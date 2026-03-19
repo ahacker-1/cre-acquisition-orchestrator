@@ -1,0 +1,64 @@
+name: Bug Report
+description: Report a bug in the orchestrator, dashboard, or simulation engine
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please fill out the sections below so we can reproduce and fix it.
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js version
+      description: Run `node --version` and paste the output
+      placeholder: v20.x.x
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which part of the system is affected?
+      options:
+        - Pipeline / Orchestration engine
+        - Dashboard (React UI)
+        - Agent prompts
+        - Schema validation
+        - Document ingestion
+        - Configuration
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug clearly. Include the command you ran and what you expected.
+      placeholder: |
+        I ran `npm run demo` and the pipeline failed at the Underwriting phase with...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or error output
+      description: Paste any error messages, log output, or screenshots
+      render: shell
+
+  - type: dropdown
+    id: scenario
+    attributes:
+      label: Scenario
+      description: Which scenario were you running?
+      options:
+        - core-plus
+        - value-add
+        - distressed
+        - Custom deal config
+        - N/A
+    validations:
+      required: true
