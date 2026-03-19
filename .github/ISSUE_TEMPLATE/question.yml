@@ -1,0 +1,37 @@
+name: Question
+description: Ask a question about the framework, architecture, or usage
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question? Check [the docs](https://github.com/ahacker-1/cre-acquisition-orchestrator/tree/main/docs) and [FAQ](https://github.com/ahacker-1/cre-acquisition-orchestrator/blob/main/demo/docs/faq.md) first. If your answer isn't there, ask below.
+
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options:
+        - Getting started / setup
+        - Deal configuration
+        - Agent prompts / customization
+        - Dashboard
+        - Extending to other asset types
+        - LLM integration
+        - Architecture / design decisions
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What are you trying to accomplish? This helps us give a more useful answer.
