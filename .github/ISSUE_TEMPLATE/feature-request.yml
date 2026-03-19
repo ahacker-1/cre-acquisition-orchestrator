@@ -1,0 +1,46 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for improving the orchestrator? Describe it below.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which area does this feature relate to?
+      options:
+        - Orchestration engine
+        - Agent prompts / domain knowledge
+        - Dashboard UI
+        - New agent
+        - Configuration / thresholds
+        - Documentation
+        - DevOps / infrastructure
+        - LLM integration
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the feature
+      description: What should it do? Why is it useful for CRE acquisition workflows?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you considered any workarounds or alternative approaches?
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, links to similar tools, or anything else that helps explain the request
