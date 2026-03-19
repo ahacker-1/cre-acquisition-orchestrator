@@ -1,6 +1,6 @@
 name: New Asset Type Proposal
 description: Propose adding support for a new CRE property type
-labels: ["asset-type", "enhancement"]
+labels: ["enhancement"]
 body:
   - type: markdown
     attributes:

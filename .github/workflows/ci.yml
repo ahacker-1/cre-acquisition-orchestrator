@@ -24,8 +24,16 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      - name: Install dashboard dependencies
+        working-directory: dashboard
+        run: npm install --no-package-lock
+
       - name: Validate project structure and agent prompts
         run: node scripts/run-validation.js
 
       - name: Run system tests (3 scenarios + failure/resume)
         run: npm test
+
+      - name: Verify dashboard production build
+        working-directory: dashboard
+        run: npm run build

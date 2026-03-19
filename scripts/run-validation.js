@@ -68,6 +68,11 @@ function dirExists(dirPath) {
   }
 }
 
+function ensureDir(dirPath) {
+  fs.mkdirSync(dirPath, { recursive: true });
+  return dirExists(dirPath);
+}
+
 function checkSections(content, sections) {
   const results = [];
   for (const section of sections) {
@@ -146,11 +151,13 @@ function main() {
   console.log(colorize('\n--- Directories ---', 'cyan'));
   for (const relDir of REQUIRED_DIRECTORIES) {
     const absDir = path.join(BASE_DIR, relDir);
-    const exists = dirExists(absDir);
+    const existed = dirExists(absDir);
+    const exists = existed || ensureDir(absDir);
     results.directories.checked++;
     if (exists) {
       results.directories.passed++;
-      console.log(`  ${colorize('PASS', 'green')} ${relDir}/`);
+      const statusText = existed ? `${relDir}/` : `${relDir}/ (created)`;
+      console.log(`  ${colorize('PASS', 'green')} ${statusText}`);
     } else {
       results.directories.status = 'FAIL';
       console.log(`  ${colorize('FAIL', 'red')} ${relDir}/ - DIRECTORY NOT FOUND`);

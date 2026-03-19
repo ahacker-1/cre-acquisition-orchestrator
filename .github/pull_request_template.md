@@ -22,8 +22,9 @@
 
 - [ ] `npm test` passes (all 3 scenarios + failure/resume)
 - [ ] `node scripts/run-validation.js` passes
+- [ ] Dashboard changes pass `cd dashboard && npm install && npm run build`
 - [ ] New agent prompts follow the 19-section anatomy (`docs/AGENT-DEVELOPMENT.md`)
-- [ ] New JSON schemas are valid and referenced in `config/agent-registry.json`
+- [ ] New JSON schemas are valid and any runtime consumers are updated if needed (for example `scripts/validate-contracts.js`)
 - [ ] Documentation updated if needed
 
 ## Testing
