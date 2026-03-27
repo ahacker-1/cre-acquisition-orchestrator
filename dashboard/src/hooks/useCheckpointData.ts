@@ -26,6 +26,7 @@ function createIdleRunStatus(): RunStatus {
   return {
     active: false,
     runId: null,
+    dealPath: null,
     state: 'IDLE',
     mode: null,
     speed: null,
@@ -60,6 +61,7 @@ function normalizeRunStatus(value: unknown): RunStatus {
   return {
     active: Boolean(raw.active),
     runId: typeof raw.runId === 'string' ? raw.runId : null,
+    dealPath: typeof raw.dealPath === 'string' ? raw.dealPath : null,
     state: normalizeRunLifecycleState(raw.state),
     mode: raw.mode === 'fast' || raw.mode === 'live' ? raw.mode : null,
     speed: raw.speed === 'fast' || raw.speed === 'normal' || raw.speed === 'slow' ? raw.speed : null,
@@ -783,6 +785,12 @@ export function useCheckpointData() {
             setRunStatus((prev) => ({
               ...prev,
               runId: runMsg.runId ?? prev.runId,
+              dealPath:
+                typeof runMsg.details?.dealPath === 'string'
+                  ? runMsg.details.dealPath
+                  : runMsg.state === 'COMPLETED' || runMsg.state === 'FAILED' || runMsg.state === 'STOPPED' || runMsg.state === 'IDLE'
+                    ? null
+                    : prev.dealPath,
               state: runMsg.state ?? prev.state,
               mode: runMsg.mode ?? prev.mode,
               speed: runMsg.speed ?? prev.speed,
@@ -800,7 +808,7 @@ export function useCheckpointData() {
                   : {}),
             }))
 
-            if (runMsg.event === 'started' && runMsg.details?.reset === true) {
+            if (runMsg.event === 'started') {
               resetLocalState()
             }
             break

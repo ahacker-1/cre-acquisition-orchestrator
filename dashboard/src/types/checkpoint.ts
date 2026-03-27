@@ -118,6 +118,7 @@ export type RunLifecycleState = 'IDLE' | 'STARTING' | 'RUNNING' | 'STOPPING' | '
 export interface RunStatus {
   active: boolean
   runId: string | null
+  dealPath: string | null
   state: RunLifecycleState
   mode: RunMode | null
   speed: RunSpeed | null

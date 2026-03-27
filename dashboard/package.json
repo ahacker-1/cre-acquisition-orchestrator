@@ -7,8 +7,12 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:client": "vite",
     "dev:server": "tsx watch server/watcher.ts",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "start:client:test": "vite --host 127.0.0.1 --port 4173 --strictPort",
+    "start:server:test": "tsx server/watcher.ts",
+    "build": "tsc -p tsconfig.server.json && tsc && vite build",
+    "preview": "vite preview",
+    "test:e2e": "node ./scripts/run-e2e.mjs",
+    "test:e2e:headed": "node ./scripts/run-e2e.mjs --headed"
   },
   "dependencies": {
     "chokidar": "^3.6.0",
@@ -17,6 +21,7 @@
     "ws": "^8.16.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/ws": "^8.5.13",

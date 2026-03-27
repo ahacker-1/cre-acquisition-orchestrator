@@ -5,6 +5,14 @@ import { resolve, relative, dirname, join, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { RunManager, type RunMessage, type StartRunRequest } from './run-manager';
+import {
+  getDealRecord,
+  listDealLibrary,
+  markDealLaunched,
+  saveUserDeal,
+  validateDealConfig,
+  type ValidationMode,
+} from './deal-service';
 
 // ---------------------------------------------------------------------------
 // Resolve paths
@@ -366,6 +374,12 @@ const runManager = new RunManager({
   },
 });
 
+const dealServiceContext = {
+  dataRoot,
+  projectRoot,
+  statusDir,
+};
+
 // ---------------------------------------------------------------------------
 // WebSocket server
 // ---------------------------------------------------------------------------
@@ -547,6 +561,16 @@ function parseRunId(url: string, suffix: 'events' | 'documents'): string | null 
   }
 }
 
+function parseLibraryDealId(url: string): string | null {
+  const match = url.match(/^\/api\/deals\/([^/]+)/);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
 const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
   const method = req.method || 'GET';
   const url = req.url || '/';
@@ -562,6 +586,80 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
     // GET /api/run/status - current run lifecycle status
     if (method === 'GET' && url === '/api/run/status') {
       sendJson(res, 200, runManager.getStatus());
+      return;
+    }
+
+    // GET /api/deals - list saved and sample deals for the dashboard library
+    if (method === 'GET' && url === '/api/deals') {
+      sendJson(res, 200, listDealLibrary(dealServiceContext));
+      return;
+    }
+
+    // POST /api/deals/validate - validate a user-provided deal for draft or launch readiness
+    if (method === 'POST' && url === '/api/deals/validate') {
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown>;
+      try {
+        body = JSON.parse(rawBody);
+      } catch {
+        sendJson(res, 400, { error: 'Invalid JSON body' });
+        return;
+      }
+
+      const deal = body.deal;
+      if (!deal || typeof deal !== 'object' || Array.isArray(deal)) {
+        sendJson(res, 400, { error: 'Missing required field: deal' });
+        return;
+      }
+
+      const library = listDealLibrary(dealServiceContext);
+      const mode: ValidationMode = body.mode === 'launch' ? 'launch' : 'draft';
+      const currentDealId = typeof body.currentDealId === 'string' ? body.currentDealId : undefined;
+      const validation = validateDealConfig(deal as Record<string, unknown>, {
+        projectRoot,
+        mode,
+        existingIds: library.deals.map((entry) => entry.dealId),
+        currentDealId,
+      });
+
+      sendJson(res, 200, validation);
+      return;
+    }
+
+    // POST /api/deals - save a user-created deal draft or launch-ready configuration
+    if (method === 'POST' && url === '/api/deals') {
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown>;
+      try {
+        body = JSON.parse(rawBody);
+      } catch {
+        sendJson(res, 400, { error: 'Invalid JSON body' });
+        return;
+      }
+
+      const deal = body.deal;
+      if (!deal || typeof deal !== 'object' || Array.isArray(deal)) {
+        sendJson(res, 400, { error: 'Missing required field: deal' });
+        return;
+      }
+
+      const mode: ValidationMode = body.mode === 'launch' ? 'launch' : 'draft';
+      const currentDealId = typeof body.currentDealId === 'string' ? body.currentDealId : undefined;
+
+      try {
+        const record = saveUserDeal(dealServiceContext, {
+          deal: deal as Record<string, unknown>,
+          mode,
+          currentDealId,
+        });
+        sendJson(res, 201, record);
+      } catch (err) {
+        const validation = (err as Error & { validation?: unknown }).validation;
+        sendJson(res, 400, {
+          error: err instanceof Error ? err.message : 'Failed to save deal',
+          ...(validation && typeof validation === 'object' ? { validation } : {}),
+        });
+      }
       return;
     }
 
@@ -598,7 +696,11 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
       }
       const { eventsPath } = findRunArtifactPaths(runId);
       if (!eventsPath || !existsSync(eventsPath)) {
-        sendJson(res, 404, { error: `Events not found for run: ${runId}` });
+        sendJson(res, 200, {
+          runId,
+          path: null,
+          events: [],
+        });
         return;
       }
       const events = readAllEvents(eventsPath);
@@ -619,7 +721,11 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
       }
       const { documentsPath } = findRunArtifactPaths(runId);
       if (!documentsPath || !existsSync(documentsPath)) {
-        sendJson(res, 404, { error: `Documents not found for run: ${runId}` });
+        sendJson(res, 200, {
+          runId,
+          path: null,
+          documents: [],
+        });
         return;
       }
       const payload = readJsonSafe(documentsPath);
@@ -631,6 +737,79 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         runId,
         path: normalizedRelPath(statusDir, documentsPath),
         ...(payload as Record<string, unknown>),
+      });
+      return;
+    }
+
+    // GET /api/deals/:id - fetch a saved deal or sample deal by ID
+    if (method === 'GET' && /^\/api\/deals\/[^/]+$/.test(url)) {
+      const dealId = parseLibraryDealId(url);
+      if (!dealId) {
+        sendJson(res, 400, { error: 'Invalid deal ID' });
+        return;
+      }
+
+      const record = getDealRecord(dealServiceContext, dealId);
+      if (!record) {
+        sendJson(res, 404, { error: `Deal not found: ${dealId}` });
+        return;
+      }
+
+      sendJson(res, 200, record);
+      return;
+    }
+
+    // POST /api/deals/:id/launch - launch a saved or sample deal via explicit path
+    if (method === 'POST' && /^\/api\/deals\/[^/]+\/launch$/.test(url)) {
+      const dealId = parseLibraryDealId(url);
+      if (!dealId) {
+        sendJson(res, 400, { error: 'Invalid deal ID' });
+        return;
+      }
+
+      const record = getDealRecord(dealServiceContext, dealId);
+      if (!record) {
+        sendJson(res, 404, { error: `Deal not found: ${dealId}` });
+        return;
+      }
+
+      if (record.item.kind === 'user' && !record.validation.launchReady) {
+        sendJson(res, 400, {
+          error: 'Deal is not launch ready',
+          validation: record.validation,
+        });
+        return;
+      }
+
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown> = {};
+      if (rawBody.trim().length > 0) {
+        try {
+          body = JSON.parse(rawBody);
+        } catch {
+          sendJson(res, 400, { error: 'Invalid JSON body' });
+          return;
+        }
+      }
+
+      const startRequest: StartRunRequest = {
+        dealPath: record.item.dealPath,
+        mode: body.mode === 'fast' ? 'fast' : 'live',
+        speed:
+          body.speed === 'fast' || body.speed === 'slow' || body.speed === 'normal'
+            ? body.speed
+            : 'normal',
+        scenario: typeof body.scenario === 'string' ? body.scenario : undefined,
+        reset: typeof body.reset === 'boolean' ? body.reset : false,
+      }
+
+      const result = runManager.start(startRequest);
+      if (result.statusCode < 300 && record.item.kind === 'user') {
+        markDealLaunched(dealServiceContext, dealId);
+      }
+      sendJson(res, result.statusCode, {
+        ...result.body,
+        deal: record.item,
       });
       return;
     }

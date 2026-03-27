@@ -1,6 +1,7 @@
-import { spawn, type ChildProcessWithoutNullStreams } from 'child_process'
+import { spawn, type ChildProcessByStdio } from 'child_process'
 import { existsSync, mkdirSync, rmSync } from 'fs'
 import { join } from 'path'
+import type { Readable } from 'stream'
 
 export type RunMode = 'live' | 'fast'
 export type RunSpeed = 'fast' | 'normal' | 'slow'
@@ -16,6 +17,7 @@ export type RunLifecycleState =
 export interface RunStatus {
   active: boolean
   runId: string | null
+  dealPath: string | null
   state: RunLifecycleState
   mode: RunMode | null
   speed: RunSpeed | null
@@ -102,13 +104,14 @@ export class RunManager {
   private readonly dataRoot: string
   private readonly onEvent: (message: RunMessage) => void
   private readonly onReset?: () => void
-  private child: ChildProcessWithoutNullStreams | null = null
+  private child: ChildProcessByStdio<null, Readable, Readable> | null = null
   private stopTimer: ReturnType<typeof setTimeout> | null = null
 
   private status: RunStatus = {
     active: false,
-    runId: null,
-    state: 'IDLE',
+      runId: null,
+      dealPath: null,
+      state: 'IDLE',
     mode: null,
     speed: null,
     pid: null,
@@ -140,6 +143,7 @@ export class RunManager {
       timestamp: nowIso(),
       details: {
         active: this.status.active,
+        dealPath: this.status.dealPath,
         pid: this.status.pid,
         startedAt: this.status.startedAt,
         endedAt: this.status.endedAt,
@@ -172,6 +176,7 @@ export class RunManager {
     this.status = {
       active: true,
       runId,
+      dealPath,
       state: 'STARTING',
       mode,
       speed,
@@ -191,6 +196,7 @@ export class RunManager {
         this.status = {
           ...this.status,
           active: false,
+          dealPath: null,
           state: 'FAILED',
           endedAt: nowIso(),
           error: `Failed to reset runtime artifacts: ${message}`,
@@ -236,10 +242,11 @@ export class RunManager {
           ]
 
     try {
-      this.child = spawn('node', args, {
+      const child = spawn('node', args, {
         cwd: this.projectRoot,
         stdio: ['ignore', 'pipe', 'pipe'],
       })
+      this.child = child
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       this.status = {
@@ -261,17 +268,37 @@ export class RunManager {
 
     const currentRunId = runId
 
-    this.child.stdout.on('data', (chunk: Buffer) => {
+    const child = this.child
+    if (!child) {
+      this.status = {
+        ...this.status,
+        active: false,
+        dealPath: null,
+        state: 'FAILED',
+        endedAt: nowIso(),
+        error: 'Failed to retain child process handle',
+      }
+      this.emit('error', { reason: this.status.error })
+      return {
+        statusCode: 500,
+        body: {
+          error: this.status.error,
+          runId: this.status.runId,
+        },
+      }
+    }
+
+    child.stdout.on('data', (chunk: Buffer) => {
       const text = chunk.toString('utf8').trim()
       if (text) console.log(`[run:${currentRunId}] ${text}`)
     })
 
-    this.child.stderr.on('data', (chunk: Buffer) => {
+    child.stderr.on('data', (chunk: Buffer) => {
       const text = chunk.toString('utf8').trim()
       if (text) console.error(`[run:${currentRunId}:stderr] ${text}`)
     })
 
-    this.child.on('error', (err: Error) => {
+    child.on('error', (err: Error) => {
       if (this.status.runId !== currentRunId) return
       this.clearStopTimer()
       this.status = {
@@ -287,7 +314,7 @@ export class RunManager {
       this.emit('error', { reason: this.status.error })
     })
 
-    this.child.on('exit', (code: number | null, signal: NodeJS.Signals | null) => {
+    child.on('exit', (code: number | null, signal: NodeJS.Signals | null) => {
       if (this.status.runId !== currentRunId) return
       this.clearStopTimer()
       const stoppedByUser = this.status.state === 'STOPPING'
@@ -297,6 +324,7 @@ export class RunManager {
       this.status = {
         ...this.status,
         active: false,
+        dealPath: null,
         state: stoppedByUser ? 'STOPPED' : succeeded ? 'COMPLETED' : 'FAILED',
         endedAt: nowIso(),
         pid: null,
@@ -318,7 +346,7 @@ export class RunManager {
     this.status = {
       ...this.status,
       state: 'RUNNING',
-      pid: this.child.pid ?? null,
+      pid: child.pid ?? null,
     }
     this.emit('started', {
       pid: this.status.pid,
@@ -351,8 +379,9 @@ export class RunManager {
         statusCode: 200,
         body: {
           status: 'idle',
-          active: false,
-          runId: this.status.runId,
+        active: false,
+        dealPath: null,
+        runId: this.status.runId,
           state: this.status.state,
         },
       }

@@ -22,7 +22,8 @@
     "simulate": "node scripts/orchestrate.js --deal config/deal.json --scenario core-plus --seed 42",
     "dashboard": "cd dashboard && npm install && npm run dev",
     "validate": "node scripts/validate-contracts.js",
-    "test": "node scripts/system-test.js"
+    "test": "node scripts/system-test.js",
+    "test:e2e": "cd dashboard && npm run test:e2e"
   },
   "engines": {
     "node": ">=18.0.0"

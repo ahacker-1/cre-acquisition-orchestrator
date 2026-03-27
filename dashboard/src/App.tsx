@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useCheckpointData } from './hooks/useCheckpointData'
 import ErrorBoundary from './components/ErrorBoundary'
 import DealHeader from './components/DealHeader'
@@ -11,6 +11,10 @@ import FinalReport from './components/FinalReport'
 import StoryNarrative from './components/StoryNarrative'
 import DocumentWall from './components/DocumentWall'
 import DecisionLog from './components/DecisionLog'
+import DealIntakeWizard from './components/DealIntakeWizard'
+import SavedDealsPanel from './components/SavedDealsPanel'
+import { useDealLibrary } from './hooks/useDealLibrary'
+import type { DealLibraryItem } from './types/deals'
 
 type TabName =
   | 'Pipeline'
@@ -27,13 +31,17 @@ const TABS: TabName[] = ['Pipeline', 'Agent Tree', 'Timeline', 'Findings', 'Stor
 
 // Demo-friendly: Show example pipeline phases before data loads
 function ReadyToStartPanel({
+  onCreateDeal,
   onStart,
   starting,
   runError,
+  children,
 }: {
+  onCreateDeal: () => void
   onStart: () => void
   starting: boolean
   runError: string | null
+  children: ReactNode
 }) {
   return (
     <div className="space-y-6">
@@ -48,8 +56,7 @@ function ReadyToStartPanel({
           <div>
             <h2 className="text-lg font-semibold text-gray-200 mb-1">Ready to Start</h2>
             <p className="text-gray-400 text-sm">
-              The dashboard is connected and waiting for the pipeline to begin.
-              Launch the master orchestrator to start analyzing a deal.
+              Create a deal from the dashboard, continue a saved draft, or launch one of the included sample analyses.
             </p>
           </div>
         </div>
@@ -59,19 +66,28 @@ function ReadyToStartPanel({
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
-              Live Demo Start
+              Guided Start
             </h3>
             <p className="text-xs text-gray-500 mt-1">
-              Starts a timed run with automatic reset so phases are visible step by step.
+              New users should start with the deal wizard. Demo mode is still available for the classic sample run.
             </p>
           </div>
-          <button
-            onClick={onStart}
-            disabled={starting}
-            className="px-4 py-2 rounded-md text-sm font-semibold bg-cre-accent text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {starting ? 'Starting...' : 'Start Live Run'}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onCreateDeal}
+              data-testid="empty-new-deal-button"
+              className="px-4 py-2 rounded-md text-sm font-semibold bg-cre-accent text-white hover:brightness-110 transition-colors"
+            >
+              New Deal
+            </button>
+            <button
+              onClick={onStart}
+              disabled={starting}
+              className="px-4 py-2 rounded-md text-sm font-semibold bg-white/5 text-gray-100 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {starting ? 'Starting...' : 'Run Demo'}
+            </button>
+          </div>
         </div>
         {runError && (
           <p className="text-xs text-cre-danger mt-3">
@@ -121,18 +137,20 @@ function ReadyToStartPanel({
         <ol className="space-y-2 text-sm text-gray-400">
           <li className="flex gap-2">
             <span className="text-cre-accent font-mono">1.</span>
-            <span>Configure your deal in <code className="text-cre-accent/80">config/deal.json</code></span>
+            <span>Create a deal in the wizard or choose one from the library below</span>
           </li>
           <li className="flex gap-2">
             <span className="text-cre-accent font-mono">2.</span>
-            <span>Run <code className="text-cre-accent/80">node scripts/orchestrate.js --deal config/deal.json --scenario core-plus --agent-delay-ms 2000</code></span>
+            <span>Review the launch check and save the deal to a reusable path</span>
           </li>
           <li className="flex gap-2">
             <span className="text-cre-accent font-mono">3.</span>
-            <span>Monitor progress in real-time on this dashboard</span>
+            <span>Launch the pipeline and monitor progress here in real time</span>
           </li>
         </ol>
       </div>
+
+      {children}
     </div>
   )
 }
@@ -180,7 +198,23 @@ export default function App() {
     startLiveRun,
     stopRun,
   } = useCheckpointData()
+  const {
+    deals,
+    suggestedDealId,
+    loading: dealsLoading,
+    error: dealsError,
+    refreshDeals,
+    loadDeal,
+    validateDeal,
+    saveDeal,
+    launchDeal,
+  } = useDealLibrary()
   const [activeTab, setActiveTab] = useState<TabName>('Pipeline')
+  const [wizardOpen, setWizardOpen] = useState(false)
+  const [libraryOpen, setLibraryOpen] = useState(false)
+  const [editingDealId, setEditingDealId] = useState<string | null>(null)
+  const [launchingDealId, setLaunchingDealId] = useState<string | null>(null)
+  const [libraryError, setLibraryError] = useState<string | null>(null)
 
   // Demo-friendly: Default to Pipeline tab, auto-expand relevant sections
   const hasActiveData = dealCheckpoint && !/^pending$/i.test(dealCheckpoint.status)
@@ -206,6 +240,47 @@ export default function App() {
         return 'Idle'
     }
   })()
+
+  function recommendedScenarioForDeal(item: DealLibraryItem): 'core-plus' | 'value-add' | 'distressed' {
+    if (item.investmentStrategy === 'value-add') return 'value-add'
+    if (item.investmentStrategy === 'opportunistic') return 'distressed'
+    return 'core-plus'
+  }
+
+  function openNewDealWizard(): void {
+    setEditingDealId(null)
+    setWizardOpen(true)
+  }
+
+  function openEditDealWizard(dealId: string): void {
+    setEditingDealId(dealId)
+    setWizardOpen(true)
+    setLibraryOpen(false)
+  }
+
+  async function handleLaunchDeal(dealId: string): Promise<void> {
+    const match = deals.find((item) => item.dealId === dealId)
+    if (!match) return
+
+    setLaunchingDealId(dealId)
+    setLibraryError(null)
+    try {
+      await launchDeal(dealId, {
+        scenario: recommendedScenarioForDeal(match),
+        speed: 'normal',
+        reset: match.kind === 'sample',
+      })
+      setLibraryOpen(false)
+    } catch (err) {
+      setLibraryError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLaunchingDealId(null)
+    }
+  }
+
+  useEffect(() => {
+    void refreshDeals()
+  }, [refreshDeals, runStatus.runId, runStatus.state])
 
   return (
     <div className="min-h-screen bg-cre-bg text-gray-100">
@@ -251,11 +326,27 @@ export default function App() {
           </div>
 
           <button
+            onClick={openNewDealWizard}
+            data-testid="header-new-deal-button"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-cre-accent text-white hover:brightness-110 transition-colors"
+          >
+            New Deal
+          </button>
+
+          <button
+            onClick={() => setLibraryOpen(true)}
+            data-testid="header-deals-button"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 transition-colors"
+          >
+            Deals
+          </button>
+
+          <button
             onClick={() => void startLiveRun()}
             disabled={!canStart}
-            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-cre-accent text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {runRequestPending ? 'Working...' : 'Start Live'}
+            {runRequestPending ? 'Working...' : 'Run Demo'}
           </button>
 
           <button
@@ -292,10 +383,22 @@ export default function App() {
         <ErrorBoundary>
           {!dealCheckpoint ? (
             <ReadyToStartPanel
+              onCreateDeal={openNewDealWizard}
               onStart={() => void startLiveRun()}
               starting={runRequestPending || runStatus.state === 'STARTING'}
               runError={runStatus.error}
-            />
+            >
+              <SavedDealsPanel
+                deals={deals}
+                loading={dealsLoading}
+                error={libraryError || dealsError}
+                onEditDeal={openEditDealWizard}
+                onLaunchDeal={(dealId) => void handleLaunchDeal(dealId)}
+                launchingDealId={launchingDealId}
+                activeRunDealPath={runStatus.dealPath}
+                activeRunState={runStatus.state}
+              />
+            </ReadyToStartPanel>
           ) : (
             <>
               <DealHeader dealCheckpoint={dealCheckpoint} />
@@ -422,6 +525,66 @@ export default function App() {
           CRE Acquisition Orchestrator | AI-Powered Deal Analysis
         </p>
       </footer>
+
+      {libraryOpen && (
+        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="min-h-full flex items-start justify-center p-6 lg:p-10">
+            <div
+              data-testid="deal-library-modal"
+              className="w-full max-w-6xl rounded-[28px] border border-cre-border bg-cre-surface shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+            >
+              <div className="border-b border-cre-border px-6 py-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.24em] text-cre-accent font-semibold">
+                    Deal Library
+                  </p>
+                  <h2 className="text-2xl font-bold text-white mt-2">Saved and Sample Deals</h2>
+                </div>
+                <button
+                  onClick={() => setLibraryOpen(false)}
+                  className="rounded-full p-2 text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
+                  aria-label="Close deal library"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                    <path d="M5 5L15 15M15 5L5 15" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6">
+                <SavedDealsPanel
+                  deals={deals}
+                  loading={dealsLoading}
+                  error={libraryError || dealsError}
+                  onEditDeal={openEditDealWizard}
+                  onLaunchDeal={(dealId) => void handleLaunchDeal(dealId)}
+                  launchingDealId={launchingDealId}
+                  activeRunDealPath={runStatus.dealPath}
+                  activeRunState={runStatus.state}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <DealIntakeWizard
+        isOpen={wizardOpen}
+        suggestedDealId={suggestedDealId}
+        editingDealId={editingDealId}
+        onClose={() => setWizardOpen(false)}
+        onLoadDeal={loadDeal}
+        onValidateDeal={validateDeal}
+        onSaveDeal={saveDeal}
+        onLaunchDeal={launchDeal}
+        onSaved={() => {
+          setLibraryError(null)
+          void refreshDeals()
+        }}
+        onLaunched={() => {
+          setLibraryError(null)
+          void refreshDeals()
+        }}
+      />
     </div>
   )
 }
