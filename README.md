@@ -399,6 +399,12 @@ Three pre-built scenarios with different market assumptions:
 
 ---
 
+## Want Individual Skills Without the Orchestration?
+
+If you don't need the full pipeline and just want standalone analysis tools you can drop into Claude Code, ChatGPT, or Cursor, check out **[CRE Agent Skills](https://github.com/ahacker-1/cre-agent-skills)** — 25 individual skill files extracted from this orchestrator, with 6 ready-to-install Claude Code plugins (one per department). No pipeline, no infrastructure, no setup. Just pick a skill and go.
+
+---
+
 ## Who Is This For?
 
 - **CRE firms** exploring how AI agents could transform their acquisition workflow
@@ -441,7 +447,7 @@ Potential future directions:
 
 ## Author
 
-**Avi Hacker** - AI Consulting for Commercial Real Estate
+**Avi Hacker, J.D.** - AI Consulting for Commercial Real Estate
 
 I work with CRE firms to build AI systems that transform their acquisition, underwriting, and asset management workflows. This orchestrator grew out of that work - the same architectural patterns I use with clients, open-sourced so the whole industry can build on them.
 
