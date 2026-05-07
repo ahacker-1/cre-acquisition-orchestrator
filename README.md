@@ -348,26 +348,45 @@ cre-acquisition-orchestrator/
 ├── orchestrators/             # 6 orchestrator prompts (master + 5 phase)
 ├── skills/                    # 8 domain knowledge files (CRE formulas, benchmarks, criteria)
 ├── schemas/                   # 10 JSON Schema contracts (phases, common, events, checkpoints)
-├── config/                    # Deal configuration, thresholds, agent registry, scenarios
+├── config/                    # Deal configuration, workflow catalog, thresholds, agent registry
 │   ├── deal.json              #   Sample: Parkview Apartments, Austin TX, 200 units, $32M
+│   ├── workflows.json         #   Built-in outcome workflow definitions
 │   ├── thresholds.json        #   Investment criteria (DSCR, LTV, cap rate, cash-on-cash)
 │   ├── agent-registry.json    #   Agent metadata, dependencies, file mappings
 │   └── scenarios/             #   Core-Plus, Value-Add, Distressed configs
 ├── scripts/                   # Orchestration engine, simulation, utilities
-│   ├── orchestrate.js         #   Main pipeline runner
+│   ├── orchestrate.js         #   Main workflow-aware pipeline runner
 │   ├── demo-run.js            #   Quick demo execution
 │   ├── system-test.js         #   Full system test (3 scenarios + failure + resume)
-│   └── lib/                   #   Runtime core, simulation data, schema validator, story engine
-├── dashboard/                 # React + TypeScript real-time monitoring UI
-│   ├── src/                   #   Operator portal components, hooks, types, styles
-│   └── server/                #   WebSocket + REST API (chokidar file watching)
+│   └── lib/                   #   Runtime core, workflow catalog, simulation data, story engine
+├── dashboard/                 # React + TypeScript Operator Deal Hub
+│   ├── src/
+│   │   ├── components/        #   Deal workspace, workflow launcher, completion package
+│   │   ├── hooks/             #   Checkpoint, workspace, deal library, workflow hooks
+│   │   ├── types/             #   Checkpoint, deal, workflow, workspace contracts
+│   │   └── styles/            #   Professional CRE cockpit styling
+│   ├── server/
+│   │   ├── watcher.ts         #   WebSocket + REST API
+│   │   ├── run-manager.ts     #   Local deterministic run orchestration
+│   │   ├── workflow-service.ts   # Catalog + saved preset APIs
+│   │   ├── workspace-service.ts  # Criteria, documents, phase state, deal workspace APIs
+│   │   └── parser-service.ts  #   CSV/TXT/MD extraction preview and apply logic
+│   └── e2e/                   #   Playwright coverage for portal and workflow flows
 ├── templates/                 # Output templates (report, IC memo, checkpoints)
 ├── validation/                # Test fixtures and validation runner
 ├── documents/                 # Sample deal documents (rent roll CSV, T12, offering memo)
 ├── docs/                      # Architecture, configuration guide, glossary, troubleshooting
 ├── demo/                      # Demo scripts, one-pager, FAQ, executive/technical demo guides
-└── data/
-    └── examples/              # Complete sample run output (Parkview Apartments)
+├── data/                      # Local runtime data, ignored except curated examples
+│   ├── examples/              #   Complete sample run output (Parkview Apartments)
+│   ├── deals/{dealId}/        #   Criteria, uploaded docs, manifests, extractions, phase state
+│   ├── workflow-presets/      #   Saved local workflow launch presets
+│   ├── runs/                  #   Input snapshots and per-run runtime artifacts
+│   ├── status/                #   Checkpoints, phase state, agent state, event streams
+│   ├── reports/               #   Generated reports and workpapers
+│   └── logs/                  #   Local run logs
+├── RELEASE_NOTES_v2.0.0.md    # v2.0.0 Operator Deal Hub release notes
+└── package.json               # Root validation and orchestration scripts
 ```
 
 ---
