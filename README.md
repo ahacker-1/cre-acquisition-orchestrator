@@ -238,6 +238,20 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 | **Log Stream** | Raw structured log output from all agents with filtering by agent, phase, and log level |
 | **Completion Package** | Phase outcomes, workpapers, findings, decision log, document manifest, source-backed inputs, and final recommendation |
 
+## Dashboard Preview
+
+The first screen is designed as an operator command center: start a new deal, set the investment criteria, upload source documents, choose the outcome workflow, and review the package from one local-first cockpit.
+
+![New Deal Wizard showing the starting inputs for a CRE acquisition deal](docs/assets/new-deal-start.png)
+
+![Operator Deal Hub overview with current deal, criteria, phase tabs, and source document entry points](docs/assets/operator-deal-hub-overview.png)
+
+| Workflow Launcher | Source Document Workspace |
+|-------------------|---------------------------|
+| ![Workflow Launcher with deal selection, saved presets, and five available workflows](docs/assets/workflow-launcher.png) | ![Documents workspace with local document intake and extraction preview](docs/assets/document-workspace.png) |
+
+![Completion Package view with phase outcomes, findings, workpapers, and final recommendation](docs/assets/completion-package.png)
+
 ---
 
 ## Quick Start
