@@ -27,7 +27,7 @@ export default function FinalReport({ dealCheckpoint }: FinalReportProps) {
       <div className="flex justify-end no-print">
         <button
           onClick={handlePrint}
-          className="flex items-center gap-2 px-4 py-2 bg-cre-accent hover:bg-cre-accent/80 text-white rounded-lg font-medium text-sm transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-200 text-black font-semibold text-sm uppercase transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

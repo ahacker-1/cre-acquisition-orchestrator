@@ -232,7 +232,7 @@ function summarizeProgress(checkpoint) {
 
   PHASES.forEach((phase) => {
     const status = checkpoint.phases[phase.key]?.status;
-    if (status === 'COMPLETE') completed += 1;
+    if (status === 'COMPLETE' || status === 'SKIPPED') completed += 1;
     if (status === 'RUNNING') running = true;
     if (status === 'FAILED') failed = true;
   });

@@ -27,7 +27,7 @@ export default function PhaseDetail({
   agentCheckpoints,
 }: PhaseDetailProps) {
   const progressPercent = Math.round((phase.progress ?? 0) * 100)
-  const agents = phase.agents || { total: 0, completed: 0, running: 0, failed: 0, pending: 0 }
+  const agents = phase.agents || { total: 0, completed: 0, running: 0, failed: 0, pending: 0, skipped: 0 }
   const outputs = phase.outputs || { phaseSummary: '', keyFindings: [], redFlags: [], dataGaps: [], phaseVerdict: null }
   const redFlagText = (flag: PhaseInfo['outputs']['redFlags'][number]): string =>
     flag.description || flag.message || 'Flag'
@@ -70,6 +70,8 @@ export default function PhaseDetail({
               ? 'bg-cre-danger'
               : phase.status === 'complete'
               ? 'bg-cre-success'
+              : phase.status === 'skipped'
+              ? 'bg-gray-500'
               : 'bg-cre-accent'
           }`}
           style={{ width: `${progressPercent}%` }}
@@ -77,7 +79,7 @@ export default function PhaseDetail({
       </div>
 
       {/* Agent counts */}
-      <div className="grid grid-cols-5 gap-2 text-center text-sm">
+      <div className="grid grid-cols-6 gap-2 text-center text-sm">
         <div>
           <div className="text-lg font-bold text-white">{agents.total}</div>
           <div className="text-xs text-gray-500">Total</div>
@@ -97,6 +99,10 @@ export default function PhaseDetail({
         <div>
           <div className="text-lg font-bold text-gray-400">{agents.pending}</div>
           <div className="text-xs text-gray-500">Pending</div>
+        </div>
+        <div>
+          <div className="text-lg font-bold text-gray-500">{agents.skipped || 0}</div>
+          <div className="text-xs text-gray-500">Skipped</div>
         </div>
       </div>
 
@@ -121,6 +127,8 @@ export default function PhaseDetail({
                         ? 'bg-cre-info'
                         : agent.status === 'failed'
                         ? 'bg-cre-danger'
+                        : agent.status === 'skipped'
+                        ? 'bg-gray-500'
                         : 'bg-gray-600'
                     }`}
                   />

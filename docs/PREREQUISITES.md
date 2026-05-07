@@ -17,7 +17,7 @@ Everything you need installed and configured before running the CRE Acquisition 
 
 The system runs entirely inside Claude Code. Every agent is a markdown prompt file launched via the `Task` tool.
 
-```bash
+```powershell
 # Verify Claude Code is installed
 claude --version
 ```
@@ -118,7 +118,7 @@ npm --version
 
 # 4. Verify deal config exists
 # From cre-acquisition/ root:
-ls config/deal.json
+Get-Item config/deal.json
 # Expected: file exists
 
 # 5. Verify dashboard dependencies (first time only)

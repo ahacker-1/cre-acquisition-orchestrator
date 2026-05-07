@@ -372,7 +372,16 @@ cre-acquisition/
 │   └── ic-memo-template.md            # Template for IC memo
 │
 ├── data/
-│   ├── inputs/                        # Uploaded deal documents (rent rolls, T-12s, etc.)
+│   ├── deals/
+│   │   └── {deal-id}/
+│   │       ├── deal.json              # Local user-created or extraction-updated deal config
+│   │       ├── criteria.json          # Deal-specific underwriting criteria
+│   │       ├── document-manifest.json # Source document catalog
+│   │       ├── approved-fields.json   # Source-backed approved fields
+│   │       ├── documents/             # Uploaded source documents
+│   │       └── extractions/           # Extraction previews
+│   ├── workflow-presets/              # Saved local workflow launcher presets
+│   ├── runs/                          # Source-backed run input snapshots
 │   ├── logs/
 │   │   └── {deal-id}/
 │   │       ├── master.log             # Master orchestrator activity log
@@ -401,7 +410,8 @@ cre-acquisition/
 ├── dashboard/
 │   ├── package.json                   # Dashboard dependencies
 │   ├── vite.config.ts                 # Vite configuration
-│   └── src/                           # React dashboard source
+│   ├── server/                        # Local watcher, REST API, workflow/document services
+│   └── src/                           # React operator portal source
 │
 ├── validation/
 │   ├── test-deal.json                 # Synthetic test deal for validation

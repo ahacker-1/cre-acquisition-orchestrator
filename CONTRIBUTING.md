@@ -12,9 +12,9 @@ Thanks for your interest in the CRE Acquisition Orchestrator! Contributions are 
 
 4. **Test your changes** — Run the simulation and validation:
    ```bash
-   npm run demo
-   npm run validate
-   npm run test:e2e
+   npm test
+   node scripts/validate-contracts.js --deal-id parkview-2026-001
+   cd dashboard && npm run build && npm run test:e2e
    ```
 
 5. **Submit a PR** — Reference the issue in your pull request description.
@@ -33,6 +33,8 @@ npm run demo
 npm run dashboard
 # Dashboard available at http://localhost:5173
 ```
+
+The dashboard stores local deal workspaces, uploaded source documents, extraction previews, presets, and run snapshots under `data/`. These runtime files are ignored by git and should not be included in pull requests.
 
 ## Code Style
 

@@ -20,13 +20,21 @@ If any check fails, see [PREREQUISITES.md](PREREQUISITES.md) for installation in
 
 ## Step 2: Configure Your Deal
 
-The system needs a `config/deal.json` file describing the property you are analyzing.
+The fastest v2.0.0 path is the dashboard:
+
+1. Start the dashboard in Step 4.
+2. Click **New Deal** or **Create Upload Workspace**.
+3. Save a draft deal.
+4. Open the deal workspace and use the **Documents** tab to upload rent rolls, T12s, offering memoranda, LOIs, PDFs, or XLSX files.
+5. Extract CSV/TXT/MD files and approve fields before launching a workflow.
+
+If you prefer the original config-file path, the system can still run from `config/deal.json`.
 
 ### 2a. Copy the Example File
 
-```bash
+```powershell
 # From cre-acquisition/ root directory
-cp config/deal-example.json config/deal.json
+Copy-Item config/deal-example.json config/deal.json
 ```
 
 ### 2b. Open and Edit deal.json
@@ -216,22 +224,22 @@ Open **http://localhost:5173** in your browser. The dashboard displays:
 
 The master orchestrator updates `data/status/<deal-id>.json` at the project root after every significant event:
 
-```bash
+```powershell
 # Quick status check from another terminal
-cat data/status/<deal-id>.json
+Get-Content data/status/<deal-id>.json
 ```
 
 ### Log Files (Detailed)
 
 For detailed agent activity:
 
-```bash
+```powershell
 # Master orchestrator log
-cat data/logs/{deal-id}/master.log
+Get-Content data/logs/{deal-id}/master.log
 
 # Phase-specific logs
-cat data/logs/{deal-id}/due-diligence.log
-cat data/logs/{deal-id}/underwriting.log
+Get-Content data/logs/{deal-id}/due-diligence.log
+Get-Content data/logs/{deal-id}/underwriting.log
 ```
 
 Replace `{deal-id}` with your actual deal ID (e.g., `DEAL-2025-001`).
@@ -255,8 +263,8 @@ When the pipeline completes, all outputs are in the `data/reports/{deal-id}/` di
 
 ### Read the Final Report
 
-```bash
-cat data/reports/{deal-id}/final-report.md
+```powershell
+Get-Content data/reports/{deal-id}/final-report.md
 ```
 
 The report opens with:
@@ -311,10 +319,10 @@ If something goes wrong during the pipeline:
 ### Pipeline Stalls
 ```bash
 # Check data/status/<deal-id>.json for current status
-cat data/status/<deal-id>.json
+Get-Content data/status/<deal-id>.json
 
 # Check master log for errors
-cat data/logs/{deal-id}/master.log
+Get-Content data/logs/{deal-id}/master.log
 ```
 
 ### Agent Failures

@@ -518,20 +518,39 @@ export function getDealRecord(
 
   const sampleFiles = listSampleDeals(context)
   const match = sampleFiles.find((entry) => entry.dealId === dealId)
-  if (!match) return null
-  const deal = readJsonSafe(match.dealPath)
-  if (!deal) return null
-  return {
-    item: match,
-    deal,
-    validation: {
-      valid: true,
-      launchReady: true,
-      issues: [],
-      blockingIssues: [],
-      warnings: [],
-    },
+  if (match) {
+    const deal = readJsonSafe(match.dealPath)
+    if (!deal) return null
+    return {
+      item: match,
+      deal,
+      validation: {
+        valid: true,
+        launchReady: true,
+        issues: [],
+        blockingIssues: [],
+        warnings: [],
+      },
+    }
   }
+
+  const configDealPath = join(context.projectRoot, 'config', 'deal.json')
+  const configDeal = readJsonSafe(configDealPath)
+  if (configDeal && asString(configDeal.dealId) === dealId) {
+    const validation = validateDealConfig(configDeal, {
+      projectRoot: context.projectRoot,
+      mode: 'launch',
+      existingIds: listDealLibrary(context).deals.map((entry) => entry.dealId),
+      currentDealId: dealId,
+    })
+    return {
+      item: summarizeDeal('sample', configDealPath, configDeal, null, readPipelineStatus(context.statusDir, dealId)),
+      deal: configDeal,
+      validation,
+    }
+  }
+
+  return null
 }
 
 export function saveUserDeal(

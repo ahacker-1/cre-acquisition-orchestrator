@@ -74,12 +74,44 @@ cd dashboard && npm run dev
 
 ---
 
+## Workflow Launcher
+
+```bash
+cd dashboard && npm run dev
+# Open http://localhost:5173
+# Click Workflows, choose a deal, choose an outcome, review inputs, then Run Now
+```
+
+Available workflow IDs for CLI runs:
+
+```bash
+node scripts/orchestrate.js --deal config/deal.json --workflow full-acquisition-review --scenario core-plus --seed 42
+node scripts/orchestrate.js --deal config/deal.json --workflow quick-deal-screen --scenario core-plus --seed 42
+node scripts/orchestrate.js --deal config/deal.json --workflow underwriting-refresh --scenario core-plus --seed 42
+node scripts/orchestrate.js --deal config/deal.json --workflow financing-package --scenario core-plus --seed 42
+node scripts/orchestrate.js --deal config/deal.json --workflow legal-psa-review --scenario core-plus --seed 42
+```
+
+---
+
+## Local Document Intake
+
+```bash
+cd dashboard && npm run dev
+# Open http://localhost:5173
+# Create or open a deal, go to Documents, upload files, extract CSV/TXT/MD, approve fields
+```
+
+Uploaded files and extraction previews stay under `data/deals/{deal-id}/` and are ignored by git.
+
+---
+
 ## Find Your Deal ID
 
 ```bash
-cat data/status/<deal-id>.json
+Get-Content data/status/<deal-id>.json
 # or
-ls data/status/
+Get-ChildItem data/status/
 ```
 
 ---
@@ -93,6 +125,9 @@ ls data/status/
 | Story events (NDJSON) | `data/status/{deal-id}/run-{run-id}-events.ndjson` |
 | Document registry | `data/status/{deal-id}/run-{run-id}-documents.json` |
 | Run manifest | `data/status/{deal-id}/run-{run-id}-manifest.json` |
+| Source uploads | `data/deals/{deal-id}/documents/` |
+| Extraction previews | `data/deals/{deal-id}/extractions/` |
+| Approved source fields | `data/deals/{deal-id}/approved-fields.json` |
 | Logs | `data/logs/{deal-id}/master.log` |
 | Checkpoint | `data/status/{deal-id}.json` |
 | Session state | `data/status/<deal-id>.json` (project root) |

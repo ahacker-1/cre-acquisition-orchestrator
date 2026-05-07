@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "defaultWorkflowId": "full-acquisition-review",
+  "workflows": [
+    {
+      "id": "full-acquisition-review",
+      "name": "Full Acquisition Review",
+      "summary": "Run the complete acquisition pipeline from diligence through closing.",
+      "operatorGoal": "Create a full IC-ready acquisition package.",
+      "recommendedScenario": "core-plus",
+      "phases": [
+        { "phaseKey": "dueDiligence", "agents": ["*"] },
+        { "phaseKey": "underwriting", "agents": ["*"] },
+        { "phaseKey": "financing", "agents": ["*"] },
+        { "phaseKey": "legal", "agents": ["*"] },
+        { "phaseKey": "closing", "agents": ["*"] }
+      ]
+    },
+    {
+      "id": "quick-deal-screen",
+      "name": "Quick Deal Screen",
+      "summary": "Run a fast go/no-go screen using core diligence and underwriting.",
+      "operatorGoal": "Decide whether the deal deserves deeper pursuit.",
+      "recommendedScenario": "core-plus",
+      "phases": [
+        {
+          "phaseKey": "dueDiligence",
+          "agents": [
+            "rent-roll-analyst",
+            "opex-analyst",
+            "market-study",
+            "tenant-credit",
+            "environmental-review"
+          ]
+        },
+        { "phaseKey": "underwriting", "agents": ["*"] }
+      ]
+    },
+    {
+      "id": "underwriting-refresh",
+      "name": "Underwriting Refresh",
+      "summary": "Refresh the financial model, sensitivity cases, and IC memo.",
+      "operatorGoal": "Update the economics without rerunning the whole acquisition file.",
+      "recommendedScenario": "value-add",
+      "phases": [
+        { "phaseKey": "underwriting", "agents": ["*"] }
+      ]
+    },
+    {
+      "id": "financing-package",
+      "name": "Financing Package",
+      "summary": "Prepare an underwriting-backed financing package and lender comparison.",
+      "operatorGoal": "Package the deal for debt sizing and lender outreach.",
+      "recommendedScenario": "core-plus",
+      "phases": [
+        { "phaseKey": "underwriting", "agents": ["*"] },
+        { "phaseKey": "financing", "agents": ["*"] }
+      ]
+    },
+    {
+      "id": "legal-psa-review",
+      "name": "Legal / PSA Review",
+      "summary": "Run legal diligence and PSA review without loan-document review unless financing exists.",
+      "operatorGoal": "Surface contract, title, insurance, transfer, and environmental blockers.",
+      "recommendedScenario": "core-plus",
+      "phases": [
+        {
+          "phaseKey": "dueDiligence",
+          "agents": [
+            "legal-title-review",
+            "environmental-review"
+          ]
+        },
+        {
+          "phaseKey": "legal",
+          "agents": [
+            "psa-reviewer",
+            "title-survey-reviewer",
+            "estoppel-tracker",
+            "insurance-coordinator",
+            "transfer-doc-preparer"
+          ]
+        }
+      ]
+    }
+  ]
+}

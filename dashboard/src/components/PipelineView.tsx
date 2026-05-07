@@ -37,6 +37,8 @@ function getStatusColor(status: string): string {
       return 'bg-cre-danger'
     case 'blocked':
       return 'bg-cre-warning'
+    case 'skipped':
+      return 'bg-gray-500'
     default:
       return 'bg-gray-600'
   }
@@ -50,6 +52,8 @@ function getStatusBorderClass(status: string): string {
       return 'border-cre-success/50'
     case 'failed':
       return 'border-cre-danger/50'
+    case 'skipped':
+      return 'border-gray-600/60'
     default:
       return 'border-cre-border'
   }
@@ -98,6 +102,9 @@ function PhaseCard({
         )}
         {agents.failed > 0 && (
           <span className="text-cre-danger ml-1">({agents.failed} failed)</span>
+        )}
+        {(agents.skipped || 0) > 0 && (
+          <span className="text-gray-500 ml-1">({agents.skipped} skipped)</span>
         )}
       </div>
     </button>

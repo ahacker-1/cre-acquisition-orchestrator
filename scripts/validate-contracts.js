@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { validateFile, readJson } = require('./lib/schema-validator');
 const { PHASES } = require('./lib/runtime-core');
+const { getWorkflowById, createWorkflowRunPlan } = require('./lib/workflow-catalog');
 
 const BASE_DIR = path.resolve(__dirname, '..');
 
@@ -52,6 +53,57 @@ function main() {
       ...validateFile(schemaPath, phaseOutput, phase.key)
     });
   });
+
+  if (checkpoint.workflowId) {
+    const workflow = getWorkflowById(BASE_DIR, checkpoint.workflowId);
+    const workflowPlan = createWorkflowRunPlan(workflow, PHASES);
+    const errors = [];
+
+    PHASES.forEach((phase) => {
+      const phaseState = checkpoint.phases?.[phase.key] || {};
+      const selection = workflowPlan.phaseSelections.get(phase.key);
+      const phaseOutputPath = path.join(BASE_DIR, 'data', 'phase-outputs', dealId, `${phase.slug}-output.json`);
+      const agentStatuses = phaseState.agentStatuses || {};
+
+      if (!selection) {
+        if (phaseState.status !== 'SKIPPED') {
+          errors.push(`${phase.key} expected SKIPPED, received ${phaseState.status}`);
+        }
+        if (fs.existsSync(phaseOutputPath)) {
+          errors.push(`${phase.key} is skipped but still has phase output: ${phaseOutputPath}`);
+        }
+        phase.agents.forEach((agentName) => {
+          if (agentStatuses[agentName] !== 'SKIPPED') {
+            errors.push(`${agentName} expected SKIPPED, received ${agentStatuses[agentName] || 'missing'}`);
+          }
+        });
+        return;
+      }
+
+      const selected = new Set(selection.agents);
+      if (phaseState.status !== 'COMPLETE') {
+        errors.push(`${phase.key} expected COMPLETE, received ${phaseState.status}`);
+      }
+      selected.forEach((agentName) => {
+        if (agentStatuses[agentName] !== 'COMPLETED') {
+          errors.push(`${agentName} expected COMPLETED, received ${agentStatuses[agentName] || 'missing'}`);
+        }
+      });
+      phase.agents
+        .filter((agentName) => !selected.has(agentName))
+        .forEach((agentName) => {
+          if (agentStatuses[agentName] !== 'SKIPPED') {
+            errors.push(`${agentName} expected SKIPPED, received ${agentStatuses[agentName] || 'missing'}`);
+          }
+        });
+    });
+
+    results.push({
+      item: `workflow-${checkpoint.workflowId}`,
+      valid: errors.length === 0,
+      errors
+    });
+  }
 
   const agentsDir = path.join(BASE_DIR, 'data', 'status', dealId, 'agents');
   if (fs.existsSync(agentsDir)) {

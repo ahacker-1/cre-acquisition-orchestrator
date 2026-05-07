@@ -27,6 +27,10 @@ function createIdleRunStatus(): RunStatus {
     active: false,
     runId: null,
     dealPath: null,
+    workflowId: null,
+    runtimeProvider: null,
+    presetId: null,
+    inputSnapshotPath: null,
     state: 'IDLE',
     mode: null,
     speed: null,
@@ -62,6 +66,10 @@ function normalizeRunStatus(value: unknown): RunStatus {
     active: Boolean(raw.active),
     runId: typeof raw.runId === 'string' ? raw.runId : null,
     dealPath: typeof raw.dealPath === 'string' ? raw.dealPath : null,
+    workflowId: typeof raw.workflowId === 'string' ? raw.workflowId : null,
+    runtimeProvider: raw.runtimeProvider === 'simulation' ? raw.runtimeProvider : null,
+    presetId: typeof raw.presetId === 'string' ? raw.presetId : null,
+    inputSnapshotPath: typeof raw.inputSnapshotPath === 'string' ? raw.inputSnapshotPath : null,
     state: normalizeRunLifecycleState(raw.state),
     mode: raw.mode === 'fast' || raw.mode === 'live' ? raw.mode : null,
     speed: raw.speed === 'fast' || raw.speed === 'normal' || raw.speed === 'slow' ? raw.speed : null,
@@ -258,6 +266,7 @@ function normalizeDealCheckpoint(raw: Record<string, unknown>): DealCheckpoint |
       running: statusValues.filter((s) => /^running$/i.test(s)).length,
       failed: statusValues.filter((s) => /^failed$/i.test(s)).length,
       pending: statusValues.filter((s) => /^pending$/i.test(s)).length,
+      skipped: statusValues.filter((s) => /^skipped$/i.test(s)).length,
     }
 
     const progress = typeof rawPhase.progress === 'number'
@@ -316,6 +325,13 @@ function normalizeDealCheckpoint(raw: Record<string, unknown>): DealCheckpoint |
     dealName: asString(raw.dealName, 'Unknown Deal'),
     property,
     status: normalizedDealStatus,
+    workflowId: asOptionalString(raw.workflowId),
+    workflowName: asOptionalString(raw.workflowName),
+    runtimeProvider: asOptionalString(raw.runtimeProvider),
+    inputSnapshot:
+      raw.inputSnapshot && typeof raw.inputSnapshot === 'object'
+        ? raw.inputSnapshot as DealCheckpoint['inputSnapshot']
+        : undefined,
     overallProgress: normalizeProgress(raw.overallProgress),
     startedAt: asString(raw.startedAt, ''),
     lastUpdatedAt: asString(raw.lastUpdatedAt) || asString(raw.lastUpdated),
@@ -465,6 +481,7 @@ export function useCheckpointData() {
 
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectDelayRef = useRef(1000)
+  const initialConnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const mountedRef = useRef(true)
@@ -791,6 +808,22 @@ export function useCheckpointData() {
                   : runMsg.state === 'COMPLETED' || runMsg.state === 'FAILED' || runMsg.state === 'STOPPED' || runMsg.state === 'IDLE'
                     ? null
                     : prev.dealPath,
+              workflowId:
+                typeof runMsg.details?.workflowId === 'string'
+                  ? runMsg.details.workflowId
+                  : prev.workflowId,
+              runtimeProvider:
+                runMsg.details?.runtimeProvider === 'simulation'
+                  ? 'simulation'
+                  : prev.runtimeProvider,
+              presetId:
+                typeof runMsg.details?.presetId === 'string'
+                  ? runMsg.details.presetId
+                  : prev.presetId,
+              inputSnapshotPath:
+                typeof runMsg.details?.inputSnapshotPath === 'string'
+                  ? runMsg.details.inputSnapshotPath
+                  : prev.inputSnapshotPath,
               state: runMsg.state ?? prev.state,
               mode: runMsg.mode ?? prev.mode,
               speed: runMsg.speed ?? prev.speed,
@@ -844,10 +877,16 @@ export function useCheckpointData() {
   useEffect(() => {
     mountedRef.current = true
     void refreshRunStatus()
-    connect()
+    initialConnectTimerRef.current = setTimeout(() => {
+      initialConnectTimerRef.current = null
+      connect()
+    }, 0)
 
     return () => {
       mountedRef.current = false
+      if (initialConnectTimerRef.current) {
+        clearTimeout(initialConnectTimerRef.current)
+      }
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current)
       }

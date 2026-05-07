@@ -5,6 +5,7 @@ interface SavedDealsPanelProps {
   loading: boolean
   error: string | null
   onEditDeal: (dealId: string) => void
+  onOpenWorkspace: (dealId: string, section?: 'overview' | 'documents') => void
   onLaunchDeal: (dealId: string) => void
   launchingDealId?: string | null
   activeRunDealPath?: string | null
@@ -56,6 +57,7 @@ function statusClass(
 function DealCard({
   item,
   onEditDeal,
+  onOpenWorkspace,
   onLaunchDeal,
   launchingDealId,
   activeRunDealPath,
@@ -63,6 +65,7 @@ function DealCard({
 }: {
   item: DealLibraryItem
   onEditDeal: (dealId: string) => void
+  onOpenWorkspace: (dealId: string, section?: 'overview' | 'documents') => void
   onLaunchDeal: (dealId: string) => void
   launchingDealId?: string | null
   activeRunDealPath?: string | null
@@ -110,19 +113,28 @@ function DealCard({
 
       <div className="mt-5 flex items-center gap-2">
         {item.kind === 'user' && (
-          <button
-            onClick={() => onEditDeal(item.dealId)}
-            data-testid={`edit-deal-${item.dealId}`}
-            className="px-3 py-2 rounded-md text-sm font-medium bg-white/5 text-gray-200 hover:bg-white/10 transition-colors"
-          >
-            {item.saveState === 'draft' ? 'Continue' : 'Edit'}
-          </button>
+          <>
+            <button
+              onClick={() => onOpenWorkspace(item.dealId, 'documents')}
+              data-testid={`workspace-docs-${item.dealId}`}
+              className="px-3 py-2 text-sm font-semibold uppercase bg-white text-black hover:bg-gray-200 transition-colors"
+            >
+              Upload Docs
+            </button>
+            <button
+              onClick={() => onEditDeal(item.dealId)}
+              data-testid={`edit-deal-${item.dealId}`}
+              className="px-3 py-2 text-sm font-medium bg-white/5 text-gray-200 hover:bg-white/10 transition-colors"
+            >
+              {item.saveState === 'draft' ? 'Continue' : 'Edit'}
+            </button>
+          </>
         )}
         <button
           onClick={() => onLaunchDeal(item.dealId)}
           disabled={!canLaunch || launching}
           data-testid={`launch-deal-${item.dealId}`}
-          className="px-3 py-2 rounded-md text-sm font-semibold bg-cre-accent text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-2 text-sm font-semibold uppercase bg-white text-black hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {launching ? 'Launching...' : item.kind === 'sample' ? 'Run Sample' : 'Launch'}
         </button>
@@ -136,6 +148,7 @@ export default function SavedDealsPanel({
   loading,
   error,
   onEditDeal,
+  onOpenWorkspace,
   onLaunchDeal,
   launchingDealId,
   activeRunDealPath,
@@ -152,9 +165,9 @@ export default function SavedDealsPanel({
             <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
               Deal Library
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Create a new deal, continue a draft, or run one of the included sample analyses.
-            </p>
+          <p className="text-sm text-gray-500 mt-1">
+              Create a new deal, open its workspace, upload source documents, or run one of the included sample analyses.
+          </p>
           </div>
           {loading && <span className="text-xs text-gray-500">Refreshing…</span>}
         </div>
@@ -181,6 +194,7 @@ export default function SavedDealsPanel({
                 key={item.dealId}
                 item={item}
                 onEditDeal={onEditDeal}
+                onOpenWorkspace={onOpenWorkspace}
                 onLaunchDeal={onLaunchDeal}
                 launchingDealId={launchingDealId}
                 activeRunDealPath={activeRunDealPath}
@@ -204,6 +218,7 @@ export default function SavedDealsPanel({
               key={item.dealId}
                 item={item}
                 onEditDeal={onEditDeal}
+                onOpenWorkspace={onOpenWorkspace}
                 onLaunchDeal={onLaunchDeal}
                 launchingDealId={launchingDealId}
                 activeRunDealPath={activeRunDealPath}

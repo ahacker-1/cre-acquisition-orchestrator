@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useLayoutEffect, useState, type ReactNode } from 'react'
 import {
   createEmptyDealForm,
   createEmptyUnitMixRow,
@@ -35,7 +35,7 @@ interface DealIntakeWizardProps {
     dealId: string,
     options: { scenario: LaunchScenario; speed: 'fast' | 'normal' | 'slow'; reset?: boolean },
   ) => Promise<unknown>
-  onSaved: () => void
+  onSaved: (dealId?: string, intent?: 'draft' | 'launch' | 'documents') => void
   onLaunched: () => void
 }
 
@@ -110,7 +110,7 @@ function inputClassName(): string {
 
 function buttonClassName(kind: 'primary' | 'secondary' | 'ghost'): string {
   if (kind === 'primary') {
-    return 'px-4 py-2.5 rounded-xl text-sm font-semibold bg-cre-accent text-white hover:brightness-110 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+    return 'px-4 py-2.5 text-sm font-semibold uppercase bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
   }
   if (kind === 'secondary') {
     return 'px-4 py-2.5 rounded-xl text-sm font-semibold bg-white/8 text-gray-100 hover:bg-white/12 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
@@ -147,7 +147,7 @@ export default function DealIntakeWizard({
   const [workingState, setWorkingState] = useState<'saving' | 'launching' | 'checking' | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isOpen) return
 
     let cancelled = false
@@ -187,7 +187,7 @@ export default function DealIntakeWizard({
     return () => {
       cancelled = true
     }
-  }, [editingDealId, isOpen, onLoadDeal, suggestedDealId])
+  }, [editingDealId, isOpen])
 
   if (!isOpen) return null
 
@@ -222,8 +222,8 @@ export default function DealIntakeWizard({
     setWorkingState('saving')
     setSaveError(null)
     try {
-      await onSaveDeal(form, 'draft', currentDealId)
-      onSaved()
+      const saved = await onSaveDeal(form, 'draft', currentDealId)
+      onSaved(saved.item.dealId, 'documents')
       onClose()
     } catch (err) {
       const error = err as Error & { validation?: DealValidationResult }
@@ -276,7 +276,10 @@ export default function DealIntakeWizard({
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm overflow-y-auto">
       <div className="min-h-full flex items-start justify-center p-6 lg:p-10">
-        <div className="w-full max-w-6xl rounded-[28px] border border-cre-border bg-cre-surface shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+        <div
+          data-testid="deal-wizard-modal"
+          className="w-full max-w-6xl border border-cre-border bg-cre-surface shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+        >
           <div className="border-b border-cre-border px-6 py-5 flex items-start justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-cre-accent font-semibold">
@@ -286,7 +289,7 @@ export default function DealIntakeWizard({
                 {editingDealId ? 'Edit Deal' : 'Create a Deal'}
               </h2>
               <p className="text-sm text-gray-500 mt-2 max-w-2xl">
-                Capture the key underwriting inputs, save a reusable deal file, and launch the pipeline without editing repository config by hand.
+                Start with a deal name, save a draft, then upload rent rolls, T12s, offering memoranda, LOIs, and legal files into the deal workspace for extraction before launch.
               </p>
             </div>
             <button

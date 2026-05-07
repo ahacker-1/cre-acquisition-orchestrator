@@ -21,14 +21,18 @@ export default function ReportHeader({ dealCheckpoint }: ReportHeaderProps) {
     const v = phase?.verdict || phase?.outputs?.phaseVerdict || null
     return typeof v === 'string' ? v.toUpperCase() : null
   })
+  const phaseValues = Object.values(phases || {})
+  const hasSkipped = phaseValues.some((phase) => phase.status === 'skipped')
 
   const hasFail = verdicts.some((v) => v === 'FAIL')
   const hasConditional = verdicts.some(
     (v) => v !== null && (v.includes('CONDITIONAL') || v.includes('MITIGATION'))
   )
 
-  let recommendation = 'PROCEED TO CLOSE'
-  let recClasses = 'bg-cre-success/20 text-cre-success border-cre-success/40'
+  let recommendation = hasSkipped ? 'SCOPED WORKFLOW COMPLETE' : 'PROCEED TO CLOSE'
+  let recClasses = hasSkipped
+    ? 'bg-cre-info/20 text-cre-info border-cre-info/40'
+    : 'bg-cre-success/20 text-cre-success border-cre-success/40'
 
   if (hasFail) {
     recommendation = 'DO NOT PROCEED'
@@ -111,7 +115,7 @@ export default function ReportHeader({ dealCheckpoint }: ReportHeaderProps) {
           <p className="text-xs text-gray-500">
             Prepared by:{' '}
             <span className="text-gray-400">
-              CRE Acquisition Orchestration System (21 agents, 5 phases)
+              {dealCheckpoint.workflowName || 'CRE Acquisition Orchestration System'} ({hasSkipped ? 'scoped workflow' : '21 agents, 5 phases'})
             </span>
           </p>
           <p className="text-[10px] text-gray-600 mt-1 font-mono">

@@ -54,6 +54,16 @@
     "scenario": {
       "type": "string"
     },
+    "workflowId": {
+      "type": "string"
+    },
+    "workflowName": {
+      "type": "string"
+    },
+    "runtimeProvider": {
+      "type": "string",
+      "enum": ["simulation"]
+    },
     "seed": {
       "type": "number"
     },

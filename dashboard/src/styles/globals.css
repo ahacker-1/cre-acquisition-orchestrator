@@ -3,38 +3,75 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+    letter-spacing: 0 !important;
+  }
+
   body {
     @apply bg-cre-bg text-gray-100 font-sans;
+    margin: 0;
+    background:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+      #000000;
+    background-size: 48px 48px;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid rgba(255,255,255,0.9);
+    outline-offset: 2px;
   }
 }
 
 @layer components {
   .status-badge {
-    @apply px-2 py-0.5 rounded-full text-xs font-semibold;
+    @apply inline-flex items-center border px-2 py-0.5 text-xs font-semibold uppercase;
+    border-radius: 0;
+    letter-spacing: 0;
   }
-  .status-complete { @apply bg-cre-success/20 text-cre-success; }
-  .status-running { @apply bg-cre-info/20 text-cre-info; }
-  .status-pending { @apply bg-gray-600/20 text-gray-400; }
-  .status-failed { @apply bg-cre-danger/20 text-cre-danger; }
-  .status-skipped { @apply bg-gray-600/20 text-gray-500; }
-  .status-blocked { @apply bg-cre-warning/20 text-cre-warning; }
+  .status-complete { @apply border-cre-success/30 bg-cre-success/10 text-cre-success; }
+  .status-running { @apply border-white/20 bg-white/10 text-gray-100; }
+  .status-pending { @apply border-white/10 bg-white/[0.03] text-gray-500; }
+  .status-failed { @apply border-cre-danger/30 bg-cre-danger/10 text-cre-danger; }
+  .status-skipped { @apply border-white/10 bg-white/[0.02] text-gray-600; }
+  .status-blocked { @apply border-cre-warning/30 bg-cre-warning/10 text-cre-warning; }
 
   .progress-bar {
-    @apply h-2 rounded-full bg-cre-border overflow-hidden;
+    @apply h-2 bg-white/10 overflow-hidden;
+    border-radius: 0;
   }
   .progress-fill {
-    @apply h-full rounded-full transition-all duration-500;
+    @apply h-full transition-all duration-500;
+    border-radius: 0;
   }
 
   .card {
-    @apply bg-cre-surface border border-cre-border rounded-lg p-4;
+    @apply border border-cre-border bg-cre-surface p-4;
+    border-radius: 0;
   }
 
   .tab {
-    @apply px-4 py-2 text-sm font-medium rounded-t-lg cursor-pointer transition-colors;
+    @apply px-4 py-2 text-sm font-semibold uppercase cursor-pointer transition-colors;
+    border-radius: 0;
+    letter-spacing: 0;
   }
   .tab-active {
-    @apply bg-cre-surface text-white border-b-2 border-cre-accent;
+    @apply bg-white text-black border-b-2 border-white;
   }
   .tab-inactive {
     @apply text-gray-400 hover:text-gray-200 hover:bg-cre-surface/50;
@@ -50,12 +87,152 @@
   .log-complete { @apply text-gray-100; }
 
   .red-flag {
-    @apply border-l-4 border-cre-danger bg-cre-danger/10 p-3 rounded-r;
+    @apply border-l-4 border-cre-danger bg-cre-danger/10 p-3;
   }
   .finding {
-    @apply border-l-4 border-cre-success bg-cre-success/10 p-3 rounded-r;
+    @apply border-l-4 border-cre-success bg-cre-success/10 p-3;
   }
   .data-gap {
-    @apply border-l-4 border-cre-warning bg-cre-warning/10 p-3 rounded-r;
+    @apply border-l-4 border-cre-warning bg-cre-warning/10 p-3;
+  }
+
+  .portal-shell {
+    @apply space-y-5;
+  }
+
+  .portal-hero {
+    @apply grid gap-6 border border-white/10 bg-black p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:p-8;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .portal-hero h1 {
+    @apply mt-3 max-w-5xl font-serif text-4xl font-semibold leading-none text-white md:text-6xl;
+    letter-spacing: 0;
+  }
+
+  .portal-hero p:not(.portal-kicker) {
+    @apply mt-4 max-w-3xl text-sm leading-6 text-gray-400 md:text-base;
+    letter-spacing: 0;
+  }
+
+  .portal-hero-meta {
+    @apply grid gap-2 text-xs text-gray-400 sm:grid-cols-3 lg:min-w-72 lg:grid-cols-1;
+  }
+
+  .portal-hero-meta span {
+    @apply border border-white/10 bg-white/[0.03] px-3 py-2 font-mono uppercase;
+    letter-spacing: 0;
+  }
+
+  .portal-nav {
+    @apply flex gap-1 overflow-x-auto border border-white/10 bg-cre-surface p-1;
+  }
+
+  .portal-nav button {
+    @apply min-h-11 shrink-0 px-4 py-2 text-xs font-semibold uppercase text-gray-500 transition-colors;
+    border-radius: 0;
+    letter-spacing: 0;
+  }
+
+  .portal-nav button:hover {
+    @apply bg-white/[0.06] text-gray-100;
+  }
+
+  .portal-nav button.active {
+    @apply bg-white text-black;
+  }
+
+  .portal-panel {
+    @apply border border-white/10 bg-cre-surface p-4 md:p-5;
+    border-radius: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .portal-section-header {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between;
+  }
+
+  .portal-kicker {
+    @apply text-xs font-bold uppercase text-gray-500;
+    letter-spacing: 0;
+  }
+
+  .portal-title {
+    @apply mt-1 font-serif text-2xl font-semibold leading-tight text-white;
+    letter-spacing: 0;
+  }
+
+  .portal-button {
+    @apply inline-flex min-h-11 items-center justify-center border px-4 py-2 text-xs font-bold uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    border-radius: 0;
+    letter-spacing: 0;
+  }
+
+  .portal-button-primary {
+    @apply border-white bg-white text-black hover:bg-gray-200;
+  }
+
+  .portal-button-secondary {
+    @apply border-white/20 bg-transparent text-white hover:border-white hover:bg-white/10;
+  }
+
+  .portal-field {
+    @apply block text-xs font-semibold uppercase text-gray-500;
+    letter-spacing: 0;
+  }
+
+  .portal-field span {
+    @apply mb-2 block;
+  }
+
+  .portal-field input,
+  .portal-field select,
+  .portal-field textarea {
+    @apply w-full border border-white/10 bg-black px-3 py-2 text-sm font-normal normal-case text-gray-100 transition-colors placeholder:text-gray-700;
+    border-radius: 0;
+    letter-spacing: 0;
+  }
+
+  .portal-field input:focus,
+  .portal-field select:focus,
+  .portal-field textarea:focus {
+    @apply border-white/40;
+  }
+
+  .portal-stat {
+    @apply border border-white/10 bg-black p-3;
+    border-radius: 0;
+  }
+
+  .portal-stat strong {
+    @apply block font-serif text-2xl font-semibold leading-none text-white;
+    letter-spacing: 0;
+  }
+
+  .portal-stat span {
+    @apply mt-2 block text-xs font-semibold uppercase text-gray-500;
+    letter-spacing: 0;
+  }
+
+  .portal-stat-large {
+    @apply p-5;
+  }
+
+  .portal-stat-large strong {
+    @apply text-4xl;
+  }
+
+  .portal-metric {
+    @apply border border-white/10 bg-black p-3;
+    border-radius: 0;
+  }
+
+  .portal-metric span {
+    @apply block text-xs font-semibold uppercase text-gray-500;
+    letter-spacing: 0;
+  }
+
+  .portal-metric strong {
+    @apply mt-2 block font-mono text-lg text-white;
   }
 }

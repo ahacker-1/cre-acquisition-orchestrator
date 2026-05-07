@@ -6,17 +6,21 @@ Guide to installing, configuring, and using the real-time monitoring dashboard f
 
 ## Overview
 
-The dashboard provides real-time visibility into pipeline execution:
+The dashboard provides a local-first operator cockpit for deal setup, source-document intake, workflow launch, and pipeline execution:
 
-- **Phase progress**: Visual progress bars for each of the 5 phases
+- **Deal workspace**: Overview, Underwriting, Due Diligence, Financing, Legal, Closing, Documents, and Package views for each deal
+- **Workflow launcher**: Five outcome workflows with saved local presets and run-now launch
+- **Document intake**: Upload, classify, extract, review, and apply source-backed inputs from local files
+- **Phase progress**: Visual progress bars for each of the 5 phases, including skipped-phase visibility for scoped workflows
 - **Agent status**: Per-agent status indicators (pending, running, complete, failed)
 - **Log viewer**: Live log stream from all agents with filtering
-- **Report viewer**: Read final reports and IC memos directly in the browser
+- **Package viewer**: Read final reports, workpapers, findings, document manifests, and recommendation packages directly in the browser
 - **Real-time updates**: WebSocket connection pushes updates as agents write checkpoints
 
-The dashboard consists of two components:
+The dashboard consists of three local components:
 1. **Vite dev server** (port 5173): Serves the React frontend
 2. **Watcher process** (port 8080): Monitors checkpoint/log files and pushes updates via WebSocket
+3. **Local REST API** (port 8081): Serves deals, workflows, presets, document uploads, extraction previews, and run launch requests
 
 ---
 
@@ -50,6 +54,7 @@ npm run dev
 This single command starts both:
 - The Vite development server on **port 5173**
 - The file watcher on **port 8080**
+- The local REST API on **port 8081**
 
 You should see output similar to:
 ```
@@ -60,6 +65,7 @@ You should see output similar to:
 
   Watcher: Monitoring data/status/ for changes
   Watcher: WebSocket server started on port 8080
+  REST API listening on http://localhost:8081
 ```
 
 ---
@@ -138,11 +144,39 @@ Log entries are color-coded:
 
 ### Report Viewer
 
-Once the pipeline completes, view generated reports directly in the dashboard:
+Once the pipeline completes, view generated reports and package artifacts directly in the dashboard:
 
 - **Final Report**: The comprehensive deal analysis report
 - **IC Memo**: The Investment Committee memorandum
 - **Phase Outputs**: Individual phase output summaries
+- **Completion Package**: Phase outcomes, workpapers, findings, decision log, document manifest, source-backed inputs, and final recommendation
+
+### Operator Deal Hub
+
+Open a saved deal to work inside its full lifecycle workspace:
+
+| Workspace | What It Provides |
+|-----------|------------------|
+| Overview | Pipeline progress, criteria, source coverage, and embedded workflow launcher |
+| Underwriting | Required documents, checklist, Agent Playbook, and underwriting workflow launch |
+| Due Diligence | Diligence checklist, document coverage, Agent Playbook, and quick-screen launch |
+| Financing | Debt assumptions, required lender package documents, and financing package workflow |
+| Legal | PSA/title/survey readiness, legal Agent Playbook, and legal / PSA review workflow |
+| Closing | Closing readiness checklist, required closing documents, and full review launch |
+| Documents | Source-document upload, classification, extraction preview, and approved-field apply |
+| Package | Completion package for the latest run |
+
+### Local Document Intake
+
+1. Open a deal workspace.
+2. Select **Documents**.
+3. Upload rent rolls, T12s, offering memoranda, LOIs, PDFs, or XLSX files.
+4. For CSV/TXT/MD files, click **Extract** and review the preview.
+5. Select fields to approve, confirm conflicts if needed, then apply them to deal inputs.
+
+Runtime uploads live under `data/deals/{dealId}/documents/`. Extraction previews live under `data/deals/{dealId}/extractions/`. These local deal files are ignored by git.
+
+PDF and XLSX files are stored and classified in v2.0.0, but deep extraction is intentionally marked pending.
 
 ---
 
@@ -163,18 +197,20 @@ export default defineConfig({
 
 Then access the dashboard at `http://localhost:3000`.
 
-### Changing the Watcher Port (Default: 8080)
+### Changing the Watcher/API Ports (Defaults: 8080 and 8081)
 
-If port 8080 conflicts, edit `dashboard/watcher/index.js`:
-
-```javascript
-const WS_PORT = 8080;  // Change to desired port
-```
-
-You must also update the WebSocket URL in the frontend. Edit `dashboard/src/config.ts` (or equivalent):
+If port 8080 or 8081 conflicts, edit `dashboard/server/watcher.ts`:
 
 ```typescript
-export const WS_URL = 'ws://localhost:8080';  // Match the new watcher port
+const WS_PORT = 8080;  // WebSocket port
+const API_PORT = 8081; // REST API port
+```
+
+You must also update the URLs in the frontend hooks:
+
+```typescript
+const WS_URL = 'ws://localhost:8080'
+const API_URL = 'http://localhost:8081'
 ```
 
 After changing ports, restart the dashboard: stop the process and run `npm run dev` again.

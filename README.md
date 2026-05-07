@@ -25,13 +25,14 @@ Let's bring this industry into the future.
 
 ---
 
-## What's New in v1.1.0
+## What's New in v2.0.0
 
-- **Dashboard New Deal Wizard** - Create, validate, save, and launch deals directly from the dashboard without manually editing `config/deal.json`
-- **Saved Deal Library** - Reopen draft deals, launch ready-to-run deals, and keep sample deals separate from user-created deals
-- **Explicit Deal Launch Paths** - Dashboard launches now target saved deal files instead of assuming a single shared config file
-- **Playwright End-to-End Coverage** - Browser tests now cover draft save, deal relaunch, wizard-based launch, and sample-deal launch flows
-- **Stronger Dashboard Build Gate** - Dashboard build now typechecks both client and server-side TypeScript before bundling
+- **Operator Deal Hub** - Each saved deal now opens into a lifecycle workspace with Overview, Underwriting, Due Diligence, Financing, Legal, Closing, Documents, and Package views
+- **Workflow Launcher** - Launch five built-in outcome workflows from the dashboard: full acquisition review, quick deal screen, underwriting refresh, financing package, and legal / PSA review
+- **Local Document Intake** - Upload rent rolls, T12s, offering memoranda, LOIs, PDFs, and XLSX files into deal-specific local storage
+- **Extraction Review Path** - CSV/TXT/MD rent rolls, T12s, and offering memos produce source-backed extraction previews that operators approve before updating deal inputs
+- **Completion Package View** - Completed runs now surface phase outcomes, findings, workpapers, decision log, document manifest, source-backed input coverage, and the final recommendation in one review surface
+- **Release-Grade Test Coverage** - Playwright now covers workflow catalog load, preset save, phase workspace navigation, local upload, extraction apply, skipped phases, and package visibility
 
 ---
 
@@ -39,8 +40,8 @@ Let's bring this industry into the future.
 
 | | | | |
 |---|---|---|---|
-| **31** AI Agents | **8** Domain Knowledge Skills | **10** JSON Schema Contracts | **9**-Tab Real-Time Dashboard |
-| **5** Deal Phases | **3** Investment Scenarios | **54,000+** Lines of Code | **202** Files |
+| **31** AI Agents | **8** Domain Knowledge Skills | **10** JSON Schema Contracts | **8** Deal Workspace Views |
+| **5** Deal Phases | **5** Outcome Workflows | **65,000+** Lines of Code | **232** Files |
 
 ---
 
@@ -218,12 +219,15 @@ Every data handoff between agents and phases is validated against formal **JSON 
 
 ---
 
-## Real-Time Dashboard
+## Operator Dashboard
 
-A 9-tab React + TypeScript monitoring UI connects via WebSocket for live pipeline visualization:
+A React + TypeScript deal cockpit connects to the local watcher and REST API for deal setup, workflow launch, source-document intake, and live pipeline visualization:
 
-| Tab | What It Shows |
+| View | What It Shows |
 |-----|--------------|
+| **Operator Deal Hub** | Deal lifecycle workspace with Overview, Underwriting, Due Diligence, Financing, Legal, Closing, Documents, and Package tabs |
+| **Workflow Launcher** | Guided `Choose Deal -> Choose Outcome -> Review Inputs -> Run Now` launcher with saved local presets |
+| **Documents** | Local upload, classification, extraction preview, operator approval, and source-backed input tracking |
 | **Pipeline View** | Phase-by-phase progress with dependency arrows, completion percentages, active agent indicators |
 | **Agent Tree** | Hierarchical view of all agents: orchestrators, specialists, and dynamically spawned child agents with real-time status |
 | **Timeline** | Gantt-style execution timeline showing parallel and sequential agent execution, phase transitions, and total elapsed time |
@@ -232,7 +236,7 @@ A 9-tab React + TypeScript monitoring UI connects via WebSocket for live pipelin
 | **Document Wall** | Visual grid of all documents processed and generated: ingestion status, extraction results, report outputs |
 | **Decision Log** | Chronological record of every go/no-go decision, escalation, conditional pass, and dealbreaker flag |
 | **Log Stream** | Raw structured log output from all agents with filtering by agent, phase, and log level |
-| **Final Report** | The complete acquisition recommendation rendered in-dashboard with print-optimized CSS for IC presentation |
+| **Completion Package** | Phase outcomes, workpapers, findings, decision log, document manifest, source-backed inputs, and final recommendation |
 
 ---
 
@@ -268,29 +272,32 @@ npm run dashboard
 # Open http://localhost:5173
 ```
 
-The dashboard connects via WebSocket and shows the pipeline executing in real-time across 9 monitoring views.
+The dashboard connects via WebSocket and REST APIs to show the pipeline executing in real time while keeping deal data local.
 
 From the dashboard you can now:
 - create a new deal in the wizard
 - save drafts to the deal library
-- relaunch saved deals without replacing the shared sample config
-- launch shipped sample deals directly from the library
+- open the Operator Deal Hub for each deal
+- upload source documents into the deal workspace
+- extract and approve source-backed inputs from CSV, TXT, and MD files
+- classify PDF/XLSX files for the right phase with extraction marked pending
+- launch a focused workflow or full acquisition review
+- review the completion package after the run finishes
 
-### Document Ingestion (requires Claude Code CLI)
+### Local Document Intake
 
-```bash
-# Drop deal documents into the incoming folder
-cp your-rent-roll.xlsx documents/incoming/
-cp your-t12.xlsx documents/incoming/
-cp your-offering-memo.pdf documents/incoming/
+The preferred v2.0.0 path is inside the dashboard:
 
-# Run the document orchestrator
-claude "Process the documents in documents/incoming/ and create deal.json"
+1. Start the dashboard with `npm run dashboard`
+2. Create or open a deal workspace
+3. Open the **Documents** view
+4. Upload rent rolls, T12s, offering memoranda, LOIs, legal files, PDFs, or XLSX files
+5. Run extraction on CSV/TXT/MD documents
+6. Approve selected fields before they update the deal inputs
 
-# Review extraction results
-cat documents/extraction-report.md
-cat config/deal.json
-```
+Uploaded files are stored under `data/deals/{dealId}/documents/`, extraction previews under `data/deals/{dealId}/extractions/`, and approved source-backed fields under `data/deals/{dealId}/approved-fields.json`. Runtime deal data stays local and is ignored by git.
+
+Legacy drop-folder ingestion prompts remain available for Claude Code users, but the dashboard upload path is now the main operator workflow.
 
 ### Manual Deal Setup
 
@@ -317,11 +324,12 @@ npm run test:e2e
 - **Hierarchical Orchestration** - Three-level agent hierarchy with dependency management, concurrent phase execution, and early-start capabilities
 - **8 Domain Knowledge Skills** - Reusable CRE expertise files encoding financial formulas, risk scoring frameworks, industry benchmarks, lender criteria, and legal checklists
 - **10 JSON Schema Contracts** - Every data handoff validated at runtime - phase outputs, checkpoints, flags, and events all have formal schemas
-- **Real-Time Dashboard** - 9-tab React dashboard with WebSocket push updates for live pipeline monitoring
+- **Operator Deal Hub** - React dashboard workspace for criteria, phase playbooks, source documents, workflow launching, and completion packages
+- **Workflow Launcher** - Five deterministic outcome workflows with saved local presets and skipped-phase visibility
 - **Deterministic Simulation** - Seeded RNG engine produces realistic CRE financials for demo and testing without any API calls
 - **3 Investment Scenarios** - Core-Plus, Value-Add, and Distressed configurations with different market assumptions and risk tolerances
 - **Failure Injection & Recovery** - Force any agent to fail, resume from 3-tier checkpoint system - models real-world pipeline resilience
-- **Document Ingestion Pipeline** - Drop rent rolls, T12s, and offering memos for automated extraction and deal configuration
+- **Local Document Intake** - Upload and classify source files by deal and phase, with CSV/TXT/MD extraction previews and operator-approved input updates
 - **Investment Committee Memo** - Auto-generated structured IC memo with go/no-go recommendation synthesizing all pipeline findings
 
 ---
@@ -351,7 +359,7 @@ cre-acquisition-orchestrator/
 │   ├── system-test.js         #   Full system test (3 scenarios + failure + resume)
 │   └── lib/                   #   Runtime core, simulation data, schema validator, story engine
 ├── dashboard/                 # React + TypeScript real-time monitoring UI
-│   ├── src/                   #   13 components, hooks, types, styles
+│   ├── src/                   #   Operator portal components, hooks, types, styles
 │   └── server/                #   WebSocket + REST API (chokidar file watching)
 ├── templates/                 # Output templates (report, IC memo, checkpoints)
 ├── validation/                # Test fixtures and validation runner

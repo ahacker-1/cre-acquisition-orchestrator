@@ -316,13 +316,18 @@ function verifyAllToClosing(dd, uw, financing, legal, closing) {
 
   // 4. All phases completed check
   const phases = [dd, uw, financing, legal, closing];
-  const allCompleted = phases.every(p => p.status === 'COMPLETED' || p.status === 'complete');
+  const allCompleted = phases.every(p =>
+    p.status === 'COMPLETED' ||
+    p.status === 'complete' ||
+    p.status === 'SKIPPED' ||
+    p.status === 'skipped'
+  );
   checks.push({
-    check: 'All phases completed',
+    check: 'All phases resolved',
     status: allCompleted ? 'PASS' : 'FAIL',
     detail: allCompleted
-      ? 'All 5 phases show completed status'
-      : `Incomplete: ${phases.map((p, i) => ({ name: ['DD', 'UW', 'Financing', 'Legal', 'Closing'][i], status: p.status })).filter(p => p.status !== 'COMPLETED' && p.status !== 'complete').map(p => `${p.name}(${p.status})`).join(', ')}`
+      ? 'All 5 phases show completed or workflow-skipped status'
+      : `Incomplete: ${phases.map((p, i) => ({ name: ['DD', 'UW', 'Financing', 'Legal', 'Closing'][i], status: p.status })).filter(p => !['COMPLETED', 'complete', 'SKIPPED', 'skipped'].includes(p.status)).map(p => `${p.name}(${p.status})`).join(', ')}`
   });
 
   // 5. Verdict chain is coherent

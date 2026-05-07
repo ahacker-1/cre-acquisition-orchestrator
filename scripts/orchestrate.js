@@ -17,9 +17,11 @@ const {
   readRuntimeConfig,
   readScenarioConfig,
   validatePhaseData,
+  validateAgentCheckpoint,
   validateMasterCheckpoint,
   validatePhaseCompletionEvent
 } = require('./lib/runtime-core');
+const { getWorkflowById, createWorkflowRunPlan } = require('./lib/workflow-catalog');
 const {
   generatePhaseData,
   determinePhaseVerdict,
@@ -45,7 +47,9 @@ function parseArgs() {
     agentDelayMs: Number(getArg('--agent-delay-ms', '0')) || 0,
     resume: args.includes('--resume'),
     fromPhase: phaseFromArg(getArg('--from-phase', null)),
-    failAgent: getArg('--fail-agent', null)
+    failAgent: getArg('--fail-agent', null),
+    workflowId: getArg('--workflow', null),
+    inputSnapshotPath: getArg('--input-snapshot', null)
   };
 }
 
@@ -93,13 +97,28 @@ function renderFinalReport(checkpoint) {
   lines.push(`# Final Acquisition Report - ${checkpoint.dealName}`);
   lines.push('');
   lines.push(`- Deal ID: ${checkpoint.dealId}`);
+  lines.push(`- Workflow: ${checkpoint.workflowName || checkpoint.workflowId || 'Full Acquisition Review'}`);
   lines.push(`- Scenario: ${checkpoint.scenario}`);
   lines.push(`- Seed: ${checkpoint.seed}`);
+  if (checkpoint.inputSnapshot?.sourceCoverage) {
+    const coverage = checkpoint.inputSnapshot.sourceCoverage;
+    lines.push(`- Source Documents: ${coverage.sourceDocumentCount ?? 0}`);
+    lines.push(`- Approved Source Fields: ${coverage.approvedFieldCount ?? 0}/${coverage.requiredApprovedFieldCount ?? 0}`);
+  }
   lines.push(`- Overall Status: ${checkpoint.status}`);
   lines.push(`- Overall Progress: ${checkpoint.overallProgress}%`);
   lines.push(`- Start: ${checkpoint.startedAt}`);
   lines.push(`- End: ${checkpoint.completedAt || checkpoint.lastUpdatedAt}`);
   lines.push('');
+  if (checkpoint.inputSnapshot?.sourceCoverage) {
+    const coverage = checkpoint.inputSnapshot.sourceCoverage;
+    lines.push('## Source-Backed Inputs');
+    lines.push(`- Snapshot: ${checkpoint.inputSnapshot.path || 'N/A'}`);
+    lines.push(`- Applied Documents: ${coverage.appliedDocumentCount ?? 0}/${coverage.sourceDocumentCount ?? 0}`);
+    lines.push(`- Approved Fields: ${coverage.approvedFieldCount ?? 0}`);
+    lines.push(`- Missing Required Source Fields: ${coverage.missingApprovedFieldCount ?? 0}`);
+    lines.push('');
+  }
   lines.push('## Phase Outcomes');
   PHASES.forEach((phase) => {
     const state = phases[phase.key] || {};
@@ -118,11 +137,118 @@ function renderFinalReport(checkpoint) {
     lines.push('Proceed with conditions and complete pending checklist items.');
   } else if (checkpoint.status === 'FAILED') {
     lines.push('Pipeline halted due to execution failure. Resume required.');
+  } else if (checkpoint.status === 'COMPLETE' && phases.closing?.status === 'SKIPPED') {
+    lines.push('Scoped workflow completed. Review the package outputs before expanding to a full closing run.');
   } else {
     lines.push('Do not proceed until critical issues are resolved.');
   }
   lines.push('');
   return `${lines.join('\n')}\n`;
+}
+
+function makeSkippedAgentCheckpoint({ agentName, phaseKey, dealId, reason }) {
+  const timestamp = nowIso();
+  return {
+    agentName,
+    phase: phaseKey,
+    dealId,
+    status: 'skipped',
+    progress: 1,
+    startedAt: null,
+    completedAt: timestamp,
+    lastUpdatedAt: timestamp,
+    resumePoint: null,
+    outputs: {
+      summary: reason,
+      findings: [],
+      metrics: {},
+      verdict: null
+    },
+    dataGaps: [],
+    errors: [],
+    redFlags: [],
+    childAgents: []
+  };
+}
+
+function persistSkippedAgentCheckpoint({ baseDir, agentStatusDir, agentName, phaseKey, dealId, reason }) {
+  const checkpoint = makeSkippedAgentCheckpoint({ agentName, phaseKey, dealId, reason });
+  validateAgentCheckpoint(baseDir, checkpoint);
+  writeJson(path.join(agentStatusDir, `${agentName}.json`), checkpoint);
+}
+
+function clearDealRuntimeArtifacts(baseDir, dealId) {
+  const targets = [
+    path.join(baseDir, 'data', 'status', `${dealId}.json`),
+    path.join(baseDir, 'data', 'status', dealId),
+    path.join(baseDir, 'data', 'logs', dealId),
+    path.join(baseDir, 'data', 'phase-outputs', dealId),
+    path.join(baseDir, 'data', 'reports', dealId)
+  ];
+  targets.forEach((target) => fs.rmSync(target, { recursive: true, force: true }));
+}
+
+function filterPhaseDataForSelectedAgents(phaseData, selectedAgentSet) {
+  const filtered = { ...phaseData };
+  if (phaseData.agentFindings && typeof phaseData.agentFindings === 'object') {
+    filtered.agentFindings = Object.fromEntries(
+      Object.entries(phaseData.agentFindings).filter(([agentName]) => selectedAgentSet.has(agentName))
+    );
+  }
+  if (Array.isArray(phaseData.redFlags)) {
+    filtered.redFlags = phaseData.redFlags.filter((flag) => {
+      return !flag.owner || selectedAgentSet.has(flag.owner);
+    });
+    filtered.redFlagCount = filtered.redFlags.length;
+  }
+  if (Array.isArray(phaseData.dataGaps)) {
+    filtered.dataGaps = phaseData.dataGaps.filter((gap) => {
+      return !gap.owner || selectedAgentSet.has(gap.owner);
+    });
+    filtered.dataGapCount = filtered.dataGaps.length;
+  }
+  return filtered;
+}
+
+function markPhaseSkipped({ checkpoint, phaseMeta, phaseState, paths, masterLog, storyEngine, reason }) {
+  const timestamp = nowIso();
+  phaseState.status = 'SKIPPED';
+  phaseState.progress = 1;
+  phaseState.startedAt = phaseState.startedAt || timestamp;
+  phaseState.completedAt = timestamp;
+  phaseState.verdict = null;
+  phaseState.findings = 0;
+  phaseState.riskScore = 0;
+  phaseState.redFlagCount = 0;
+  phaseState.dataGapCount = 0;
+  phaseState.confidence = 0;
+  phaseState.dataForDownstream = {};
+  phaseState.outputs = {
+    phaseSummary: reason,
+    keyFindings: [],
+    redFlags: [],
+    dataGaps: [],
+    phaseVerdict: null
+  };
+  phaseState.agentStatuses = phaseState.agentStatuses || {};
+  phaseMeta.agents.forEach((agentName) => {
+    phaseState.agentStatuses[agentName] = 'SKIPPED';
+    persistSkippedAgentCheckpoint({
+      baseDir: BASE_DIR,
+      agentStatusDir: paths.agentStatusDir,
+      agentName,
+      phaseKey: phaseMeta.key,
+      dealId: checkpoint.dealId,
+      reason
+    });
+  });
+  appendLog(masterLog, 'orchestrator', 'PHASE', `${phaseMeta.label} skipped: ${reason}`);
+  storyEngine.emit('phase_skipped', {
+    phase: phaseMeta.slug,
+    phaseLabel: phaseMeta.label,
+    title: `${phaseMeta.label} skipped`,
+    summary: reason
+  });
 }
 
 async function main() {
@@ -149,6 +275,9 @@ async function main() {
       ? args.runId.trim()
       : `local-${Date.now()}`;
 
+  if (!args.resume) {
+    clearDealRuntimeArtifacts(BASE_DIR, deal.dealId);
+  }
   const paths = ensureRuntimePaths(BASE_DIR, deal.dealId);
   const masterLog = path.join(paths.logsDir, 'master.log');
   const checkpointPath = paths.masterCheckpoint;
@@ -165,6 +294,9 @@ async function main() {
     appendLog(masterLog, 'orchestrator', 'INFO', 'Starting new autonomous simulated run');
   }
 
+  const workflow = getWorkflowById(BASE_DIR, args.workflowId || checkpoint.workflowId || null);
+  const workflowRunPlan = createWorkflowRunPlan(workflow, PHASES);
+
   storyEngine = new StoryEngine({
     baseDir: BASE_DIR,
     dealId: deal.dealId,
@@ -174,15 +306,54 @@ async function main() {
   checkpoint.scenario = scenarioName;
   checkpoint.seed = seed;
   checkpoint.runId = runId;
+  checkpoint.workflowId = workflow.id;
+  checkpoint.workflowName = workflow.name || workflow.id;
+  checkpoint.runtimeProvider = 'simulation';
+  if (args.inputSnapshotPath) {
+    const snapshotPath = path.resolve(BASE_DIR, args.inputSnapshotPath);
+    const inputSnapshot = readJsonIfExists(snapshotPath);
+    if (inputSnapshot) {
+      checkpoint.inputSnapshot = {
+        path: path.relative(BASE_DIR, snapshotPath).replace(/\\/g, '/'),
+        capturedAt: inputSnapshot.capturedAt || null,
+        workflowId: inputSnapshot.workflowId || workflow.id,
+        sourceCoverage: inputSnapshot.readiness?.sourceCoverage || {},
+        readiness: {
+          status: inputSnapshot.readiness?.status || 'warning',
+          blockers: inputSnapshot.readiness?.blockers || [],
+          warnings: inputSnapshot.readiness?.warnings || []
+        },
+        approvedFieldCount: Array.isArray(inputSnapshot.approvedFields?.fields)
+          ? inputSnapshot.approvedFields.fields.length
+          : 0
+      };
+    }
+  }
   checkpoint.lastUpdatedAt = nowIso();
+  checkpoint.resumeInstructions =
+    `Run: node scripts/orchestrate.js --deal ${path.relative(BASE_DIR, args.dealPath).replace(/\\/g, '/')} --resume --workflow ${workflow.id} --scenario ${scenarioName} --seed ${seed}`;
 
   storyEngine.emit('run_started', {
     runId,
     dealName: checkpoint.dealName,
+    workflowId: workflow.id,
+    workflowName: workflow.name || workflow.id,
     scenario: scenarioName,
     seed,
     mode: args.resume ? 'resume' : 'fresh'
   });
+  if (args.inputSnapshotPath && checkpoint.inputSnapshot) {
+    storyEngine.registerExternalDocument({
+      phase: 'underwriting',
+      agent: 'source-backed-inputs',
+      title: 'Run Input Snapshot',
+      docType: 'input-snapshot',
+      absolutePath: path.resolve(BASE_DIR, args.inputSnapshotPath),
+      summary: 'Criteria, approved fields, source documents, and launch readiness captured before workflow execution',
+      mime: 'application/json',
+      tags: ['source-backed-inputs', 'launch-snapshot']
+    });
+  }
   storyEngine.emitMilestone(
     args.resume ? 'Pipeline Resumed' : 'Pipeline Initiated',
     `${checkpoint.dealName} - ${scenarioName}`,
@@ -206,18 +377,38 @@ async function main() {
   for (let i = 0; i < PHASES.length; i += 1) {
     const phaseMeta = PHASES[i];
     if (i < startIndex) continue;
+    const phaseSelection = workflowRunPlan.phaseSelections.get(phaseMeta.key);
+    const selectedAgents = phaseSelection ? phaseSelection.agents : [];
+    const selectedAgentSet = new Set(selectedAgents);
 
     const phaseState = checkpoint.phases[phaseMeta.key];
-    if (args.resume && !args.fromPhase && phaseState.status === 'COMPLETE') {
+    if (args.resume && !args.fromPhase && (phaseState.status === 'COMPLETE' || phaseState.status === 'SKIPPED')) {
       appendLog(
         masterLog,
         'orchestrator',
         'INFO',
-        `Skipping ${phaseMeta.label} because it is already COMPLETE`
+        `Skipping ${phaseMeta.label} because it is already ${phaseState.status}`
       );
       if (phaseState.dataForDownstream) {
         phaseContext[phaseMeta.key] = phaseState.dataForDownstream;
       }
+      continue;
+    }
+
+    if (!phaseSelection || selectedAgents.length === 0) {
+      markPhaseSkipped({
+        checkpoint,
+        phaseMeta,
+        phaseState,
+        paths,
+        masterLog,
+        storyEngine,
+        reason: `${phaseMeta.label} is outside the ${workflow.name || workflow.id} workflow scope.`
+      });
+      summarizeProgress(checkpoint);
+      checkpoint.lastUpdatedAt = nowIso();
+      validateMasterCheckpoint(BASE_DIR, checkpoint);
+      writeJson(checkpointPath, checkpoint);
       continue;
     }
 
@@ -228,7 +419,17 @@ async function main() {
     phaseState.progress = 0;
     phaseState.agentStatuses = phaseState.agentStatuses || {};
     phaseMeta.agents.forEach((agentName) => {
-      if (!phaseState.agentStatuses[agentName] || args.fromPhase) {
+      if (!selectedAgentSet.has(agentName)) {
+        phaseState.agentStatuses[agentName] = 'SKIPPED';
+        persistSkippedAgentCheckpoint({
+          baseDir: BASE_DIR,
+          agentStatusDir: paths.agentStatusDir,
+          agentName,
+          phaseKey: phaseMeta.key,
+          dealId: deal.dealId,
+          reason: `${agentName} is outside the ${workflow.name || workflow.id} workflow scope.`
+        });
+      } else if (!phaseState.agentStatuses[agentName] || args.fromPhase) {
         phaseState.agentStatuses[agentName] = 'PENDING';
       }
     });
@@ -236,19 +437,23 @@ async function main() {
     storyEngine.emit('phase_started', {
       phase: phaseMeta.slug,
       phaseLabel: phaseMeta.label,
-      totalAgents: phaseMeta.agents.length
+      totalAgents: selectedAgents.length,
+      skippedAgents: phaseMeta.agents.length - selectedAgents.length
     });
     storyEngine.emitMilestone(
       `${phaseMeta.label} Started`,
-      `Spawning ${phaseMeta.agents.length} specialist agents`,
+      `Spawning ${selectedAgents.length} specialist agents`,
       'info'
     );
 
-    const phaseData = generatePhaseData(phaseMeta.key, deal, phaseContext, scenarioConfig, rng);
+    const phaseData = filterPhaseDataForSelectedAgents(
+      generatePhaseData(phaseMeta.key, deal, phaseContext, scenarioConfig, rng),
+      selectedAgentSet
+    );
     validatePhaseData(BASE_DIR, phaseMeta.key, phaseData);
 
     let completedAgents = 0;
-    for (const agentName of phaseMeta.agents) {
+    for (const agentName of selectedAgents) {
       try {
         await executeAgent({
           baseDir: BASE_DIR,
@@ -266,7 +471,7 @@ async function main() {
         });
         phaseState.agentStatuses[agentName] = 'COMPLETED';
         completedAgents += 1;
-        phaseState.progress = round(completedAgents / phaseMeta.agents.length, 3);
+        phaseState.progress = round(completedAgents / selectedAgents.length, 3);
         checkpoint.lastUpdatedAt = nowIso();
         summarizeProgress(checkpoint);
         validateMasterCheckpoint(BASE_DIR, checkpoint);
@@ -274,7 +479,7 @@ async function main() {
       } catch (error) {
         phaseState.agentStatuses[agentName] = 'FAILED';
         phaseState.status = 'FAILED';
-        phaseState.progress = round(completedAgents / phaseMeta.agents.length, 3);
+        phaseState.progress = round(completedAgents / selectedAgents.length, 3);
         phaseState.completedAt = nowIso();
         phaseState.verdict = 'FAIL';
         phaseState.outputs = {
@@ -339,7 +544,7 @@ async function main() {
       phaseVerdict: verdict
     };
     phaseMeta.agents.forEach((agentName) => {
-      if (phaseState.agentStatuses[agentName] !== 'FAILED') {
+      if (selectedAgentSet.has(agentName) && phaseState.agentStatuses[agentName] !== 'FAILED') {
         phaseState.agentStatuses[agentName] = 'COMPLETED';
       }
     });
@@ -452,11 +657,15 @@ async function main() {
     checkpointPath: path.relative(BASE_DIR, checkpointPath).replace(/\\/g, '/'),
     finalReportPath: path.relative(BASE_DIR, finalReportPath).replace(/\\/g, '/'),
     scenario: scenarioName,
+    workflowId: workflow.id,
+    workflowName: workflow.name || workflow.id,
+    inputSnapshotPath: checkpoint.inputSnapshot?.path,
     seed
   });
   storyFinalized = true;
 
   console.log(`Deal: ${deal.dealId}`);
+  console.log(`Workflow: ${workflow.name || workflow.id}`);
   console.log(`Scenario: ${scenarioName}`);
   console.log(`Run ID: ${runId}`);
   console.log(`Seed: ${seed}`);

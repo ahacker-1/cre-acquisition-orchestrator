@@ -162,12 +162,12 @@ Continue until all 5 phases are complete and a final report is produced.
 
 ### How to Find Your Deal ID
 
-```bash
+```powershell
 # List all deal checkpoints
-ls data/status/
+Get-ChildItem data/status/
 
 # Or check data/status/<deal-id>.json
-cat data/status/<deal-id>.json
+Get-Content data/status/<deal-id>.json
 ```
 
 ---

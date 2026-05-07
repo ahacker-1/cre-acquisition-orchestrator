@@ -19,6 +19,7 @@ function getPhaseCountsByStatus(phases: DealCheckpoint['phases']) {
   let running = 0
   let pending = 0
   let failed = 0
+  let skipped = 0
 
   for (const phase of Object.values(phases)) {
     switch (phase.status) {
@@ -31,12 +32,15 @@ function getPhaseCountsByStatus(phases: DealCheckpoint['phases']) {
       case 'failed':
         failed++
         break
+      case 'skipped':
+        skipped++
+        break
       default:
         pending++
     }
   }
 
-  return { completed, running, pending, failed, total: Object.keys(phases).length }
+  return { completed, running, pending, failed, skipped, total: Object.keys(phases).length }
 }
 
 export default function DealHeader({ dealCheckpoint }: DealHeaderProps) {
@@ -60,6 +64,11 @@ export default function DealHeader({ dealCheckpoint }: DealHeaderProps) {
             {addr}{city && `, ${city}`}{state && `, ${state}`}
           </p>
           <p className="text-xs text-gray-600 mt-1 font-mono">{dealId}</p>
+          {dealCheckpoint.workflowName && (
+            <p className="text-xs text-cre-accent mt-2 font-semibold">
+              {dealCheckpoint.workflowName}
+            </p>
+          )}
         </div>
 
         {/* Right: Stats */}
@@ -127,6 +136,11 @@ export default function DealHeader({ dealCheckpoint }: DealHeaderProps) {
         {phaseCounts.failed > 0 && (
           <span className="text-cre-danger">
             {phaseCounts.failed} failed
+          </span>
+        )}
+        {phaseCounts.skipped > 0 && (
+          <span className="text-gray-500">
+            {phaseCounts.skipped} skipped
           </span>
         )}
       </div>

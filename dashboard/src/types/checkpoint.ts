@@ -2,7 +2,7 @@ import type { PhaseDownstreamData } from './phase-contracts'
 
 export type AgentStatus = 'pending' | 'running' | 'complete' | 'failed' | 'skipped'
 
-export type PhaseStatus = 'pending' | 'running' | 'complete' | 'failed' | 'blocked'
+export type PhaseStatus = 'pending' | 'running' | 'complete' | 'failed' | 'blocked' | 'skipped'
 
 export type Verdict = 'PASS' | 'FAIL' | 'CONDITIONAL' | 'NEEDS_REVIEW' | 'PROCEED_WITH_MITIGATIONS' | null
 
@@ -72,6 +72,7 @@ export interface PhaseInfo {
     running: number
     failed: number
     pending: number
+    skipped?: number
   }
   outputs: {
     phaseSummary: string
@@ -97,6 +98,30 @@ export interface DealCheckpoint {
     askingPrice: number
   }
   status: string
+  workflowId?: string
+  workflowName?: string
+  runtimeProvider?: string
+  inputSnapshot?: {
+    path?: string
+    capturedAt?: string | null
+    workflowId?: string
+    sourceCoverage?: {
+      sourceDocumentCount?: number
+      appliedDocumentCount?: number
+      reviewReadyDocumentCount?: number
+      pendingExtractionCount?: number
+      approvedFieldCount?: number
+      requiredApprovedFieldCount?: number
+      missingApprovedFieldCount?: number
+      staleDocumentCount?: number
+    }
+    readiness?: {
+      status?: string
+      blockers?: string[]
+      warnings?: string[]
+    }
+    approvedFieldCount?: number
+  }
   overallProgress: number
   startedAt: string
   lastUpdatedAt: string
@@ -119,6 +144,10 @@ export interface RunStatus {
   active: boolean
   runId: string | null
   dealPath: string | null
+  workflowId: string | null
+  runtimeProvider: 'simulation' | null
+  presetId: string | null
+  inputSnapshotPath: string | null
   state: RunLifecycleState
   mode: RunMode | null
   speed: RunSpeed | null
@@ -213,4 +242,8 @@ export interface StartRunRequestPayload {
   reset: boolean
   scenario?: string
   seed?: number
+  workflowId?: string
+  runtimeProvider?: 'simulation'
+  presetId?: string
+  inputSnapshotPath?: string
 }

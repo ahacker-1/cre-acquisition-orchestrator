@@ -21,4 +21,6 @@ This project is a reference architecture and simulation framework. It does not p
 
 | Version | Supported |
 |---------|-----------|
-| 1.0.x   | Yes       |
+| 2.0.x   | Yes       |
+| 1.1.x   | Yes       |
+| 1.0.x   | Security fixes only |

@@ -13,6 +13,23 @@ import {
   validateDealConfig,
   type ValidationMode,
 } from './deal-service';
+import {
+  getWorkflow,
+  listWorkflowPresets,
+  listWorkflows,
+  saveWorkflowPreset,
+} from './workflow-service';
+import {
+  applySourceExtraction,
+  buildRunInputSnapshot,
+  evaluateLaunchReadiness,
+  extractSourceDocument,
+  getDealWorkspace,
+  listDealDocuments,
+  saveDealCriteria,
+  savePhaseState,
+  saveSourceDocument,
+} from './workspace-service';
 
 // ---------------------------------------------------------------------------
 // Resolve paths
@@ -380,6 +397,56 @@ const dealServiceContext = {
   statusDir,
 };
 
+const workflowServiceContext = {
+  dataRoot,
+  projectRoot,
+};
+
+function safeFileSegment(value: string): string {
+  return value.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').slice(0, 120) || 'item';
+}
+
+function logFileWatcherError(scope: string, err: Error): void {
+  const code = (err as NodeJS.ErrnoException).code;
+  if (code === 'EPERM' || code === 'ENOENT') {
+    console.warn(`[watcher] ${scope} watcher skipped transient filesystem event`, err.message);
+    return;
+  }
+  console.error(`[watcher] ${scope} watcher error`, err);
+}
+
+function writeJsonFile(filePath: string, value: unknown): void {
+  mkdirSync(dirname(filePath), { recursive: true });
+  writeFileSync(filePath, JSON.stringify(value, null, 2));
+}
+
+function createRunInputSnapshotFile(
+  dealId: string,
+  workflowId: string,
+  launch: Record<string, unknown>,
+): {
+  absolutePath: string;
+  relativePath: string;
+  snapshot: ReturnType<typeof buildRunInputSnapshot>;
+  readiness: ReturnType<typeof evaluateLaunchReadiness>;
+} {
+  const snapshot = buildRunInputSnapshot({ ...dealServiceContext, projectRoot }, dealId, workflowId, launch);
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const absolutePath = join(
+    dataRoot,
+    'runs',
+    safeFileSegment(dealId),
+    `${timestamp}-${safeFileSegment(workflowId)}-input-snapshot.json`,
+  );
+  writeJsonFile(absolutePath, snapshot);
+  return {
+    absolutePath,
+    relativePath: relative(projectRoot, absolutePath).replace(/\\/g, '/'),
+    snapshot,
+    readiness: snapshot.readiness,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // WebSocket server
 // ---------------------------------------------------------------------------
@@ -481,7 +548,7 @@ statusWatcher.on('add', (filePath: string) => {
 });
 
 statusWatcher.on('error', (err: Error) => {
-  console.error('[watcher] Status watcher error', err);
+  logFileWatcherError('Status', err);
 });
 
 const logsWatcher = watch(logsDir, {
@@ -512,7 +579,7 @@ logsWatcher.on('add', (filePath: string) => {
 });
 
 logsWatcher.on('error', (err: Error) => {
-  console.error('[watcher] Logs watcher error', err);
+  logFileWatcherError('Logs', err);
 });
 
 console.log(`[watcher] Watching status: ${statusDir}`);
@@ -524,24 +591,75 @@ console.log('[watcher] Watcher started');
 // ---------------------------------------------------------------------------
 
 const API_PORT = 8081;
+const MAX_REQUEST_BODY_BYTES = 80 * 1024 * 1024;
+
+class RequestBodyTooLargeError extends Error {
+  readonly statusCode = 413;
+
+  constructor(limitBytes: number) {
+    super(`Request body exceeds the ${Math.round(limitBytes / 1024 / 1024)} MB local API limit.`);
+  }
+}
+
+function isAllowedBrowserOrigin(origin: string | undefined): boolean {
+  if (!origin) return true;
+  try {
+    const parsed = new URL(origin);
+    return parsed.protocol === 'http:' && (
+      parsed.hostname === 'localhost' ||
+      parsed.hostname === '127.0.0.1' ||
+      parsed.hostname === '[::1]' ||
+      parsed.hostname === '::1'
+    );
+  } catch {
+    return false;
+  }
+}
+
+function applyCorsHeaders(req: IncomingMessage, res: ServerResponse): void {
+  const origin = req.headers.origin;
+  if (typeof origin === 'string' && isAllowedBrowserOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
   });
   res.end(payload);
 }
 
-function readBody(req: IncomingMessage): Promise<string> {
+function readBody(req: IncomingMessage, limitBytes = MAX_REQUEST_BODY_BYTES): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
-    req.on('error', reject);
+    let totalBytes = 0;
+    let settled = false;
+
+    req.on('data', (chunk: Buffer) => {
+      if (settled) return;
+      totalBytes += chunk.length;
+      if (totalBytes > limitBytes) {
+        settled = true;
+        reject(new RequestBodyTooLargeError(limitBytes));
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      if (settled) return;
+      settled = true;
+      resolve(Buffer.concat(chunks, totalBytes).toString('utf-8'));
+    });
+    req.on('error', (error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    });
   });
 }
 
@@ -571,9 +689,50 @@ function parseLibraryDealId(url: string): string | null {
   }
 }
 
+function parseWorkflowId(url: string): string | null {
+  const match = url.match(/^\/api\/workflows\/([^/]+)/);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+function decodeUrlPart(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function parseDealWorkspaceId(url: string, suffix: string): string | null {
+  const match = url.match(new RegExp(`^/api/deals/([^/]+)/${suffix}$`));
+  return match ? decodeUrlPart(match[1]) : null;
+}
+
+function parseDealDocumentRoute(url: string, suffix: 'extract' | 'apply-extraction'): {
+  dealId: string;
+  documentId: string;
+} | null {
+  const match = url.match(new RegExp(`^/api/deals/([^/]+)/documents/([^/]+)/${suffix}$`));
+  if (!match) return null;
+  return {
+    dealId: decodeUrlPart(match[1]),
+    documentId: decodeUrlPart(match[2]),
+  };
+}
+
 const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
   const method = req.method || 'GET';
   const url = req.url || '/';
+  applyCorsHeaders(req, res);
+
+  if (!isAllowedBrowserOrigin(req.headers.origin)) {
+    sendJson(res, 403, { error: 'Browser origin is not allowed for this local API.' });
+    return;
+  }
 
   // CORS preflight
   if (method === 'OPTIONS') {
@@ -592,6 +751,46 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
     // GET /api/deals - list saved and sample deals for the dashboard library
     if (method === 'GET' && url === '/api/deals') {
       sendJson(res, 200, listDealLibrary(dealServiceContext));
+      return;
+    }
+
+    // GET /api/workflows - list built-in outcome workflows for the cockpit launcher
+    if (method === 'GET' && url === '/api/workflows') {
+      sendJson(res, 200, listWorkflows(workflowServiceContext));
+      return;
+    }
+
+    // GET /api/workflow-presets - list locally saved workflow presets
+    if (method === 'GET' && url === '/api/workflow-presets') {
+      sendJson(res, 200, listWorkflowPresets(workflowServiceContext));
+      return;
+    }
+
+    // POST /api/workflow-presets - save a reusable local workflow preset
+    if (method === 'POST' && url === '/api/workflow-presets') {
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown>;
+      try {
+        body = JSON.parse(rawBody);
+      } catch {
+        sendJson(res, 400, { error: 'Invalid JSON body' });
+        return;
+      }
+
+      const dealId = typeof body.dealId === 'string' ? body.dealId : '';
+      if (!dealId || !getDealRecord(dealServiceContext, dealId)) {
+        sendJson(res, 400, { error: `Deal not found: ${dealId || 'missing dealId'}` });
+        return;
+      }
+
+      try {
+        const preset = saveWorkflowPreset(workflowServiceContext, body);
+        sendJson(res, 201, { preset });
+      } catch (err) {
+        sendJson(res, 400, {
+          error: err instanceof Error ? err.message : 'Failed to save workflow preset',
+        });
+      }
       return;
     }
 
@@ -741,6 +940,245 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
       return;
     }
 
+    // POST /api/workflows/:workflowId/launch - launch an outcome workflow for a selected deal
+    if (method === 'POST' && /^\/api\/workflows\/[^/]+\/launch$/.test(url)) {
+      const workflowId = parseWorkflowId(url);
+      if (!workflowId) {
+        sendJson(res, 400, { error: 'Invalid workflow ID' });
+        return;
+      }
+
+      const workflow = getWorkflow(workflowServiceContext, workflowId);
+      if (!workflow) {
+        sendJson(res, 404, { error: `Workflow not found: ${workflowId}` });
+        return;
+      }
+
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown> = {};
+      if (rawBody.trim().length > 0) {
+        try {
+          body = JSON.parse(rawBody);
+        } catch {
+          sendJson(res, 400, { error: 'Invalid JSON body' });
+          return;
+        }
+      }
+
+      const presetId = typeof body.presetId === 'string' ? body.presetId : null;
+      const preset = presetId
+        ? listWorkflowPresets(workflowServiceContext).presets.find((entry) => entry.presetId === presetId)
+        : null;
+      const dealId = typeof body.dealId === 'string' ? body.dealId : preset?.dealId;
+      if (!dealId) {
+        sendJson(res, 400, { error: 'Missing required field: dealId' });
+        return;
+      }
+
+      const record = getDealRecord(dealServiceContext, dealId);
+      if (!record) {
+        sendJson(res, 404, { error: `Deal not found: ${dealId}` });
+        return;
+      }
+      if (record.item.kind === 'user' && !record.validation.launchReady) {
+        sendJson(res, 400, {
+          error: 'Deal is not launch ready',
+          validation: record.validation,
+        });
+        return;
+      }
+
+      const startRequest: StartRunRequest = {
+        dealPath: record.item.dealPath,
+        mode: 'live',
+        speed:
+          body.speed === 'fast' || body.speed === 'slow' || body.speed === 'normal'
+            ? body.speed
+            : preset?.speed || 'normal',
+        scenario:
+          typeof body.scenario === 'string'
+            ? body.scenario
+            : preset?.scenario || workflow.recommendedScenario,
+        seed: typeof body.seed === 'number' ? body.seed : preset?.seed ?? undefined,
+        reset: typeof body.reset === 'boolean' ? body.reset : false,
+        workflowId: workflow.id,
+        runtimeProvider: 'simulation',
+        presetId: preset?.presetId || presetId || undefined,
+      };
+
+      const inputSnapshot = createRunInputSnapshotFile(dealId, workflow.id, {
+        ...startRequest,
+        dealId,
+        workflowName: workflow.name,
+        notes: typeof body.notes === 'string' ? body.notes : undefined,
+        requireSourceBackedInputs: body.requireSourceBackedInputs === true,
+      });
+      if (inputSnapshot.readiness.blockers.length > 0) {
+        sendJson(res, 400, {
+          error: 'Workflow launch readiness blocked',
+          readiness: inputSnapshot.readiness,
+          inputSnapshot: { path: inputSnapshot.relativePath },
+        });
+        return;
+      }
+      startRequest.inputSnapshotPath = inputSnapshot.absolutePath;
+
+      const result = runManager.start(startRequest);
+      if (result.statusCode < 300 && record.item.kind === 'user') {
+        markDealLaunched(dealServiceContext, dealId);
+      }
+      sendJson(res, result.statusCode, {
+        ...result.body,
+        workflow,
+        deal: record.item,
+        readiness: inputSnapshot.readiness,
+        inputSnapshot: {
+          path: inputSnapshot.relativePath,
+          sourceCoverage: inputSnapshot.readiness.sourceCoverage,
+        },
+      });
+      return;
+    }
+
+    // GET /api/deals/:dealId/workspace - full operator workspace payload
+    if (method === 'GET' && /^\/api\/deals\/[^/]+\/workspace$/.test(url)) {
+      const dealId = parseDealWorkspaceId(url, 'workspace');
+      if (!dealId) {
+        sendJson(res, 400, { error: 'Invalid deal ID' });
+        return;
+      }
+      try {
+        sendJson(res, 200, getDealWorkspace({ ...dealServiceContext, projectRoot }, dealId));
+      } catch (err) {
+        sendJson(res, 404, { error: err instanceof Error ? err.message : 'Workspace not found' });
+      }
+      return;
+    }
+
+    // POST /api/deals/:dealId/criteria - save deal-specific underwriting criteria
+    if (method === 'POST' && /^\/api\/deals\/[^/]+\/criteria$/.test(url)) {
+      const dealId = parseDealWorkspaceId(url, 'criteria');
+      if (!dealId) {
+        sendJson(res, 400, { error: 'Invalid deal ID' });
+        return;
+      }
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown>;
+      try {
+        body = rawBody.trim() ? JSON.parse(rawBody) : {};
+      } catch {
+        sendJson(res, 400, { error: 'Invalid JSON body' });
+        return;
+      }
+      try {
+        sendJson(res, 200, saveDealCriteria({ ...dealServiceContext, projectRoot }, dealId, body));
+      } catch (err) {
+        sendJson(res, 400, { error: err instanceof Error ? err.message : 'Failed to save criteria' });
+      }
+      return;
+    }
+
+    // GET /api/deals/:dealId/documents - list source documents for a deal
+    if (method === 'GET' && /^\/api\/deals\/[^/]+\/documents$/.test(url)) {
+      const dealId = parseDealWorkspaceId(url, 'documents');
+      if (!dealId) {
+        sendJson(res, 400, { error: 'Invalid deal ID' });
+        return;
+      }
+      try {
+        sendJson(res, 200, listDealDocuments({ ...dealServiceContext, projectRoot }, dealId));
+      } catch (err) {
+        sendJson(res, 404, { error: err instanceof Error ? err.message : 'Documents not found' });
+      }
+      return;
+    }
+
+    // POST /api/deals/:dealId/documents - upload a local source document as JSON/base64
+    if (method === 'POST' && /^\/api\/deals\/[^/]+\/documents$/.test(url)) {
+      const dealId = parseDealWorkspaceId(url, 'documents');
+      if (!dealId) {
+        sendJson(res, 400, { error: 'Invalid deal ID' });
+        return;
+      }
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown>;
+      try {
+        body = JSON.parse(rawBody);
+      } catch {
+        sendJson(res, 400, { error: 'Invalid JSON body' });
+        return;
+      }
+      try {
+        sendJson(res, 201, saveSourceDocument({ ...dealServiceContext, projectRoot }, dealId, body));
+      } catch (err) {
+        sendJson(res, 400, { error: err instanceof Error ? err.message : 'Failed to save document' });
+      }
+      return;
+    }
+
+    // POST /api/deals/:dealId/documents/:documentId/extract - create extraction preview
+    if (method === 'POST' && /^\/api\/deals\/[^/]+\/documents\/[^/]+\/extract$/.test(url)) {
+      const route = parseDealDocumentRoute(url, 'extract');
+      if (!route) {
+        sendJson(res, 400, { error: 'Invalid document route' });
+        return;
+      }
+      try {
+        sendJson(res, 200, extractSourceDocument({ ...dealServiceContext, projectRoot }, route.dealId, route.documentId));
+      } catch (err) {
+        sendJson(res, 400, { error: err instanceof Error ? err.message : 'Failed to extract document' });
+      }
+      return;
+    }
+
+    // POST /api/deals/:dealId/documents/:documentId/apply-extraction - apply approved fields to deal inputs
+    if (method === 'POST' && /^\/api\/deals\/[^/]+\/documents\/[^/]+\/apply-extraction$/.test(url)) {
+      const route = parseDealDocumentRoute(url, 'apply-extraction');
+      if (!route) {
+        sendJson(res, 400, { error: 'Invalid document route' });
+        return;
+      }
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown> = {};
+      if (rawBody.trim().length > 0) {
+        try {
+          body = JSON.parse(rawBody);
+        } catch {
+          sendJson(res, 400, { error: 'Invalid JSON body' });
+          return;
+        }
+      }
+      try {
+        sendJson(res, 200, applySourceExtraction({ ...dealServiceContext, projectRoot }, route.dealId, route.documentId, body));
+      } catch (err) {
+        sendJson(res, 400, { error: err instanceof Error ? err.message : 'Failed to apply extraction' });
+      }
+      return;
+    }
+
+    // POST /api/deals/:dealId/phase-state - save phase checklist state
+    if (method === 'POST' && /^\/api\/deals\/[^/]+\/phase-state$/.test(url)) {
+      const dealId = parseDealWorkspaceId(url, 'phase-state');
+      if (!dealId) {
+        sendJson(res, 400, { error: 'Invalid deal ID' });
+        return;
+      }
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown>;
+      try {
+        body = JSON.parse(rawBody);
+      } catch {
+        sendJson(res, 400, { error: 'Invalid JSON body' });
+        return;
+      }
+      try {
+        sendJson(res, 200, savePhaseState({ ...dealServiceContext, projectRoot }, dealId, body));
+      } catch (err) {
+        sendJson(res, 400, { error: err instanceof Error ? err.message : 'Failed to save phase state' });
+      }
+      return;
+    }
+
     // GET /api/deals/:id - fetch a saved deal or sample deal by ID
     if (method === 'GET' && /^\/api\/deals\/[^/]+$/.test(url)) {
       const dealId = parseLibraryDealId(url);
@@ -801,7 +1239,24 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
             : 'normal',
         scenario: typeof body.scenario === 'string' ? body.scenario : undefined,
         reset: typeof body.reset === 'boolean' ? body.reset : false,
+        workflowId: 'full-acquisition-review',
+        runtimeProvider: 'simulation',
       }
+
+      const inputSnapshot = createRunInputSnapshotFile(dealId, 'full-acquisition-review', {
+        ...startRequest,
+        dealId,
+        requireSourceBackedInputs: body.requireSourceBackedInputs === true,
+      });
+      if (inputSnapshot.readiness.blockers.length > 0) {
+        sendJson(res, 400, {
+          error: 'Deal launch readiness blocked',
+          readiness: inputSnapshot.readiness,
+          inputSnapshot: { path: inputSnapshot.relativePath },
+        });
+        return;
+      }
+      startRequest.inputSnapshotPath = inputSnapshot.absolutePath;
 
       const result = runManager.start(startRequest);
       if (result.statusCode < 300 && record.item.kind === 'user') {
@@ -810,6 +1265,11 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
       sendJson(res, result.statusCode, {
         ...result.body,
         deal: record.item,
+        readiness: inputSnapshot.readiness,
+        inputSnapshot: {
+          path: inputSnapshot.relativePath,
+          sourceCoverage: inputSnapshot.readiness.sourceCoverage,
+        },
       });
       return;
     }
@@ -952,6 +1412,10 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
     sendJson(res, 404, { error: `Not found: ${method} ${url}` });
   } catch (err) {
     console.error(`[api] Unhandled error: ${method} ${url}`, err);
+    if (err instanceof RequestBodyTooLargeError) {
+      sendJson(res, err.statusCode, { error: err.message });
+      return;
+    }
     sendJson(res, 500, { error: 'Internal server error' });
   }
 });

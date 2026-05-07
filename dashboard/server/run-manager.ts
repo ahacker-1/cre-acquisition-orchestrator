@@ -5,6 +5,7 @@ import type { Readable } from 'stream'
 
 export type RunMode = 'live' | 'fast'
 export type RunSpeed = 'fast' | 'normal' | 'slow'
+export type RuntimeProvider = 'simulation'
 export type RunLifecycleState =
   | 'IDLE'
   | 'STARTING'
@@ -18,6 +19,10 @@ export interface RunStatus {
   active: boolean
   runId: string | null
   dealPath: string | null
+  workflowId: string | null
+  runtimeProvider: RuntimeProvider | null
+  presetId: string | null
+  inputSnapshotPath: string | null
   state: RunLifecycleState
   mode: RunMode | null
   speed: RunSpeed | null
@@ -35,6 +40,10 @@ export interface StartRunRequest {
   scenario?: string
   seed?: number
   reset?: boolean
+  workflowId?: string
+  runtimeProvider?: RuntimeProvider
+  presetId?: string
+  inputSnapshotPath?: string
 }
 
 export interface RunMessage {
@@ -87,6 +96,25 @@ function sanitizeScenario(scenario: unknown): string {
   return scenario
 }
 
+function sanitizeWorkflowId(workflowId: unknown): string {
+  if (typeof workflowId !== 'string' || workflowId.trim().length === 0) return 'full-acquisition-review'
+  return workflowId.trim()
+}
+
+function sanitizeRuntimeProvider(runtimeProvider: unknown): RuntimeProvider {
+  return runtimeProvider === 'simulation' ? 'simulation' : 'simulation'
+}
+
+function sanitizePresetId(presetId: unknown): string | null {
+  if (typeof presetId !== 'string' || presetId.trim().length === 0) return null
+  return presetId.trim()
+}
+
+function sanitizeInputSnapshotPath(inputSnapshotPath: unknown): string | null {
+  if (typeof inputSnapshotPath !== 'string' || inputSnapshotPath.trim().length === 0) return null
+  return inputSnapshotPath.trim()
+}
+
 function sanitizeSeed(seed: unknown): number | null {
   if (typeof seed !== 'number') return null
   if (!Number.isFinite(seed)) return null
@@ -109,9 +137,13 @@ export class RunManager {
 
   private status: RunStatus = {
     active: false,
-      runId: null,
-      dealPath: null,
-      state: 'IDLE',
+    runId: null,
+    dealPath: null,
+    workflowId: null,
+    runtimeProvider: null,
+    presetId: null,
+    inputSnapshotPath: null,
+    state: 'IDLE',
     mode: null,
     speed: null,
     pid: null,
@@ -144,6 +176,10 @@ export class RunManager {
       details: {
         active: this.status.active,
         dealPath: this.status.dealPath,
+        workflowId: this.status.workflowId,
+        runtimeProvider: this.status.runtimeProvider,
+        presetId: this.status.presetId,
+        inputSnapshotPath: this.status.inputSnapshotPath,
         pid: this.status.pid,
         startedAt: this.status.startedAt,
         endedAt: this.status.endedAt,
@@ -170,6 +206,10 @@ export class RunManager {
     const dealPath = sanitizeDealPath(request.dealPath)
     const scenario = sanitizeScenario(request.scenario)
     const seed = sanitizeSeed(request.seed)
+    const workflowId = sanitizeWorkflowId(request.workflowId)
+    const runtimeProvider = sanitizeRuntimeProvider(request.runtimeProvider)
+    const presetId = sanitizePresetId(request.presetId)
+    const inputSnapshotPath = sanitizeInputSnapshotPath(request.inputSnapshotPath)
     const reset = request.reset !== false
     const runId = `run_${nowIso().replace(/[:.]/g, '-')}`
 
@@ -177,6 +217,10 @@ export class RunManager {
       active: true,
       runId,
       dealPath,
+      workflowId,
+      runtimeProvider,
+      presetId,
+      inputSnapshotPath,
       state: 'STARTING',
       mode,
       speed,
@@ -186,7 +230,7 @@ export class RunManager {
       exitCode: null,
       error: null,
     }
-    this.emit('state', { reset, dealPath })
+    this.emit('state', { reset, dealPath, workflowId, runtimeProvider, presetId, inputSnapshotPath })
 
     if (reset) {
       try {
@@ -226,8 +270,11 @@ export class RunManager {
             dealPath,
             '--scenario',
             scenario,
+            '--workflow',
+            workflowId,
             '--run-id',
             runId,
+            ...(inputSnapshotPath ? ['--input-snapshot', inputSnapshotPath] : []),
             ...(seed !== null ? ['--seed', String(seed)] : []),
             '--agent-delay-ms',
             String(agentDelayMs),
@@ -354,6 +401,10 @@ export class RunManager {
       speed,
       reset,
       dealPath,
+      workflowId,
+      runtimeProvider,
+      presetId,
+      inputSnapshotPath,
       scenario,
       seed,
       agentDelayMs,
@@ -367,6 +418,10 @@ export class RunManager {
         status: 'started',
         mode: this.status.mode,
         speed: this.status.speed,
+        workflowId: this.status.workflowId,
+        runtimeProvider: this.status.runtimeProvider,
+        presetId: this.status.presetId,
+        inputSnapshotPath: this.status.inputSnapshotPath,
         pid: this.status.pid,
         startedAt: this.status.startedAt,
       },
@@ -379,9 +434,9 @@ export class RunManager {
         statusCode: 200,
         body: {
           status: 'idle',
-        active: false,
-        dealPath: null,
-        runId: this.status.runId,
+          active: false,
+          dealPath: null,
+          runId: this.status.runId,
           state: this.status.state,
         },
       }
