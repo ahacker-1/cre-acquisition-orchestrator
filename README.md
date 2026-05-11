@@ -54,7 +54,7 @@ This project has grown in four public steps: first the agent architecture, then 
 | | | | |
 |---|---|---|---|
 | **31** AI Agents | **8** Domain Knowledge Skills | **10** JSON Schema Contracts | **8** Deal Workspace Views |
-| **5** Deal Phases | **5** Outcome Workflows | **64,000+** Lines of Code | **245** Files |
+| **5** Deal Phases | **5** Outcome Workflows | **65,000+** Lines of Code + Prompts | **252** Files |
 
 ---
 
