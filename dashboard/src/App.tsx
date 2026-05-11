@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useCheckpointData } from './hooks/useCheckpointData'
 import ErrorBoundary from './components/ErrorBoundary'
 import DealIntakeWizard from './components/DealIntakeWizard'
+import DropZoneHero from './components/DropZoneHero'
+import QuickDealCreate from './components/QuickDealCreate'
 import SavedDealsPanel from './components/SavedDealsPanel'
 import WorkflowLauncher from './components/WorkflowLauncher'
 import DealWorkspace from './components/DealWorkspace'
 import { useDealLibrary } from './hooks/useDealLibrary'
+import { uploadDealDocument } from './lib/documentUpload'
 import type { DealCheckpoint, PhaseInfo } from './types/checkpoint'
 import type { DealLibraryItem, DealRecordResponse } from './types/deals'
 
@@ -81,132 +84,6 @@ function checkpointFromDealRecord(record: DealRecordResponse): DealCheckpoint {
   }
 }
 
-// Demo-friendly: Show example pipeline phases before data loads
-function ReadyToStartPanel({
-  onCreateDeal,
-  onStart,
-  starting,
-  runError,
-  children,
-}: {
-  onCreateDeal: () => void
-  onStart: () => void
-  starting: boolean
-  runError: string | null
-  children: ReactNode
-}) {
-  return (
-    <div className="space-y-6">
-      {/* Welcome Card */}
-      <div className="card">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 border border-white/15 bg-white/10 flex items-center justify-center flex-shrink-0">
-            <svg className="w-6 h-6 text-cre-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-200 mb-1">Ready to Start</h2>
-            <p className="text-gray-400 text-sm">
-              Create a draft workspace, upload source documents, approve extracted inputs, then choose the operator workflow.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="card bg-cre-surface/50">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
-              Guided Start
-            </h3>
-            <p className="text-xs text-gray-500 mt-1">
-              New users can save a light draft first, then upload rent rolls, T12s, offering memos, LOIs, and legal files before filling every form field by hand.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onCreateDeal}
-              data-testid="empty-new-deal-button"
-              className="px-4 py-2 text-sm font-semibold uppercase bg-white text-black hover:bg-gray-200 transition-colors"
-            >
-              Create Upload Workspace
-            </button>
-            <button
-              onClick={onStart}
-              disabled={starting}
-              className="px-4 py-2 rounded-md text-sm font-semibold bg-white/5 text-gray-100 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {starting ? 'Starting...' : 'Run Demo'}
-            </button>
-          </div>
-        </div>
-        {runError && (
-          <p className="text-xs text-cre-danger mt-3">
-            {runError}
-          </p>
-        )}
-      </div>
-
-      {/* Pipeline Preview */}
-      <div className="card">
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
-          Pipeline Phases
-        </h3>
-        <div className="space-y-3">
-          {[
-            { name: 'Due Diligence', agents: 7, desc: 'Property analysis, market research, risk assessment' },
-            { name: 'Underwriting', agents: 3, desc: 'Financial modeling, scenario analysis, return projections' },
-            { name: 'Financing', agents: 3, desc: 'Lender outreach, term comparison, debt sizing' },
-            { name: 'Legal', agents: 6, desc: 'PSA review, title search, estoppel tracking' },
-            { name: 'Closing', agents: 2, desc: 'Readiness assessment, fund flow, final checklist' },
-          ].map((phase, idx) => (
-            <div
-              key={phase.name}
-              className="flex items-center gap-4 p-3 bg-cre-surface/30 border border-cre-border/50"
-            >
-              <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-sm font-medium">
-                {idx + 1}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-300">{phase.name}</span>
-                  <span className="text-xs text-gray-600">{phase.agents} agents</span>
-                </div>
-                <p className="text-xs text-gray-500 truncate">{phase.desc}</p>
-              </div>
-              <span className="text-xs text-gray-600 uppercase">Pending</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Quick Start Instructions */}
-      <div className="card bg-cre-surface/50">
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Quick Start
-        </h3>
-        <ol className="space-y-2 text-sm text-gray-400">
-          <li className="flex gap-2">
-            <span className="text-cre-accent font-mono">1.</span>
-            <span>Create a light draft workspace or choose one from the library below</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="text-cre-accent font-mono">2.</span>
-            <span>Open Upload Docs, add financials, LOIs, offering memoranda, and legal files, then extract fields</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="text-cre-accent font-mono">3.</span>
-            <span>Approve source-backed inputs and launch the workflow when the deal is ready</span>
-          </li>
-        </ol>
-      </div>
-
-      {children}
-    </div>
-  )
-}
-
 export default function App() {
   const {
     dealCheckpoint,
@@ -242,6 +119,7 @@ export default function App() {
   const [libraryError, setLibraryError] = useState<string | null>(null)
   const [workspaceCheckpoint, setWorkspaceCheckpoint] = useState<DealCheckpoint | null>(null)
   const [workspaceInitialTab, setWorkspaceInitialTab] = useState<WorkspaceInitialTab>('overview')
+  const [quickCreateFiles, setQuickCreateFiles] = useState<File[]>([])
 
   // Demo-friendly: Default to Pipeline tab, auto-expand relevant sections
   const runActive = runStatus.state === 'STARTING' || runStatus.state === 'RUNNING' || runStatus.state === 'STOPPING'
@@ -303,6 +181,17 @@ export default function App() {
     } catch (err) {
       setLibraryError(err instanceof Error ? err.message : String(err))
     }
+  }
+
+  function handleQuickFiles(files: File[]): void {
+    setLibraryError(null)
+    setQuickCreateFiles(files)
+  }
+
+  async function handleQuickDealCreated(dealId: string): Promise<void> {
+    setQuickCreateFiles([])
+    await refreshDeals()
+    await openDealWorkspace(dealId, 'documents')
   }
 
   function handleWorkflowLaunchStarted(): void {
@@ -457,30 +346,27 @@ export default function App() {
       <main className="p-6 max-w-[1440px] mx-auto">
         <ErrorBoundary>
           {!visibleDealCheckpoint ? (
-            <ReadyToStartPanel
-              onCreateDeal={openNewDealWizard}
-              onStart={() => void startLiveRun()}
-              starting={runRequestPending || runStatus.state === 'STARTING'}
-              runError={runStatus.error}
-            >
-              <WorkflowLauncher
-                deals={deals}
-                onLaunchStarted={handleWorkflowLaunchStarted}
-                onPresetSaved={() => void refreshDeals()}
+            <div className="space-y-6">
+              <DropZoneHero
+                onFilesSelected={handleQuickFiles}
+                onTryDemo={() => void startLiveRun()}
+                starting={runRequestPending || runStatus.state === 'STARTING'}
+                runError={runStatus.error}
               />
-
               <SavedDealsPanel
+                variant="compact"
                 deals={deals}
                 loading={dealsLoading}
                 error={libraryError || dealsError}
                 onEditDeal={openEditDealWizard}
                 onOpenWorkspace={(dealId, section) => void openDealWorkspace(dealId, section)}
                 onLaunchDeal={(dealId) => void handleLaunchDeal(dealId)}
+                onViewAll={() => setLibraryOpen(true)}
                 launchingDealId={launchingDealId}
                 activeRunDealPath={runStatus.dealPath}
                 activeRunState={runStatus.state}
               />
-            </ReadyToStartPanel>
+            </div>
           ) : (
             <DealWorkspace
               dealCheckpoint={visibleDealCheckpoint}
@@ -490,6 +376,7 @@ export default function App() {
               documentArtifacts={visibleDocumentArtifacts}
               deals={deals}
               initialTab={workspaceInitialTab}
+              onOpenEditDetails={openEditDealWizard}
               onLaunchStarted={handleWorkflowLaunchStarted}
               onPresetSaved={() => void refreshDeals()}
             />
@@ -603,6 +490,16 @@ export default function App() {
           setLibraryError(null)
           void refreshDeals()
         }}
+      />
+
+      <QuickDealCreate
+        files={quickCreateFiles}
+        suggestedDealId={suggestedDealId}
+        isOpen={quickCreateFiles.length > 0}
+        onCancel={() => setQuickCreateFiles([])}
+        onCreated={(dealId) => void handleQuickDealCreated(dealId)}
+        saveDeal={saveDeal}
+        uploadDealDocument={uploadDealDocument}
       />
     </div>
   )

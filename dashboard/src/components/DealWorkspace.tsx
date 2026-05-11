@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import AgentTree from './AgentTree'
 import CompletionPackage from './CompletionPackage'
+import DealCockpitSidebar from './DealCockpitSidebar'
 import DecisionLog from './DecisionLog'
 import DocumentWall from './DocumentWall'
 import FinalReport from './FinalReport'
@@ -39,6 +40,7 @@ interface DealWorkspaceProps {
   documentArtifacts: DocumentArtifact[]
   deals: DealLibraryItem[]
   initialTab?: WorkspaceTab
+  onOpenEditDetails?: (dealId: string) => void
   onLaunchStarted?: (response: WorkflowLaunchResponse) => void
   onPresetSaved?: (preset: WorkflowPreset) => void
 }
@@ -792,10 +794,12 @@ export default function DealWorkspace({
   documentArtifacts,
   deals,
   initialTab = 'overview',
+  onOpenEditDetails,
   onLaunchStarted,
   onPresetSaved,
 }: DealWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab)
+  const [autoDefaultedDealId, setAutoDefaultedDealId] = useState<string | null>(null)
   const {
     workspace,
     loading,
@@ -817,6 +821,7 @@ export default function DealWorkspace({
 
   useEffect(() => {
     setActiveTab(initialTab)
+    setAutoDefaultedDealId(null)
   }, [dealCheckpoint.dealId, initialTab])
 
   const phaseTabs = workspace?.phases ?? []
@@ -833,6 +838,20 @@ export default function DealWorkspace({
     ] as { id: WorkspaceTab | string; label: string }[],
     [phaseTabs],
   )
+
+  useEffect(() => {
+    if (
+      !loading &&
+      workspace &&
+      initialTab === 'overview' &&
+      activeTab === 'overview' &&
+      documents.length === 0 &&
+      autoDefaultedDealId !== dealCheckpoint.dealId
+    ) {
+      setActiveTab('documents')
+      setAutoDefaultedDealId(dealCheckpoint.dealId)
+    }
+  }, [activeTab, autoDefaultedDealId, dealCheckpoint.dealId, documents.length, initialTab, loading, workspace])
 
   async function handlePhaseLaunch(phaseSlug: string): Promise<void> {
     const workflowId = PHASE_WORKFLOW[phaseSlug] ?? 'full-acquisition-review'
@@ -863,6 +882,18 @@ export default function DealWorkspace({
   async function handleWorkspaceLaunch(response: WorkflowLaunchResponse): Promise<void> {
     await refreshWorkspace()
     onLaunchStarted?.(response)
+  }
+
+  async function handleUploadFiles(files: File[]): Promise<void> {
+    for (const file of files) {
+      await uploadDocument(file)
+    }
+  }
+
+  async function handleExtractDocuments(targetDocuments: SourceDocument[]): Promise<void> {
+    for (const document of targetDocuments) {
+      await extractDocument(document.documentId)
+    }
   }
 
   return (
@@ -921,82 +952,99 @@ export default function DealWorkspace({
 
       {loading && <div className="portal-panel text-sm text-gray-500">Loading workspace...</div>}
 
-      {!loading && activeTab === 'overview' && (
-        <Overview
-          dealCheckpoint={dealCheckpoint}
-          workspace={workspace}
-          criteria={criteria}
-          documents={documents}
-        >
-          {criteria && (
-            <CriteriaPanel
-              criteria={criteria}
-              working={working}
-              onSave={saveCriteria}
-            />
-          )}
-          <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,0.72fr)]">
-            <PipelineView dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
-            <WorkflowLauncher
-              deals={deals}
-              initialDealId={dealCheckpoint.dealId}
-              onLaunchStarted={(response) => void handleWorkspaceLaunch(response)}
-              onPresetSaved={onPresetSaved}
-              compact
-            />
-          </section>
-        </Overview>
-      )}
+      {!loading && (
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0 space-y-4">
+            {activeTab === 'overview' && (
+              <Overview
+                dealCheckpoint={dealCheckpoint}
+                workspace={workspace}
+                criteria={criteria}
+                documents={documents}
+              >
+                {criteria && (
+                  <CriteriaPanel
+                    criteria={criteria}
+                    working={working}
+                    onSave={saveCriteria}
+                  />
+                )}
+                <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,0.72fr)]">
+                  <PipelineView dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
+                  <WorkflowLauncher
+                    deals={deals}
+                    initialDealId={dealCheckpoint.dealId}
+                    onLaunchStarted={(response) => void handleWorkspaceLaunch(response)}
+                    onPresetSaved={onPresetSaved}
+                    compact
+                  />
+                </section>
+              </Overview>
+            )}
 
-      {!loading && activePhase && (
-        <PhaseWorkspaceView
-          dealCheckpoint={dealCheckpoint}
-          agentCheckpoints={agentCheckpoints}
-          phase={activePhase}
-          documents={documents}
-          onChecklist={savePhaseChecklist}
-          onLaunch={handlePhaseLaunch}
-          launching={launchingWorkflowId !== null}
-          runtimeProvider={phaseRuntimeProvider}
-          onRuntimeProviderChange={setPhaseRuntimeProvider}
-          codexMaxAgents={phaseCodexMaxAgents}
-          onCodexMaxAgentsChange={setPhaseCodexMaxAgents}
-          codexConcurrency={phaseCodexConcurrency}
-          onCodexConcurrencyChange={setPhaseCodexConcurrency}
-        />
-      )}
+            {activePhase && (
+              <PhaseWorkspaceView
+                dealCheckpoint={dealCheckpoint}
+                agentCheckpoints={agentCheckpoints}
+                phase={activePhase}
+                documents={documents}
+                onChecklist={savePhaseChecklist}
+                onLaunch={handlePhaseLaunch}
+                launching={launchingWorkflowId !== null}
+                runtimeProvider={phaseRuntimeProvider}
+                onRuntimeProviderChange={setPhaseRuntimeProvider}
+                codexMaxAgents={phaseCodexMaxAgents}
+                onCodexMaxAgentsChange={setPhaseCodexMaxAgents}
+                codexConcurrency={phaseCodexConcurrency}
+                onCodexConcurrencyChange={setPhaseCodexConcurrency}
+              />
+            )}
 
-      {!loading && activeTab === 'documents' && (
-        <div className="space-y-4">
-          <DocumentIntakePanel
-            documents={documents}
-            extraction={lastExtraction}
-            working={working}
-            onUpload={uploadDocument}
-            onExtract={extractDocument}
-            onApply={applyExtraction}
-          />
-          <DocumentWall documentArtifacts={documentArtifacts} />
-        </div>
-      )}
+            {activeTab === 'documents' && (
+              <div className="space-y-4">
+                <DocumentIntakePanel
+                  documents={documents}
+                  extraction={lastExtraction}
+                  working={working}
+                  onUpload={uploadDocument}
+                  onExtract={extractDocument}
+                  onApply={applyExtraction}
+                />
+                <DocumentWall documentArtifacts={documentArtifacts} />
+              </div>
+            )}
 
-      {!loading && activeTab === 'package' && (
-        <div className="space-y-4">
-          <CompletionPackage
-            dealCheckpoint={dealCheckpoint}
-            storyEvents={storyEvents}
-            documentArtifacts={documentArtifacts}
-          />
-          <div className="grid gap-4 xl:grid-cols-2">
-            <FindingsPanel dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
-            <DecisionLog storyEvents={storyEvents} />
+            {activeTab === 'package' && (
+              <div className="space-y-4">
+                <CompletionPackage
+                  dealCheckpoint={dealCheckpoint}
+                  storyEvents={storyEvents}
+                  documentArtifacts={documentArtifacts}
+                />
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <FindingsPanel dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
+                  <DecisionLog storyEvents={storyEvents} />
+                </div>
+                <StoryNarrative storyEvents={storyEvents} />
+                <TimelineView dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
+                {logEntries.length > 0 && <LogStream logEntries={logEntries} />}
+                {/^complete$/i.test(dealCheckpoint.status) && <FinalReport dealCheckpoint={dealCheckpoint} />}
+                <AgentTree dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
+              </div>
+            )}
           </div>
-          <StoryNarrative storyEvents={storyEvents} />
-          <TimelineView dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
-          {logEntries.length > 0 && <LogStream logEntries={logEntries} />}
-          {/^complete$/i.test(dealCheckpoint.status) && <FinalReport dealCheckpoint={dealCheckpoint} />}
-          <AgentTree dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
-        </div>
+
+          <DealCockpitSidebar
+            workspace={workspace}
+            documents={documents}
+            dealCheckpoint={dealCheckpoint}
+            activeTab={activeTab}
+            onTabChange={(tab) => setActiveTab(tab as WorkspaceTab)}
+            onUploadFiles={(files) => void handleUploadFiles(files)}
+            onExtractDocuments={(targetDocuments) => void handleExtractDocuments(targetDocuments)}
+            onOpenEditDetails={() => onOpenEditDetails?.(dealCheckpoint.dealId)}
+          />
+        </section>
       )}
     </div>
   )

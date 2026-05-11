@@ -25,20 +25,19 @@ Let's bring this industry into the future.
 
 ---
 
-## What's New in v2.1.0
+## What's New in v2.2.0
 
-- **ChatGPT-Backed Codex Runtime** - Run the same markdown agents through the open-source Codex CLI harness with an existing ChatGPT subscription login, from either scripts or the dashboard
-- **In-App ChatGPT Login** - The Workflow Launcher checks local Codex status and exposes a **Login to ChatGPT** button for first-time users
-- **Dashboard Codex Launches** - The Workflow Launcher and phase workspaces can now launch live Codex runs and publish real Codex memos back into the Package view
-- **First-Download Setup** - `npm run setup` prepares offline users cleanly, while `npm run setup -- --require-codex` enforces ChatGPT-authenticated live-agent readiness
-- **Codex Artifact Validation** - `npm run validate:codex` checks raw Codex outputs plus dashboard story events, manifests, and package documents
-- **Open-Source Release Hygiene** - Docs now distinguish local simulation from live Codex data flow, generated runtime artifacts are ignored, and browser/e2e tests are friendlier for contributors
+- **Document-First Front Door** - The dashboard now opens with a large “Drop your deal documents here” surface instead of forcing a full intake wizard before upload.
+- **Quick Draft Creation** - Dropped files open a one-field deal-name modal, save a draft deal, upload files, and route directly to the Documents tab.
+- **Cockpit Sidebar** - The Operator Deal Hub now includes a responsive sidebar showing documents you have, the next action, and phase readiness.
+- **Honest File Scope** - CSV, TXT, and Markdown extract locally; PDFs are stored for review; Excel files are stored and classified while field mapping remains out of scope.
+- **Open-Source Release Hygiene** - Existing selectors and workflows are preserved, the new modal is accessible, transient Windows/OneDrive upload locks retry safely, and E2E coverage now includes the document-first flow.
 
 ---
 
 ## Release Journey
 
-This project has grown in four public steps: first the agent architecture, then a usable dashboard, then a real operator workspace, and now live Codex-backed agent execution.
+This project has grown in five public steps: first the agent architecture, then a usable dashboard, then a real operator workspace, then live Codex-backed agent execution, and now a document-first acquisition cockpit.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -46,6 +45,7 @@ This project has grown in four public steps: first the agent architecture, then 
 | **v1.1.0 - Dashboard Deal Wizard** | Moved setup into the product with a guided New Deal Wizard, saved deal library, launch-ready deal flow, and Playwright coverage for key dashboard paths. | [RELEASE_NOTES_v1.1.0.md](RELEASE_NOTES_v1.1.0.md) |
 | **v2.0.0 - Operator Deal Hub** | Turned the dashboard into a local-first acquisition cockpit with phase workspaces, document intake, source-backed inputs, outcome workflows, presets, and completion packages. | [RELEASE_NOTES_v2.0.0.md](RELEASE_NOTES_v2.0.0.md) |
 | **v2.1.0 - Codex / ChatGPT Workflow Runtime** | Added the optional live-agent path: ChatGPT-authenticated Codex CLI execution, in-app login status, dashboard-launched Codex runs, and release-ready setup validation. | [RELEASE_NOTES_v2.1.0.md](RELEASE_NOTES_v2.1.0.md) |
+| **v2.2.0 - Document-First Acquisition Cockpit** | Made the dashboard front door document-first with quick draft creation, upload-to-documents routing, compact recent deals, and a persistent cockpit sidebar. | [RELEASE_NOTES_v2.2.0.md](RELEASE_NOTES_v2.2.0.md) |
 
 ---
 
@@ -54,7 +54,7 @@ This project has grown in four public steps: first the agent architecture, then 
 | | | | |
 |---|---|---|---|
 | **31** AI Agents | **8** Domain Knowledge Skills | **10** JSON Schema Contracts | **8** Deal Workspace Views |
-| **5** Deal Phases | **5** Outcome Workflows | **65,000+** Lines of Code + Prompts | **252** Files |
+| **5** Deal Phases | **5** Outcome Workflows | **65,000+** Lines of Code + Prompts | **250+** Files |
 
 ---
 
@@ -285,6 +285,8 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 | View | What It Shows |
 |-----|--------------|
 | **Operator Deal Hub** | Deal lifecycle workspace with Overview, Underwriting, Due Diligence, Financing, Legal, Closing, Documents, and Package tabs |
+| **Document Front Door** | First-run homepage drop zone that creates a draft workspace from uploaded deal files before any long-form intake |
+| **Cockpit Sidebar** | Persistent workspace sidebar with required document coverage, one computed next action, and phase readiness |
 | **Workflow Launcher** | Guided `Choose Deal -> Choose Outcome -> Review Inputs -> Runtime -> Run Now` launcher with saved local presets |
 | **Documents** | Local upload, classification, extraction preview, operator approval, and source-backed input tracking |
 | **Run Status** | Phase-by-phase progress, active runtime provider, completion state, findings, and story events |
@@ -295,9 +297,9 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 
 ## Dashboard Preview
 
-The first screen is designed as an operator command center: start a new deal, set the investment criteria, upload source documents, choose the outcome workflow, and review the package from one local-first cockpit.
+The first screen is designed as a document-first acquisition cockpit: drop source files, confirm a deal name, and land in the Documents workspace before filling the detailed intake. The full New Deal Wizard remains available for launch-ready setup and editing.
 
-![New Deal Wizard showing the starting inputs for a CRE acquisition deal](docs/assets/new-deal-start.png)
+![New Deal Wizard showing the detailed inputs for a CRE acquisition deal](docs/assets/new-deal-start.png)
 
 ![Operator Deal Hub overview with current deal, criteria, phase tabs, and source document entry points](docs/assets/operator-deal-hub-overview.png)
 
@@ -388,6 +390,7 @@ npm run codex:run:full
 The Codex runner uses the open-source Codex CLI harness through `codex exec`. It reads the existing markdown agent prompts, runs selected agents with your ChatGPT subscription login, and defaults to a read-only sandbox so live agents can inspect the repo and deal files without changing project files.
 
 From the dashboard you can now:
+- drop source documents on the homepage and create a draft workspace from the files
 - create a new deal in the wizard
 - save drafts to the deal library
 - open the Operator Deal Hub for each deal
@@ -403,13 +406,14 @@ From the dashboard you can now:
 The preferred v2.x path is inside the dashboard:
 
 1. Start the dashboard with `npm run dashboard`
-2. Create or open a deal workspace
-3. Open the **Documents** view
-4. Upload rent rolls, T12s, offering memoranda, LOIs, legal files, PDFs, or XLSX files
+2. Drop rent rolls, T12s, offering memoranda, LOIs, legal files, PDFs, or XLSX files on the homepage
+3. Confirm the draft deal name
+4. Land in the **Documents** view
 5. Run extraction on CSV/TXT/MD documents
 6. Approve selected fields before they update the deal inputs
+7. Use the cockpit sidebar to see missing documents and the next phase action
 
-Uploaded files are stored under `data/deals/{dealId}/documents/`, extraction previews under `data/deals/{dealId}/extractions/`, and approved source-backed fields under `data/deals/{dealId}/approved-fields.json`. Runtime deal data stays local and is ignored by git.
+Uploaded files are stored under `data/deals/{dealId}/documents/`, extraction previews under `data/deals/{dealId}/extractions/`, and approved source-backed fields under `data/deals/{dealId}/approved-fields.json`. Runtime deal data stays local and is ignored by git. PDFs are stored with extraction pending. XLSX files are stored and classified, but source-backed field mapping is not enabled yet.
 
 Legacy drop-folder ingestion prompts remain available for advanced users with their own prompt runner, but the dashboard upload path is now the main operator workflow.
 
@@ -504,6 +508,7 @@ cre-acquisition-orchestrator/
 │   ├── status/                #   Checkpoints, phase state, agent state, event streams
 │   ├── reports/               #   Generated reports and workpapers
 │   └── logs/                  #   Local run logs
+├── RELEASE_NOTES_v2.2.0.md    # v2.2.0 document-first cockpit release notes
 ├── RELEASE_NOTES_v2.1.0.md    # v2.1.0 Codex / ChatGPT workflow release notes
 ├── RELEASE_NOTES_v2.0.0.md    # v2.0.0 Operator Deal Hub release notes
 ├── RELEASE_NOTES_v1.1.0.md    # v1.1.0 Dashboard Deal Wizard release notes

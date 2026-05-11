@@ -77,6 +77,30 @@ export function createEmptyDealForm(suggestedDealId = ''): DealFormData {
   }
 }
 
+function cleanDealName(value: string): string {
+  return value
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+export function createDraftDealFromFiles(
+  fileNames: string[],
+  suggestedName: string,
+  suggestedDealId = '',
+): DealFormData {
+  const firstFileName = fileNames[0] ?? ''
+  const fallbackName = firstFileName
+    .replace(/\.[^.]+$/, '')
+    .replace(/\b(om|t12|rent|roll|final|draft|financials?|memo|offering)\b/gi, ' ')
+  const dealName = cleanDealName(suggestedName) || cleanDealName(fallbackName) || 'New Acquisition Deal'
+
+  return {
+    ...createEmptyDealForm(suggestedDealId),
+    dealName,
+  }
+}
+
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)

@@ -131,10 +131,10 @@ node scripts/orchestrate.js --deal config/deal.json --workflow legal-psa-review 
 ```powershell
 npm run dashboard
 # Open http://localhost:5173
-# Create or open a deal, go to Documents, upload files, extract CSV/TXT/MD, approve fields
+# Drop files on the homepage, confirm the deal name, extract CSV/TXT/MD, approve fields
 ```
 
-Uploaded files and extraction previews stay under `data/deals/{deal-id}/` and are ignored by git.
+Uploaded files and extraction previews stay under `data/deals/{deal-id}/` and are ignored by git. PDFs are stored for review, and Excel files are stored/classified while source-backed field mapping remains out of scope.
 
 ---
 

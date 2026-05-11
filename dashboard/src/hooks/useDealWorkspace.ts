@@ -6,21 +6,12 @@ import type {
   PhaseWorkspaceStatus,
   SourceDocument,
 } from '../types/workspace'
+import { uploadDealDocument } from '../lib/documentUpload'
 
 const API_URL = 'http://localhost:8081'
-const MAX_DOCUMENT_UPLOAD_BYTES = 50 * 1024 * 1024
 
 async function parseJson<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>
-}
-
-function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result || ''))
-    reader.onerror = () => reject(reader.error || new Error('Failed to read file'))
-    reader.readAsDataURL(file)
-  })
 }
 
 export function useDealWorkspace(dealId: string | null | undefined) {
@@ -78,29 +69,12 @@ export function useDealWorkspace(dealId: string | null | undefined) {
 
   async function uploadDocument(file: File): Promise<SourceDocument> {
     if (!dealId) throw new Error('Choose a deal before uploading documents.')
-    if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
-      throw new Error(`${file.name} is larger than the 50 MB local upload limit.`)
-    }
     setWorking(true)
     try {
-      const contentBase64 = await readFileAsBase64(file)
-      const response = await fetch(`${API_URL}/api/deals/${encodeURIComponent(dealId)}/documents`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: file.name,
-          mime: file.type,
-          size: file.size,
-          contentBase64,
-        }),
-      })
-      const payload = await parseJson<{ document?: SourceDocument; error?: string }>(response)
-      if (!response.ok || !payload.document) {
-        throw new Error(payload.error || 'Failed to upload document')
-      }
+      const document = await uploadDealDocument(dealId, file)
       await refreshWorkspace()
       setError(null)
-      return payload.document
+      return document
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       throw err

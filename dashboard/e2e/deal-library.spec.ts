@@ -16,6 +16,8 @@ const READY_DEAL_NAME = 'Playwright Launch Deal'
 const SAMPLE_DEAL_ID = 'demo-pass-001'
 const WORKSPACE_DEAL_ID = 'DEAL-2099-903'
 const WORKSPACE_DEAL_NAME = 'Playwright Operator Hub Deal'
+const RECENT_DEAL_ID = 'DEAL-2099-904'
+const RECENT_DEAL_NAME = 'Playwright Recent Deal'
 
 const API_URL = 'http://127.0.0.1:8081'
 
@@ -247,6 +249,7 @@ test.beforeEach(async ({ request }) => {
   cleanupDealArtifacts(READY_DEAL_ID)
   cleanupDealArtifacts(SAMPLE_DEAL_ID)
   cleanupDealArtifacts(WORKSPACE_DEAL_ID)
+  cleanupDealArtifacts(RECENT_DEAL_ID)
   cleanupGeneratedRuntimeArtifacts(WORKSPACE_DEAL_ID)
   cleanupWorkflowPresets()
   await stopActiveRun(request)
@@ -309,6 +312,73 @@ test('launches a shipped sample deal from the library', async ({ page }) => {
   await expect(page.getByText('Run: Running')).toBeVisible({ timeout: 15_000 })
   await expect(modal).toBeHidden({ timeout: 20_000 })
   await expect(page.getByRole('main').getByRole('heading', { name: 'Riverside Gardens' })).toBeVisible({ timeout: 20_000 })
+
+  expect(consoleErrors).toEqual([])
+})
+
+test('creates a draft from the document-first homepage and uploads the dropped file', async ({ page, request }) => {
+  const consoleErrors = collectConsoleErrors(page)
+
+  await waitForDashboardReady(page)
+  await expect(page.getByTestId('drop-zone-hero')).toContainText('Drop your deal documents here')
+  await expect(page.getByTestId('drop-zone-hero')).toContainText('Excel files are stored and classified')
+
+  await page.getByTestId('drop-zone-input').setInputFiles({
+    name: 'playwright-hero-rent-roll.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from([
+      'Unit,Unit Type,SqFt,Market Rent,Current Rent,Status',
+      '101,1BR/1BA,700,1700,1600,Occupied',
+      '102,1BR/1BA,710,1710,1610,Occupied',
+    ].join('\n')),
+  })
+
+  const quickModal = page.getByTestId('quick-deal-modal')
+  await expect(quickModal).toBeVisible()
+  await quickModal.getByTestId('quick-deal-name-input').fill('Playwright Hero Drop Deal')
+
+  const saveResponsePromise = page.waitForResponse((response) => isApiResponse(response, 'POST', '/api/deals'))
+  await quickModal.getByTestId('quick-deal-create').click()
+  const saveResponse = await saveResponsePromise
+  await expectApiOk(saveResponse)
+  const savePayload = (await saveResponse.json()) as { item: { dealId: string } }
+  const quickDealId = savePayload.item.dealId
+
+  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByTestId('workspace-tab-documents')).toHaveClass(/active/)
+  await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-hero-rent-roll.csv')
+
+  const workspaceResponse = await request.get(`${API_URL}/api/deals/${quickDealId}/workspace`)
+  await expectApiOk(workspaceResponse)
+  const workspace = (await workspaceResponse.json()) as { documents: Array<{ fileName?: string; type?: string }> }
+  expect(workspace.documents.some((doc) => doc.fileName === 'playwright-hero-rent-roll.csv' && doc.type === 'rent_roll')).toBe(true)
+
+  const modal = await openDealLibraryModal(page)
+  await expect(modal.getByTestId(`deal-card-${quickDealId}`)).toContainText('Draft')
+  cleanupDealArtifacts(quickDealId)
+
+  expect(consoleErrors).toEqual([])
+})
+
+test('shows compact recent deals without changing the full deal library modal', async ({ page, request }) => {
+  const consoleErrors = collectConsoleErrors(page)
+
+  await saveLaunchReadyDeal(request, RECENT_DEAL_ID, RECENT_DEAL_NAME)
+  await waitForDashboardReady(page)
+
+  const strip = page.getByTestId('recent-deals-strip')
+  await expect(strip).toBeVisible()
+  await expect(strip.getByTestId(`deal-card-${RECENT_DEAL_ID}`)).toContainText(RECENT_DEAL_NAME)
+
+  await strip.getByTestId(`workspace-docs-${RECENT_DEAL_ID}`).click()
+  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByTestId('workspace-tab-documents')).toHaveClass(/active/)
+
+  await page.getByTestId('header-deals-button').click()
+  const modal = page.getByTestId('deal-library-modal')
+  await expect(modal).toBeVisible()
+  await expect(modal.getByTestId(`deal-card-${RECENT_DEAL_ID}`)).toContainText('Ready')
+  await expect(modal.getByTestId(`launch-deal-${RECENT_DEAL_ID}`)).toBeVisible()
 
   expect(consoleErrors).toEqual([])
 })
@@ -405,6 +475,8 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await waitForOperatorDealHub(page, WORKSPACE_DEAL_NAME)
   await stopActiveRun(request)
 
+  await expect(page.getByTestId('workspace-tab-documents')).toHaveClass(/active/)
+  await page.getByTestId('workspace-tab-overview').click()
   await page.getByTestId('criteria-scenario').selectOption('value-add')
   await page.getByTestId('criteria-target-irr').fill('0.185')
   const criteriaSaveResponse = page.waitForResponse(
@@ -461,6 +533,13 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-rent-roll.csv')
   await expect(page.getByTestId('source-document-t12')).toContainText('playwright-t12-financials.csv')
   await expect(page.getByTestId('source-document-offering_memo')).toContainText('playwright-offering-memo.md')
+  await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('Rent Roll')
+  await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('T12')
+  await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('Environmental')
+  await expect(page.getByTestId('cockpit-next-action')).toContainText('Run extraction')
+  await page.getByTestId('cockpit-phase-underwriting').click()
+  await expect(page.getByTestId('workspace-tab-underwriting')).toHaveClass(/active/)
+  await page.getByTestId('workspace-tab-documents').click()
 
   const extractionPreview = page.getByTestId('extraction-preview')
 
@@ -500,6 +579,8 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await expect(page.getByRole('heading', { name: 'Agent Playbook' })).toBeVisible()
   await expect(documentCoverageStat(page)).toContainText('100%')
   await expect(page.getByText('Required Documents').locator('..')).toContainText('Offering Memo')
+  await page.getByTestId('cockpit-phase-due-diligence').click()
+  await expect(page.getByTestId('workspace-tab-due-diligence')).toHaveClass(/active/)
 
   await page.getByTestId('workspace-tab-due-diligence').click()
   await expect(page.getByTestId('workspace-tab-due-diligence')).toHaveClass(/active/)
@@ -518,6 +599,43 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   const payload = (await status.json()) as { state?: string; workflowId?: string }
   expect(payload.workflowId).toBe('underwriting-refresh')
   expect(['STARTING', 'RUNNING', 'COMPLETED']).toContain(payload.state)
+
+  expect(consoleErrors).toEqual([])
+})
+
+test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, request }) => {
+  const consoleErrors = collectConsoleErrors(page)
+
+  await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
+  await waitForDashboardReady(page)
+  await page.getByTestId(`workspace-docs-${WORKSPACE_DEAL_ID}`).click()
+  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
+  await page.getByTestId('workspace-tab-documents').click()
+  await page.getByTestId('source-document-upload').setInputFiles([
+    {
+      name: 'playwright-title.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4\n% Playwright title fixture\n'),
+    },
+    {
+      name: 'playwright-rent-roll.xlsx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      buffer: Buffer.from('not-a-real-workbook-but-stored-for-status'),
+    },
+  ])
+
+  await expect(page.getByTestId('source-document-title')).toContainText('playwright-title.pdf')
+  await expect(page.getByTestId('source-document-title')).toContainText('Extraction Pending')
+  await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-rent-roll.xlsx')
+  await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('PDF and Excel stay honest')
+
+  const workspaceResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
+  await expectApiOk(workspaceResponse)
+  const workspace = (await workspaceResponse.json()) as {
+    documents: Array<{ fileName?: string; extractionStatus?: string }>
+  }
+  expect(workspace.documents.find((doc) => doc.fileName === 'playwright-title.pdf')?.extractionStatus).toBe('extraction-pending')
+  expect(workspace.documents.find((doc) => doc.fileName === 'playwright-rent-roll.xlsx')?.extractionStatus).toBe('not-started')
 
   expect(consoleErrors).toEqual([])
 })

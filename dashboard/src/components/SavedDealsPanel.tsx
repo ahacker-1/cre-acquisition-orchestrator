@@ -1,12 +1,14 @@
 import type { DealLibraryItem } from '../types/deals'
 
 interface SavedDealsPanelProps {
+  variant?: 'full' | 'compact'
   deals: DealLibraryItem[]
   loading: boolean
   error: string | null
   onEditDeal: (dealId: string) => void
   onOpenWorkspace: (dealId: string, section?: 'overview' | 'documents') => void
   onLaunchDeal: (dealId: string) => void
+  onViewAll?: () => void
   launchingDealId?: string | null
   activeRunDealPath?: string | null
   activeRunState?: string
@@ -144,18 +146,87 @@ function DealCard({
 }
 
 export default function SavedDealsPanel({
+  variant = 'full',
   deals,
   loading,
   error,
   onEditDeal,
   onOpenWorkspace,
   onLaunchDeal,
+  onViewAll,
   launchingDealId,
   activeRunDealPath,
   activeRunState,
 }: SavedDealsPanelProps) {
   const userDeals = deals.filter((item) => item.kind === 'user')
   const sampleDeals = deals.filter((item) => item.kind === 'sample')
+
+  if (variant === 'compact') {
+    const recentDeals = [...userDeals]
+      .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+      .slice(0, 5)
+
+    return (
+      <section className="border border-white/10 bg-cre-surface/60 p-4" data-testid="recent-deals-strip">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="portal-kicker">Recent Deals</p>
+            <h2 className="mt-1 text-lg font-semibold text-white">Pick up where you left off</h2>
+          </div>
+          <div className="flex items-center gap-3">
+            {loading && <span className="text-xs text-gray-500">Refreshing...</span>}
+            <button
+              type="button"
+              className="portal-button portal-button-secondary"
+              onClick={onViewAll}
+            >
+              View All Deals
+            </button>
+          </div>
+        </div>
+        {error && <p className="mt-3 text-xs text-cre-danger">{error}</p>}
+        {recentDeals.length === 0 ? (
+          <div className="mt-4 border border-white/10 bg-black p-4 text-sm text-gray-500">
+            No saved deals yet. Drop a document above to create your first upload workspace.
+          </div>
+        ) : (
+          <div className="mt-4 grid gap-3 lg:grid-cols-3 2xl:grid-cols-5">
+            {recentDeals.map((item) => {
+              const isDraft = item.saveState === 'draft'
+              return (
+                <article
+                  key={item.dealId}
+                  className="border border-white/10 bg-black p-4"
+                  data-testid={`deal-card-${item.dealId}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-semibold text-white">{item.dealName}</h3>
+                      <p className="mt-1 text-xs text-gray-500">{item.dealId}</p>
+                    </div>
+                    <span className={`status-badge ${statusClass(item, activeRunDealPath, activeRunState)}`}>
+                      {statusLabel(item, activeRunDealPath, activeRunState)}
+                    </span>
+                  </div>
+                  <p className="mt-3 truncate text-xs text-gray-500">
+                    {[item.city, item.state].filter(Boolean).join(', ') || item.address || 'Location pending'}
+                  </p>
+                  <button
+                    type="button"
+                    className="portal-button portal-button-primary mt-4 w-full"
+                    onClick={() => (isDraft ? onEditDeal(item.dealId) : onOpenWorkspace(item.dealId, 'documents'))}
+                    data-testid={isDraft ? `edit-deal-${item.dealId}` : `workspace-docs-${item.dealId}`}
+                  >
+                    {isDraft ? 'Continue' : 'Open Docs'}
+                  </button>
+                </article>
+              )
+            })}
+          </div>
+        )}
+      </section>
+    )
+  }
 
   return (
     <div className="space-y-6">
