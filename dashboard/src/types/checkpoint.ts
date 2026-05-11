@@ -138,6 +138,7 @@ export interface LogEntry {
 
 export type RunMode = 'live' | 'fast'
 export type RunSpeed = 'fast' | 'normal' | 'slow'
+export type RuntimeProvider = 'simulation' | 'codex'
 export type RunLifecycleState = 'IDLE' | 'STARTING' | 'RUNNING' | 'STOPPING' | 'COMPLETED' | 'FAILED' | 'STOPPED'
 
 export interface RunStatus {
@@ -145,9 +146,10 @@ export interface RunStatus {
   runId: string | null
   dealPath: string | null
   workflowId: string | null
-  runtimeProvider: 'simulation' | null
+  runtimeProvider: RuntimeProvider | null
   presetId: string | null
   inputSnapshotPath: string | null
+  outputPath: string | null
   state: RunLifecycleState
   mode: RunMode | null
   speed: RunSpeed | null
@@ -243,7 +245,12 @@ export interface StartRunRequestPayload {
   scenario?: string
   seed?: number
   workflowId?: string
-  runtimeProvider?: 'simulation'
+  runtimeProvider?: RuntimeProvider
   presetId?: string
   inputSnapshotPath?: string
+  codexMaxAgents?: number | null
+  codexConcurrency?: number | null
+  codexSandbox?: string | null
+  codexModel?: string | null
+  codexSearch?: boolean
 }

@@ -10,42 +10,41 @@ Complete this checklist 30 minutes before every demo to ensure a smooth presenta
 
 - [ ] Open a terminal window
 - [ ] Navigate to the project directory:
-  ```bash
-  cd cre-acquisition
+  ```powershell
+  cd C:\path\to\cre-acquisition-orchestrator
   ```
 - [ ] Verify Node.js is installed:
-  ```bash
+  ```powershell
   node --version
   # Should show v18.x.x or higher
   ```
 
-### 2. Dashboard Dependencies
+### 2. Setup and Codex Check
 
-- [ ] Navigate to dashboard directory:
-  ```bash
-  cd dashboard
-  ```
-- [ ] Verify dependencies are installed:
-  ```bash
-  npm list --depth=0
-  # Should show installed packages without errors
-  ```
-- [ ] If errors, reinstall:
-  ```bash
+- [ ] Install dependencies from the repo root:
+  ```powershell
   npm install
+  ```
+- [ ] Run setup:
+  ```powershell
+  npm run setup
+  ```
+- [ ] Optional for live agents, verify Codex status:
+  ```powershell
+  npm run codex:status
   ```
 
 ### 3. Deal Configuration
 
 - [ ] Verify deal config exists and is valid JSON:
-  ```bash
-  cat ../config/deal.json | head -20
+  ```powershell
+  Get-Content config/deal.json -TotalCount 20
   # Should display JSON without syntax errors
   ```
 - [ ] For Parkview demo, ensure this file contains the Parkview deal
-- [ ] Alternatively, copy a sample deal:
-  ```bash
-  cp ../demo/deals/riverside-gardens.json ../config/deal.json
+- [ ] Alternatively, copy the blank example deal:
+  ```powershell
+  Copy-Item config/deal-example.json config/deal.json
   ```
 
 ---
@@ -54,9 +53,9 @@ Complete this checklist 30 minutes before every demo to ensure a smooth presenta
 
 ### 4. Start the Dashboard
 
-- [ ] From the `dashboard` directory, run:
-  ```bash
-  npm run dev
+- [ ] From the repo root, run:
+  ```powershell
+  npm run dashboard
   ```
 - [ ] Wait for the "ready" message:
   ```
@@ -88,17 +87,16 @@ Complete this checklist 30 minutes before every demo to ensure a smooth presenta
 ### 7. Deal Data Check
 
 In the dashboard, verify:
-- [ ] Deal name displays correctly in header
+- [ ] Deal library or sample deal workspace displays correctly
 - [ ] No error messages in the main content area
-- [ ] "No Active Deal" message appears if pipeline hasn't started
-  (This is expected - you'll launch during the demo)
+- [ ] Workflow Launcher, Documents, and Package views open without console errors
 
 ### 8. Sample Files Available
 
 Verify these files exist and are accessible:
 - [ ] `config/deal.json` - Main deal configuration
-- [ ] `demo/deals/riverside-gardens.json` - PASS scenario
-- [ ] `demo/deals/oakwood-terrace.json` - FAIL scenario
+- [ ] `config/deal-example.json` - Blank deal template
+- [ ] `data/examples/parkview-2026-001/reports/final-report.md` - Sample completed output
 - [ ] `demo/scripts/executive-demo.md` - Demo script
 
 ---
@@ -117,26 +115,26 @@ If you need to show results without running live:
 Know these commands for quick recovery:
 
 **Dashboard won't load:**
-```bash
+```powershell
 # Kill any processes on port 5173
 npx kill-port 5173
 # Restart dashboard
-npm run dev
+npm run dashboard
 ```
 
 **Need to restart fresh:**
-```bash
+```powershell
 # Clear any stale state
-rm -rf data/status/*.json
-rm -rf data/logs/*
+Remove-Item data/status/*.json -Force -ErrorAction SilentlyContinue
+Remove-Item data/logs/* -Recurse -Force -ErrorAction SilentlyContinue
 # Restart dashboard
-npm run dev
+npm run dashboard
 ```
 
 **Pipeline seems stuck:**
-```bash
+```powershell
 # Check the logs
-tail -50 data/logs/*/master.log
+Get-ChildItem data/logs -Recurse -Filter master.log | Select-Object -First 1 | Get-Content -Tail 50
 # The checkpoint system means you can resume
 ```
 
@@ -166,7 +164,7 @@ tail -50 data/logs/*/master.log
 ### 13. Quick Functional Test
 
 - [ ] Refresh the dashboard page
-- [ ] Click through each tab: Pipeline, Agent Tree, Logs, Findings, Timeline
+- [ ] Click through the Operator Deal Hub: Overview, Workflows, Documents, and Package
 - [ ] Verify no JavaScript errors in browser console (F12 → Console)
 
 ### 14. Presenter Prep
@@ -188,13 +186,18 @@ tail -50 data/logs/*/master.log
 
 | Action | Command |
 |--------|---------|
-| Start dashboard | `cd dashboard && npm run dev` |
+| First setup | `npm install` then `npm run setup` |
+| Start dashboard | `npm run dashboard` |
+| Offline demo | `npm run demo` |
+| Codex status | `npm run codex:status` |
+| Live Codex smoke | `npm run codex:smoke` |
+| Live Codex run | `npm run codex:run` |
 | Check Node version | `node --version` |
 | Reinstall deps | `npm install` |
 | Kill port 5173 | `npx kill-port 5173` |
-| View deal config | `cat config/deal.json` |
-| Copy sample deal | `cp demo/deals/riverside-gardens.json config/deal.json` |
-| Check latest logs | `tail -50 data/logs/*/master.log` |
+| View deal config | `Get-Content config/deal.json` |
+| Copy blank deal template | `Copy-Item config/deal-example.json config/deal.json` |
+| Check latest logs | `Get-ChildItem data/logs -Recurse -Filter master.log | Select-Object -First 1 | Get-Content -Tail 50` |
 
 ---
 
@@ -204,7 +207,7 @@ tail -50 data/logs/*/master.log
 
 **Quick fix:** Refresh the page. If still disconnected:
 1. Check terminal - is the dev server running?
-2. Restart: `npm run dev`
+2. Restart: `npm run dashboard`
 3. Refresh browser
 
 ### Pipeline Not Starting

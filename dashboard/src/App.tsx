@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useCheckpointData } from './hooks/useCheckpointData'
 import ErrorBoundary from './components/ErrorBoundary'
 import DealIntakeWizard from './components/DealIntakeWizard'
@@ -266,6 +266,12 @@ export default function App() {
         return 'Idle'
     }
   })()
+  const runProviderLabel =
+    runStatus.runtimeProvider === 'codex'
+      ? 'Codex'
+      : runStatus.runtimeProvider === 'simulation'
+        ? 'Simulation'
+        : null
 
   function recommendedScenarioForDeal(item: DealLibraryItem): 'core-plus' | 'value-add' | 'distressed' {
     if (item.investmentStrategy === 'value-add') return 'value-add'
@@ -334,6 +340,14 @@ export default function App() {
 
   const visibleDealCheckpoint = workspaceCheckpoint ?? dealCheckpoint
   const showingManualWorkspace = Boolean(workspaceCheckpoint)
+  const visibleStoryEvents = useMemo(() => {
+    if (!visibleDealCheckpoint) return []
+    return storyEvents.filter((event) => event.dealId === visibleDealCheckpoint.dealId)
+  }, [storyEvents, visibleDealCheckpoint])
+  const visibleDocumentArtifacts = useMemo(() => {
+    if (!visibleDealCheckpoint) return []
+    return documentArtifacts.filter((artifact) => artifact.dealId === visibleDealCheckpoint.dealId)
+  }, [documentArtifacts, visibleDealCheckpoint])
 
   return (
     <div className="min-h-screen bg-cre-bg text-gray-100">
@@ -362,7 +376,7 @@ export default function App() {
               }`}
             />
             <span className="text-gray-400">
-              Run: {runStateLabel}
+              Run: {runStateLabel}{runProviderLabel ? ` / ${runProviderLabel}` : ''}
             </span>
           </div>
 
@@ -472,8 +486,8 @@ export default function App() {
               dealCheckpoint={visibleDealCheckpoint}
               agentCheckpoints={showingManualWorkspace ? new Map() : agentCheckpoints}
               logEntries={showingManualWorkspace ? [] : logEntries}
-              storyEvents={showingManualWorkspace ? [] : storyEvents}
-              documentArtifacts={showingManualWorkspace ? [] : documentArtifacts}
+              storyEvents={visibleStoryEvents}
+              documentArtifacts={visibleDocumentArtifacts}
               deals={deals}
               initialTab={workspaceInitialTab}
               onLaunchStarted={handleWorkflowLaunchStarted}

@@ -9,17 +9,19 @@ Symptom-based troubleshooting guide for the CRE Acquisition Orchestration System
 | Symptom | Likely Cause | Fix |
 |---------|-------------|-----|
 | Pipeline won't start | Invalid or incomplete `deal.json` | Run pre-flight validation. Ensure all REQUIRED fields are populated. See [Deal Configuration](DEAL-CONFIGURATION.md) for field-by-field requirements. |
-| Agent hangs / never completes | Context window exhaustion or infinite loop | Resume from checkpoint. The agent may have hit the token limit. Re-launch the master orchestrator with `resume=true`; it will pick up from the last checkpoint. |
-| Dashboard shows no data | Watcher process not started | Start the dashboard with `cd dashboard && npm run dev`. The watcher on port 8080 must be running to feed data to the UI. |
-| Dashboard shows "Disconnected" | WebSocket connection lost between browser and watcher | Refresh the browser. If the issue persists, restart the watcher: stop the process and run `npm run dev` again. |
-| Checkpoint shows "failed" | Agent encountered an unrecoverable error | Check the phase log at `data/logs/{deal-id}/{phase}.log` for the ERROR entry. Fix the underlying issue (usually missing data), then resume the pipeline. |
+| Agent hangs / never completes | Context window exhaustion, a stalled live Codex run, or an interrupted deterministic run | For deterministic runs, resume with `node scripts/orchestrate.js --deal config/deal.json --resume`. For live Codex runs, inspect `data/codex-runs/{runId}/` and rerun the selected workflow. |
+| Dashboard shows no data | Watcher process not started or no run has been generated yet | Run `npm run demo`, then start the dashboard with `npm run dashboard`. |
+| Dashboard shows "Disconnected" | WebSocket connection lost between browser and watcher | Refresh the browser. If the issue persists, restart the watcher with `npm run dashboard`. |
+| `npm run codex:status` does not show ChatGPT login | Codex CLI is missing or authenticated with a different method | In the dashboard, choose Codex / ChatGPT and click **Login to ChatGPT**. Or run `codex login`, choose ChatGPT, then rerun `npm run codex:status`. |
+| Codex run completes but package artifacts are missing | Run was not launched from the dashboard, or the deal/run ID does not match the open workspace | Inspect `data/codex-runs/{runId}/` for raw outputs and `data/status/{dealId}/run-{runId}-documents.json` for Package-view artifacts. |
+| Checkpoint shows "failed" | Agent encountered an unrecoverable error | Check `data/logs/{deal-id}/master.log` and the relevant files under `data/status/{deal-id}/agents/`. Fix the underlying issue, then resume with `node scripts/orchestrate.js --deal config/deal.json --resume`. |
 | Missing phase data | Upstream phase incomplete or skipped | Verify all prior phases show status COMPLETE in `data/status/{deal-id}.json`. The master orchestrator enforces sequential phase dependencies. |
 | "File not found" errors | Mismatched deal-id or incorrect file paths | Confirm `dealId` in `config/deal.json` matches the directory names under `data/status/` and `data/logs/`. Paths are case-sensitive. |
 | Agent produces empty output | Missing input data from upstream agent or deal config | Check the agent's `inputs` field in `config/agent-registry.json`. Verify each required input file exists and contains data. |
 | Scores don't match expectations | Threshold configuration misaligned with strategy | Review `config/thresholds.json`. Ensure `investmentStrategy` in `deal.json` matches the intended thresholds under `strategyThresholds`. See [Threshold Customization](THRESHOLD-CUSTOMIZATION.md). |
 | Resume skips agents that should re-run | Stale checkpoint marks agent as complete | Delete the specific agent checkpoint file at `data/status/{deal-id}/agents/{agent-name}.json` and re-run the pipeline. The orchestrator will treat that agent as not started. |
 | Agent reports LOW confidence on everything | Critical source documents missing | Check `data_quality_notes` and `uncertainty_flags` in the agent output. Provide the missing source documents (rent roll, T-12, Phase I ESA, etc.) and re-run. |
-| Multiple agents fail simultaneously | Deal config missing critical fields | Run the validation suite: read `validation/validation-runner.md` and launch as a Task agent against your deal config. It will identify all missing or malformed fields. |
+| Multiple agents fail simultaneously | Deal config missing critical fields | Run `npm run demo` on the sample deal to verify the install, then compare your deal config against [Deal Configuration](DEAL-CONFIGURATION.md). |
 | Pipeline completes but no final report | Report generation agent failed silently | Check `data/logs/{deal-id}/closing.log` for errors. Verify that all phase output files exist under `data/phase-outputs/`. |
 | Scenario analysis shows 0/27 passing | Unrealistic deal parameters | Review `config/deal.json` financial inputs. Common causes: asking price too high relative to NOI, estimated rate too high, or target returns set unrealistically. |
 
@@ -123,7 +125,10 @@ To clear all checkpoints and start the pipeline from scratch:
    Reset data/status/<deal-id>.json to initial template
    ```
 
-8. **Re-launch the master orchestrator** without the `resume=true` flag
+8. **Re-run the pipeline**:
+   ```powershell
+   npm run demo
+   ```
 
 ### Partial Reset
 
@@ -137,7 +142,10 @@ To re-run only a specific phase:
 
 2. Update the master checkpoint to set that phase's status back to `NOT_STARTED`
 
-3. Re-launch the master orchestrator with `resume=true` -- it will detect the incomplete phase and re-run it
+3. Resume the deterministic runner:
+   ```powershell
+   node scripts/orchestrate.js --deal config/deal.json --resume --from-phase <phase>
+   ```
 
 **Note**: Re-running an upstream phase does NOT automatically re-run downstream phases. If you re-run Due Diligence, you should also clear Underwriting checkpoints since they depend on DD outputs.
 
@@ -238,12 +246,14 @@ If an agent exceeds its timeout, the orchestrator will record the agent as FAILE
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Blank page at localhost:5173 | Vite dev server not running | Run `cd dashboard && npm run dev` |
-| "Cannot find module" on npm run dev | Dependencies not installed | Run `cd dashboard && npm install` first |
+| Blank page at localhost:5173 | Vite dev server not running | Run `npm run dashboard` |
+| "Cannot find module" on dashboard start | Dependencies not installed | Run `npm run setup` first |
 | Port 5173 already in use | Another process using the port | Kill the existing process or change the port in `dashboard/vite.config.ts` |
-| Port 8080 already in use | Another process using the watcher port | Kill the existing process or change the port in `dashboard/watcher/index.js` |
+| Port 8080 already in use | Another process using the watcher port | Kill the existing process or change the port in `dashboard/server/watcher.ts` |
 | Phase progress stuck at 0% | Watcher cannot find checkpoint files | Verify `data/status/{deal-id}.json` exists and the watcher is configured to watch the correct deal-id |
 | Log viewer empty | No log files written yet | Logs are created when agents start running. Launch the pipeline first. |
+| Codex run button fails immediately | Codex CLI is missing or not logged in | In the Workflow Launcher, choose Codex / ChatGPT and click **Login to ChatGPT**. Or run `npm run codex:status`, then `codex login` and choose ChatGPT. |
+| Package tab is empty after a Codex run | Browser is viewing a different deal or stale run | Reopen the deal workspace and verify `data/status/{deal-id}/run-{run-id}-documents.json` exists. |
 
 For more dashboard details, see [Dashboard Setup](DASHBOARD-SETUP.md).
 
@@ -251,19 +261,30 @@ For more dashboard details, see [Dashboard Setup](DASHBOARD-SETUP.md).
 
 ## Validation Suite
 
-Before running a real deal, validate the system setup:
+Before running a real deal, validate the system setup with the offline demo:
 
-1. Read `validation/validation-runner.md`
-2. Launch it as a Task agent against `validation/test-deal.json`
-3. The validation suite checks:
-   - All agent prompt files exist and are readable
-   - All config files parse correctly
-   - The deal.json schema is valid
-   - All required directories exist
-   - Threshold values are internally consistent
-   - Agent registry references resolve to actual files
+```powershell
+npm run demo
+npm run validate
+```
+
+`npm run validate` expects generated checkpoint files, so run `npm run demo` or a dashboard workflow first. The validation checks:
+
+- All agent prompt files exist and are readable
+- All config files parse correctly
+- The deal.json schema is valid
+- All required directories exist
+- Threshold values are internally consistent
+- Agent registry references resolve to actual files
 
 This catches configuration errors before they cause pipeline failures.
+
+After a live smoke run, validate the Codex output and dashboard package contract too:
+
+```powershell
+npm run codex:smoke
+npm run validate:codex
+```
 
 ---
 
@@ -272,7 +293,7 @@ This catches configuration errors before they cause pipeline failures.
 If you cannot resolve an issue:
 
 1. **Collect diagnostics**: Master checkpoint, phase logs, the failing agent's checkpoint
-2. **Check the deal config**: Run the validation suite to rule out config issues
+2. **Check the deal config**: Run `npm run demo` and `npm run validate` to rule out config issues
 3. **Review thresholds**: Ensure thresholds match the deal's investment strategy
 4. **Check cross-references**: See [Architecture](ARCHITECTURE.md) for system structure and data flow
 

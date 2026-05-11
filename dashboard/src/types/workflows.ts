@@ -1,4 +1,4 @@
-import type { RunMode, RunSpeed } from './checkpoint'
+import type { RunMode, RunSpeed, RuntimeProvider } from './checkpoint'
 import type { DealLibraryItem, LaunchScenario } from './deals'
 
 export type WorkflowId = string
@@ -29,7 +29,11 @@ export interface WorkflowPresetInputs {
   scenario: LaunchScenario
   speed: RunSpeed
   mode: WorkflowLaunchMode
+  runtimeProvider: RuntimeProvider
   reset: boolean
+  codexMaxAgents?: number | null
+  codexConcurrency?: number | null
+  codexSearch?: boolean
   notes?: string
   tags?: string[]
 }
@@ -67,6 +71,10 @@ export interface WorkflowLaunchRequest {
   speed: RunSpeed
   scenario: LaunchScenario
   reset: boolean
+  runtimeProvider: RuntimeProvider
+  codexMaxAgents?: number | null
+  codexConcurrency?: number | null
+  codexSearch?: boolean
   notes?: string
 }
 
@@ -90,6 +98,7 @@ export interface WorkflowLaunchResponse {
     path: string
     sourceCoverage?: Record<string, number>
   }
+  outputPath?: string | null
 }
 
 export interface WorkflowSelectionDraft extends WorkflowPresetInputs {

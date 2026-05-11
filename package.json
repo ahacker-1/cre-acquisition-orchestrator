@@ -1,6 +1,6 @@
 {
   "name": "cre-acquisition-orchestrator",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Multi-agent AI orchestration framework for commercial real estate acquisitions",
   "author": "Avi Hacker",
   "license": "Apache-2.0",
@@ -18,12 +18,20 @@
     "agent-orchestration"
   ],
   "scripts": {
+    "setup": "node scripts/setup.js",
+    "first-run": "node scripts/setup.js --with-demo",
     "demo": "node scripts/demo-run.js --deal config/deal.json --scenario core-plus --seed 42",
     "simulate": "node scripts/orchestrate.js --deal config/deal.json --scenario core-plus --seed 42",
-    "dashboard": "cd dashboard && npm install && npm run dev",
+    "dashboard": "npm --prefix dashboard install && npm --prefix dashboard run dev",
+    "dev": "npm run dashboard",
     "validate": "node scripts/validate-contracts.js",
+    "validate:codex": "node scripts/validate-contracts.js --codex-run-id codex-smoke",
     "test": "node scripts/system-test.js",
-    "test:e2e": "cd dashboard && npm run test:e2e"
+    "test:e2e": "npm --prefix dashboard run test:e2e",
+    "codex:status": "node scripts/codex-status.js",
+    "codex:smoke": "node scripts/codex-agent-runner.js --workflow underwriting-refresh --max-agents 1 --concurrency 1 --run-id codex-smoke",
+    "codex:run": "node scripts/codex-agent-runner.js --workflow quick-deal-screen --concurrency 2",
+    "codex:run:full": "node scripts/codex-agent-runner.js --workflow full-acquisition-review --concurrency 3"
   },
   "engines": {
     "node": ">=18.0.0"

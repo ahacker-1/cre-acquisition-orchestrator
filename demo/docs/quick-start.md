@@ -12,12 +12,20 @@ Before you begin, ensure you have:
 - [ ] Git (for cloning the repository)
 - [ ] A modern web browser (Chrome recommended)
 - [ ] Terminal/command line access
+- [ ] Optional: Codex CLI signed in with ChatGPT for live AI agents
+
+From the repo root, run:
+
+```powershell
+npm install
+npm run setup
+```
 
 ---
 
 ## Step 1: Configure Your Deal
 
-Edit `config/deal.json` with your property details.
+The repo ships with `config/deal.json` already populated for the Parkview Apartments sample. Keep it as-is for the fastest first run, or copy `config/deal-example.json` and edit it for your own property.
 
 ### Required Fields
 
@@ -45,69 +53,64 @@ Edit `config/deal.json` with your property details.
 }
 ```
 
-### Sample Deals
+Copy the blank example to start a new deal:
 
-For testing, use one of our pre-configured sample deals:
-
-| Deal | File | Expected Result |
-|------|------|-----------------|
-| Parkview Apartments | `demo/deals/parkview.json` | CONDITIONAL |
-| Riverside Gardens | `demo/deals/riverside-gardens.json` | PASS |
-| Oakwood Terrace | `demo/deals/oakwood-terrace.json` | FAIL |
-
-Copy a sample deal to `config/deal.json`:
-```bash
-cp demo/deals/riverside-gardens.json config/deal.json
+```powershell
+Copy-Item config/deal-example.json config/deal.json
 ```
 
 ---
 
 ## Step 2: Launch the Dashboard
 
-Open a terminal and navigate to the dashboard directory:
-
-```bash
-cd cre-acquisition/dashboard
-```
-
-Install dependencies (first time only):
-
-```bash
-npm install
-```
-
 Start the dashboard:
 
-```bash
-npm run dev
+```powershell
+npm run dashboard
 ```
 
 The dashboard will be available at: **http://localhost:5173**
 
 ### What You'll See
 
-- **Header**: Deal name and connection status
-- **Pipeline View**: 5 phases with progress indicators
-- **Tabs**: Pipeline, Agent Tree, Logs, Findings, Timeline
+- **Operator Deal Hub**: Deal library and lifecycle workspace
+- **Workflow Launcher**: Choose a deal, outcome, runtime, and launch settings
+- **Documents**: Upload source files, extract CSV/TXT/MD data, and approve fields
+- **Package**: Final reports, workpapers, story events, document manifests, and recommendations
 
 ---
 
 ## Step 3: Run the Analysis
 
-### Option A: Launch via Claude Code
+### Option A: Offline Demo
 
-In Claude Code, read and launch the master orchestrator:
-
-```
-Read the master orchestrator prompt from cre-acquisition/orchestrators/master-orchestrator.md
-and launch it with the deal configuration from config/deal.json
+```powershell
+npm run demo
 ```
 
-### Option B: Launch Script (if available)
+### Option B: Live Codex Agents
 
-```bash
-node scripts/launch-deal.js
+If `npm run setup` did not finish Codex login, use either path:
+
+- Dashboard: choose **Codex / ChatGPT** in the Workflow Launcher and click **Login to ChatGPT**
+- CLI:
+
+```powershell
+codex login
+npm run codex:status
 ```
+
+Choose **Sign in with ChatGPT** during login.
+
+The dashboard button starts the local Codex CLI login flow and reports status only. It does not store or expose credentials in the repo.
+
+```powershell
+npm run codex:status
+npm run codex:smoke
+npm run codex:run
+```
+
+CLI Codex runs write raw outputs to `data/codex-runs/{runId}/`. Dashboard-launched Codex runs also publish Package-view artifacts under `data/status/{dealId}/run-{runId}-*.{ndjson,json}`.
 
 ### Monitoring Progress
 
@@ -125,13 +128,13 @@ Watch the dashboard as the pipeline executes:
 
 ### During Analysis
 
-- **Logs Tab**: Real-time activity stream
-- **Findings Tab**: Issues and metrics as they're discovered
-- **Agent Tree Tab**: Hierarchical view of active agents
+- **Overview**: Current run status, source coverage, and selected workflow
+- **Phase Workspaces**: Phase-specific playbooks, required documents, and launch controls
+- **Package**: Workpapers, findings, decision log, document manifest, source-backed input coverage, and final recommendation
 
 ### After Completion
 
-- **Final Report Tab**: Appears when analysis completes
+- **Package View**: Updates when a simulation or dashboard Codex run completes
 - **Decision Card**: One-page executive summary
 - **Full Report**: Detailed findings in `data/reports/{deal-id}/`
 
@@ -139,9 +142,9 @@ Watch the dashboard as the pipeline executes:
 
 | Verdict | Meaning |
 |---------|---------|
-| **PASS** | Deal meets all investment criteria. Proceed with acquisition. |
+| **PASS** | Deal meets the configured investment criteria. Review source support before proceeding. |
 | **CONDITIONAL** | Deal is viable with specific conditions. Review and address conditions. |
-| **FAIL** | Deal has dealbreakers or fails critical thresholds. Do not proceed. |
+| **FAIL** | Deal has dealbreakers or fails critical thresholds. Review before spending more diligence time. |
 
 ---
 
@@ -149,7 +152,7 @@ Watch the dashboard as the pipeline executes:
 
 ### Dashboard won't connect
 
-1. Verify the development server is running (`npm run dev`)
+1. Verify the development server is running (`npm run dashboard`)
 2. Check that port 5173 is not blocked
 3. Try refreshing the browser
 
@@ -182,10 +185,15 @@ See [Known Issues](../known-issues.md) for detailed troubleshooting.
 
 | Task | Command |
 |------|---------|
-| Start dashboard | `cd dashboard && npm run dev` |
-| Copy sample deal | `cp demo/deals/riverside-gardens.json config/deal.json` |
-| View logs | Dashboard → Logs tab |
-| View results | Dashboard → Final Report tab |
+| First setup | `npm install` then `npm run setup` |
+| Start dashboard | `npm run dashboard` |
+| Offline demo | `npm run demo` |
+| Codex status | `npm run codex:status` |
+| Live Codex smoke | `npm run codex:smoke` |
+| Live Codex run | `npm run codex:run` |
+| Copy blank deal template | `Copy-Item config/deal-example.json config/deal.json` |
+| View logs | Dashboard status and files under `data/logs/` |
+| View results | Dashboard Package view |
 | Resume interrupted | Pipeline resumes automatically from checkpoint |
 
 **Dashboard URL**: http://localhost:5173

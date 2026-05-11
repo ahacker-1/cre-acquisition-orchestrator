@@ -18,6 +18,7 @@ import type {
   DealCheckpoint,
   DocumentArtifact,
   LogEntry,
+  RuntimeProvider,
   StoryEvent,
 } from '../types/checkpoint'
 import type { DealLibraryItem } from '../types/deals'
@@ -75,6 +76,17 @@ const DOCUMENT_LABELS: Record<string, string> = {
   closing_statement: 'Closing Statement',
   other: 'Other',
 }
+
+const RUNTIME_OPTIONS: { value: RuntimeProvider; label: string }[] = [
+  { value: 'simulation', label: 'Simulation' },
+  { value: 'codex', label: 'Codex / ChatGPT' },
+]
+
+const CODEX_AGENT_LIMITS: { value: string; label: string }[] = [
+  { value: '1', label: '1 agent' },
+  { value: '2', label: '2 agents' },
+  { value: '', label: 'All selected' },
+]
 
 function formatNumber(value: number | null | undefined, suffix = ''): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '--'
@@ -520,6 +532,12 @@ function PhaseWorkspaceView({
   onChecklist,
   onLaunch,
   launching,
+  runtimeProvider,
+  onRuntimeProviderChange,
+  codexMaxAgents,
+  onCodexMaxAgentsChange,
+  codexConcurrency,
+  onCodexConcurrencyChange,
 }: {
   dealCheckpoint: DealCheckpoint
   agentCheckpoints: Map<string, AgentCheckpoint>
@@ -528,9 +546,16 @@ function PhaseWorkspaceView({
   onChecklist: (phaseSlug: string, checklist: Record<string, 'pending' | 'complete'>) => Promise<unknown>
   onLaunch: (phaseSlug: string) => Promise<void>
   launching: boolean
+  runtimeProvider: RuntimeProvider
+  onRuntimeProviderChange: (runtimeProvider: RuntimeProvider) => void
+  codexMaxAgents: number | null
+  onCodexMaxAgentsChange: (maxAgents: number | null) => void
+  codexConcurrency: number
+  onCodexConcurrencyChange: (concurrency: number) => void
 }) {
   const runtimePhase = phaseFromCheckpoint(dealCheckpoint, phase)
   const phaseDocs = documents.filter((doc) => doc.phase === phase.phaseSlug)
+  const isCodexRun = runtimeProvider === 'codex'
   const coverage = phase.requiredDocuments.length === 0
     ? 100
     : Math.round((phase.uploadedDocuments.length / phase.requiredDocuments.length) * 100)
@@ -564,6 +589,53 @@ function PhaseWorkspaceView({
               <strong>{phaseProgress(dealCheckpoint, phase)}%</strong>
               <span>Runtime</span>
             </div>
+          </div>
+          <div className="mt-4 grid gap-3">
+            <label className="portal-field">
+              <span>Runtime</span>
+              <select
+                data-testid={`phase-runtime-provider-select-${phase.phaseSlug}`}
+                value={runtimeProvider}
+                onChange={(event) => onRuntimeProviderChange(event.target.value as RuntimeProvider)}
+              >
+                {RUNTIME_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {isCodexRun && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="portal-field">
+                  <span>Codex Agents</span>
+                  <select
+                    data-testid={`phase-codex-agent-limit-select-${phase.phaseSlug}`}
+                    value={typeof codexMaxAgents === 'number' && codexMaxAgents > 0 ? String(codexMaxAgents) : ''}
+                    onChange={(event) =>
+                      onCodexMaxAgentsChange(event.target.value === '' ? null : Number(event.target.value))
+                    }
+                  >
+                    {CODEX_AGENT_LIMITS.map((option) => (
+                      <option key={option.value || 'all'} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="portal-field">
+                  <span>Codex Concurrency</span>
+                  <input
+                    data-testid={`phase-codex-concurrency-input-${phase.phaseSlug}`}
+                    type="number"
+                    min={1}
+                    max={4}
+                    value={codexConcurrency}
+                    onChange={(event) => onCodexConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
+                  />
+                </label>
+              </div>
+            )}
           </div>
           <button
             type="button"
@@ -739,6 +811,9 @@ export default function DealWorkspace({
   } = useDealWorkspace(dealCheckpoint.dealId)
   const { launchWorkflow, launchingWorkflowId } = useWorkflows()
   const [launchMessage, setLaunchMessage] = useState<string | null>(null)
+  const [phaseRuntimeProvider, setPhaseRuntimeProvider] = useState<RuntimeProvider>('simulation')
+  const [phaseCodexMaxAgents, setPhaseCodexMaxAgents] = useState<number | null>(1)
+  const [phaseCodexConcurrency, setPhaseCodexConcurrency] = useState(1)
 
   useEffect(() => {
     setActiveTab(initialTab)
@@ -767,14 +842,17 @@ export default function DealWorkspace({
         scenario: criteria?.scenario ?? 'core-plus',
         speed: 'fast',
         mode: 'live',
+        runtimeProvider: phaseRuntimeProvider,
         reset: false,
+        codexMaxAgents: phaseRuntimeProvider === 'codex' ? phaseCodexMaxAgents : undefined,
+        codexConcurrency: phaseRuntimeProvider === 'codex' ? phaseCodexConcurrency : undefined,
         notes: criteria?.notes,
       })
       const sourceCount = response.inputSnapshot?.sourceCoverage?.sourceDocumentCount
       setLaunchMessage(
-        `Workflow launched: ${workflowId}${
+        `Workflow launched: ${workflowId} / ${phaseRuntimeProvider}${
           typeof sourceCount === 'number' ? ` / ${sourceCount} source docs captured` : ''
-        }`,
+        }${response.outputPath ? ` / output ${response.outputPath}` : ''}`,
       )
       onLaunchStarted?.(response)
     } catch (err) {
@@ -879,6 +957,12 @@ export default function DealWorkspace({
           onChecklist={savePhaseChecklist}
           onLaunch={handlePhaseLaunch}
           launching={launchingWorkflowId !== null}
+          runtimeProvider={phaseRuntimeProvider}
+          onRuntimeProviderChange={setPhaseRuntimeProvider}
+          codexMaxAgents={phaseCodexMaxAgents}
+          onCodexMaxAgentsChange={setPhaseCodexMaxAgents}
+          codexConcurrency={phaseCodexConcurrency}
+          onCodexConcurrencyChange={setPhaseCodexConcurrency}
         />
       )}
 

@@ -11,16 +11,20 @@ async function waitForUrl(url, timeoutMs, label) {
   const deadline = Date.now() + timeoutMs
 
   while (Date.now() < deadline) {
-    try {
-      const response = await fetch(url)
-      if (response.ok) return
-    } catch {
-      // Retry until timeout.
-    }
+    if (await isUrlReady(url)) return
     await sleep(500)
   }
 
   throw new Error(`Timed out waiting for ${label} at ${url}`)
+}
+
+async function isUrlReady(url) {
+  try {
+    const response = await fetch(url)
+    return response.ok
+  } catch {
+    return false
+  }
 }
 
 function quoteArg(arg) {
@@ -71,10 +75,25 @@ async function killProcessTree(child) {
 }
 
 async function main() {
-  const watcher = spawnLogged(npxCommand, ['tsx', 'server/watcher.ts'], { label: 'watcher' })
-  const client = spawnLogged(npxCommand, ['vite', '--host', '127.0.0.1', '--port', '4173', '--strictPort'], {
-    label: 'vite',
-  })
+  const watcherUrl = 'http://127.0.0.1:8081/api/run/status'
+  const clientUrl = 'http://127.0.0.1:4173'
+  const watcherAlreadyRunning = await isUrlReady(watcherUrl)
+  const clientAlreadyRunning = await isUrlReady(clientUrl)
+  const watcher = watcherAlreadyRunning
+    ? null
+    : spawnLogged(npxCommand, ['tsx', 'server/watcher.ts'], { label: 'watcher' })
+  const client = clientAlreadyRunning
+    ? null
+    : spawnLogged(npxCommand, ['vite', '--host', '127.0.0.1', '--port', '4173', '--strictPort'], {
+        label: 'vite',
+      })
+
+  if (watcherAlreadyRunning) {
+    console.log(`[watcher] Reusing existing watcher at ${watcherUrl}`)
+  }
+  if (clientAlreadyRunning) {
+    console.log(`[vite] Reusing existing client at ${clientUrl}`)
+  }
 
   const cleanup = async () => {
     await Promise.allSettled([killProcessTree(watcher), killProcessTree(client)])
@@ -90,8 +109,8 @@ async function main() {
   })
 
   try {
-    await waitForUrl('http://127.0.0.1:8081/api/run/status', 120_000, 'watcher server')
-    await waitForUrl('http://127.0.0.1:4173', 120_000, 'vite client')
+    await waitForUrl(watcherUrl, 120_000, 'watcher server')
+    await waitForUrl(clientUrl, 120_000, 'vite client')
 
     const runner = spawn(
       isWindows

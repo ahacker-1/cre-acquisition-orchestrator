@@ -4,15 +4,19 @@
 
 ### Where does our deal data go?
 
-The system runs **entirely locally** in your environment. Deal data never leaves your network. All AI processing happens on-premise using your existing infrastructure and security controls. There is no cloud dependency for deal data storage or analysis.
+The default offline simulation and dashboard storage run locally. Runtime deal files, uploads, checkpoints, reports, and package artifacts are written under the local `data/` directory and are ignored by git.
+
+Live Codex runs are optional. If you choose the Codex / ChatGPT runtime, the selected prompts and deal context are sent through your ChatGPT-authenticated Codex CLI session so the real agents can run. Use offline simulation for local-only demos.
+
+The **Login to ChatGPT** button starts the local Codex CLI login flow. Authentication stays with Codex on the user's machine; this repository does not include or export tokens, cookies, API keys, or credential files.
 
 ### Is our data used to train AI models?
 
-No. Your deal data is not used for any training purposes. The AI models are pre-trained and your proprietary information remains completely private.
+The offline path does not send deal data to an AI provider. For optional live Codex runs, data handling follows the terms and controls of the ChatGPT-authenticated Codex session you choose to use.
 
 ### What about third-party integrations?
 
-Web searches and external data lookups (market comps, public records) are performed through standard secure channels. Sensitive deal details are never transmitted - only generic search queries like property addresses or market statistics.
+Offline simulation does not call external services. Optional live Codex runs use OpenAI Codex CLI through your ChatGPT login. Optional web search only runs when you request it with `--search` and your Codex CLI supports that flag.
 
 ---
 
@@ -124,7 +128,7 @@ For each deal:
 
 1. Review the [Quick Start Guide](./quick-start.md)
 2. Schedule a technical setup session
-3. Run your first test deal with our sample data
+3. Run your first test deal with the sample data in `config/deal.json`
 4. Configure for your specific investment criteria
 5. Process your first live deal with oversight
 

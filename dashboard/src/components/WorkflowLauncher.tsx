@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useWorkflows } from '../hooks/useWorkflows'
-import type { RunMode, RunSpeed } from '../types/checkpoint'
+import type { RunMode, RunSpeed, RuntimeProvider } from '../types/checkpoint'
 import type { DealLibraryItem, LaunchScenario } from '../types/deals'
 import type {
   WorkflowDefinition,
@@ -19,6 +19,25 @@ interface WorkflowLauncherProps {
 }
 
 const DRAFT_STORAGE_KEY = 'cre.workflowLauncher.v1'
+const API_URL = 'http://localhost:8081'
+
+interface CodexAuthStatus {
+  installed: boolean
+  loggedIn: boolean
+  usingChatGpt: boolean
+  version: string | null
+  loginStatus: string | null
+  error: string | null
+  authStorage?: string
+  storesCredentialsInRepo?: boolean
+}
+
+interface CodexLoginResponse {
+  started: boolean
+  message?: string
+  error?: string
+  codexStatus?: CodexAuthStatus
+}
 
 const SCENARIOS: { value: LaunchScenario; label: string }[] = [
   { value: 'core-plus', label: 'Core Plus' },
@@ -35,6 +54,17 @@ const SPEEDS: { value: RunSpeed; label: string }[] = [
 const MODES: { value: RunMode; label: string }[] = [
   { value: 'live', label: 'Live' },
   { value: 'fast', label: 'Fast Run' },
+]
+
+const RUNTIME_PROVIDERS: { value: RuntimeProvider; label: string }[] = [
+  { value: 'simulation', label: 'Simulation' },
+  { value: 'codex', label: 'Codex / ChatGPT' },
+]
+
+const CODEX_AGENT_LIMITS: { value: string; label: string }[] = [
+  { value: '1', label: '1 agent' },
+  { value: '2', label: '2 agents' },
+  { value: '', label: 'All selected' },
 ]
 
 function readStoredDraft(): Partial<WorkflowSelectionDraft> {
@@ -100,6 +130,24 @@ function workflowLaunchTestId(workflowId: string): string {
   return `workflow-launch-${workflowId}`
 }
 
+async function readCodexStatus(): Promise<CodexAuthStatus> {
+  const response = await fetch(`${API_URL}/api/codex/status`)
+  const payload = (await response.json()) as CodexAuthStatus & { error?: string }
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to read Codex status')
+  }
+  return payload
+}
+
+async function startCodexLogin(): Promise<CodexLoginResponse> {
+  const response = await fetch(`${API_URL}/api/codex/login`, { method: 'POST' })
+  const payload = (await response.json()) as CodexLoginResponse
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to start Codex login')
+  }
+  return payload
+}
+
 function createInitialDraft(
   deals: DealLibraryItem[],
   defaultWorkflowId: string,
@@ -119,7 +167,17 @@ function createInitialDraft(
         ? stored.speed
         : 'normal',
     mode: stored.mode === 'fast' ? 'fast' : 'live',
+    runtimeProvider: stored.runtimeProvider === 'codex' ? 'codex' : 'simulation',
     reset: typeof stored.reset === 'boolean' ? stored.reset : false,
+    codexMaxAgents:
+      typeof stored.codexMaxAgents === 'number' && stored.codexMaxAgents > 0
+        ? Math.round(stored.codexMaxAgents)
+        : 1,
+    codexConcurrency:
+      typeof stored.codexConcurrency === 'number' && stored.codexConcurrency > 0
+        ? Math.round(stored.codexConcurrency)
+        : 1,
+    codexSearch: stored.codexSearch === true,
     notes: typeof stored.notes === 'string' ? stored.notes : '',
     presetName: typeof stored.presetName === 'string' ? stored.presetName : '',
     presetId: typeof stored.presetId === 'string' ? stored.presetId : undefined,
@@ -152,6 +210,9 @@ function WorkflowLauncher({
   )
   const [activeStep, setActiveStep] = useState<'deal' | 'workflow' | 'review'>('deal')
   const [localMessage, setLocalMessage] = useState<string | null>(null)
+  const [codexStatus, setCodexStatus] = useState<CodexAuthStatus | null>(null)
+  const [codexStatusLoading, setCodexStatusLoading] = useState(false)
+  const [codexLoginStarting, setCodexLoginStarting] = useState(false)
 
   const selectedDeal = useMemo(
     () => deals.find((deal) => deal.dealId === draft.dealId) ?? null,
@@ -190,6 +251,27 @@ function WorkflowLauncher({
     window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
   }, [draft])
 
+  useEffect(() => {
+    if (draft.runtimeProvider !== 'codex') return
+    let cancelled = false
+    setCodexStatusLoading(true)
+    readCodexStatus()
+      .then((status) => {
+        if (!cancelled) setCodexStatus(status)
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setLocalMessage(err instanceof Error ? err.message : String(err))
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCodexStatusLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [draft.runtimeProvider])
+
   function chooseWorkflow(workflow: WorkflowDefinition): void {
     setDraft((current) => ({
       ...current,
@@ -209,7 +291,11 @@ function WorkflowLauncher({
       scenario: preset.inputs.scenario,
       speed: preset.inputs.speed,
       mode: preset.inputs.mode,
+      runtimeProvider: preset.inputs.runtimeProvider,
       reset: preset.inputs.reset,
+      codexMaxAgents: preset.inputs.codexMaxAgents ?? 1,
+      codexConcurrency: preset.inputs.codexConcurrency ?? 1,
+      codexSearch: preset.inputs.codexSearch === true,
       notes: preset.inputs.notes || '',
       presetName: preset.name,
       presetId: preset.id,
@@ -233,7 +319,11 @@ function WorkflowLauncher({
           scenario: draft.scenario,
           speed: draft.speed,
           mode: draft.mode,
-          reset: draft.reset,
+          runtimeProvider: draft.runtimeProvider,
+          reset: draft.runtimeProvider === 'codex' ? false : draft.reset,
+          codexMaxAgents: draft.runtimeProvider === 'codex' ? draft.codexMaxAgents : undefined,
+          codexConcurrency: draft.runtimeProvider === 'codex' ? draft.codexConcurrency : undefined,
+          codexSearch: draft.runtimeProvider === 'codex' ? draft.codexSearch : undefined,
           notes: draft.notes?.trim() || undefined,
         },
       })
@@ -242,6 +332,32 @@ function WorkflowLauncher({
       onPresetSaved?.(preset)
     } catch (err) {
       setLocalMessage(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  async function handleRefreshCodexStatus(): Promise<void> {
+    setCodexStatusLoading(true)
+    try {
+      setCodexStatus(await readCodexStatus())
+      setLocalMessage(null)
+    } catch (err) {
+      setLocalMessage(err instanceof Error ? err.message : String(err))
+    } finally {
+      setCodexStatusLoading(false)
+    }
+  }
+
+  async function handleCodexLogin(): Promise<void> {
+    setCodexLoginStarting(true)
+    try {
+      const response = await startCodexLogin()
+      if (response.codexStatus) setCodexStatus(response.codexStatus)
+      setLocalMessage(response.message || 'Codex login started. Choose Sign in with ChatGPT, then refresh status.')
+      window.setTimeout(() => void handleRefreshCodexStatus(), 2500)
+    } catch (err) {
+      setLocalMessage(err instanceof Error ? err.message : String(err))
+    } finally {
+      setCodexLoginStarting(false)
     }
   }
 
@@ -255,6 +371,14 @@ function WorkflowLauncher({
       setActiveStep('deal')
       return
     }
+    if (
+      draft.runtimeProvider === 'codex' &&
+      !(codexStatus?.installed && codexStatus.loggedIn && codexStatus.usingChatGpt)
+    ) {
+      setLocalMessage('Login to ChatGPT with Codex before launching a live Codex workflow.')
+      setActiveStep('review')
+      return
+    }
     try {
       const response = await launchWorkflow(workflow.id, {
         dealId: selectedDeal.dealId,
@@ -262,14 +386,18 @@ function WorkflowLauncher({
         mode: draft.mode,
         speed: draft.speed,
         scenario: draft.scenario,
-        reset: draft.reset,
+        reset: draft.runtimeProvider === 'codex' ? false : draft.reset,
+        runtimeProvider: draft.runtimeProvider,
+        codexMaxAgents: draft.runtimeProvider === 'codex' ? draft.codexMaxAgents : undefined,
+        codexConcurrency: draft.runtimeProvider === 'codex' ? draft.codexConcurrency : undefined,
+        codexSearch: draft.runtimeProvider === 'codex' ? draft.codexSearch : undefined,
         notes: draft.notes?.trim() || undefined,
       })
       const sourceCount = response.inputSnapshot?.sourceCoverage?.sourceDocumentCount
       setLocalMessage(
         `${workflow.name} launched for ${selectedDeal.dealName}${
           typeof sourceCount === 'number' ? ` with ${sourceCount} source docs captured` : ''
-        }`,
+        }${response.outputPath ? ` / output ${response.outputPath}` : ''}`,
       )
       onLaunchStarted?.(response)
     } catch (err) {
@@ -277,7 +405,22 @@ function WorkflowLauncher({
     }
   }
 
-  const canLaunch = Boolean(selectedDeal && selectedWorkflow)
+  const isCodexRun = draft.runtimeProvider === 'codex'
+  const codexReady = Boolean(codexStatus?.installed && codexStatus.loggedIn && codexStatus.usingChatGpt)
+  const codexStatusLabel = !codexStatus
+    ? 'Not checked'
+    : !codexStatus.installed
+      ? 'Codex CLI not installed'
+      : !codexStatus.loggedIn
+        ? 'Not logged in'
+        : codexStatus.usingChatGpt
+          ? 'Logged in with ChatGPT'
+          : 'Logged in, but not confirmed as ChatGPT'
+  const canLaunch = Boolean(selectedDeal && selectedWorkflow && (!isCodexRun || codexReady))
+  const codexAgentLimitLabel =
+    typeof draft.codexMaxAgents === 'number' && draft.codexMaxAgents > 0
+      ? `${draft.codexMaxAgents} agent${draft.codexMaxAgents === 1 ? '' : 's'}`
+      : 'All selected'
   const dealStepClassName = compact
     ? 'grid min-w-0 gap-4'
     : 'grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,0.65fr)]'
@@ -465,7 +608,7 @@ function WorkflowLauncher({
                       type="button"
                       data-testid={workflowLaunchTestId(workflow.id)}
                       onClick={() => void handleLaunch(workflow)}
-                      disabled={!selectedDeal || launching}
+                      disabled={!selectedDeal || launching || (isCodexRun && !codexReady)}
                       className={buttonClassName('primary')}
                     >
                       {launching ? 'Launching...' : 'Launch'}
@@ -521,6 +664,27 @@ function WorkflowLauncher({
                 </select>
               </label>
               <label className="block">
+                <span className="block text-sm font-medium text-gray-200 mb-2">Runtime</span>
+                <select
+                  data-testid="workflow-runtime-provider-select"
+                  value={draft.runtimeProvider}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      runtimeProvider: event.target.value as RuntimeProvider,
+                      reset: event.target.value === 'codex' ? false : current.reset,
+                    }))
+                  }
+                  className={inputClassName()}
+                >
+                  {RUNTIME_PROVIDERS.map((provider) => (
+                    <option key={provider.value} value={provider.value}>
+                      {provider.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
                 <span className="block text-sm font-medium text-gray-200 mb-2">Scenario</span>
                 <select
                   data-testid="workflow-scenario-select"
@@ -541,13 +705,14 @@ function WorkflowLauncher({
                 </select>
               </label>
               <label className="block">
-                <span className="block text-sm font-medium text-gray-200 mb-2">Run Speed</span>
+                <span className="block text-sm font-medium text-gray-200 mb-2">Simulation Speed</span>
                 <select
                   data-testid="workflow-speed-select"
                   value={draft.speed}
                   onChange={(event) =>
                     setDraft((current) => ({ ...current, speed: event.target.value as RunSpeed }))
                   }
+                  disabled={isCodexRun}
                   className={inputClassName()}
                 >
                   {SPEEDS.map((speed) => (
@@ -558,12 +723,14 @@ function WorkflowLauncher({
                 </select>
               </label>
               <label className="block">
-                <span className="block text-sm font-medium text-gray-200 mb-2">Mode</span>
+                <span className="block text-sm font-medium text-gray-200 mb-2">Simulation Mode</span>
                 <select
+                  data-testid="workflow-mode-select"
                   value={draft.mode}
                   onChange={(event) =>
                     setDraft((current) => ({ ...current, mode: event.target.value as RunMode }))
                   }
+                  disabled={isCodexRun}
                   className={inputClassName()}
                 >
                   {MODES.map((mode) => (
@@ -573,13 +740,100 @@ function WorkflowLauncher({
                   ))}
                 </select>
               </label>
+              {isCodexRun && (
+                <>
+                  <label className="block">
+                    <span className="block text-sm font-medium text-gray-200 mb-2">Codex Agents</span>
+                    <select
+                      data-testid="workflow-codex-agent-limit-select"
+                      value={
+                        typeof draft.codexMaxAgents === 'number' && draft.codexMaxAgents > 0
+                          ? String(draft.codexMaxAgents)
+                          : ''
+                      }
+                      onChange={(event) =>
+                        setDraft((current) => ({
+                          ...current,
+                          codexMaxAgents:
+                            event.target.value === '' ? null : Number(event.target.value),
+                        }))
+                      }
+                      className={inputClassName()}
+                    >
+                      {CODEX_AGENT_LIMITS.map((limit) => (
+                        <option key={limit.value || 'all'} value={limit.value}>
+                          {limit.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="block text-sm font-medium text-gray-200 mb-2">Codex Concurrency</span>
+                    <input
+                      data-testid="workflow-codex-concurrency-input"
+                      type="number"
+                      min={1}
+                      max={4}
+                      value={draft.codexConcurrency ?? 1}
+                      onChange={(event) =>
+                        setDraft((current) => ({
+                          ...current,
+                          codexConcurrency: Math.max(1, Number(event.target.value) || 1),
+                        }))
+                      }
+                      className={inputClassName()}
+                    />
+                  </label>
+                  <div
+                    data-testid="workflow-codex-auth-card"
+                    className="md:col-span-2 border border-cre-border bg-black/20 p-4 text-sm text-gray-300"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                          ChatGPT Authentication
+                        </div>
+                        <div className="mt-1 text-base font-semibold text-white">{codexStatusLabel}</div>
+                        <div className="mt-1 text-xs text-gray-500">
+                          {codexStatus?.version || 'Codex CLI status will appear here.'}
+                        </div>
+                        <p className="mt-3 leading-6">
+                          No authentication is stored in this repository. Codex CLI keeps credentials outside the project;
+                          this app only checks status and starts the local login flow.
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <button
+                          type="button"
+                          data-testid="workflow-codex-refresh-status"
+                          onClick={() => void handleRefreshCodexStatus()}
+                          disabled={codexStatusLoading}
+                          className={buttonClassName('secondary')}
+                        >
+                          {codexStatusLoading ? 'Checking...' : 'Refresh Status'}
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="workflow-codex-login-chatgpt"
+                          onClick={() => void handleCodexLogin()}
+                          disabled={codexLoginStarting || codexStatusLoading || codexReady}
+                          className={buttonClassName('primary')}
+                        >
+                          {codexLoginStarting ? 'Starting...' : 'Login to ChatGPT'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
               <label className="flex items-center gap-3 border border-cre-border bg-black/20 px-3 py-2 text-sm text-gray-200">
                 <input
                   type="checkbox"
-                  checked={draft.reset}
+                  checked={!isCodexRun && draft.reset}
                   onChange={(event) =>
                     setDraft((current) => ({ ...current, reset: event.target.checked }))
                   }
+                  disabled={isCodexRun}
                   className="h-4 w-4 accent-cre-accent"
                 />
                 Reset prior run artifacts before launch
@@ -618,11 +872,25 @@ function WorkflowLauncher({
                   <dd className="min-w-0 break-words text-right text-gray-200">{draft.scenario}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
+                  <dt className="text-gray-500">Runtime</dt>
+                  <dd className="min-w-0 break-words text-right text-gray-200">
+                    {isCodexRun ? 'Codex / ChatGPT' : 'Simulation'}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
                   <dt className="text-gray-500">Coverage</dt>
                   <dd className="min-w-0 break-words text-right text-gray-200">
                     {selectedWorkflow?.phases.length ?? 0} phases, {totalAgentCount(selectedWorkflow)} agents
                   </dd>
                 </div>
+                {isCodexRun && (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-gray-500">Codex Run</dt>
+                    <dd className="min-w-0 break-words text-right text-gray-200">
+                      {codexAgentLimitLabel} / {draft.codexConcurrency ?? 1} parallel
+                    </dd>
+                  </div>
+                )}
               </dl>
               <div className="mt-5 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                 <input

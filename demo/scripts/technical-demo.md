@@ -33,6 +33,7 @@
 cre-acquisition/
 ├── config/              # Deal and system configuration
 │   ├── deal.json        # Current deal parameters
+│   ├── workflows.json   # Built-in outcome workflows
 │   ├── thresholds.json  # Investment criteria
 │   └── agent-registry.json
 ├── orchestrators/       # Phase-level coordinators
@@ -45,11 +46,17 @@ cre-acquisition/
 │   └── ...
 ├── skills/              # Reusable capabilities
 ├── data/                # Runtime data
-│   ├── status/          # Checkpoints
+│   ├── deals/           # Uploaded docs, criteria, extraction state
+│   ├── runs/            # Source-backed launch snapshots
+│   ├── status/          # Checkpoints, story events, package manifests
+│   ├── codex-runs/      # Live Codex prompts, logs, summaries, memos
 │   ├── logs/            # Activity logs
 │   └── reports/         # Generated reports
-└── dashboard/           # React monitoring UI
+├── scripts/             # Simulation runner, Codex runner, setup helpers
+└── dashboard/           # Operator Deal Hub, workflow launcher, package view
 ```
+
+> "There are two runtime paths now. Offline simulation writes deterministic local artifacts. Live Codex uses the open-source Codex CLI with ChatGPT login, then writes raw Codex output plus dashboard package artifacts back into the same local data tree."
 
 ### 1.3 Agent Hierarchy
 
@@ -287,22 +294,22 @@ Level 4: Child Agents (dynamic)
 - Log entries streaming
 - Findings appearing as they're reported
 
-### 5.2 Agent Tree Navigation
+### 5.2 Runtime and Package Navigation
 
-**Action:** Click through the Agent Tree tab
+**Action:** Click through the Operator Deal Hub, Workflow Launcher, Documents, and Package views.
 
-> "Click any agent to see its current state, findings, and metrics."
+> "The current dashboard is organized around the acquisition workflow. You can inspect source coverage, launch simulation or Codex-backed workflows, then review generated workpapers and story artifacts in the Package view."
 
 **Show:**
-- Expanding phase hierarchies
-- Agent status colors (green = complete, blue = running, gray = pending)
-- Child agents under specialists
+- Runtime selector for Simulation and Codex / ChatGPT
+- Codex agent count, concurrency, and optional search controls
+- Package artifacts generated from `data/status/{dealId}/run-{runId}-documents.json`
 
-### 5.3 Final Report Generation
+### 5.3 Completion Package Generation
 
-**Action:** Show or describe the Final Report tab
+**Action:** Show or describe the Package view.
 
-> "When complete, the system generates a comprehensive report with go/no-go verdict."
+> "When complete, the system generates a completion package with workpapers, findings, decision log, document manifest, source-backed input coverage, and a final recommendation."
 
 ---
 
@@ -343,16 +350,16 @@ Level 4: Child Agents (dynamic)
 > "Each agent that makes external calls implements exponential backoff. If rate limited, it checkpoints, waits, and resumes. The logs show rate limit events clearly."
 
 **Q: "Can we run this on-prem?"**
-> "Absolutely. The entire system runs locally. You need Node.js for the dashboard and Claude Code for the AI runtime. No cloud dependencies for your deal data."
+> "The offline demo and dashboard storage run locally. You need Node.js for the dashboard. If you choose live agents, they run through Codex CLI using your ChatGPT login, which sends the selected prompts and deal context through that Codex session."
 
 **Q: "What about sensitive data in prompts?"**
-> "Deal data is injected at runtime - it's not stored in the prompts. The prompt files are generic instructions. Data stays in your `data/` directory and never leaves your environment."
+> "Deal data is injected at runtime - it's not stored in the prompt templates. For offline simulation, data stays in your `data/` directory. For live Codex runs, only use deal context that is approved for your ChatGPT-authenticated Codex environment."
 
 **Q: "How do we monitor in production?"**
 > "The dashboard provides real-time monitoring. For production, you'd add logging to your observability stack (Datadog, Splunk, etc.) by tailing the log files."
 
 **Q: "What's the compute cost?"**
-> "Primary cost is AI API calls. The system is optimized to minimize redundant calls through caching and checkpointing. A typical deal runs 1000-2000 API calls total."
+> "The offline demo has no AI usage cost. Live runs use your Codex CLI authentication, with the practical cost and limits governed by your ChatGPT or OpenAI account. The runner supports scoped workflows, max-agent limits, and concurrency controls so you can start small."
 
 ---
 
@@ -368,13 +375,18 @@ Level 4: Child Agents (dynamic)
 
 | Action | Command |
 |--------|---------|
-| Start dashboard | `cd dashboard && npm run dev` |
-| View deal config | `cat config/deal.json` |
-| View thresholds | `cat config/thresholds.json` |
-| Check checkpoint | `cat data/status/*.json` |
-| Tail master log | `tail -f data/logs/*/master.log` |
-| List agents | `cat config/agent-registry.json` |
-| Reset state | `rm -rf data/status/* data/logs/*` |
+| First setup | `npm install` then `npm run setup` |
+| Start dashboard | `npm run dashboard` |
+| Offline demo | `npm run demo` |
+| Codex status | `npm run codex:status` |
+| Live Codex smoke | `npm run codex:smoke` |
+| Live Codex run | `npm run codex:run` |
+| View deal config | `Get-Content config/deal.json` |
+| View thresholds | `Get-Content config/thresholds.json` |
+| Check checkpoint | `Get-Content data/status/*.json` |
+| Tail master log | `Get-ChildItem data/logs -Recurse -Filter master.log | Select-Object -First 1 | Get-Content -Wait` |
+| List agents | `Get-Content config/agent-registry.json` |
+| Reset state | `Remove-Item data/status/*,data/logs/* -Recurse -Force -ErrorAction SilentlyContinue` |
 
 ## Appendix: Key Files Reference
 

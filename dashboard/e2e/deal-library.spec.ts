@@ -333,6 +333,27 @@ test('loads workflow catalog and saves a reusable preset', async ({ page }) => {
   expect(consoleErrors).toEqual([])
 })
 
+test('shows Codex ChatGPT authentication status in workflow launcher', async ({ page }) => {
+  const consoleErrors = collectConsoleErrors(page)
+
+  await waitForDashboardReady(page)
+  await page.getByTestId('header-workflows-button').click()
+  const modal = page.getByTestId('workflow-launcher-modal')
+  await modal.getByTestId('workflow-step-review').click()
+  await modal.getByTestId('workflow-runtime-provider-select').selectOption('codex')
+
+  const authCard = modal.getByTestId('workflow-codex-auth-card')
+  await expect(authCard).toContainText('ChatGPT Authentication')
+  await expect(authCard).toContainText('No authentication is stored in this repository')
+  await expect(authCard.getByTestId('workflow-codex-refresh-status')).toBeVisible()
+  await expect(authCard.getByTestId('workflow-codex-login-chatgpt')).toBeVisible()
+
+  await authCard.getByTestId('workflow-codex-refresh-status').click()
+  await expect(authCard).toContainText(/Logged in|Not logged in|not installed|Not checked/)
+
+  expect(consoleErrors).toEqual([])
+})
+
 test('guards local document upload API against unsafe browser origins and malformed content', async ({ request }) => {
   const rejectedOrigin = await request.post(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/documents`, {
     headers: { Origin: 'https://example.com' },

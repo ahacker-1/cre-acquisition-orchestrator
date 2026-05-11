@@ -35,6 +35,7 @@ This release moves the project from a monitoring dashboard toward a local-first 
 - Extract CSV rent roll and T12 data.
 - Approve selected extraction fields and update deal inputs.
 - Launch a scoped phase workflow or full acquisition review.
+- Launch selected workflows through the offline simulation runtime.
 - Save and reuse workflow presets.
 - Review skipped phases and completion packages after a scoped run.
 

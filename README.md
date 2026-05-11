@@ -25,14 +25,14 @@ Let's bring this industry into the future.
 
 ---
 
-## What's New in v2.0.0
+## What's New in v2.1.0
 
-- **Operator Deal Hub** - Each saved deal now opens into a lifecycle workspace with Overview, Underwriting, Due Diligence, Financing, Legal, Closing, Documents, and Package views
-- **Workflow Launcher** - Launch five built-in outcome workflows from the dashboard: full acquisition review, quick deal screen, underwriting refresh, financing package, and legal / PSA review
-- **Local Document Intake** - Upload rent rolls, T12s, offering memoranda, LOIs, PDFs, and XLSX files into deal-specific local storage
-- **Extraction Review Path** - CSV/TXT/MD rent rolls, T12s, and offering memos produce source-backed extraction previews that operators approve before updating deal inputs
-- **Completion Package View** - Completed runs now surface phase outcomes, findings, workpapers, decision log, document manifest, source-backed input coverage, and the final recommendation in one review surface
-- **Release-Grade Test Coverage** - Playwright now covers workflow catalog load, preset save, phase workspace navigation, local upload, extraction apply, skipped phases, and package visibility
+- **ChatGPT-Backed Codex Runtime** - Run the same markdown agents through the open-source Codex CLI harness with an existing ChatGPT subscription login, from either scripts or the dashboard
+- **In-App ChatGPT Login** - The Workflow Launcher checks local Codex status and exposes a **Login to ChatGPT** button for first-time users
+- **Dashboard Codex Launches** - The Workflow Launcher and phase workspaces can now launch live Codex runs and publish real Codex memos back into the Package view
+- **First-Download Setup** - `npm run setup` prepares offline users cleanly, while `npm run setup -- --require-codex` enforces ChatGPT-authenticated live-agent readiness
+- **Codex Artifact Validation** - `npm run validate:codex` checks raw Codex outputs plus dashboard story events, manifests, and package documents
+- **Open-Source Release Hygiene** - Docs now distinguish local simulation from live Codex data flow, generated runtime artifacts are ignored, and browser/e2e tests are friendlier for contributors
 
 ---
 
@@ -41,7 +41,7 @@ Let's bring this industry into the future.
 | | | | |
 |---|---|---|---|
 | **31** AI Agents | **8** Domain Knowledge Skills | **10** JSON Schema Contracts | **8** Deal Workspace Views |
-| **5** Deal Phases | **5** Outcome Workflows | **65,000+** Lines of Code | **232** Files |
+| **5** Deal Phases | **5** Outcome Workflows | **64,000+** Lines of Code | **245** Files |
 
 ---
 
@@ -92,6 +92,52 @@ graph TD
 ```
 
 At runtime, specialist agents can spawn additional child agents - the Scenario Analyst runs up to **27 scenario sub-analyses**, Lender Outreach contacts up to **12 lenders in parallel**, and the Estoppel Tracker manages up to **200 unit-level estoppel certificates**.
+
+### Runtime and Artifact Flow
+
+```mermaid
+flowchart LR
+    U[Operator] --> UI[Dashboard<br/>Operator Deal Hub]
+    UI --> API[Local REST API<br/>port 8081]
+    UI --> WS[Watcher WebSocket<br/>port 8080]
+    UI --> AUTH[ChatGPT Auth Panel<br/>Status and Login]
+
+    API --> DOCS[Source Documents<br/>data/deals]
+    API --> SNAP[Launch Input Snapshot<br/>data/runs]
+    API --> RM[Run Manager]
+    AUTH --> API
+    API --> CSTAT[Codex Auth Status<br/>No Secrets Returned]
+
+    RM --> SIM[Offline Simulation<br/>scripts/orchestrate.js]
+    RM --> COD[Live Codex Runner<br/>scripts/codex-agent-runner.js]
+
+    COD --> CLI[Codex CLI<br/>ChatGPT login]
+    CSTAT --> CLI
+    CLI --> STORE[Codex Credentials<br/>Outside Repo]
+    CLI --> OPENAI[OpenAI Codex Service]
+
+    SIM --> STATUS[Checkpoints and Story Events<br/>data/status]
+    SIM --> PHASE[Phase Outputs<br/>data/phase-outputs]
+    SIM --> REPORTS[Reports and Workpapers<br/>data/reports]
+
+    COD --> RAW[Raw Codex Prompts Logs Memos<br/>data/codex-runs]
+    COD --> STATUS
+    COD --> REPORTS
+
+    STATUS --> PACKAGE[Dashboard Package View]
+    REPORTS --> PACKAGE
+    RAW --> PACKAGE
+
+    style UI fill:#16213e,color:#fff
+    style SIM fill:#0f3460,color:#fff
+    style COD fill:#533483,color:#fff
+    style AUTH fill:#0f766e,color:#fff
+    style STORE fill:#334155,color:#fff
+    style OPENAI fill:#e94560,color:#fff
+    style PACKAGE fill:#1a1a2e,color:#fff
+```
+
+The offline simulation path stays local after dependencies are installed. The live Codex path sends selected prompts and deal context through the user's ChatGPT-authenticated Codex CLI session, then writes both raw Codex outputs and dashboard-readable package artifacts back into the local `data/` tree. Authentication is not stored in this repository; the dashboard only asks the local Codex CLI whether it is installed and logged in, and the **Login to ChatGPT** button starts the Codex CLI login flow on the user's machine.
 
 ---
 
@@ -226,16 +272,12 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 | View | What It Shows |
 |-----|--------------|
 | **Operator Deal Hub** | Deal lifecycle workspace with Overview, Underwriting, Due Diligence, Financing, Legal, Closing, Documents, and Package tabs |
-| **Workflow Launcher** | Guided `Choose Deal -> Choose Outcome -> Review Inputs -> Run Now` launcher with saved local presets |
+| **Workflow Launcher** | Guided `Choose Deal -> Choose Outcome -> Review Inputs -> Runtime -> Run Now` launcher with saved local presets |
 | **Documents** | Local upload, classification, extraction preview, operator approval, and source-backed input tracking |
-| **Pipeline View** | Phase-by-phase progress with dependency arrows, completion percentages, active agent indicators |
-| **Agent Tree** | Hierarchical view of all agents: orchestrators, specialists, and dynamically spawned child agents with real-time status |
-| **Timeline** | Gantt-style execution timeline showing parallel and sequential agent execution, phase transitions, and total elapsed time |
-| **Findings Panel** | Aggregated findings across all agents, filterable by severity (Critical/High/Medium/Low), phase, and agent |
+| **Run Status** | Phase-by-phase progress, active runtime provider, completion state, findings, and story events |
 | **Story Narrative** | Human-readable event stream narrating the deal analysis as it progresses, powered by NDJSON story events |
 | **Document Wall** | Visual grid of all documents processed and generated: ingestion status, extraction results, report outputs |
 | **Decision Log** | Chronological record of every go/no-go decision, escalation, conditional pass, and dealbreaker flag |
-| **Log Stream** | Raw structured log output from all agents with filtering by agent, phase, and log level |
 | **Completion Package** | Phase outcomes, workpapers, findings, decision log, document manifest, source-backed inputs, and final recommendation |
 
 ## Dashboard Preview
@@ -260,33 +302,77 @@ The first screen is designed as an operator command center: start a new deal, se
 
 - [Node.js](https://nodejs.org/) 18+
 - npm
+- Optional for live AI runs: [OpenAI Codex CLI](https://github.com/openai/codex) signed in with ChatGPT
 
-### Run the Simulation
+### One-Time Setup
 
-```bash
-# Clone the repo
+From a fresh clone on Windows:
+
+```powershell
 git clone https://github.com/ahacker-1/cre-acquisition-orchestrator.git
 cd cre-acquisition-orchestrator
 
-# Install dependencies
 npm install
+npm run setup
+```
 
-# Run the demo simulation (no API keys needed)
+`npm run setup` verifies Node/npm, installs dashboard dependencies, and tries to prepare the optional Codex live-agent runtime. If Codex is missing or login is skipped, the offline demo and dashboard still work. To require a complete live-agent setup during onboarding, run:
+
+```powershell
+npm run setup -- --require-codex
+```
+
+When the Codex login flow opens, choose **Sign in with ChatGPT** to use an existing ChatGPT subscription instead of an API key.
+
+If setup is run in offline mode or the login flow is skipped, the dashboard can start it later: open the Workflow Launcher, select **Codex / ChatGPT**, and click **Login to ChatGPT**.
+
+You can check the auth path any time:
+
+```powershell
+npm run codex:status
+```
+
+Expected login output should say `Logged in using ChatGPT`.
+
+### Run the Offline Simulation
+
+```powershell
 npm run demo
 ```
 
-This runs a complete acquisition pipeline for the sample Parkview Apartments deal (200 units, Austin TX, $32M) using the deterministic simulation engine. All 5 phases execute, all 21 specialist agents produce outputs, and a final report with go/no-go recommendation is generated.
+This runs a complete acquisition pipeline for the sample Parkview Apartments deal (200 units, Austin TX, $32M) using the deterministic simulation engine. No API key or AI subscription is required for this path. All 5 phases execute, all 21 specialist agents produce outputs, and a final report with go/no-go recommendation is generated.
 
 ### Start the Dashboard
 
-```bash
-# In a separate terminal
+```powershell
 npm run dashboard
-
-# Open http://localhost:5173
 ```
 
-The dashboard connects via WebSocket and REST APIs to show the pipeline executing in real time while keeping deal data local.
+Open `http://localhost:5173`. The dashboard connects via WebSocket and REST APIs to show the pipeline executing in real time while keeping deal data local.
+
+### Run Live Codex Agents with ChatGPT Login
+
+Live Codex runs use `codex exec` against the same markdown agent instructions in this repo. CLI runs write the raw prompts, logs, manifests, summaries, and agent memos to `data/codex-runs/{runId}/`. Dashboard-launched Codex runs also publish dashboard-readable story events and package documents under `data/status/{dealId}/run-{runId}-*.{ndjson,json}` so the Package view can show the real Codex workpapers.
+
+After `npm run setup` confirms `Logged in using ChatGPT`, run a small live smoke test:
+
+```powershell
+npm run codex:smoke
+```
+
+Then try a multi-agent Codex workflow:
+
+```powershell
+npm run codex:run
+```
+
+For the complete Codex-backed agent catalog:
+
+```powershell
+npm run codex:run:full
+```
+
+The Codex runner uses the open-source Codex CLI harness through `codex exec`. It reads the existing markdown agent prompts, runs selected agents with your ChatGPT subscription login, and defaults to a read-only sandbox so live agents can inspect the repo and deal files without changing project files.
 
 From the dashboard you can now:
 - create a new deal in the wizard
@@ -295,12 +381,13 @@ From the dashboard you can now:
 - upload source documents into the deal workspace
 - extract and approve source-backed inputs from CSV, TXT, and MD files
 - classify PDF/XLSX files for the right phase with extraction marked pending
+- choose **Codex / ChatGPT** in the Workflow Launcher and click **Login to ChatGPT** if Codex is not already authenticated
 - launch a focused workflow or full acquisition review
 - review the completion package after the run finishes
 
 ### Local Document Intake
 
-The preferred v2.0.0 path is inside the dashboard:
+The preferred v2.x path is inside the dashboard:
 
 1. Start the dashboard with `npm run dashboard`
 2. Create or open a deal workspace
@@ -311,13 +398,13 @@ The preferred v2.0.0 path is inside the dashboard:
 
 Uploaded files are stored under `data/deals/{dealId}/documents/`, extraction previews under `data/deals/{dealId}/extractions/`, and approved source-backed fields under `data/deals/{dealId}/approved-fields.json`. Runtime deal data stays local and is ignored by git.
 
-Legacy drop-folder ingestion prompts remain available for Claude Code users, but the dashboard upload path is now the main operator workflow.
+Legacy drop-folder ingestion prompts remain available for advanced users with their own prompt runner, but the dashboard upload path is now the main operator workflow.
 
 ### Manual Deal Setup
 
 Edit `config/deal.json` with your deal parameters and run:
 
-```bash
+```powershell
 npm run simulate
 ```
 
@@ -325,7 +412,7 @@ npm run simulate
 
 Run the browser test suite for the dashboard workflow:
 
-```bash
+```powershell
 npm run test:e2e
 ```
 
@@ -340,6 +427,7 @@ npm run test:e2e
 - **10 JSON Schema Contracts** - Every data handoff validated at runtime - phase outputs, checkpoints, flags, and events all have formal schemas
 - **Operator Deal Hub** - React dashboard workspace for criteria, phase playbooks, source documents, workflow launching, and completion packages
 - **Workflow Launcher** - Five deterministic outcome workflows with saved local presets and skipped-phase visibility
+- **Live Codex Harness** - Optional ChatGPT-login runtime that runs selected markdown agents through Codex CLI and publishes workpapers back into dashboard packages
 - **Deterministic Simulation** - Seeded RNG engine produces realistic CRE financials for demo and testing without any API calls
 - **3 Investment Scenarios** - Core-Plus, Value-Add, and Distressed configurations with different market assumptions and risk tolerances
 - **Failure Injection & Recovery** - Force any agent to fail, resume from 3-tier checkpoint system - models real-world pipeline resilience
@@ -371,8 +459,11 @@ cre-acquisition-orchestrator/
 ├── scripts/                   # Orchestration engine, simulation, utilities
 │   ├── orchestrate.js         #   Main workflow-aware pipeline runner
 │   ├── demo-run.js            #   Quick demo execution
+│   ├── setup.js               #   First-run dependency and optional Codex login helper
+│   ├── codex-agent-runner.js  #   ChatGPT-backed Codex CLI agent harness
+│   ├── codex-status.js        #   Codex CLI and login status check
 │   ├── system-test.js         #   Full system test (3 scenarios + failure + resume)
-│   └── lib/                   #   Runtime core, workflow catalog, simulation data, story engine
+│   └── lib/                   #   Runtime core, workflow catalog, Codex helpers, story engine
 ├── dashboard/                 # React + TypeScript Operator Deal Hub
 │   ├── src/
 │   │   ├── components/        #   Deal workspace, workflow launcher, completion package
@@ -396,9 +487,11 @@ cre-acquisition-orchestrator/
 │   ├── deals/{dealId}/        #   Criteria, uploaded docs, manifests, extractions, phase state
 │   ├── workflow-presets/      #   Saved local workflow launch presets
 │   ├── runs/                  #   Input snapshots and per-run runtime artifacts
+│   ├── codex-runs/            #   Live Codex prompts, logs, summaries, and agent memos
 │   ├── status/                #   Checkpoints, phase state, agent state, event streams
 │   ├── reports/               #   Generated reports and workpapers
 │   └── logs/                  #   Local run logs
+├── RELEASE_NOTES_v2.1.0.md    # v2.1.0 Codex / ChatGPT workflow release notes
 ├── RELEASE_NOTES_v2.0.0.md    # v2.0.0 Operator Deal Hub release notes
 └── package.json               # Root validation and orchestration scripts
 ```
@@ -442,7 +535,7 @@ Three pre-built scenarios with different market assumptions:
 
 ## Want Individual Skills Without the Orchestration?
 
-If you don't need the full pipeline and just want standalone analysis tools you can drop into Claude Code, ChatGPT, or Cursor, check out **[CRE Agent Skills](https://github.com/ahacker-1/cre-agent-skills)** — 25 individual skill files extracted from this orchestrator, with 6 ready-to-install Claude Code plugins (one per department). No pipeline, no infrastructure, no setup. Just pick a skill and go.
+If you don't need the full pipeline and just want standalone analysis tools you can drop into ChatGPT, Codex, Claude Code, Cursor, or another prompt runner, check out **[CRE Agent Skills](https://github.com/ahacker-1/cre-agent-skills)**. It is a separate lightweight repo with individual skill files extracted from this orchestrator. No pipeline, no infrastructure, no setup. Just pick a skill and go.
 
 ---
 
@@ -461,7 +554,8 @@ This is not an abstract demo - it models the actual workflow that CRE acquisitio
 
 Potential future directions:
 
-- [ ] Real LLM API integration (replacing simulation engine with live Claude/GPT agents)
+- [x] Codex CLI live-agent harness using ChatGPT subscription login
+- [ ] Deeper direct Responses API integration for production hosted deployments
 - [ ] Additional property types (office, industrial, retail)
 - [ ] Historical deal comparison database
 - [ ] Automated lender matching via API

@@ -51,9 +51,9 @@
 
 **Action:** If not already running, demonstrate the launch command:
 
-```bash
-# From the cre-acquisition directory
-cd dashboard && npm run dev
+```powershell
+# From the repo root
+npm run dashboard
 ```
 
 > "The system reads the deal configuration and begins autonomous analysis. Let's switch to the dashboard to see it in action."
@@ -66,55 +66,38 @@ cd dashboard && npm run dev
 
 ## DASHBOARD TOUR (3 minutes)
 
-### Pipeline View
+### Operator Deal Hub
 
-**Action:** Click on "Pipeline" tab (should be default)
+**Action:** Open the sample deal workspace.
 
-> "The Pipeline view shows the five phases of analysis. Each phase contains specialist AI agents working in parallel where possible."
+> "The Operator Deal Hub is the working surface for an acquisition. The team can review criteria, source coverage, phase playbooks, launch workflows, and package outputs without leaving the browser."
 
 **Point out:**
-- Phase progression (DD → UW → Financing → Legal → Closing)
-- Status indicators (green = complete, blue = running, gray = pending)
-- Progress percentages
+- Overview with current run status and source coverage
+- Phase workspaces for Underwriting, Due Diligence, Financing, Legal, and Closing
+- Documents and Package tabs
 
-### Agent Tree
+### Workflow Launcher
 
-**Action:** Click on "Agent Tree" tab
+**Action:** Open the workflow launcher.
 
-> "The Agent Tree shows the hierarchical structure of our AI workforce. The Master Orchestrator coordinates everything. Under it, each phase has its own orchestrator managing specialist agents."
+> "The workflow launcher lets an operator choose the outcome, inspect inputs, and select the runtime. They can use offline simulation for a fast local demo or live Codex agents through a ChatGPT-authenticated Codex CLI session."
 
-**Expand Due Diligence phase and explain:**
-- Rent Roll Analyst - validates income assumptions
-- OpEx Analyst - scrutinizes expenses
-- Market Analyst - researches comparable properties
-- Physical Inspector - assesses property condition
-- Environmental Specialist - reviews Phase 1 reports
-- Title Specialist - examines title and survey
-- Tax Analyst - analyzes property taxes
+**Point out:**
+- Outcome workflows such as quick screen, underwriting refresh, financing package, legal review, and full acquisition review
+- Runtime selector for Simulation or Codex / ChatGPT
+- Agent count and concurrency controls for live Codex runs
 
-> "Each of these agents can spawn additional sub-agents. For example, the rent roll analyst might spawn agents to analyze each unit type separately."
+### Documents and Package
 
-### Live Logs
+**Action:** Open Documents, then Package.
 
-**Action:** Click on "Logs" tab
+> "Source files can be uploaded, classified, extracted, reviewed, and applied to the deal. When a run finishes, the Package view collects workpapers, findings, document manifests, source-backed inputs, and the final recommendation."
 
-> "Every action is logged in real-time. This creates a complete audit trail - you can see exactly what the system analyzed and when."
-
-**Point out a few interesting log entries:**
-- Agent launches
-- Findings
-- Checkpoint saves
-
-### Findings Panel
-
-**Action:** Click on "Findings" tab
-
-> "As agents complete their work, they report findings here. Findings are categorized by severity: red flags, warnings, and positive indicators."
-
-**If findings are available, highlight:**
-- Any red flags detected
-- Key metrics discovered
-- Data gaps identified
+**If a completed run is available, highlight:**
+- Workpapers and Codex memos
+- Red flags and data gaps
+- Decision log and source coverage
 
 ---
 
@@ -200,7 +183,7 @@ cd dashboard && npm run dev
 > "It produces standard output formats: IC memos, underwriting summaries, due diligence checklists. These slot directly into your existing investment committee process."
 
 **Q: "What about data security?"**
-> "The system runs locally in your environment. Deal data never leaves your network. All analysis happens on-premise with your existing security controls."
+> "The default demo and dashboard storage run locally, with runtime files written under the local data folder. If we switch to the optional live Codex runtime, selected prompts and deal context are sent through the user's ChatGPT-authenticated Codex session, so we only use that path for data approved for that environment."
 
 **Q: "Can we customize the criteria?"**
 > "Absolutely. Investment thresholds, risk tolerances, deal structures - all configurable through threshold files. Different strategies can have different parameters."

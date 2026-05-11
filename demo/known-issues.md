@@ -29,18 +29,18 @@ This document covers common issues you may encounter when running the CRE Acquis
    - Right-click refresh button → "Empty Cache and Hard Reload"
 
 3. **Restart the dev server:**
-   ```bash
+   ```powershell
    # Stop current server (Ctrl+C)
    # Restart
-   npm run dev
+   npm run dashboard
    ```
 
 4. **Check for build errors:**
-   ```bash
+   ```powershell
    # Look at terminal output for errors
    # If errors exist, try:
    npm install
-   npm run dev
+   npm run dashboard
    ```
 
 5. **Check browser console:**
@@ -65,18 +65,18 @@ This document covers common issues you may encounter when running the CRE Acquis
 **Solutions:**
 
 1. **Verify the server is running:**
-   ```bash
+   ```powershell
    # Terminal should show Vite dev server running
    # If not, restart:
-   npm run dev
+   npm run dashboard
    ```
 
 2. **Check the port:**
-   ```bash
+   ```powershell
    # See what's using port 5173
    npx kill-port 5173
    # Restart server
-   npm run dev
+   npm run dashboard
    ```
 
 3. **Check firewall/antivirus:**
@@ -109,22 +109,22 @@ This document covers common issues you may encounter when running the CRE Acquis
    - Check if data updates after refresh
 
 2. **Verify checkpoint files are updating:**
-   ```bash
+   ```powershell
    # Watch the status file for changes
-   ls -la data/status/
+   Get-ChildItem data/status
    # Check file modification times
    ```
 
 3. **Check log files:**
-   ```bash
+   ```powershell
    # View recent logs
-   tail -100 data/logs/*/master.log
+   Get-ChildItem data/logs -Recurse -Filter master.log | Select-Object -First 1 | Get-Content -Tail 100
    ```
 
 4. **Verify file permissions:**
-   ```bash
+   ```powershell
    # Ensure data directory is writable
-   ls -la data/
+   Get-ChildItem data
    ```
 
 ---
@@ -139,30 +139,30 @@ This document covers common issues you may encounter when running the CRE Acquis
 - Agent status shows "running" indefinitely
 
 **Causes:**
-1. Agent waiting for external data (API timeout)
-2. Rate limiting from external services
+1. Live Codex agent still running or waiting on model output
+2. Optional web search or account limits slowing a live run
 3. Agent prompt error
 4. Background task failed silently
 
 **Solutions:**
 
 1. **Check the logs:**
-   ```bash
-   tail -200 data/logs/*/master.log
+   ```powershell
+   Get-ChildItem data/logs -Recurse -Filter master.log | Select-Object -First 1 | Get-Content -Tail 200
    # Look for ERROR or WARNING entries
    # Check last activity timestamp
    ```
 
 2. **Check individual agent checkpoints:**
-   ```bash
-   ls -la data/status/*/agents/
+   ```powershell
+   Get-ChildItem data/status/*/agents
    # Look for recently modified files
-   cat data/status/*/agents/*.json | head -50
+   Get-Content data/status/*/agents/*.json -TotalCount 50
    ```
 
 3. **Verify the master task is running:**
-   - If using Claude Code, check if the Task is still active
-   - Use `/tasks` to view running tasks
+   - If using live agents, run `npm run codex:status`
+   - Use `npm run codex:smoke` before relaunching
 
 4. **Resume from checkpoint:**
    - The system automatically resumes from checkpoints
@@ -189,15 +189,15 @@ This document covers common issues you may encounter when running the CRE Acquis
 **Solutions:**
 
 1. **Check upstream phase status:**
-   ```bash
-   cat data/status/{deal-id}.json | grep -A5 "dueDiligence"
+   ```powershell
+   Select-String -Path data/status/{deal-id}.json -Pattern "dueDiligence" -Context 0,5
    # Verify status is "COMPLETED"
    ```
 
 2. **Verify required data exists:**
-   ```bash
+   ```powershell
    # Check the dataForDownstream section of the upstream phase
-   cat data/status/{deal-id}.json | grep -A20 "dataForDownstream"
+   Select-String -Path data/status/{deal-id}.json -Pattern "dataForDownstream" -Context 0,20
    ```
 
 3. **Re-run the upstream phase:**
@@ -215,12 +215,12 @@ This document covers common issues you may encounter when running the CRE Acquis
 **Symptoms:**
 - Log shows rate limit messages
 - Web searches failing
-- API calls rejected
+- Live Codex requests delayed or rejected
 
 **Causes:**
 1. Too many concurrent web requests
 2. Search engine rate limiting
-3. AI API rate limits
+3. Codex or ChatGPT account limits during live runs
 
 **Solutions:**
 
@@ -234,8 +234,8 @@ This document covers common issues you may encounter when running the CRE Acquis
    - Multiple deals can run in parallel, but each needs its own deal ID
 
 3. **Reduce parallelism:**
-   - The system automatically backs off on rate limits
-   - For persistent issues, contact support
+   - Reduce Codex concurrency or run a smaller workflow
+   - For persistent issues, check your Codex account status and open a GitHub issue with non-sensitive logs
 
 ---
 
@@ -254,10 +254,10 @@ This document covers common issues you may encounter when running the CRE Acquis
 **Solutions:**
 
 1. **Validate JSON syntax:**
-   ```bash
+   ```powershell
    # Use a JSON validator
-   cat config/deal.json | python -m json.tool
-   # Or online: jsonlint.com
+   Get-Content config/deal.json -Raw | ConvertFrom-Json | Out-Null
+   # Or use online: jsonlint.com
    ```
 
 2. **Check required fields exist:**
@@ -277,8 +277,8 @@ This document covers common issues you may encounter when running the CRE Acquis
    - Decimals for percentages: `0.93` not `93`
 
 4. **Use a sample deal as template:**
-   ```bash
-   cp demo/deals/riverside-gardens.json config/deal.json
+   ```powershell
+   Copy-Item config/deal-example.json config/deal.json
    # Then edit with your values
    ```
 
@@ -296,21 +296,19 @@ This document covers common issues you may encounter when running the CRE Acquis
 **Solutions:**
 
 1. **Check directory permissions:**
-   ```bash
-   ls -la data/
+   ```powershell
+   Get-ChildItem data
    # Ensure write permission for current user
    ```
 
 2. **Fix permissions:**
-   ```bash
-   # Linux/Mac
-   chmod -R 755 data/
-   # Windows: Right-click → Properties → Security → Edit permissions
+   ```powershell
+   # Windows: Right-click the data folder -> Properties -> Security -> Edit permissions
    ```
 
 3. **Ensure directories exist:**
-   ```bash
-   mkdir -p data/status data/logs data/reports
+   ```powershell
+   New-Item -ItemType Directory -Force data/status,data/logs,data/reports
    ```
 
 ---
@@ -324,14 +322,14 @@ This document covers common issues you may encounter when running the CRE Acquis
 **Solutions:**
 
 1. **Verify file exists:**
-   ```bash
-   ls -la orchestrators/
-   ls -la agents/
+   ```powershell
+   Get-ChildItem orchestrators
+   Get-ChildItem agents
    ```
 
 2. **Check agent registry:**
-   ```bash
-   cat config/agent-registry.json
+   ```powershell
+   Get-Content config/agent-registry.json
    # Verify paths are correct
    ```
 
@@ -347,26 +345,24 @@ This document covers common issues you may encounter when running the CRE Acquis
 
 If you need to start completely fresh:
 
-```bash
+```powershell
 # 1. Stop the dashboard
-# (Ctrl+C in terminal running npm run dev)
+# (Ctrl+C in terminal running npm run dashboard)
 
 # 2. Clear all state
-rm -rf data/status/*
-rm -rf data/logs/*
-rm -rf data/reports/*
+Remove-Item data/status/*,data/logs/*,data/reports/* -Recurse -Force -ErrorAction SilentlyContinue
 
 # 3. Restart dashboard
-cd dashboard && npm run dev
+npm run dashboard
 
 # 4. Relaunch pipeline
 ```
 
 ### Resume from Specific Phase
 
-```bash
+```powershell
 # Check current state
-cat data/status/{deal-id}.json | grep -E '"status"'
+Select-String -Path data/status/{deal-id}.json -Pattern '"status"'
 
 # Mark phase as pending to re-run
 # Edit data/status/{deal-id}.json
@@ -376,12 +372,12 @@ cat data/status/{deal-id}.json | grep -E '"status"'
 
 ### Export Logs for Support
 
-```bash
+```powershell
 # Create a support bundle
-mkdir support-bundle
-cp data/status/*.json support-bundle/
-cp data/logs/*/*.log support-bundle/
-cp config/deal.json support-bundle/
+New-Item -ItemType Directory -Force support-bundle
+Copy-Item data/status/*.json support-bundle/ -ErrorAction SilentlyContinue
+Copy-Item data/logs/*/*.log support-bundle/ -ErrorAction SilentlyContinue
+Copy-Item config/deal.json support-bundle/
 # Zip and send to support
 ```
 

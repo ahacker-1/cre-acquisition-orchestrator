@@ -6,7 +6,7 @@ import {
   writeFileSync,
 } from 'fs'
 import { join } from 'path'
-import type { RunSpeed } from './run-manager'
+import type { RunMode, RunSpeed, RuntimeProvider } from './run-manager'
 
 export type LaunchScenario = 'core-plus' | 'value-add' | 'distressed'
 
@@ -31,6 +31,24 @@ export interface WorkflowPreset {
   dealId: string
   scenario: LaunchScenario
   speed: RunSpeed
+  mode: RunMode
+  runtimeProvider: RuntimeProvider
+  reset: boolean
+  codexMaxAgents: number | null
+  codexConcurrency: number | null
+  codexSearch: boolean
+  notes?: string
+  inputs: {
+    scenario: LaunchScenario
+    speed: RunSpeed
+    mode: RunMode
+    runtimeProvider: RuntimeProvider
+    reset: boolean
+    codexMaxAgents: number | null
+    codexConcurrency: number | null
+    codexSearch: boolean
+    notes?: string
+  }
   seed: number | null
   createdAt: string
   updatedAt: string
@@ -52,6 +70,13 @@ interface SavePresetInput {
   dealId?: unknown
   scenario?: unknown
   speed?: unknown
+  mode?: unknown
+  runtimeProvider?: unknown
+  reset?: unknown
+  codexMaxAgents?: unknown
+  codexConcurrency?: unknown
+  codexSearch?: unknown
+  notes?: unknown
   seed?: unknown
   inputs?: unknown
 }
@@ -94,9 +119,23 @@ function asSpeed(value: unknown): RunSpeed {
   return value === 'fast' || value === 'slow' || value === 'normal' ? value : 'normal'
 }
 
+function asMode(value: unknown): RunMode {
+  return value === 'fast' ? 'fast' : 'live'
+}
+
+function asRuntimeProvider(value: unknown): RuntimeProvider {
+  return value === 'codex' ? 'codex' : 'simulation'
+}
+
 function asSeed(value: unknown): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null
   return Math.round(value)
+}
+
+function asPositiveInteger(value: unknown, fallback: number | null): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
+  const nextValue = Math.round(value)
+  return nextValue > 0 ? nextValue : fallback
 }
 
 export function listWorkflows(context: ServiceContext): { workflows: WorkflowDefinition[] } {
@@ -160,6 +199,34 @@ export function saveWorkflowPreset(
     dealId,
     scenario: asScenario(input.scenario ?? nestedInputs.scenario, workflow.recommendedScenario || 'core-plus'),
     speed: asSpeed(input.speed ?? nestedInputs.speed),
+    mode: asMode(input.mode ?? nestedInputs.mode),
+    runtimeProvider: asRuntimeProvider(input.runtimeProvider ?? nestedInputs.runtimeProvider),
+    reset: input.reset === true || nestedInputs.reset === true,
+    codexMaxAgents: asPositiveInteger(input.codexMaxAgents ?? nestedInputs.codexMaxAgents, null),
+    codexConcurrency: asPositiveInteger(input.codexConcurrency ?? nestedInputs.codexConcurrency, 1),
+    codexSearch: input.codexSearch === true || nestedInputs.codexSearch === true,
+    notes:
+      typeof input.notes === 'string'
+        ? input.notes
+        : typeof nestedInputs.notes === 'string'
+          ? nestedInputs.notes
+          : undefined,
+    inputs: {
+      scenario: asScenario(input.scenario ?? nestedInputs.scenario, workflow.recommendedScenario || 'core-plus'),
+      speed: asSpeed(input.speed ?? nestedInputs.speed),
+      mode: asMode(input.mode ?? nestedInputs.mode),
+      runtimeProvider: asRuntimeProvider(input.runtimeProvider ?? nestedInputs.runtimeProvider),
+      reset: input.reset === true || nestedInputs.reset === true,
+      codexMaxAgents: asPositiveInteger(input.codexMaxAgents ?? nestedInputs.codexMaxAgents, null),
+      codexConcurrency: asPositiveInteger(input.codexConcurrency ?? nestedInputs.codexConcurrency, 1),
+      codexSearch: input.codexSearch === true || nestedInputs.codexSearch === true,
+      notes:
+        typeof input.notes === 'string'
+          ? input.notes
+          : typeof nestedInputs.notes === 'string'
+            ? nestedInputs.notes
+            : undefined,
+    },
     seed: asSeed(input.seed ?? nestedInputs.seed),
     createdAt: existing?.createdAt || timestamp,
     updatedAt: timestamp,

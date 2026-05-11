@@ -109,7 +109,24 @@ function normalizePreset(entry: unknown): WorkflowPreset | null {
             ? value.speed
           : 'normal',
       mode: rawInputs.mode === 'fast' ? 'fast' : 'live',
+      runtimeProvider:
+        rawInputs.runtimeProvider === 'codex' || value.runtimeProvider === 'codex'
+          ? 'codex'
+          : 'simulation',
       reset: typeof rawInputs.reset === 'boolean' ? rawInputs.reset : false,
+      codexMaxAgents:
+        typeof rawInputs.codexMaxAgents === 'number'
+          ? rawInputs.codexMaxAgents
+          : typeof value.codexMaxAgents === 'number'
+            ? value.codexMaxAgents
+            : 1,
+      codexConcurrency:
+        typeof rawInputs.codexConcurrency === 'number'
+          ? rawInputs.codexConcurrency
+          : typeof value.codexConcurrency === 'number'
+            ? value.codexConcurrency
+            : 1,
+      codexSearch: rawInputs.codexSearch === true || value.codexSearch === true,
       notes: typeof rawInputs.notes === 'string' ? rawInputs.notes : undefined,
       tags: Array.isArray(rawInputs.tags)
         ? rawInputs.tags.filter((tag): tag is string => typeof tag === 'string')

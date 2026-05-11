@@ -19,6 +19,8 @@ data/reports/
 data/deals/
 data/workflow-presets/
 data/runs/
+data/codex-runs/
+data/normalized/
 # Keep data/examples/ (curated sample output)
 !data/examples/
 

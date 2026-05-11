@@ -1,63 +1,105 @@
 # Prerequisites
 
-Everything you need installed and configured before running the CRE Acquisition Orchestration System.
+Everything needed before running the CRE Acquisition Orchestrator from a fresh Windows checkout.
 
 ---
 
-## Software Requirements
+## Required Software
 
 | Requirement | Minimum Version | Purpose |
-|-------------|----------------|---------|
-| Claude Code CLI | Latest | Runtime for all agents and orchestrators |
-| Node.js | 18.0+ | Dashboard server and build tools |
-| npm or yarn | npm 9+ / yarn 1.22+ | Dashboard dependency management |
-| Chrome or Chromium | Latest stable | Dashboard viewing at localhost:5173 |
+|-------------|-----------------|---------|
+| Node.js | 18.0+ | Root scripts, simulation engine, dashboard server |
+| npm | 9+ | Dependency install and launch scripts |
+| Chrome, Edge, or another modern browser | Current stable | Dashboard at `http://localhost:5173` |
 
-### Claude Code CLI
-
-The system runs entirely inside Claude Code. Every agent is a markdown prompt file launched via the `Task` tool.
+Run the project setup from the repo root:
 
 ```powershell
-# Verify Claude Code is installed
-claude --version
+npm install
+npm run setup
 ```
 
-If not installed, follow the official Anthropic installation guide for your platform.
+The setup script verifies Node/npm, installs dashboard dependencies, and tries to prepare the optional Codex live-agent runtime. The offline demo and dashboard still work if Codex install or login is skipped.
 
-### Node.js and npm
+For a strict live-agent setup check:
 
-Required only for the monitoring dashboard.
-
-```bash
-# Verify Node.js version (must be 18+)
-node --version
-
-# Verify npm version
-npm --version
+```powershell
+npm run setup -- --require-codex
 ```
 
-If Node.js is not installed or is below version 18, download from [https://nodejs.org](https://nodejs.org) (LTS recommended).
+For offline-only setup:
+
+```powershell
+npm run setup -- --skip-codex-install --skip-login
+```
 
 ---
 
-## Account Requirements
+## Optional Live AI Runtime
 
-### Anthropic API Key
+The deterministic demo does not need any API key or AI subscription. Live AI agent runs use OpenAI Codex CLI.
 
-Claude Code must have a valid API key with sufficient quota to run the pipeline.
+| Requirement | Purpose |
+|-------------|---------|
+| Codex CLI | Runs local agent tasks through OpenAI's open-source Codex harness |
+| ChatGPT account with Codex access | Lets you use Codex with your existing ChatGPT subscription login |
 
-| Setting | Recommendation | Notes |
-|---------|---------------|-------|
-| Model for orchestrators | Opus (claude-opus) | Best reasoning for coordination, dependency management, and final verdicts |
-| Model for specialists | Sonnet (claude-sonnet) | Good balance of speed and quality for focused analysis tasks |
-| API quota | Substantial | A full pipeline run may use 50-100+ agent invocations depending on deal complexity |
+Install Codex manually if setup cannot install it:
 
-```bash
-# Verify your API key is configured
-claude config list
+```powershell
+npm install -g @openai/codex
 ```
 
-Make sure your key is set and has not expired. If you encounter rate limit errors during a run, the checkpoint system will allow you to resume once quota is restored.
+Sign in from the dashboard or CLI. In the dashboard, choose **Codex / ChatGPT** in the Workflow Launcher and click **Login to ChatGPT**. From the CLI:
+
+```powershell
+codex login
+```
+
+Choose **Sign in with ChatGPT**. This uses your ChatGPT account instead of an OpenAI API key. Codex stores credentials outside this project; the repository only sees login status.
+
+Verify:
+
+```powershell
+npm run codex:status
+```
+
+Expected output includes:
+
+```text
+Logged in using ChatGPT
+```
+
+If you prefer API-key usage, Codex supports it, but this project's recommended first-run path is ChatGPT login.
+
+---
+
+## First-Run Checklist
+
+```powershell
+# 1. Node.js
+node --version
+# Expected: v18.x.x or higher
+
+# 2. npm
+npm --version
+# Expected: 9.x.x or higher
+
+# 3. Install project and dashboard dependencies
+npm install
+npm run setup
+
+# 4. Run the no-key offline demo
+npm run demo
+
+# 5. Optional: run one live Codex-backed agent
+npm run codex:smoke
+
+# 6. Start the dashboard
+npm run dashboard
+```
+
+Open `http://localhost:5173` after the dashboard starts.
 
 ---
 
@@ -65,89 +107,40 @@ Make sure your key is set and has not expired. If you encounter rate limit error
 
 | Component | Size | Notes |
 |-----------|------|-------|
-| System files (prompts, configs, skills, templates) | ~50 MB | All markdown and JSON, very lightweight |
-| Per deal analysis | ~200 MB | Logs, checkpoints, reports, phase outputs |
-| Dashboard (with node_modules) | ~150 MB | One-time install |
+| System files | About 50 MB | Prompts, configs, schemas, scripts |
+| Dashboard dependencies | About 150 MB | Installed under `dashboard/node_modules/` |
+| Per deterministic run | About 200 MB | Logs, checkpoints, reports, phase outputs |
+| Codex live outputs | Varies | Written under `data/codex-runs/` and ignored by git |
 
-For a typical workstation, allocate at least **500 MB** for the system plus one active deal. If you plan to analyze multiple deals in parallel or retain historical data, allocate accordingly.
+Allocate at least 500 MB for the system plus one active deal.
 
 ---
 
 ## Network Access
 
-Internet access is required for several specialist agents that perform online research:
+Internet access is required for:
 
-| Agent | Network Use |
-|-------|-------------|
-| market-study | WebSearch for market data, rent comps, demographic trends |
-| environmental-review | WebSearch/WebFetch for EPA databases, state DEQ records |
-| legal-title-review | WebSearch for county recorder lookups, lien searches |
-| lender-outreach | WebSearch for current lender rate sheets and program terms |
-| physical-inspection | WebSearch for contractor cost databases, code requirements |
+- Installing npm dependencies
+- Installing or updating Codex CLI
+- Signing in to Codex with ChatGPT
+- Optional live Codex runs that use web search via `--search`
 
-If you are behind a corporate firewall or VPN, ensure that outbound HTTPS traffic is permitted. Claude Code's WebSearch and WebFetch tools need standard HTTPS access.
-
----
-
-## Browser
-
-The real-time monitoring dashboard runs locally:
-
-- **URL:** `http://localhost:5173`
-- **Browser:** Chrome or Chromium (recommended for best compatibility with the React/Vite dashboard)
-- **Alternative:** Any modern browser (Firefox, Edge) should work, but Chrome is tested
-
----
-
-## Prerequisite Verification Checklist
-
-Run these commands to verify your environment is ready:
-
-```bash
-# 1. Claude Code CLI
-claude --version
-# Expected: version number displayed
-
-# 2. Node.js
-node --version
-# Expected: v18.x.x or higher
-
-# 3. npm
-npm --version
-# Expected: 9.x.x or higher
-
-# 4. Verify deal config exists
-# From cre-acquisition/ root:
-Get-Item config/deal.json
-# Expected: file exists
-
-# 5. Verify dashboard dependencies (first time only)
-cd dashboard && npm install && cd ..
-# Expected: dependencies installed without errors
-
-# 6. Test dashboard starts
-cd dashboard && npm run dev
-# Expected: Vite dev server starts at http://localhost:5173
-# Press Ctrl+C to stop after confirming
-```
+The offline deterministic simulation runs after dependencies are installed and does not call an LLM.
 
 ---
 
 ## Recommended Setup
 
-These are not strictly required, but will improve your experience:
-
 | Recommendation | Why |
-|---------------|-----|
-| **VS Code** | Best editor for reviewing and editing `deal.json` with JSON validation and syntax highlighting |
-| **Terminal width: 200+ columns** | Agent logs include timestamps, agent names, and categories. Wider terminals prevent line wrapping in log output |
-| **Second monitor** | Run the dashboard on one screen and Claude Code on the other for real-time monitoring |
-| **JSON formatter extension** | VS Code extensions like "Prettier" help keep deal.json readable |
+|----------------|-----|
+| VS Code | Good JSON editing and local markdown preview |
+| Terminal width of 160+ columns | Agent logs are easier to scan |
+| Second browser or monitor | Useful for watching dashboard and terminal output together |
 
 ---
 
 ## Next Steps
 
-Once all prerequisites are verified:
-- Proceed to [FIRST-DEAL-GUIDE.md](FIRST-DEAL-GUIDE.md) for a step-by-step walkthrough of your first deal analysis
-- Or jump to [LAUNCH-PROCEDURES.md](LAUNCH-PROCEDURES.md) if you are already familiar with the system
+- Follow [First Deal Guide](FIRST-DEAL-GUIDE.md) for a full walkthrough.
+- Use [Launch Procedures](LAUNCH-PROCEDURES.md) for all command modes.
+- Use [Troubleshooting](TROUBLESHOOTING.md) if setup or runtime checks fail.

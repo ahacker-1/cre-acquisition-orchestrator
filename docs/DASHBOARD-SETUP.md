@@ -10,6 +10,7 @@ The dashboard provides a local-first operator cockpit for deal setup, source-doc
 
 - **Deal workspace**: Overview, Underwriting, Due Diligence, Financing, Legal, Closing, Documents, and Package views for each deal
 - **Workflow launcher**: Five outcome workflows with saved local presets and run-now launch
+- **Runtime selector**: Choose offline simulation or live Codex / ChatGPT execution before launching supported workflows
 - **Document intake**: Upload, classify, extract, review, and apply source-backed inputs from local files
 - **Phase progress**: Visual progress bars for each of the 5 phases, including skipped-phase visibility for scoped workflows
 - **Agent status**: Per-agent status indicators (pending, running, complete, failed)
@@ -20,7 +21,7 @@ The dashboard provides a local-first operator cockpit for deal setup, source-doc
 The dashboard consists of three local components:
 1. **Vite dev server** (port 5173): Serves the React frontend
 2. **Watcher process** (port 8080): Monitors checkpoint/log files and pushes updates via WebSocket
-3. **Local REST API** (port 8081): Serves deals, workflows, presets, document uploads, extraction previews, and run launch requests
+3. **Local REST API** (port 8081): Serves deals, workflows, presets, document uploads, extraction previews, and simulation or Codex run launch requests
 
 ---
 
@@ -35,20 +36,18 @@ See [Prerequisites](PREREQUISITES.md) for full software requirements.
 
 ### Install Dependencies
 
-```bash
-cd dashboard
-npm install
+```powershell
+npm run setup
 ```
 
-This installs all frontend dependencies (React, Vite, Tailwind CSS) and the watcher dependencies.
+This installs all frontend dependencies (React, Vite, Tailwind CSS) and the watcher dependencies. It also tries to prepare the optional Codex live-agent runtime. Offline dashboard workflows still work if Codex is not installed or not logged in.
 
 ---
 
 ## Starting the Dashboard
 
-```bash
-cd dashboard
-npm run dev
+```powershell
+npm run dashboard
 ```
 
 This single command starts both:
@@ -166,6 +165,55 @@ Open a saved deal to work inside its full lifecycle workspace:
 | Documents | Source-document upload, classification, extraction preview, and approved-field apply |
 | Package | Completion package for the latest run |
 
+### Runtime Selection
+
+The Workflow Launcher and phase workspaces support two runtime providers:
+
+| Runtime | Best For | Output |
+|---------|----------|--------|
+| Simulation | No-key local demos, regression checks, and deterministic onboarding | Checkpoints, phase outputs, reports, story events, and package artifacts under `data/` |
+| Codex / ChatGPT | Running real markdown agents with your ChatGPT-authenticated Codex CLI session | Raw Codex prompts/logs/memos in `data/codex-runs/{runId}/` plus Package-view artifacts in `data/status/{dealId}/run-{runId}-*` |
+
+Codex launches expose agent count, concurrency, and optional web search controls. The default sandbox is read-only.
+
+When **Codex / ChatGPT** is selected, the Workflow Launcher shows a **ChatGPT Authentication** panel. It reports whether Codex CLI is installed, whether the local user is logged in with ChatGPT, and includes a **Login to ChatGPT** button. The button starts `codex login` locally so the user can complete the browser-based ChatGPT sign-in flow. The dashboard returns status only; it never returns or writes Codex credentials into the project.
+
+### Launch API Contract
+
+The dashboard posts workflow launches to:
+
+```text
+POST /api/workflows/{workflowId}/launch
+```
+
+Important request fields:
+
+| Field | Values | Notes |
+|-------|--------|-------|
+| `dealId` | saved deal id | Required unless using a saved preset |
+| `runtimeProvider` | `simulation` or `codex` | Defaults to `simulation` |
+| `codexMaxAgents` | positive integer | Optional cap for live Codex launches |
+| `codexConcurrency` | positive integer | Optional live Codex parallelism |
+| `codexSandbox` | Codex sandbox string | Defaults to read-only in the runner |
+| `codexModel` | model id | Optional Codex CLI model override |
+| `codexSearch` | boolean | Enables web search only when the installed Codex CLI supports it |
+
+Run artifacts are available through:
+
+```text
+GET /api/run/{runId}/events
+GET /api/run/{runId}/documents
+```
+
+Codex authentication helpers are available through:
+
+```text
+GET /api/codex/status
+POST /api/codex/login
+```
+
+`/api/codex/status` returns readiness flags only. `/api/codex/login` starts the local Codex CLI login flow so the user can choose ChatGPT in the browser.
+
 ### Local Document Intake
 
 1. Open a deal workspace.
@@ -213,7 +261,7 @@ const WS_URL = 'ws://localhost:8080'
 const API_URL = 'http://localhost:8081'
 ```
 
-After changing ports, restart the dashboard: stop the process and run `npm run dev` again.
+After changing ports, restart the dashboard: stop the process and run `npm run dashboard` again.
 
 ---
 
@@ -234,7 +282,7 @@ Multiple browser windows can connect to the same dashboard simultaneously. All r
 
 ## Stopping the Dashboard
 
-Press `Ctrl+C` in the terminal where `npm run dev` is running. This stops both the Vite server and the file watcher.
+Press `Ctrl+C` in the terminal where `npm run dashboard` is running. This stops both the Vite server and the file watcher.
 
 ---
 
@@ -242,13 +290,16 @@ Press `Ctrl+C` in the terminal where `npm run dev` is running. This stops both t
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Blank page at localhost:5173 | Vite dev server not running | Run `cd dashboard && npm run dev` |
-| "Cannot find module" error | Dependencies not installed | Run `cd dashboard && npm install` |
+| Blank page at localhost:5173 | Vite dev server not running | Run `npm run dashboard` |
+| "Cannot find module" error | Dependencies not installed | Run `npm run setup` |
 | Port 5173 in use | Another process occupying the port | Kill the process or change the port (see above) |
 | Port 8080 in use | Another process occupying the port | Kill the process or change the port (see above) |
-| "Disconnected" status | Watcher crashed or was not started | Restart with `npm run dev` |
+| "Disconnected" status | Watcher crashed or was not started | Restart with `npm run dashboard` |
 | Phase progress stuck at 0% | Watcher cannot find checkpoint files | Verify `data/status/{deal-id}.json` exists. Check that the watcher's watch path matches your data directory. |
 | Log viewer empty | Pipeline has not started yet | Logs appear only after agents begin executing. Launch the pipeline first. |
+| Codex run button fails immediately | Codex CLI is missing or not logged in | In the Workflow Launcher, choose Codex / ChatGPT and click **Login to ChatGPT**. Or run `npm run codex:status`, then `codex login` and choose ChatGPT |
+| Login to ChatGPT button does not open a login flow | Codex CLI is missing or the API server is not running | Run `npm run setup`, then restart `npm run dashboard` and retry |
+| Codex run completes but Package is empty | Browser is viewing a different deal or stale run | Reopen the deal workspace and verify `data/status/{dealId}/run-{runId}-documents.json` exists |
 | Stale data after pipeline re-run | Browser cache showing old data | Hard refresh (Ctrl+Shift+R) or clear browser cache |
 | Watcher shows file change events but UI doesn't update | WebSocket message format mismatch | Check browser console for errors. Ensure watcher and frontend versions match. |
 
@@ -269,9 +320,8 @@ If you see connection errors, the watcher may not be running or the port may be 
 
 For a production build (optimized, no hot reload):
 
-```bash
-cd dashboard
-npm run build
+```powershell
+npm --prefix dashboard run build
 ```
 
 This outputs static files to `dashboard/dist/`. Serve them with any static file server. Note that the watcher still needs to run separately for real-time updates.

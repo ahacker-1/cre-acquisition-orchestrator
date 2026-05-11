@@ -1,11 +1,11 @@
-import { spawn, type ChildProcessByStdio } from 'child_process'
+import { spawn, spawnSync, type ChildProcessByStdio } from 'child_process'
 import { existsSync, mkdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import type { Readable } from 'stream'
 
 export type RunMode = 'live' | 'fast'
 export type RunSpeed = 'fast' | 'normal' | 'slow'
-export type RuntimeProvider = 'simulation'
+export type RuntimeProvider = 'simulation' | 'codex'
 export type RunLifecycleState =
   | 'IDLE'
   | 'STARTING'
@@ -23,6 +23,7 @@ export interface RunStatus {
   runtimeProvider: RuntimeProvider | null
   presetId: string | null
   inputSnapshotPath: string | null
+  outputPath: string | null
   state: RunLifecycleState
   mode: RunMode | null
   speed: RunSpeed | null
@@ -44,6 +45,11 @@ export interface StartRunRequest {
   runtimeProvider?: RuntimeProvider
   presetId?: string
   inputSnapshotPath?: string
+  codexMaxAgents?: number | null
+  codexConcurrency?: number | null
+  codexSandbox?: string | null
+  codexModel?: string | null
+  codexSearch?: boolean
 }
 
 export interface RunMessage {
@@ -102,7 +108,7 @@ function sanitizeWorkflowId(workflowId: unknown): string {
 }
 
 function sanitizeRuntimeProvider(runtimeProvider: unknown): RuntimeProvider {
-  return runtimeProvider === 'simulation' ? 'simulation' : 'simulation'
+  return runtimeProvider === 'codex' ? 'codex' : 'simulation'
 }
 
 function sanitizePresetId(presetId: unknown): string | null {
@@ -119,6 +125,17 @@ function sanitizeSeed(seed: unknown): number | null {
   if (typeof seed !== 'number') return null
   if (!Number.isFinite(seed)) return null
   return Math.round(seed)
+}
+
+function sanitizePositiveInteger(value: unknown, fallback: number | null = null): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
+  const nextValue = Math.round(value)
+  return nextValue > 0 ? nextValue : fallback
+}
+
+function sanitizeOptionalString(value: unknown): string | null {
+  if (typeof value !== 'string' || value.trim().length === 0) return null
+  return value.trim()
 }
 
 function speedToDelayMs(speed: RunSpeed): number {
@@ -143,6 +160,7 @@ export class RunManager {
     runtimeProvider: null,
     presetId: null,
     inputSnapshotPath: null,
+    outputPath: null,
     state: 'IDLE',
     mode: null,
     speed: null,
@@ -180,6 +198,7 @@ export class RunManager {
         runtimeProvider: this.status.runtimeProvider,
         presetId: this.status.presetId,
         inputSnapshotPath: this.status.inputSnapshotPath,
+        outputPath: this.status.outputPath,
         pid: this.status.pid,
         startedAt: this.status.startedAt,
         endedAt: this.status.endedAt,
@@ -210,8 +229,14 @@ export class RunManager {
     const runtimeProvider = sanitizeRuntimeProvider(request.runtimeProvider)
     const presetId = sanitizePresetId(request.presetId)
     const inputSnapshotPath = sanitizeInputSnapshotPath(request.inputSnapshotPath)
+    const codexMaxAgents = sanitizePositiveInteger(request.codexMaxAgents)
+    const codexConcurrency = sanitizePositiveInteger(request.codexConcurrency, 2) ?? 2
+    const codexSandbox = sanitizeOptionalString(request.codexSandbox) || 'read-only'
+    const codexModel = sanitizeOptionalString(request.codexModel)
+    const codexSearch = request.codexSearch === true
     const reset = request.reset !== false
     const runId = `run_${nowIso().replace(/[:.]/g, '-')}`
+    const outputPath = runtimeProvider === 'codex' ? `data/codex-runs/${runId}` : null
 
     this.status = {
       active: true,
@@ -221,6 +246,7 @@ export class RunManager {
       runtimeProvider,
       presetId,
       inputSnapshotPath,
+      outputPath,
       state: 'STARTING',
       mode,
       speed,
@@ -230,9 +256,9 @@ export class RunManager {
       exitCode: null,
       error: null,
     }
-    this.emit('state', { reset, dealPath, workflowId, runtimeProvider, presetId, inputSnapshotPath })
+    this.emit('state', { reset, dealPath, workflowId, runtimeProvider, presetId, inputSnapshotPath, outputPath })
 
-    if (reset) {
+    if (reset && runtimeProvider === 'simulation') {
       try {
         this.resetRuntimeArtifacts()
       } catch (err) {
@@ -257,13 +283,35 @@ export class RunManager {
     }
 
     const scriptPath =
-      mode === 'live'
+      runtimeProvider === 'codex'
+        ? join(this.projectRoot, 'scripts', 'codex-agent-runner.js')
+        : mode === 'live'
         ? join(this.projectRoot, 'scripts', 'orchestrate.js')
         : join(this.projectRoot, 'scripts', 'demo-run.js')
     const agentDelayMs = speedToDelayMs(speed)
 
     const args: string[] =
-      mode === 'live'
+      runtimeProvider === 'codex'
+        ? [
+            scriptPath,
+            '--deal',
+            dealPath,
+            '--scenario',
+            scenario,
+            '--workflow',
+            workflowId,
+            '--run-id',
+            runId,
+            '--concurrency',
+            String(codexConcurrency),
+            '--sandbox',
+            codexSandbox,
+            ...(inputSnapshotPath ? ['--input-snapshot', inputSnapshotPath] : []),
+            ...(codexMaxAgents ? ['--max-agents', String(codexMaxAgents)] : []),
+            ...(codexModel ? ['--model', codexModel] : []),
+            ...(codexSearch ? ['--search'] : []),
+          ]
+        : mode === 'live'
         ? [
             scriptPath,
             '--deal',
@@ -405,10 +453,20 @@ export class RunManager {
       runtimeProvider,
       presetId,
       inputSnapshotPath,
+      outputPath,
       scenario,
       seed,
       agentDelayMs,
       script: scriptPath,
+      ...(runtimeProvider === 'codex'
+        ? {
+            codexMaxAgents,
+            codexConcurrency,
+            codexSandbox,
+            codexSearch,
+            codexModel,
+          }
+        : {}),
     })
 
     return {
@@ -422,6 +480,7 @@ export class RunManager {
         runtimeProvider: this.status.runtimeProvider,
         presetId: this.status.presetId,
         inputSnapshotPath: this.status.inputSnapshotPath,
+        outputPath: this.status.outputPath,
         pid: this.status.pid,
         startedAt: this.status.startedAt,
       },
@@ -460,7 +519,7 @@ export class RunManager {
     const activePid = this.status.pid
 
     try {
-      this.child.kill()
+      this.killChildProcessTree()
       this.clearStopTimer()
       this.stopTimer = setTimeout(() => {
         if (!this.child) return
@@ -531,5 +590,18 @@ export class RunManager {
       clearTimeout(this.stopTimer)
       this.stopTimer = null
     }
+  }
+
+  private killChildProcessTree(): void {
+    if (!this.child) return
+    const pid = this.child.pid
+    if (process.platform === 'win32' && pid) {
+      const result = spawnSync('taskkill', ['/pid', String(pid), '/t', '/f'], {
+        cwd: this.projectRoot,
+        stdio: 'ignore',
+      })
+      if (result.status === 0) return
+    }
+    this.child.kill()
   }
 }

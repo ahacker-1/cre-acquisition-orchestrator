@@ -3,6 +3,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { readFileSync, readdirSync, existsSync, mkdirSync, statSync, writeFileSync } from 'fs';
 import { resolve, relative, dirname, join, basename } from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { RunManager, type RunMessage, type StartRunRequest } from './run-manager';
 import {
@@ -37,6 +38,18 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const require = createRequire(import.meta.url);
+const codexCli = require('../../scripts/lib/codex-cli') as {
+  getCodexStatus: (cwd?: string) => {
+    installed: boolean;
+    loggedIn: boolean;
+    usingChatGpt: boolean;
+    version: string | null;
+    loginStatus: string | null;
+    error: string | null;
+  };
+  runDetached: (command: string, args?: string[], options?: { cwd?: string }) => number | null;
+};
 
 const customDataPath: string | undefined = process.argv[2];
 const dataRoot: string = customDataPath
@@ -143,6 +156,54 @@ function readIncrementalLines(filePath: string): string[] {
 
 function normalizedRelPath(basePath: string, filePath: string): string {
   return relative(basePath, filePath).replace(/\\/g, '/');
+}
+
+function asRuntimeProvider(value: unknown): 'simulation' | 'codex' {
+  return value === 'codex' ? 'codex' : 'simulation';
+}
+
+function asPositiveInteger(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  const nextValue = Math.round(value);
+  return nextValue > 0 ? nextValue : undefined;
+}
+
+function asOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function readCodexStatus(): Record<string, unknown> {
+  const status = codexCli.getCodexStatus(projectRoot);
+  return {
+    installed: status.installed,
+    loggedIn: status.loggedIn,
+    usingChatGpt: status.usingChatGpt,
+    version: status.version,
+    loginStatus: status.loginStatus,
+    error: status.error,
+    storesCredentialsInRepo: false,
+    authStorage: 'Managed by Codex CLI outside this repository',
+  };
+}
+
+function startCodexLogin(): Record<string, unknown> {
+  const status = codexCli.getCodexStatus(projectRoot);
+  if (!status.installed) {
+    return {
+      started: false,
+      statusCode: 400,
+      error: 'Codex CLI is not installed. Install it with: npm install -g @openai/codex',
+      codexStatus: readCodexStatus(),
+    };
+  }
+  const pid = codexCli.runDetached('codex', ['login'], { cwd: projectRoot });
+  return {
+    started: true,
+    statusCode: 202,
+    pid,
+    message: 'Codex login started. Choose Sign in with ChatGPT in the browser flow, then refresh status.',
+    codexStatus: readCodexStatus(),
+  };
 }
 
 function isRunArtifactJson(filePathOrRel: string): boolean {
@@ -748,6 +809,19 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
       return;
     }
 
+    // GET /api/codex/status - report local Codex CLI auth state without exposing credentials
+    if (method === 'GET' && url === '/api/codex/status') {
+      sendJson(res, 200, readCodexStatus());
+      return;
+    }
+
+    // POST /api/codex/login - start Codex login so users can choose ChatGPT in the browser
+    if (method === 'POST' && url === '/api/codex/login') {
+      const result = startCodexLogin();
+      sendJson(res, Number(result.statusCode || 202), result);
+      return;
+    }
+
     // GET /api/deals - list saved and sample deals for the dashboard library
     if (method === 'GET' && url === '/api/deals') {
       sendJson(res, 200, listDealLibrary(dealServiceContext));
@@ -990,7 +1064,7 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
 
       const startRequest: StartRunRequest = {
         dealPath: record.item.dealPath,
-        mode: 'live',
+        mode: body.mode === 'fast' ? 'fast' : 'live',
         speed:
           body.speed === 'fast' || body.speed === 'slow' || body.speed === 'normal'
             ? body.speed
@@ -1002,8 +1076,13 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         seed: typeof body.seed === 'number' ? body.seed : preset?.seed ?? undefined,
         reset: typeof body.reset === 'boolean' ? body.reset : false,
         workflowId: workflow.id,
-        runtimeProvider: 'simulation',
+        runtimeProvider: asRuntimeProvider(body.runtimeProvider),
         presetId: preset?.presetId || presetId || undefined,
+        codexMaxAgents: asPositiveInteger(body.codexMaxAgents),
+        codexConcurrency: asPositiveInteger(body.codexConcurrency),
+        codexSandbox: asOptionalString(body.codexSandbox),
+        codexModel: asOptionalString(body.codexModel),
+        codexSearch: body.codexSearch === true,
       };
 
       const inputSnapshot = createRunInputSnapshotFile(dealId, workflow.id, {
@@ -1240,7 +1319,12 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         scenario: typeof body.scenario === 'string' ? body.scenario : undefined,
         reset: typeof body.reset === 'boolean' ? body.reset : false,
         workflowId: 'full-acquisition-review',
-        runtimeProvider: 'simulation',
+        runtimeProvider: asRuntimeProvider(body.runtimeProvider),
+        codexMaxAgents: asPositiveInteger(body.codexMaxAgents),
+        codexConcurrency: asPositiveInteger(body.codexConcurrency),
+        codexSandbox: asOptionalString(body.codexSandbox),
+        codexModel: asOptionalString(body.codexModel),
+        codexSearch: body.codexSearch === true,
       }
 
       const inputSnapshot = createRunInputSnapshotFile(dealId, 'full-acquisition-review', {

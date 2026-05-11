@@ -1,377 +1,177 @@
 # First Deal Guide
 
-A step-by-step walkthrough from zero to final acquisition report. Follow each step in order.
+A clean path from fresh clone to your first CRE acquisition run.
 
 ---
 
-## Step 1: Verify Prerequisites
+## Step 1: Install and Verify
 
-Before anything else, confirm your environment is ready.
-
-```bash
-claude --version          # Claude Code CLI installed
-node --version            # Node.js 18+
-npm --version             # npm available
-```
-
-If any check fails, see [PREREQUISITES.md](PREREQUISITES.md) for installation instructions.
-
----
-
-## Step 2: Configure Your Deal
-
-The fastest v2.0.0 path is the dashboard:
-
-1. Start the dashboard in Step 4.
-2. Click **New Deal** or **Create Upload Workspace**.
-3. Save a draft deal.
-4. Open the deal workspace and use the **Documents** tab to upload rent rolls, T12s, offering memoranda, LOIs, PDFs, or XLSX files.
-5. Extract CSV/TXT/MD files and approve fields before launching a workflow.
-
-If you prefer the original config-file path, the system can still run from `config/deal.json`.
-
-### 2a. Copy the Example File
+From the repo root:
 
 ```powershell
-# From cre-acquisition/ root directory
-Copy-Item config/deal-example.json config/deal.json
+npm install
+npm run setup
 ```
 
-### 2b. Open and Edit deal.json
+This verifies Node/npm, installs dashboard dependencies, and tries to prepare the optional Codex live-agent runtime. If Codex install or login is skipped, the offline demo and dashboard still work.
 
-Open `config/deal.json` in your editor (VS Code recommended):
+If you want live AI agents, choose **Sign in with ChatGPT** during the Codex login flow. For a strict live-agent setup check, run:
 
-```bash
+```powershell
+npm run setup -- --require-codex
+```
+
+Verify Codex auth:
+
+```powershell
+npm run codex:status
+```
+
+Expected login output includes `Logged in using ChatGPT`.
+
+---
+
+## Step 2: Start with the Sample Deal
+
+The repo ships with `config/deal.json` populated for Parkview Apartments, a 200-unit Austin multifamily sample. For the fastest first run, keep that file as-is.
+
+To create your own deal later, either:
+
+- Use the dashboard New Deal flow.
+- Copy `config/deal-example.json` into `config/deal.json` and edit the fields.
+
+```powershell
+Copy-Item config/deal-example.json config/deal.json
 code config/deal.json
 ```
 
-### 2c. Fill In Required Fields
+At minimum, keep these fields populated:
 
-At minimum, you must populate these fields. Replace the example values with your deal data:
+- `dealId`
+- `dealName`
+- `property`
+- `financials`
+- `financing`
+- `investmentStrategy`
+- `timeline`
 
-```json
-{
-  "dealId": "DEAL-2025-001",
-  "dealName": "Your Property Name",
-
-  "property": {
-    "address": "123 Main Street",
-    "city": "Your City",
-    "state": "TX",
-    "zip": "75201",
-    "propertyType": "multifamily",
-    "yearBuilt": 1995,
-    "totalUnits": 150,
-    "unitMix": {
-      "types": [
-        {
-          "type": "1BR/1BA",
-          "count": 80,
-          "avgSqFt": 750,
-          "marketRent": 1400,
-          "inPlaceRent": 1300
-        },
-        {
-          "type": "2BR/2BA",
-          "count": 70,
-          "avgSqFt": 1050,
-          "marketRent": 1800,
-          "inPlaceRent": 1700
-        }
-      ]
-    }
-  },
-
-  "financials": {
-    "askingPrice": 25000000,
-    "currentNOI": 1750000,
-    "inPlaceOccupancy": 0.94
-  },
-
-  "financing": {
-    "targetLTV": 0.70,
-    "estimatedRate": 0.055,
-    "loanTerm": 10,
-    "amortization": 30,
-    "loanType": "Agency"
-  },
-
-  "investmentStrategy": "core-plus",
-  "targetHoldPeriod": 5,
-  "targetIRR": 0.15,
-  "targetEquityMultiple": 1.8,
-  "targetCashOnCash": 0.08,
-
-  "seller": {
-    "entity": "Seller Entity LLC"
-  },
-
-  "timeline": {
-    "psaExecutionDate": "2025-06-01",
-    "ddStartDate": "2025-06-01",
-    "ddExpirationDate": "2025-07-15",
-    "closingDate": "2025-09-01"
-  }
-}
-```
-
-For a complete field reference, see [DEAL-CONFIGURATION.md](DEAL-CONFIGURATION.md).
-
-### 2d. Validate Your Configuration
-
-Review your deal.json for common mistakes:
-- `dealId` follows the `DEAL-YYYY-NNN` format
-- `state` is a two-letter uppercase abbreviation
-- `zip` is a string (quoted), not a number
-- All monetary values are plain numbers without dollar signs or commas
-- Occupancy and rates are decimals (0.93, not 93)
-- Dates are `YYYY-MM-DD` format
+For the complete field reference, see [Deal Configuration](DEAL-CONFIGURATION.md).
 
 ---
 
-## Step 3: Customize Thresholds (Optional)
+## Step 3: Run the Offline Demo
 
-The file `config/thresholds.json` defines investment criteria that determine PASS / FAIL / CONDITIONAL verdicts.
-
-Default thresholds are calibrated for a typical core-plus multifamily acquisition. If you have different investment criteria, edit the thresholds before launching.
-
-```bash
-code config/thresholds.json
+```powershell
+npm run demo
 ```
 
-For guidance on what each threshold controls, see [THRESHOLD-CUSTOMIZATION.md](THRESHOLD-CUSTOMIZATION.md).
+This does not call any LLM. It runs the deterministic simulation engine, generates checkpoints, writes phase outputs, validates contracts, and produces reports under `data/reports/{dealId}/`.
 
-If you are running your first deal, **skip this step** and use the defaults.
+Useful output locations:
+
+| Output | Path |
+|--------|------|
+| Master checkpoint | `data/status/{dealId}.json` |
+| Final report | `data/reports/{dealId}/final-report.md` |
+| Phase outputs | `data/phase-outputs/{dealId}/` |
+| Logs | `data/logs/{dealId}/master.log` |
 
 ---
 
 ## Step 4: Start the Dashboard
 
-The monitoring dashboard shows real-time pipeline progress, agent status, and findings.
-
-```bash
-# From cre-acquisition/ root
-cd dashboard
-npm install       # First time only - installs dependencies
-npm run dev       # Starts the development server
-```
-
-You should see output like:
-```
-  VITE v5.x.x  ready in XXX ms
-
-  > Local:   http://localhost:5173/
-```
-
-Open your browser to **http://localhost:5173**. The dashboard will display "No active deal" until you launch the pipeline.
-
-Leave this terminal running and open a **new terminal** for the next step.
-
----
-
-## Step 5: Launch the Pipeline
-
-This is where you start the actual analysis. Open Claude Code in a new terminal.
-
-### 5a. Start Claude Code
-
-```bash
-claude
-```
-
-### 5b. Read the Master Orchestrator
-
-In the Claude Code session, paste this prompt:
-
-```
-Read orchestrators/master-orchestrator.md and config/deal.json.
-
-Launch the full CRE acquisition pipeline for the deal described in config/deal.json.
-Follow the master orchestrator instructions exactly. Execute all 5 phases:
-Due Diligence, Underwriting, Financing, Legal, and Closing.
-```
-
-### 5c. What Happens Next
-
-Claude Code will:
-1. Read the master orchestrator prompt and deal configuration
-2. Read thresholds and the agent registry
-3. Check for any existing checkpoint (resume state)
-4. Initialize a fresh deal checkpoint at `data/status/{deal-id}.json`
-5. Create `data/status/<deal-id>.json` with deal summary
-6. Launch **Phase 1: Due Diligence** (7 specialist agents)
-7. Continue sequentially through all 5 phases
-8. Produce a final acquisition report with a Go/No-Go verdict
-
-The pipeline runs autonomously. No user input is required after launch.
-
----
-
-## Step 6: Monitor Progress
-
-While the pipeline runs, you can track progress in three ways:
-
-### Dashboard (Primary)
-
-Open **http://localhost:5173** in your browser. The dashboard displays:
-- Overall pipeline progress bar
-- Phase-by-phase status (Pending / Running / Complete / Failed)
-- Active agent count and names
-- Key findings as they are discovered
-- Red flags and data gaps
-
-### data/status/<deal-id>.json (Quick Check)
-
-The master orchestrator updates `data/status/<deal-id>.json` at the project root after every significant event:
+In a second terminal:
 
 ```powershell
-# Quick status check from another terminal
-Get-Content data/status/<deal-id>.json
+npm run dashboard
 ```
 
-### Log Files (Detailed)
+Open `http://localhost:5173`.
 
-For detailed agent activity:
+The dashboard lets you:
+
+- Create or open a deal workspace
+- Upload local source documents
+- Extract CSV/TXT/MD inputs
+- Launch focused workflows
+- Watch phase progress and agent status
+- Review the completion package
+
+---
+
+## Step 5: Run Live Codex Agents
+
+Live Codex runs use the same markdown agent instructions through `codex exec`. CLI runs write raw prompts, logs, manifests, summaries, and agent memos to `data/codex-runs/{runId}/`. Dashboard-launched Codex runs also publish story events and package documents under `data/status/{dealId}/run-{runId}-*.{ndjson,json}` so the Package view can show the real Codex workpapers.
+
+After `npm run codex:status` confirms ChatGPT login, run one live agent:
 
 ```powershell
-# Master orchestrator log
-Get-Content data/logs/{deal-id}/master.log
-
-# Phase-specific logs
-Get-Content data/logs/{deal-id}/due-diligence.log
-Get-Content data/logs/{deal-id}/underwriting.log
+npm run codex:smoke
 ```
 
-Replace `{deal-id}` with your actual deal ID (e.g., `DEAL-2025-001`).
-
----
-
-## Step 7: Review Results
-
-When the pipeline completes, all outputs are in the `data/reports/{deal-id}/` directory.
-
-### Key Output Files
-
-| File | Contents |
-|------|----------|
-| `data/reports/{deal-id}/final-report.md` | Complete acquisition report with verdict |
-| `data/reports/{deal-id}/dd-report.md` | Due diligence findings |
-| `data/reports/{deal-id}/underwriting-report.md` | Financial model, scenarios, IC memo |
-| `data/reports/{deal-id}/financing-report.md` | Lender quotes, term comparison |
-| `data/reports/{deal-id}/legal-report.md` | Title, PSA, estoppel, insurance status |
-| `data/reports/{deal-id}/closing-report.md` | Closing readiness assessment |
-
-### Read the Final Report
+Then run a multi-agent quick screen:
 
 ```powershell
-Get-Content data/reports/{deal-id}/final-report.md
+npm run codex:run
 ```
 
-The report opens with:
-- **Verdict:** PASS, FAIL, or CONDITIONAL
-- **Confidence Score:** 0-100 indicating data completeness
-- **Executive Summary:** 2-3 paragraph synthesis
+For the complete live catalog:
 
-### Decision Card
+```powershell
+npm run codex:run:full
+```
 
-The final report includes a decision card with key metrics:
+The live runner reads the existing markdown prompts in `agents/`, `orchestrators/`, and `skills/`, then writes Codex outputs to:
 
-| Metric | What It Tells You |
-|--------|-------------------|
-| NOI | Net Operating Income (revenue minus operating expenses) |
-| Cap Rate | Return based on purchase price vs. NOI |
-| DSCR | Can the property cover its debt payments? (>1.25 = good) |
-| Cash-on-Cash | Annual cash return on your equity investment |
-| IRR | Total projected return including appreciation |
-| Price/Unit | How the price compares to market |
-| Risk Score | Overall risk assessment (0-100, higher is safer) |
+```text
+data/codex-runs/{runId}/
+```
+
+The default sandbox is read-only so the agents can analyze the repo without editing it. Use `--search` when your installed Codex CLI exposes web search; older versions will print a warning and continue without search:
+
+```powershell
+node scripts/codex-agent-runner.js --workflow quick-deal-screen --concurrency 2 --search
+```
 
 ---
 
-## Step 8: Interpret Verdicts
+## Step 6: Read Results
 
-### PASS
-All primary investment criteria are met. No dealbreakers found. The system recommends proceeding with the acquisition, subject to any noted conditions.
+Offline demo report:
 
-### CONDITIONAL
-Some criteria are marginal or data gaps exist. The report lists specific conditions that must be resolved. Common conditions:
-- Outstanding environmental findings need Phase II assessment
-- Estoppel collection below 80% threshold
-- One or more underwriting metrics are borderline
+```powershell
+Get-Content data/reports/parkview-2026-001/final-report.md
+```
 
-Review the conditions list carefully. Each condition notes which phase flagged it and what resolution is needed.
+Latest live Codex run summary:
 
-### FAIL
-A dealbreaker was found or multiple primary criteria failed. The report explains exactly what triggered the failure. Common triggers:
-- DSCR below minimum threshold
-- Active title dispute or environmental contamination
-- Structural issues requiring demolition
-- Property in bankruptcy estate
+```powershell
+Get-ChildItem data/codex-runs
+Get-Content data/codex-runs/<run-id>/summary.md
+```
 
-A FAIL verdict does not always mean "walk away." Review the specific findings -- some failures may be addressable through price negotiation or deal restructuring.
+Replace `<run-id>` with the directory created by the runner, for example `codex-smoke`.
 
 ---
 
-## Step 9: Troubleshoot
+## Step 7: Common Fixes
 
-If something goes wrong during the pipeline:
-
-### Pipeline Stalls
-```bash
-# Check data/status/<deal-id>.json for current status
-Get-Content data/status/<deal-id>.json
-
-# Check master log for errors
-Get-Content data/logs/{deal-id}/master.log
-```
-
-### Agent Failures
-The system retries failed agents once automatically. If an agent still fails:
-1. Check the phase-specific log for error details
-2. The pipeline continues with available data, reducing the confidence score
-3. Data gaps are listed in the final report
-
-### Resume After Interruption
-If your session is interrupted (terminal closed, power loss, etc.), the checkpoint system preserves all progress:
-
-```bash
-# Start a new Claude Code session
-claude
-
-# Paste this prompt:
-Read orchestrators/master-orchestrator.md and config/deal.json.
-Resume the CRE acquisition pipeline for deal {deal-id}.
-Check data/status/{deal-id}.json for current state and skip completed phases.
-```
-
-The master orchestrator reads the checkpoint, identifies completed phases, and picks up where it left off.
-
-### Common Issues
-
-| Issue | Solution |
-|-------|----------|
-| "No deal config found" | Verify `config/deal.json` exists and is valid JSON |
-| Dashboard shows no data | Ensure the dashboard is running (`cd dashboard && npm run dev`) and the deal ID matches |
-| Agent timeout | Some agents (market-study, environmental) need up to 45 minutes. Check the log for timeout warnings |
-| Rate limit errors | API quota exceeded. Wait for quota reset, then resume (see above) |
-| Invalid deal.json | Check that all required fields are populated and types are correct. See [DEAL-CONFIGURATION.md](DEAL-CONFIGURATION.md) |
+| Issue | Fix |
+|-------|-----|
+| `Codex CLI is not installed` | Run `npm install -g @openai/codex`, then `npm run setup` |
+| `Codex is not logged in` | Run `codex login` and choose ChatGPT |
+| Dashboard shows no data | Run `npm run demo` once, then refresh |
+| Port 5173 is busy | Stop the other process or edit `dashboard/vite.config.ts` |
+| Contract validation fails | Run `npm run demo` first so fresh checkpoint files exist |
+| Live Codex agent has missing facts | Re-run with `--search` or add the missing source documents |
 
 ---
 
 ## What You Have Now
 
-After completing your first deal analysis, you have:
+After the first run, you have:
 
-1. **A complete acquisition report** with quantified risk and return metrics
-2. **Phase-by-phase analysis** covering property condition, financials, market, legal, and closing readiness
-3. **A Go/No-Go verdict** calibrated to your investment strategy
-4. **Checkpoint data** that can be re-analyzed if deal terms change
-5. **Experience** with the system to run future deals faster
-
----
-
-## Next Steps
-
-- Customize thresholds for your investment strategy: [THRESHOLD-CUSTOMIZATION.md](THRESHOLD-CUSTOMIZATION.md)
-- Learn the full system architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
-- Review all launch options: [LAUNCH-PROCEDURES.md](LAUNCH-PROCEDURES.md)
+1. A no-key local simulation path for instant evaluation.
+2. A dashboard for deal setup, document intake, workflow launch, and package review.
+3. A ChatGPT-login Codex harness for running real markdown agents through `codex exec`.
+4. Generated checkpoints and reports you can inspect, validate, and adapt for future deals.

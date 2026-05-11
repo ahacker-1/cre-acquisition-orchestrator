@@ -141,56 +141,80 @@ gantt
 
 ## 3. Data Flow
 
-Data flows from the deal configuration through agents, into checkpoints, and out as reports.
+Data flows from deal setup and source documents through the dashboard launch layer into one of two runtimes: offline simulation or live Codex. Both paths publish local artifacts that the Package view can read. Codex authentication stays outside the repo: the dashboard can check local status and start `codex login`, but it never reads or returns credential material.
 
 ```mermaid
 flowchart TD
-    DC[config/deal.json<br/>Deal Configuration]
-    TH[config/thresholds.json<br/>Investment Criteria]
-    AR[config/agent-registry.json<br/>Agent Registry]
+    subgraph Operator["Operator Workspace"]
+        USER[Operator]
+        DASH[Dashboard<br/>Operator Deal Hub]
+        DOCINTAKE[Document Intake<br/>Upload Extract Approve]
+        LAUNCH[Workflow Launcher<br/>Runtime Selector]
+        AUTH[ChatGPT Auth Panel<br/>Login Button]
+        PACKAGE[Package View]
+    end
 
-    DC --> MO[Master Orchestrator]
-    TH --> MO
-    AR --> MO
+    subgraph LocalConfig["Local Inputs"]
+        DEAL[config/deal.json<br/>or data/deals/{dealId}/deal.json]
+        THRESH[config/thresholds.json]
+        REG[config/agent-registry.json]
+        WORKFLOWS[config/workflows.json]
+        SOURCES[data/deals/{dealId}/documents]
+        SNAPSHOT[data/runs/{dealId}/input-snapshot.json]
+    end
 
-    MO --> DDO[DD Orchestrator]
-    DDO --> |spawns 7 agents| DDA[DD Agents]
-    DDA --> |findings, metrics| DDC[DD Checkpoint]
-    DDC --> DDR[DD Report]
+    subgraph Runtime["Runtime Paths"]
+        RM[Run Manager]
+        SIM[Offline Simulation<br/>scripts/orchestrate.js]
+        CODEX[Live Codex Runner<br/>scripts/codex-agent-runner.js]
+        CLI[Codex CLI<br/>ChatGPT login]
+        AUTHSTORE[Codex Credentials<br/>outside repository]
+    end
 
-    DDC --> UWO[UW Orchestrator]
-    UWO --> |spawns 3 agents| UWA[UW Agents]
-    UWA --> |financial model, scenarios| UWC[UW Checkpoint]
-    UWC --> UWR[UW Report]
+    subgraph Artifacts["Local Artifacts"]
+        STATUS[data/status<br/>checkpoints events manifests]
+        PHASE[data/phase-outputs]
+        REPORTS[data/reports<br/>reports workpapers]
+        RAW[data/codex-runs<br/>prompts logs memos]
+    end
 
-    UWC --> FINO[Financing Orchestrator]
-    FINO --> |spawns 3 agents| FINA[Financing Agents]
-    FINA --> |quotes, terms| FINC[Financing Checkpoint]
-    FINC --> FINR[Financing Report]
+    USER --> DASH
+    DASH --> DOCINTAKE
+    DASH --> LAUNCH
+    LAUNCH --> AUTH
+    DOCINTAKE --> SOURCES
+    SOURCES --> SNAPSHOT
+    DEAL --> SNAPSHOT
+    THRESH --> SNAPSHOT
+    REG --> SNAPSHOT
+    WORKFLOWS --> SNAPSHOT
+    SNAPSHOT --> RM
+    LAUNCH --> RM
+    AUTH --> CLI
 
-    DDC --> LEGO[Legal Orchestrator]
-    FINC --> LEGO
-    LEGO --> |spawns 6 agents| LEGA[Legal Agents]
-    LEGA --> |reviews, compliance| LEGC[Legal Checkpoint]
-    LEGC --> LEGR[Legal Report]
+    RM --> SIM
+    RM --> CODEX
+    SIM --> STATUS
+    SIM --> PHASE
+    SIM --> REPORTS
+    CODEX --> CLI
+    CODEX --> RAW
+    CODEX --> STATUS
+    CODEX --> REPORTS
+    CLI --> AUTHSTORE
 
-    DDC --> CLO[Closing Orchestrator]
-    UWC --> CLO
-    FINC --> CLO
-    LEGC --> CLO
-    CLO --> |spawns 2 agents| CLOA[Closing Agents]
-    CLOA --> |readiness, funds flow| CLOC[Closing Checkpoint]
-    CLOC --> CLOR[Closing Report]
+    STATUS --> PACKAGE
+    REPORTS --> PACKAGE
+    RAW --> PACKAGE
+    PACKAGE --> DASH
 
-    DDR --> FR[Final Report<br/>Go/No-Go Verdict]
-    UWR --> FR
-    FINR --> FR
-    LEGR --> FR
-    CLOR --> FR
-
-    style DC fill:#0f3460,color:#fff
-    style TH fill:#0f3460,color:#fff
-    style FR fill:#e94560,color:#fff
+    style DASH fill:#16213e,color:#fff
+    style SIM fill:#0f3460,color:#fff
+    style CODEX fill:#533483,color:#fff
+    style AUTH fill:#0f766e,color:#fff
+    style AUTHSTORE fill:#334155,color:#fff
+    style CLI fill:#e94560,color:#fff
+    style PACKAGE fill:#1a1a2e,color:#fff
 ```
 
 ### Input Files
@@ -200,6 +224,9 @@ flowchart TD
 | `config/deal.json` | Property details, financials, timeline | Pipeline start |
 | `config/thresholds.json` | Investment criteria for go/no-go decisions | Pipeline start and final verdict |
 | `config/agent-registry.json` | Maps agent names to prompt files | Pipeline start |
+| `config/workflows.json` | Built-in workflow catalog and phase/agent selections | Dashboard or CLI workflow launch |
+| `data/deals/{dealId}/documents/` | Uploaded source documents | Dashboard launch readiness and input snapshot |
+| `data/runs/{dealId}/...input-snapshot.json` | Source-backed launch package | Simulation and live Codex runs |
 
 ### Output Files
 
@@ -211,6 +238,10 @@ flowchart TD
 | `data/reports/{deal-id}/financing-report.md` | Financing Orchestrator | Lender quotes, terms |
 | `data/reports/{deal-id}/legal-report.md` | Legal Orchestrator | Title, PSA, estoppel, insurance |
 | `data/reports/{deal-id}/closing-report.md` | Closing Orchestrator | Readiness assessment |
+| `data/codex-runs/{runId}/summary.md` | Codex Runner | Live Codex run summary |
+| `data/codex-runs/{runId}/{phase}/{agent}.md` | Codex Specialist | Live Codex memo for a markdown agent |
+| `data/status/{dealId}/run-{runId}-events.ndjson` | Story Engine | Dashboard-readable run events |
+| `data/status/{dealId}/run-{runId}-documents.json` | Story Engine | Dashboard Package document registry |
 
 ---
 
@@ -221,11 +252,11 @@ The system uses a 3-tier checkpoint architecture for crash resilience and resume
 ```mermaid
 flowchart TD
     subgraph Tier1[" Tier 1: Human-Readable "]
-        SS[data/status/<deal-id>.json<br/>Project root<br/>Quick orientation for humans]
+        SS[data/status/<deal-id>.json<br/>quick orientation for humans]
     end
 
     subgraph Tier2[" Tier 2: Master Checkpoint "]
-        MC[data/status/DEAL-ID.json<br/>Machine-readable master state<br/>Phase statuses, progress %, timestamps]
+        MC[data/status/DEAL-ID.json<br/>phase statuses progress timestamps]
     end
 
     subgraph Tier3[" Tier 3: Agent Checkpoints "]
@@ -235,15 +266,28 @@ flowchart TD
         ACN[data/status/DEAL-ID/agents/funds-flow-manager.json]
     end
 
+    subgraph RunArtifacts[" Run Package Artifacts "]
+        EVT[data/status/DEAL-ID/run-RUN-ID-events.ndjson]
+        DOC[data/status/DEAL-ID/run-RUN-ID-documents.json]
+        MAN[data/status/DEAL-ID/run-RUN-ID-manifest.json]
+        RAW[data/codex-runs/RUN-ID<br/>live Codex raw outputs]
+    end
+
     SS <-->|"synced after every<br/>phase event"| MC
     MC <-->|"aggregated from<br/>agent results"| AC1
     MC <--> AC2
     MC <--> AC3
     MC <--> ACN
+    MC --> EVT
+    AC1 --> DOC
+    RAW --> DOC
+    EVT --> MAN
+    DOC --> MAN
 
     style Tier1 fill:#1a1a2e,color:#fff
     style Tier2 fill:#16213e,color:#fff
     style Tier3 fill:#0f3460,color:#fff
+    style RunArtifacts fill:#533483,color:#fff
 ```
 
 ### Tier 1: data/status/<deal-id>.json
@@ -392,6 +436,8 @@ cre-acquisition/
 │   │       └── closing.log            # Closing phase log
 │   ├── phase-outputs/
 │   │   └── {deal-id}/                 # Intermediate phase output data
+│   ├── codex-runs/
+│   │   └── {run-id}/                  # Live Codex prompts, logs, summaries, and agent memos
 │   ├── reports/
 │   │   └── {deal-id}/
 │   │       ├── final-report.md        # Complete acquisition report
@@ -434,15 +480,24 @@ cre-acquisition/
 
 ## 6. Runtime Model
 
-All agents run as Claude Code Task tool invocations. The execution model:
+The project now has two first-class runtime paths plus a local auth status path:
 
-1. **Master orchestrator** is launched in the main Claude Code session
-2. Master reads orchestrator prompt files and launches **phase orchestrators** via `Task(subagent_type="general-purpose", run_in_background=true)`
-3. Phase orchestrators read specialist agent prompts and launch **specialist agents** via nested Task calls
-4. Each agent has full tool access: Read, Write, WebSearch, WebFetch, Browser tools
-5. Results flow back via `TaskOutput` collection
-6. Every level writes checkpoints before and after significant work
-7. Logs are appended in a structured format for dashboard consumption
+1. **Offline deterministic runtime** - `scripts/orchestrate.js` runs the complete local simulation with no API key or subscription. It writes checkpoints, phase outputs, logs, story events, workpapers, and final reports for the dashboard.
+2. **Live Codex runtime** - `scripts/codex-agent-runner.js` uses the open-source Codex CLI harness via `codex exec`. It runs selected markdown agents with a ChatGPT login, defaults to a read-only sandbox, writes raw Codex outputs to `data/codex-runs/{runId}/`, and publishes dashboard package artifacts under `data/status/{dealId}/run-{runId}-*.{ndjson,json}`.
+3. **Codex auth status path** - `GET /api/codex/status` reports local readiness without secrets, and `POST /api/codex/login` starts `codex login` so the user can choose ChatGPT in the Codex browser flow.
+
+The live Codex execution model:
+
+1. The runner verifies `codex login status`.
+2. It reads `config/workflows.json`, `config/agent-registry.json`, `config/deal.json`, and the selected scenario.
+3. It selects agents from a workflow, phase, or explicit `--agent` filter.
+4. It launches one `codex exec` process per selected specialist, up to the requested `--concurrency`.
+5. Each Codex specialist reads the local agent, orchestrator, skill, threshold, and deal files.
+6. Each specialist returns structured Markdown: verdict, findings, red flags, data gaps, and follow-up.
+7. The runner writes prompts, logs, outputs, `manifest.json`, and `summary.md` under `data/codex-runs/{runId}/`.
+8. The runner registers Codex memos and run summaries with the story engine so dashboard-launched live runs appear in the Package view through `data/status/{dealId}/run-{runId}-events.ndjson`, `documents.json`, and `manifest.json`.
+
+Legacy prompt-runner launch prompts remain useful for advanced users who already operate in another agent runtime, but the recommended first-download live-AI path is Codex CLI with ChatGPT login.
 
 ### Key Design Principles
 

@@ -9,6 +9,14 @@ function toSlug(value) {
     .replace(/(^-|-$)/g, '');
 }
 
+function requireSafeRunId(runId) {
+  const value = String(runId || '').trim();
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value) || value.includes('..')) {
+    throw new Error('StoryEngine runId must be a safe slug without path separators or "..".');
+  }
+  return value;
+}
+
 function normalizePhase(phase) {
   if (!phase) return 'general';
   return String(phase)
@@ -30,19 +38,19 @@ class StoryEngine {
   constructor({ baseDir, dealId, runId }) {
     this.baseDir = baseDir;
     this.dealId = dealId;
-    this.runId = runId;
+    this.runId = requireSafeRunId(runId);
 
     this.statusDealDir = path.join(baseDir, 'data', 'status', dealId);
     this.reportsDealDir = path.join(baseDir, 'data', 'reports', dealId);
-    this.eventsPath = path.join(this.statusDealDir, `run-${runId}-events.ndjson`);
-    this.documentsPath = path.join(this.statusDealDir, `run-${runId}-documents.json`);
-    this.manifestPath = path.join(this.statusDealDir, `run-${runId}-manifest.json`);
+    this.eventsPath = path.join(this.statusDealDir, `run-${this.runId}-events.ndjson`);
+    this.documentsPath = path.join(this.statusDealDir, `run-${this.runId}-documents.json`);
+    this.manifestPath = path.join(this.statusDealDir, `run-${this.runId}-manifest.json`);
 
     ensureDir(this.statusDealDir);
     ensureDir(this.reportsDealDir);
 
     this.documents = readJsonIfExists(this.documentsPath, {
-      runId,
+      runId: this.runId,
       dealId,
       updatedAt: nowIso(),
       documents: []
@@ -59,7 +67,7 @@ class StoryEngine {
 
     this.seq = this.loadLastSeq();
     this.persistManifest({
-      runId,
+      runId: this.runId,
       dealId,
       startedAt: nowIso(),
       status: 'RUNNING',

@@ -15,7 +15,11 @@ I'll acknowledge receipt within 48 hours and work with you on a fix before any p
 
 ## Scope
 
-This project is a reference architecture and simulation framework. It does not process real financial data or connect to external APIs by default. However, if you've extended it with real API integrations or deal data, standard application security practices apply.
+This project is a reference architecture and simulation framework. It does not process real financial data or connect to external APIs by default. The offline simulation and dashboard storage write local files under `data/`.
+
+Optional live Codex runs are different: they send selected prompts and deal context through OpenAI Codex CLI using the user's ChatGPT-authenticated session. Do not run live Codex workflows on confidential deal data unless that data is approved for that environment. If you extend the project with real API integrations or production deal data, standard application security practices apply.
+
+Codex authentication is intentionally local. The dashboard's **Login to ChatGPT** button starts `codex login` on the user's machine and the status API reports only booleans such as `installed`, `loggedIn`, and `usingChatGpt`. It does not expose access tokens, refresh tokens, API keys, cookies, or credential file contents. Runtime outputs under `data/` are ignored by git.
 
 ## Supported Versions
 

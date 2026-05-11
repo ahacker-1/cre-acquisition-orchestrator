@@ -4,7 +4,7 @@
  *
  * Prepares a deal for pipeline execution. Validates deal config, creates
  * required directories, writes initial checkpoint and deal status,
- * and outputs the constructed prompt for Claude Code.
+ * and outputs a legacy agent prompt for manual runtimes.
  *
  * Usage:
  *   node scripts/launch-deal.js
@@ -602,10 +602,10 @@ function main() {
   console.log(`  Reports:    data/reports/${dealId}/`);
   console.log(`  Prompt:     data/status/${dealId}/launch-prompt.md`);
   console.log('');
-  console.log(colorize('  Next step:', 'cyan') + ' Launch Claude Code with the generated prompt:');
+  console.log(colorize('  Next step:', 'cyan') + ' Use the generated prompt in your preferred agent runtime, or run Codex directly:');
   console.log('');
   console.log(`    Read data/status/${dealId}/launch-prompt.md`);
-  console.log(`    Launch as Task(subagent_type="general-purpose", prompt=<prompt contents>)`);
+  console.log('    npm run codex:run');
   console.log('');
 
   // Output prompt length info

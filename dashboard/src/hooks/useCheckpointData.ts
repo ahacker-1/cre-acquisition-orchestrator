@@ -31,6 +31,7 @@ function createIdleRunStatus(): RunStatus {
     runtimeProvider: null,
     presetId: null,
     inputSnapshotPath: null,
+    outputPath: null,
     state: 'IDLE',
     mode: null,
     speed: null,
@@ -67,9 +68,13 @@ function normalizeRunStatus(value: unknown): RunStatus {
     runId: typeof raw.runId === 'string' ? raw.runId : null,
     dealPath: typeof raw.dealPath === 'string' ? raw.dealPath : null,
     workflowId: typeof raw.workflowId === 'string' ? raw.workflowId : null,
-    runtimeProvider: raw.runtimeProvider === 'simulation' ? raw.runtimeProvider : null,
+    runtimeProvider:
+      raw.runtimeProvider === 'simulation' || raw.runtimeProvider === 'codex'
+        ? raw.runtimeProvider
+        : null,
     presetId: typeof raw.presetId === 'string' ? raw.presetId : null,
     inputSnapshotPath: typeof raw.inputSnapshotPath === 'string' ? raw.inputSnapshotPath : null,
+    outputPath: typeof raw.outputPath === 'string' ? raw.outputPath : null,
     state: normalizeRunLifecycleState(raw.state),
     mode: raw.mode === 'fast' || raw.mode === 'live' ? raw.mode : null,
     speed: raw.speed === 'fast' || raw.speed === 'normal' || raw.speed === 'slow' ? raw.speed : null,
@@ -554,6 +559,7 @@ export function useCheckpointData() {
         dealPath: 'config/deal.json',
         mode: 'live',
         speed: 'normal',
+        runtimeProvider: 'simulation',
         reset: true,
       }
       const response = await fetch(`${API_URL}/api/run/start`, {
@@ -813,8 +819,8 @@ export function useCheckpointData() {
                   ? runMsg.details.workflowId
                   : prev.workflowId,
               runtimeProvider:
-                runMsg.details?.runtimeProvider === 'simulation'
-                  ? 'simulation'
+                runMsg.details?.runtimeProvider === 'simulation' || runMsg.details?.runtimeProvider === 'codex'
+                  ? runMsg.details.runtimeProvider
                   : prev.runtimeProvider,
               presetId:
                 typeof runMsg.details?.presetId === 'string'
@@ -824,6 +830,10 @@ export function useCheckpointData() {
                 typeof runMsg.details?.inputSnapshotPath === 'string'
                   ? runMsg.details.inputSnapshotPath
                   : prev.inputSnapshotPath,
+              outputPath:
+                typeof runMsg.details?.outputPath === 'string'
+                  ? runMsg.details.outputPath
+                  : prev.outputPath,
               state: runMsg.state ?? prev.state,
               mode: runMsg.mode ?? prev.mode,
               speed: runMsg.speed ?? prev.speed,
