@@ -19,7 +19,7 @@ Everything in here - the agent prompts, the skills, the schemas, the pipeline ar
 
 Let's bring this industry into the future.
 
-> **Note:** The simulation engine runs fully offline - **no API keys required** to run the demo and explore the architecture. You can see the full pipeline execute with realistic CRE financials right out of the box.
+> **Start locally:** The demo runs fully offline with no API keys. You can execute the full acquisition pipeline against sample CRE financials first, then optionally connect ChatGPT/Codex for live agent workflows.
 
 > **Disclaimer:** This project is a reference architecture and educational framework, not production software for making investment decisions. The financial calculations, legal checklists, and agent outputs are for demonstration and learning purposes only. Nothing in this repository constitutes financial, legal, or investment advice. Always consult qualified professionals before making real estate investment decisions. This software is provided "as is" without warranty of any kind - see [LICENSE](LICENSE) for full terms.
 
