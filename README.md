@@ -36,6 +36,19 @@ Let's bring this industry into the future.
 
 ---
 
+## Release Journey
+
+This project has grown in four public steps: first the agent architecture, then a usable dashboard, then a real operator workspace, and now live Codex-backed agent execution.
+
+| Release | What Changed | Full Notes |
+|---------|--------------|------------|
+| **v1.0.0 - Initial Public Release** | Published the first open-source CRE acquisition orchestration framework: markdown agents, phase orchestration, schemas, domain skills, deterministic simulation, and sample Parkview output. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v1.0.0) |
+| **v1.1.0 - Dashboard Deal Wizard** | Moved setup into the product with a guided New Deal Wizard, saved deal library, launch-ready deal flow, and Playwright coverage for key dashboard paths. | [RELEASE_NOTES_v1.1.0.md](RELEASE_NOTES_v1.1.0.md) |
+| **v2.0.0 - Operator Deal Hub** | Turned the dashboard into a local-first acquisition cockpit with phase workspaces, document intake, source-backed inputs, outcome workflows, presets, and completion packages. | [RELEASE_NOTES_v2.0.0.md](RELEASE_NOTES_v2.0.0.md) |
+| **v2.1.0 - Codex / ChatGPT Workflow Runtime** | Added the optional live-agent path: ChatGPT-authenticated Codex CLI execution, in-app login status, dashboard-launched Codex runs, and release-ready setup validation. | [RELEASE_NOTES_v2.1.0.md](RELEASE_NOTES_v2.1.0.md) |
+
+---
+
 ## By the Numbers
 
 | | | | |
@@ -493,6 +506,7 @@ cre-acquisition-orchestrator/
 │   └── logs/                  #   Local run logs
 ├── RELEASE_NOTES_v2.1.0.md    # v2.1.0 Codex / ChatGPT workflow release notes
 ├── RELEASE_NOTES_v2.0.0.md    # v2.0.0 Operator Deal Hub release notes
+├── RELEASE_NOTES_v1.1.0.md    # v1.1.0 Dashboard Deal Wizard release notes
 └── package.json               # Root validation and orchestration scripts
 ```
 
