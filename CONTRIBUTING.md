@@ -4,24 +4,27 @@ Thanks for your interest in the CRE Acquisition Orchestrator! Contributions are 
 
 ## How to Contribute
 
-1. **Open an issue first** — Before starting work, open an issue describing what you'd like to change. This ensures we're aligned before you invest time.
+1. **Open an issue first** - Before starting work, open an issue describing what you'd like to change. This ensures we're aligned before you invest time.
 
-2. **Fork and branch** — Fork the repo, create a feature branch from `main`.
+2. **Fork and branch** - Fork the repo, create a feature branch from `main`.
 
-3. **Make your changes** — Follow the existing code style and patterns.
+3. **Make your changes** - Follow the existing code style and patterns.
 
-4. **Test your changes** — Run the simulation and validation:
-   ```bash
+4. **Test your changes** - Run the simulation and validation:
+   ```powershell
+   npm run demo
    npm test
-   node scripts/validate-contracts.js --deal-id parkview-2026-001
-   cd dashboard && npm run build && npm run test:e2e
+   npm run validate:guides
+   node .\scripts\validate-contracts.js --deal-id parkview-2026-001
+   npm --prefix dashboard run build
+   npm run test:e2e
    ```
 
-5. **Submit a PR** — Reference the issue in your pull request description.
+5. **Submit a PR** - Reference the issue in your pull request description.
 
 ## Running Locally
 
-```bash
+```powershell
 # Clone your fork
 git clone https://github.com/YOUR_USERNAME/cre-acquisition-orchestrator.git
 cd cre-acquisition-orchestrator

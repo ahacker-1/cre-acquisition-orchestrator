@@ -21,9 +21,10 @@
 ## Checklist
 
 - [ ] `npm test` passes (all 3 scenarios + failure/resume)
+- [ ] `npm run validate:guides` passes
 - [ ] `node scripts/validate-contracts.js --deal-id parkview-2026-001` passes
-- [ ] Dashboard changes pass `cd dashboard && npm ci && npm run build`
-- [ ] Dashboard UX changes pass `cd dashboard && npm run test:e2e`
+- [ ] Dashboard changes pass `npm --prefix dashboard ci` and `npm --prefix dashboard run build`
+- [ ] Dashboard UX changes pass `npm run test:e2e`
 - [ ] New agent prompts follow the 19-section anatomy (`docs/AGENT-DEVELOPMENT.md`)
 - [ ] New JSON schemas are valid and any runtime consumers are updated if needed (for example `scripts/validate-contracts.js`)
 - [ ] Documentation updated if needed

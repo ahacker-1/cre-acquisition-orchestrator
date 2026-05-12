@@ -31,6 +31,9 @@ jobs:
       - name: Validate project structure and agent prompts
         run: node scripts/run-validation.js
 
+      - name: Validate operator guide contract
+        run: npm run validate:guides
+
       - name: Run system tests (3 scenarios + failure/resume)
         run: npm test
 
