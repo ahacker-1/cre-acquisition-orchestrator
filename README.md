@@ -297,17 +297,17 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 
 ## Dashboard Preview
 
-The first screen is designed as a document-first acquisition cockpit: drop source files, confirm a deal name, and land in the Documents workspace before filling the detailed intake. The full New Deal Wizard remains available for launch-ready setup and editing.
+The first screen is designed as a document-first acquisition cockpit: drop source files, confirm a deal name, and land in the Documents workspace before filling the detailed intake. The full New Deal Wizard remains available from the header and from workspace edit actions when the operator needs launch-ready setup.
 
-![New Deal Wizard showing the detailed inputs for a CRE acquisition deal](docs/assets/new-deal-start.png)
+![Document-first dashboard front door with the drop zone as the primary action](docs/assets/dashboard-front-door.png)
 
-![Operator Deal Hub overview with current deal, criteria, phase tabs, and source document entry points](docs/assets/operator-deal-hub-overview.png)
+![Quick deal creation modal opened from an uploaded rent roll](docs/assets/quick-deal-create.png)
 
-| Workflow Launcher | Source Document Workspace |
-|-------------------|---------------------------|
-| ![Workflow Launcher with deal selection, saved presets, and five available workflows](docs/assets/workflow-launcher.png) | ![Documents workspace with local document intake and extraction preview](docs/assets/document-workspace.png) |
+| Documents Cockpit | Overview With Sidebar |
+|-------------------|-----------------------|
+| ![Documents workspace with uploaded rent roll, T12, offering memo, extraction preview, and cockpit sidebar](docs/assets/document-cockpit-workspace.png) | ![Operator overview with the persistent cockpit sidebar showing document coverage and phase readiness](docs/assets/cockpit-overview-sidebar.png) |
 
-![Completion Package view with phase outcomes, findings, workpapers, and final recommendation](docs/assets/completion-package.png)
+![Workflow launcher with the current workflow catalog](docs/assets/workflow-launcher-current.png)
 
 ---
 
