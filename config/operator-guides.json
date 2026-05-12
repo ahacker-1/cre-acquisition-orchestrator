@@ -1,0 +1,404 @@
+{
+  "version": 1,
+  "sections": [
+    {
+      "phaseKey": "intake",
+      "phaseSlug": "intake",
+      "label": "Intake",
+      "summary": "Turn a loose source package into a usable local deal workspace.",
+      "runtimePhase": false,
+      "requiredDocuments": ["rent_roll", "t12", "offering_memo"],
+      "checklist": [
+        {
+          "id": "intake-create-workspace",
+          "label": "Create or reopen the right deal workspace",
+          "priority": "critical",
+          "category": "documents",
+          "whyItMatters": "Every upload, extraction, workflow run, and package output should attach to one explicit deal context.",
+          "evidenceRequired": "Open workspace deal ID matches the acquisition you intend to progress.",
+          "recommendedAction": {
+            "type": "edit_details",
+            "label": "Review deal details",
+            "target": "details"
+          },
+          "unlocks": "Safe source intake and workflow launch context.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "intake-source-package",
+          "label": "Upload the first source package",
+          "priority": "critical",
+          "category": "documents",
+          "requiredDocuments": ["rent_roll", "t12", "offering_memo"],
+          "whyItMatters": "The rent roll, T12, and offering memo create the minimum evidence base for underwriting and early deal screening.",
+          "evidenceRequired": "Rent roll, T12, and offering memo are present in the deal document manifest.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Upload documents",
+            "target": "documents"
+          },
+          "unlocks": "Extraction review and source-backed launch inputs.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "intake-review-extraction",
+          "label": "Review extracted fields before launch",
+          "priority": "critical",
+          "category": "extraction",
+          "whyItMatters": "Agent workflows are more trustworthy when the operator approves the exact fields that will overwrite deal data.",
+          "evidenceRequired": "Review-ready extraction fields are either applied, rejected, or waived.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Review extraction",
+            "target": "documents"
+          },
+          "unlocks": "Source-backed workflow launch and reliable IC package inputs.",
+          "source": "operator-guide"
+        }
+      ]
+    },
+    {
+      "phaseKey": "underwriting",
+      "phaseSlug": "underwriting",
+      "label": "Underwriting",
+      "summary": "Convert source materials and criteria into an investment view.",
+      "workflowId": "underwriting-refresh",
+      "requiredDocuments": ["rent_roll", "t12", "offering_memo"],
+      "checklist": [
+        {
+          "id": "underwriting-criteria",
+          "label": "Approve key deal criteria",
+          "priority": "critical",
+          "category": "underwriting",
+          "requiredFields": ["investmentStrategy", "targetHoldPeriod", "targetIRR"],
+          "whyItMatters": "The model needs a consistent investment target before scenario work means anything.",
+          "evidenceRequired": "Strategy, hold period, IRR, equity multiple, and risk tolerance have been reviewed.",
+          "recommendedAction": {
+            "type": "edit_details",
+            "label": "Edit criteria",
+            "target": "details"
+          },
+          "unlocks": "Underwriting refresh and scenario review.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "underwriting-source-docs",
+          "label": "Upload rent roll, T12, and offering memo",
+          "priority": "critical",
+          "category": "documents",
+          "requiredDocuments": ["rent_roll", "t12", "offering_memo"],
+          "whyItMatters": "These are the minimum source files for unit mix, occupancy, NOI, and pricing assumptions.",
+          "evidenceRequired": "All three documents are present in the workspace manifest.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Upload documents",
+            "target": "documents"
+          },
+          "unlocks": "Source-backed underwriting and quick screen workflows.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "underwriting-source-fields",
+          "label": "Source-back the core launch inputs",
+          "priority": "critical",
+          "category": "extraction",
+          "requiredFields": ["property.totalUnits", "financials.currentNOI"],
+          "whyItMatters": "The first underwriting pass should not rely on stale manual values when source-backed fields are available.",
+          "evidenceRequired": "Total units and current NOI are approved from current source documents.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Review source fields",
+            "target": "documents"
+          },
+          "unlocks": "Underwriting refresh workflow.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "underwriting-run-workflow",
+          "label": "Run underwriting refresh",
+          "priority": "important",
+          "category": "underwriting",
+          "whyItMatters": "The operator needs a refreshed investment view before committing diligence time.",
+          "evidenceRequired": "Underwriting workflow run exists for the current deal context.",
+          "recommendedAction": {
+            "type": "launch_workflow",
+            "label": "Run underwriting",
+            "workflowId": "underwriting-refresh",
+            "target": "underwriting"
+          },
+          "unlocks": "IC memo draft, scenario review, and financing package prep.",
+          "source": "agent-registry"
+        }
+      ]
+    },
+    {
+      "phaseKey": "dueDiligence",
+      "phaseSlug": "due-diligence",
+      "label": "Due Diligence",
+      "summary": "Verify property, operations, title, market, and tenant risk.",
+      "workflowId": "quick-deal-screen",
+      "requiredDocuments": ["rent_roll", "inspection_report", "environmental", "title", "survey"],
+      "checklist": [
+        {
+          "id": "dd-required-package",
+          "label": "Confirm required diligence package",
+          "priority": "critical",
+          "category": "diligence",
+          "requiredDocuments": ["rent_roll", "inspection_report", "environmental", "title", "survey"],
+          "whyItMatters": "Diligence conclusions should identify the missing property, legal, and environmental evidence instead of pretending the file is complete.",
+          "evidenceRequired": "Rent roll, inspection, environmental, title, and survey documents are uploaded or explicitly waived.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Upload diligence docs",
+            "target": "documents"
+          },
+          "unlocks": "Physical, legal, environmental, and tenant-risk review.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "dd-run-agents",
+          "label": "Run diligence agents",
+          "priority": "important",
+          "category": "diligence",
+          "whyItMatters": "The operator needs red flags and data gaps collected before moving toward IC or closing coordination.",
+          "evidenceRequired": "Due diligence workflow or quick screen output exists for this deal.",
+          "recommendedAction": {
+            "type": "launch_workflow",
+            "label": "Run diligence screen",
+            "workflowId": "quick-deal-screen",
+            "target": "due-diligence"
+          },
+          "unlocks": "Red flag triage and data gap resolution.",
+          "source": "agent-registry"
+        },
+        {
+          "id": "dd-red-flags",
+          "label": "Resolve red flags and data gaps",
+          "priority": "critical",
+          "category": "diligence",
+          "whyItMatters": "Unowned flags are what make a deal look impressive in software but risky in an actual investment process.",
+          "evidenceRequired": "Open red flags and data gaps have an owner, note, waiver, or follow-up path.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Review package",
+            "target": "package"
+          },
+          "unlocks": "Decision log and package confidence.",
+          "source": "operator-guide"
+        }
+      ]
+    },
+    {
+      "phaseKey": "financing",
+      "phaseSlug": "financing",
+      "label": "Financing",
+      "summary": "Package the deal for lenders and compare debt options.",
+      "workflowId": "financing-package",
+      "requiredDocuments": ["offering_memo", "t12", "loan_documents"],
+      "checklist": [
+        {
+          "id": "financing-assumptions",
+          "label": "Confirm target debt assumptions",
+          "priority": "critical",
+          "category": "financing",
+          "requiredFields": ["financing.targetLTV", "financing.estimatedRate", "financing.loanTerm"],
+          "whyItMatters": "Debt assumptions drive proceeds, cash-on-cash, refinance risk, and lender package credibility.",
+          "evidenceRequired": "Target LTV, rate, loan term, amortization, and loan type are reviewed.",
+          "recommendedAction": {
+            "type": "edit_details",
+            "label": "Edit financing assumptions",
+            "target": "details"
+          },
+          "unlocks": "Financing package workflow.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "financing-source-package",
+          "label": "Prepare lender source package",
+          "priority": "important",
+          "category": "documents",
+          "requiredDocuments": ["offering_memo", "t12", "loan_documents"],
+          "whyItMatters": "The lender package should separate available evidence from documents still needed from sponsor, broker, or lender.",
+          "evidenceRequired": "Offering memo, T12, and loan documents are present or waived.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Upload lender docs",
+            "target": "documents"
+          },
+          "unlocks": "Lender outreach, quote comparison, and term-sheet prep.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "financing-run-workflow",
+          "label": "Run financing package workflow",
+          "priority": "important",
+          "category": "financing",
+          "whyItMatters": "Financing work should produce a comparison-ready package, not just a debt assumption stored in the deal form.",
+          "evidenceRequired": "Financing workflow output exists for the current deal.",
+          "recommendedAction": {
+            "type": "launch_workflow",
+            "label": "Run financing",
+            "workflowId": "financing-package",
+            "target": "financing"
+          },
+          "unlocks": "Lender quote comparison and term sheet path.",
+          "source": "agent-registry"
+        }
+      ]
+    },
+    {
+      "phaseKey": "legal",
+      "phaseSlug": "legal",
+      "label": "Legal",
+      "summary": "Track PSA, title, survey, estoppels, insurance, and transfer items.",
+      "workflowId": "legal-psa-review",
+      "requiredDocuments": ["psa", "title", "survey", "insurance"],
+      "checklist": [
+        {
+          "id": "legal-source-package",
+          "label": "Upload PSA and title package",
+          "priority": "critical",
+          "category": "legal",
+          "requiredDocuments": ["psa", "title", "survey", "insurance"],
+          "whyItMatters": "Legal review needs document-backed exception tracking, not just a closing date in the deal record.",
+          "evidenceRequired": "PSA, title, survey, and insurance files are uploaded or waived.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Upload legal docs",
+            "target": "documents"
+          },
+          "unlocks": "PSA, title, survey, estoppel, and insurance review.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "legal-run-workflow",
+          "label": "Run legal / PSA review",
+          "priority": "important",
+          "category": "legal",
+          "whyItMatters": "The operator needs deadline, title, survey, and insurance issues visible before closing coordination.",
+          "evidenceRequired": "Legal workflow output exists for the current deal.",
+          "recommendedAction": {
+            "type": "launch_workflow",
+            "label": "Run legal review",
+            "workflowId": "legal-psa-review",
+            "target": "legal"
+          },
+          "unlocks": "Exception response tracking and closing readiness.",
+          "source": "agent-registry"
+        }
+      ]
+    },
+    {
+      "phaseKey": "closing",
+      "phaseSlug": "closing",
+      "label": "Closing",
+      "summary": "Coordinate final readiness, funds flow, and closing package.",
+      "workflowId": "full-acquisition-review",
+      "requiredDocuments": ["closing_statement", "loan_documents", "insurance"],
+      "checklist": [
+        {
+          "id": "closing-prior-blockers",
+          "label": "Confirm prior phase blockers are resolved",
+          "priority": "critical",
+          "category": "closing",
+          "whyItMatters": "Closing coordination is only useful when underwriting, diligence, financing, and legal blockers are visible and owned.",
+          "evidenceRequired": "Earlier critical checklist items are complete, waived, or intentionally carried forward.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Review guide",
+            "target": "guide"
+          },
+          "unlocks": "Closing readiness workflow.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "closing-source-package",
+          "label": "Upload closing statement, loan docs, and insurance",
+          "priority": "critical",
+          "category": "documents",
+          "requiredDocuments": ["closing_statement", "loan_documents", "insurance"],
+          "whyItMatters": "Funds flow and final readiness depend on the actual closing package.",
+          "evidenceRequired": "Closing statement, loan documents, and insurance evidence are uploaded or waived.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Upload closing docs",
+            "target": "documents"
+          },
+          "unlocks": "Funds flow and closing checklist package.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "closing-run-workflow",
+          "label": "Run closing readiness workflow",
+          "priority": "important",
+          "category": "closing",
+          "whyItMatters": "The final package should tell the operator what is ready, what is missing, and what decision remains.",
+          "evidenceRequired": "Full acquisition or closing workflow output exists for this deal.",
+          "recommendedAction": {
+            "type": "launch_workflow",
+            "label": "Run full review",
+            "workflowId": "full-acquisition-review",
+            "target": "closing"
+          },
+          "unlocks": "Final package and IC-style summary.",
+          "source": "agent-registry"
+        }
+      ]
+    },
+    {
+      "phaseKey": "package",
+      "phaseSlug": "package",
+      "label": "Package",
+      "summary": "Review the source-backed handoff and decide the next acquisition step.",
+      "runtimePhase": false,
+      "requiredDocuments": [],
+      "checklist": [
+        {
+          "id": "package-source-summary",
+          "label": "Review source-backed input summary",
+          "priority": "critical",
+          "category": "package",
+          "whyItMatters": "The final package should make clear which inputs came from source documents and which are still operator assumptions.",
+          "evidenceRequired": "Package includes source coverage, approved fields, warnings, and missing fields.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Review package",
+            "target": "package"
+          },
+          "unlocks": "Confident IC or diligence standup handoff.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "package-red-flags",
+          "label": "Assign red flags and missing diligence",
+          "priority": "critical",
+          "category": "package",
+          "whyItMatters": "A useful acquisition package should reduce ambiguity about who owns the next diligence action.",
+          "evidenceRequired": "Red flags and data gaps are reviewed, assigned, waived, or carried forward.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Review package",
+            "target": "package"
+          },
+          "unlocks": "Clear next decision.",
+          "source": "operator-guide"
+        },
+        {
+          "id": "package-next-decision",
+          "label": "Lock the next decision",
+          "priority": "important",
+          "category": "package",
+          "whyItMatters": "The operator needs to know whether to pursue, pause, renegotiate, expand diligence, or prepare IC materials.",
+          "evidenceRequired": "Recommended next decision is reviewed in the package.",
+          "recommendedAction": {
+            "type": "open_tab",
+            "label": "Review decision",
+            "target": "package"
+          },
+          "unlocks": "Decision-ready acquisition handoff.",
+          "source": "operator-guide"
+        }
+      ]
+    }
+  ]
+}

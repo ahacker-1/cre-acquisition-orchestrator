@@ -25,8 +25,14 @@ import type {
 import type { DealLibraryItem } from '../types/deals'
 import type {
   DealCriteria,
+  DealProgressionGuide,
+  DealProgressionSection,
   ExtractionField,
   ExtractionPreview,
+  GuideChecklistStatus,
+  LaunchReadinessResult,
+  OperatorCommand,
+  OperatorGuideAction,
   PhaseWorkspaceStatus,
   SourceDocument,
 } from '../types/workspace'
@@ -46,6 +52,7 @@ interface DealWorkspaceProps {
 }
 
 type WorkspaceTab =
+  | 'guide'
   | 'overview'
   | 'underwriting'
   | 'due-diligence'
@@ -90,6 +97,22 @@ const CODEX_AGENT_LIMITS: { value: string; label: string }[] = [
   { value: '', label: 'All selected' },
 ]
 
+const WORKFLOW_LABELS: Record<string, string> = {
+  'full-acquisition-review': 'Full Acquisition Review',
+  'quick-deal-screen': 'Quick Deal Screen',
+  'underwriting-refresh': 'Underwriting Refresh',
+  'financing-package': 'Financing Package',
+  'legal-psa-review': 'Legal / PSA Review',
+}
+
+const FIELD_LABELS: Record<string, string> = {
+  'property.totalUnits': 'Total Units',
+  'financials.askingPrice': 'Asking Price',
+  'financials.currentNOI': 'Current NOI',
+  'financials.inPlaceOccupancy': 'Occupancy',
+  'financing.targetLTV': 'Target LTV',
+}
+
 function formatNumber(value: number | null | undefined, suffix = ''): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '--'
   return `${value.toLocaleString()}${suffix}`
@@ -130,13 +153,55 @@ function statusClass(status: string): string {
   }
   if (
     status === 'blocked' ||
+    status === 'missing' ||
     status === 'unsupported' ||
     status === 'parse_failed' ||
     status === 'parser-unavailable' ||
     status === 'rejected'
   ) return 'status-blocked'
   if (status === 'waived') return 'status-pending'
+  if (status === 'in_review') return 'status-running'
   return 'status-pending'
+}
+
+function readinessStatusClass(status: string): string {
+  if (status === 'ready') return 'status-complete'
+  if (status === 'warning') return 'status-running'
+  if (status === 'blocked') return 'status-blocked'
+  return 'status-pending'
+}
+
+function checklistStatusLabel(status: GuideChecklistStatus): string {
+  return status.replace(/_/g, ' ')
+}
+
+function isWorkspaceTab(value: string | undefined): value is WorkspaceTab {
+  return Boolean(value) && [
+    'guide',
+    'overview',
+    'underwriting',
+    'due-diligence',
+    'financing',
+    'legal',
+    'closing',
+    'documents',
+    'package',
+  ].includes(value as WorkspaceTab)
+}
+
+function workflowLabel(workflowId: string): string {
+  return WORKFLOW_LABELS[workflowId] ?? displaySlug(workflowId)
+}
+
+function displaySlug(value: string): string {
+  return value
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[-_.]/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
+function fieldLabel(path: string): string {
+  return FIELD_LABELS[path] ?? displaySlug(path)
 }
 
 function fieldValue(value: unknown): string {
@@ -351,6 +416,7 @@ function ExtractionPreviewPanel({
     )
   }
   const selectedFields = extraction.fields.filter((field) => selectedFieldIds.includes(field.fieldId))
+  const selectableFields = extraction.fields.filter((field) => !field.validationIssues?.length)
   const selectedConflictCount = selectedFields.filter((field) => field.conflict).length
   const canApply = selectedFieldIds.length > 0 && (selectedConflictCount === 0 || confirmConflicts)
 
@@ -368,6 +434,51 @@ function ExtractionPreviewPanel({
       )}
       {extraction.error && (
         <p className="mt-3 border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-100">{extraction.error}</p>
+      )}
+      {extraction.fields.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            data-testid="select-all-safe-fields"
+            className="portal-button portal-button-secondary min-h-9 px-3 py-1"
+            onClick={() => setSelectedFieldIds(selectableFields.map((field) => field.fieldId))}
+            disabled={selectableFields.length === 0}
+          >
+            Select Apply-Ready Fields
+          </button>
+          <button
+            type="button"
+            data-testid="clear-selected-fields"
+            className="portal-button portal-button-secondary min-h-9 px-3 py-1"
+            disabled={selectedFieldIds.length === 0}
+            onClick={() => setSelectedFieldIds([])}
+          >
+            Clear
+          </button>
+          <span className="text-xs font-semibold uppercase text-gray-500">
+            {selectedFieldIds.length}/{selectableFields.length} selected
+          </span>
+        </div>
+      )}
+      {selectedFields.length > 0 && (
+        <div className="mt-4 border border-white/10 bg-black p-3" data-testid="selected-field-change-summary">
+          <p className="text-xs font-semibold uppercase text-gray-500">Deal data changes</p>
+          <div className="mt-3 space-y-2">
+            {selectedFields.slice(0, 5).map((field) => (
+              <div key={field.fieldId} className="grid gap-2 text-xs md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <span className="font-semibold text-gray-300">{field.label}</span>
+                <span className="min-w-0 text-gray-500">
+                  <span className="break-words">{field.currentValue !== undefined ? fieldValue(field.currentValue) : 'empty'}</span>
+                  <span className="px-2 text-gray-700">to</span>
+                  <span className="break-words text-white">{fieldValue(field.value)}</span>
+                </span>
+              </div>
+            ))}
+            {selectedFields.length > 5 && (
+              <p className="text-xs text-gray-500">+ {selectedFields.length - 5} more selected changes</p>
+            )}
+          </div>
+        </div>
       )}
       <div className="mt-4 space-y-2">
         {extraction.fields.length === 0 ? (
@@ -526,6 +637,277 @@ function DocumentIntakePanel({
   )
 }
 
+function OperatorCommandBar({
+  command,
+  onAction,
+}: {
+  command: OperatorCommand | null | undefined
+  onAction: (action: OperatorGuideAction) => void
+}) {
+  if (!command) {
+    return (
+      <section className="portal-panel" data-testid="operator-command-bar">
+        <p className="text-sm text-gray-500">Loading operator command...</p>
+      </section>
+    )
+  }
+
+  const progressLabel = `${command.completedChecklistCount}/${command.totalChecklistCount}`
+  const sourceLabel = command.sourceCoverage.requiredApprovedFieldCount > 0
+    ? `${Math.max(0, command.sourceCoverage.requiredApprovedFieldCount - command.sourceCoverage.missingApprovedFieldCount)}/${command.sourceCoverage.requiredApprovedFieldCount}`
+    : '--'
+
+  return (
+    <section className="portal-panel" data-testid="operator-command-bar">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="portal-kicker">Operator Command</p>
+            <span className={`status-badge ${statusClass(command.readiness)}`}>{command.readiness}</span>
+            <span className="status-badge status-pending">{command.activePhaseLabel}</span>
+          </div>
+          <h2 className="mt-2 font-serif text-2xl font-semibold leading-tight text-white">
+            {command.recommendedAction.title}
+          </h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-gray-400">{command.recommendedAction.detail}</p>
+        </div>
+        <button
+          type="button"
+          className="portal-button portal-button-primary w-full xl:w-auto"
+          data-testid="operator-command-primary-action"
+          onClick={() => onAction(command.recommendedAction.action)}
+        >
+          {command.recommendedAction.cta}
+        </button>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-5">
+        <div className="portal-metric">
+          <span>Checklist</span>
+          <strong>{progressLabel}</strong>
+        </div>
+        <div className="portal-metric">
+          <span>Blockers</span>
+          <strong>{command.blockingCount}</strong>
+        </div>
+        <div className="portal-metric">
+          <span>Warnings</span>
+          <strong>{command.warningCount}</strong>
+        </div>
+        <div className="portal-metric">
+          <span>Source inputs</span>
+          <strong>{sourceLabel}</strong>
+        </div>
+        <div className="portal-metric">
+          <span>Review queue</span>
+          <strong>{command.sourceCoverage.reviewQueueCount}</strong>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function GuideChecklistItem({
+  section,
+  item,
+  onAction,
+  onChecklist,
+}: {
+  section: DealProgressionSection
+  item: PhaseWorkspaceStatus['checklist'][number]
+  onAction: (action: OperatorGuideAction) => void
+  onChecklist: (phaseSlug: string, checklist: Record<string, GuideChecklistStatus>, notes?: Record<string, string>) => Promise<unknown>
+}) {
+  const [note, setNote] = useState(item.note ?? '')
+  const isClosed = item.status === 'complete' || item.status === 'waived'
+
+  async function saveStatus(status: GuideChecklistStatus): Promise<void> {
+    await onChecklist(section.phaseSlug, { [item.id]: status }, { [item.id]: note })
+  }
+
+  return (
+    <article className="border border-white/10 bg-black p-3" data-testid={`guide-checklist-${item.id}`}>
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`status-badge ${statusClass(item.status)}`}>{checklistStatusLabel(item.status)}</span>
+            <span className="status-badge status-pending">{item.priority}</span>
+            <span className="status-badge status-pending">{item.category}</span>
+          </div>
+          <h4 className="mt-3 text-sm font-semibold text-white">{item.label}</h4>
+          <p className="mt-2 text-sm leading-6 text-gray-400">{item.whyItMatters}</p>
+          <div className="mt-3 grid gap-2 text-xs text-gray-500 lg:grid-cols-2">
+            <p><span className="font-semibold text-gray-400">Evidence:</span> {item.evidenceRequired}</p>
+            <p><span className="font-semibold text-gray-400">Unlocks:</span> {item.unlocks}</p>
+            <p><span className="font-semibold text-gray-400">Status:</span> {item.statusReason}</p>
+            <p><span className="font-semibold text-gray-400">Source:</span> {item.source}</p>
+          </div>
+          {(item.missingDocuments.length > 0 || item.missingFields.length > 0) && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {item.missingDocuments.map((type) => (
+                <span key={type} className="status-badge status-blocked">{DOCUMENT_LABELS[type] ?? displaySlug(type)}</span>
+              ))}
+              {item.missingFields.map((field) => (
+                <span key={field} className="status-badge status-blocked">{fieldLabel(field)}</span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="grid shrink-0 gap-2 md:w-48">
+          <button
+            type="button"
+            className="portal-button portal-button-secondary w-full"
+            onClick={() => onAction(item.recommendedAction)}
+          >
+            {item.recommendedAction.label}
+          </button>
+          <button
+            type="button"
+            className="portal-button portal-button-primary w-full"
+            disabled={item.status === 'complete'}
+            data-testid={`guide-complete-${item.id}`}
+            onClick={() => void saveStatus('complete')}
+          >
+            Mark Complete
+          </button>
+          <button
+            type="button"
+            className="portal-button portal-button-secondary w-full"
+            disabled={item.status === 'waived'}
+            data-testid={`guide-waive-${item.id}`}
+            onClick={() => void saveStatus('waived')}
+          >
+            Waive / Defer
+          </button>
+          {isClosed && (
+            <button
+              type="button"
+              className="portal-button portal-button-secondary w-full"
+              data-testid={`guide-reopen-${item.id}`}
+              onClick={() => void saveStatus('missing')}
+            >
+              Reopen
+            </button>
+          )}
+        </div>
+      </div>
+      <label className="portal-field mt-3">
+        <span>Operator note or waiver reason</span>
+        <input
+          data-testid={`guide-note-${item.id}`}
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          placeholder="Short reason, owner, or follow-up path"
+        />
+      </label>
+    </article>
+  )
+}
+
+function DealProgressionGuideView({
+  guide,
+  activeTab,
+  onOpenSection,
+  onAction,
+  onChecklist,
+}: {
+  guide: DealProgressionGuide | null | undefined
+  activeTab: WorkspaceTab
+  onOpenSection: (phaseSlug: string) => void
+  onAction: (action: OperatorGuideAction) => void
+  onChecklist: (phaseSlug: string, checklist: Record<string, GuideChecklistStatus>, notes?: Record<string, string>) => Promise<unknown>
+}) {
+  const sections = guide?.sections ?? []
+
+  return (
+    <section className="space-y-4" data-testid="deal-progression-guide">
+      <div className="portal-panel">
+        <div className="portal-section-header">
+          <div>
+            <p className="portal-kicker">Deal Progression Guide</p>
+            <h2 className="portal-title">What is needed next</h2>
+          </div>
+          <span className="status-badge status-pending">Guide v{guide?.version ?? 1}</span>
+        </div>
+        <p className="mt-3 max-w-4xl text-sm leading-6 text-gray-400">
+          The guide combines required documents, source-backed fields, operator judgment, and workflow readiness so the deal can move from intake to package review without guessing what is missing.
+        </p>
+      </div>
+
+      <div className="grid gap-3 xl:grid-cols-3">
+        {sections.map((section) => (
+          <button
+            key={section.phaseSlug}
+            type="button"
+            className={`border border-white/10 bg-black p-4 text-left transition-colors hover:border-white/40 ${
+              activeTab === section.phaseSlug ? 'border-white/50' : ''
+            }`}
+            data-testid={`guide-section-card-${section.phaseSlug}`}
+            onClick={() => onOpenSection(section.runtimePhase ? section.phaseSlug : 'guide')}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase text-gray-500">{section.label}</p>
+                <p className="mt-2 text-sm text-gray-300">{section.summary}</p>
+              </div>
+              <span className={`status-badge ${statusClass(section.readiness)}`}>{section.readiness}</span>
+            </div>
+            <div className="mt-3 progress-bar">
+              <div className="progress-fill bg-white" style={{ width: `${section.progress}%` }} />
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+              <span className="border border-white/10 px-2 py-2 text-gray-500">{section.progress}% done</span>
+              <span className="border border-white/10 px-2 py-2 text-gray-500">{section.blockingCount} blockers</span>
+              <span className="border border-white/10 px-2 py-2 text-gray-500">{section.warningCount} warnings</span>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <div className="grid gap-4">
+        {sections.map((section) => (
+          <section key={section.phaseSlug} className="portal-panel" data-testid={`guide-section-${section.phaseSlug}`}>
+            <div className="portal-section-header">
+              <div>
+                <p className="portal-kicker">{section.label}</p>
+                <h3 className="portal-title">Checklist and help guide</h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className={`status-badge ${statusClass(section.readiness)}`}>{section.readiness}</span>
+                {section.workflowId && <span className="status-badge status-pending">{workflowLabel(section.workflowId)}</span>}
+              </div>
+            </div>
+            {section.requiredDocuments.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {section.requiredDocuments.map((type) => (
+                  <span
+                    key={type}
+                    className={`status-badge ${
+                      section.uploadedDocuments.includes(type) ? 'status-complete' : 'status-blocked'
+                    }`}
+                  >
+                    {DOCUMENT_LABELS[type] ?? displaySlug(type)}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="mt-4 grid gap-3">
+              {section.checklist.map((item) => (
+                <GuideChecklistItem
+                  key={item.id}
+                  section={section}
+                  item={item}
+                  onAction={onAction}
+                  onChecklist={onChecklist}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function PhaseWorkspaceView({
   dealCheckpoint,
   agentCheckpoints,
@@ -545,7 +927,7 @@ function PhaseWorkspaceView({
   agentCheckpoints: Map<string, AgentCheckpoint>
   phase: PhaseWorkspaceStatus
   documents: SourceDocument[]
-  onChecklist: (phaseSlug: string, checklist: Record<string, 'pending' | 'complete'>) => Promise<unknown>
+  onChecklist: (phaseSlug: string, checklist: Record<string, GuideChecklistStatus>, notes?: Record<string, string>) => Promise<unknown>
   onLaunch: (phaseSlug: string) => Promise<void>
   launching: boolean
   runtimeProvider: RuntimeProvider
@@ -563,7 +945,7 @@ function PhaseWorkspaceView({
     : Math.round((phase.uploadedDocuments.length / phase.requiredDocuments.length) * 100)
 
   async function toggleChecklist(itemId: string, complete: boolean): Promise<void> {
-    await onChecklist(phase.phaseSlug, { [itemId]: complete ? 'complete' : 'pending' })
+    await onChecklist(phase.phaseSlug, { [itemId]: complete ? 'complete' : 'missing' })
   }
 
   return (
@@ -728,17 +1110,243 @@ function PhaseWorkspaceView({
   )
 }
 
+function OperatorBriefing({
+  workspace,
+  documents,
+  onOpenDocuments,
+  onFocusWorkflowLauncher,
+  onOpenPhase,
+  onOpenEditDetails,
+}: {
+  workspace: ReturnType<typeof useDealWorkspace>['workspace']
+  documents: SourceDocument[]
+  onOpenDocuments: () => void
+  onFocusWorkflowLauncher: () => void
+  onOpenPhase: (phaseSlug: string) => void
+  onOpenEditDetails: () => void
+}) {
+  const phases = workspace?.phases ?? []
+  const readiness = workspace?.launchReadiness ?? []
+  const fullReview = readiness.find((entry) => entry.workflowId === 'full-acquisition-review') ?? readiness[0]
+  const readyPhase = phases.find((phase) => phase.readiness === 'ready')
+  const phaseWithMissingDocs = phases.find((phase) => phase.missingDocuments.length > 0)
+  const readyPhaseCount = phases.filter((phase) => phase.readiness === 'ready').length
+  const reviewReadyCount = documents.filter((doc) => doc.status === 'review_ready').length
+  const extractionQueueCount = documents.filter((doc) =>
+    doc.extractionStatus === 'not-started' ||
+    doc.extractionStatus === 'extraction-pending' ||
+    doc.extractionStatus === 'parser-unavailable' ||
+    doc.extractionStatus === 'parse_failed'
+  ).length
+  const sourceCoverage = fullReview?.sourceCoverage
+  const requiredSourceCount = sourceCoverage?.requiredApprovedFieldCount ?? 0
+  const approvedRequiredSourceCount = Math.max(
+    0,
+    requiredSourceCount - (sourceCoverage?.missingApprovedFieldCount ?? 0),
+  )
+  const missingFieldLabels = (fullReview?.missingApprovedFields ?? []).map(fieldLabel)
+  const missingDocLabels = phaseWithMissingDocs?.missingDocuments.slice(0, 4).map((type) => DOCUMENT_LABELS[type] ?? displaySlug(type)) ?? []
+  const bestRunnable = readiness.find((entry) => entry.status === 'ready') ?? readiness.find((entry) => entry.status === 'warning')
+
+  const nextAction = (() => {
+    if (!workspace) {
+      return {
+        title: 'Load the workspace package.',
+        detail: 'The cockpit is reading deal criteria, source documents, and workflow readiness.',
+        cta: 'Loading',
+        onClick: () => undefined,
+      }
+    }
+    if ((fullReview?.blockers.length ?? 0) > 0) {
+      return {
+        title: 'Fix launch-blocking deal fields.',
+        detail: fullReview?.blockers[0] ?? 'The saved deal is not launch-ready yet.',
+        cta: 'Edit Details',
+        onClick: onOpenEditDetails,
+      }
+    }
+    if (documents.length === 0) {
+      return {
+        title: 'Upload the first source package.',
+        detail: 'Start with the rent roll, T12, and offering memo so the model has operator-grade inputs.',
+        cta: 'Upload Documents',
+        onClick: onOpenDocuments,
+      }
+    }
+    if (reviewReadyCount > 0) {
+      return {
+        title: 'Review extracted fields before launch.',
+        detail: `${reviewReadyCount} document${reviewReadyCount === 1 ? '' : 's'} can be approved into source-backed deal inputs.`,
+        cta: 'Review Fields',
+        onClick: onOpenDocuments,
+      }
+    }
+    if (extractionQueueCount > 0) {
+      return {
+        title: 'Run or resolve the extraction queue.',
+        detail: `${extractionQueueCount} uploaded document${extractionQueueCount === 1 ? '' : 's'} still need extraction or operator review.`,
+        cta: 'Open Documents',
+        onClick: onOpenDocuments,
+      }
+    }
+    if (missingFieldLabels.length > 0) {
+      return {
+        title: 'Source-back the remaining launch inputs.',
+        detail: `Still missing: ${missingFieldLabels.slice(0, 3).join(', ')}${missingFieldLabels.length > 3 ? '...' : ''}.`,
+        cta: 'Open Documents',
+        onClick: onOpenDocuments,
+      }
+    }
+    if (readyPhase) {
+      return {
+        title: `${readyPhase.label} is ready for agent work.`,
+        detail: 'Open the phase playbook to confirm checklist status or run its scoped workflow.',
+        cta: `Open ${readyPhase.label}`,
+        onClick: () => onOpenPhase(readyPhase.phaseSlug),
+      }
+    }
+    if (bestRunnable) {
+      return {
+        title: `${workflowLabel(bestRunnable.workflowId)} is runnable with current inputs.`,
+        detail: 'Review runtime options, scenario, speed, and notes before launching.',
+        cta: 'Launch Workflow',
+        onClick: onFocusWorkflowLauncher,
+      }
+    }
+    return {
+      title: 'Complete the minimum source package.',
+      detail: missingDocLabels.length > 0
+        ? `Missing documents: ${missingDocLabels.join(', ')}.`
+        : 'Review criteria and source documents before starting agent workflows.',
+      cta: 'Open Documents',
+      onClick: onOpenDocuments,
+    }
+  })()
+
+  return (
+    <section className="portal-panel" data-testid="operator-briefing">
+      <div className="portal-section-header">
+        <div>
+          <p className="portal-kicker">Operator Briefing</p>
+          <h2 className="portal-title">Launch Readiness</h2>
+        </div>
+        <span className={`status-badge ${readinessStatusClass(fullReview?.status ?? 'pending')}`}>
+          {fullReview?.status ?? 'pending'}
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)]">
+        <div className="border border-white/10 bg-black p-4" data-testid="operator-next-action">
+          <p className="text-xs font-semibold uppercase text-gray-500">Best next move</p>
+          <h3 className="mt-2 text-xl font-semibold text-white">{nextAction.title}</h3>
+          <p className="mt-2 text-sm leading-6 text-gray-400">{nextAction.detail}</p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="button"
+              className="portal-button portal-button-primary"
+              onClick={nextAction.onClick}
+              disabled={!workspace}
+            >
+              {nextAction.cta}
+            </button>
+            <button
+              type="button"
+              className="portal-button portal-button-secondary"
+              onClick={onFocusWorkflowLauncher}
+            >
+              Workflow Launcher
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+          <div className="portal-metric" data-testid="source-backed-input-score">
+            <span>Source-backed inputs</span>
+            <strong>{requiredSourceCount > 0 ? `${approvedRequiredSourceCount}/${requiredSourceCount}` : '--'}</strong>
+          </div>
+          <div className="portal-metric">
+            <span>Review queue</span>
+            <strong>{reviewReadyCount + extractionQueueCount}</strong>
+          </div>
+          <div className="portal-metric">
+            <span>Phase ready</span>
+            <strong>{readyPhaseCount}/{phases.length || 5}</strong>
+          </div>
+        </div>
+      </div>
+
+      {(fullReview || missingDocLabels.length > 0) && (
+        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+          {(fullReview?.blockers ?? []).slice(0, 2).map((blocker) => (
+            <div key={blocker} className="border border-cre-warning/30 bg-cre-warning/10 px-3 py-3 text-sm text-cre-warning">
+              {blocker}
+            </div>
+          ))}
+          {(fullReview?.warnings ?? []).slice(0, 2).map((warning) => (
+            <div key={warning} className="border border-white/10 bg-black px-3 py-3 text-sm text-gray-400">
+              {warning}
+            </div>
+          ))}
+          {missingDocLabels.length > 0 && (
+            <div className="border border-white/10 bg-black px-3 py-3 text-sm text-gray-400">
+              Missing phase docs: {missingDocLabels.join(', ')}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        {readiness.map((entry: LaunchReadinessResult) => (
+          <article
+            key={entry.workflowId}
+            className="border border-white/10 bg-black p-3"
+            data-testid={`workflow-readiness-${entry.workflowId}`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-sm font-semibold text-white">{workflowLabel(entry.workflowId)}</h3>
+              <span className={`status-badge ${readinessStatusClass(entry.status)}`}>{entry.status}</span>
+            </div>
+            <p className="mt-3 text-xs text-gray-500">
+              {entry.sourceCoverage.missingApprovedFieldCount === 0
+                ? 'Required source fields approved'
+                : `${entry.sourceCoverage.missingApprovedFieldCount} source field${entry.sourceCoverage.missingApprovedFieldCount === 1 ? '' : 's'} missing`}
+            </p>
+            {(entry.blockers[0] || entry.warnings[0]) && (
+              <p className="mt-2 line-clamp-2 text-xs text-gray-500">
+                {entry.blockers[0] || entry.warnings[0]}
+              </p>
+            )}
+          </article>
+        ))}
+        {readiness.length === 0 && (
+          <div className="border border-white/10 bg-black p-4 text-sm text-gray-500 md:col-span-2 xl:col-span-5">
+            Readiness checks will appear once the workspace service returns workflow metadata.
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 function Overview({
   dealCheckpoint,
   workspace,
   criteria,
   documents,
+  onOpenDocuments,
+  onFocusWorkflowLauncher,
+  onOpenPhase,
+  onOpenEditDetails,
   children,
 }: {
   dealCheckpoint: DealCheckpoint
   workspace: ReturnType<typeof useDealWorkspace>['workspace']
   criteria: DealCriteria | null
   documents: SourceDocument[]
+  onOpenDocuments: () => void
+  onFocusWorkflowLauncher: () => void
+  onOpenPhase: (phaseSlug: string) => void
+  onOpenEditDetails: () => void
   children: ReactNode
 }) {
   const phases = workspace?.phases ?? []
@@ -746,6 +1354,14 @@ function Overview({
   const sourceDocCount = documents.length
   return (
     <div className="space-y-4">
+      <OperatorBriefing
+        workspace={workspace}
+        documents={documents}
+        onOpenDocuments={onOpenDocuments}
+        onFocusWorkflowLauncher={onFocusWorkflowLauncher}
+        onOpenPhase={onOpenPhase}
+        onOpenEditDetails={onOpenEditDetails}
+      />
       <section className="grid gap-4 lg:grid-cols-4">
         <div className="portal-stat portal-stat-large">
           <strong>{formatNumber(dealCheckpoint.property.totalUnits)}</strong>
@@ -793,13 +1409,12 @@ export default function DealWorkspace({
   storyEvents,
   documentArtifacts,
   deals,
-  initialTab = 'overview',
+  initialTab = 'guide',
   onOpenEditDetails,
   onLaunchStarted,
   onPresetSaved,
 }: DealWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab)
-  const [autoDefaultedDealId, setAutoDefaultedDealId] = useState<string | null>(null)
   const {
     workspace,
     loading,
@@ -821,7 +1436,6 @@ export default function DealWorkspace({
 
   useEffect(() => {
     setActiveTab(initialTab)
-    setAutoDefaultedDealId(null)
   }, [dealCheckpoint.dealId, initialTab])
 
   const phaseTabs = workspace?.phases ?? []
@@ -831,27 +1445,14 @@ export default function DealWorkspace({
 
   const navItems = useMemo(
     () => [
-      { id: 'overview', label: 'Overview' },
+      { id: 'guide', label: 'Guide' },
+      { id: 'overview', label: 'Briefing' },
       ...phaseTabs.map((phase) => ({ id: phase.phaseSlug, label: phase.label })),
       { id: 'documents', label: 'Documents' },
       { id: 'package', label: 'Package' },
     ] as { id: WorkspaceTab | string; label: string }[],
     [phaseTabs],
   )
-
-  useEffect(() => {
-    if (
-      !loading &&
-      workspace &&
-      initialTab === 'overview' &&
-      activeTab === 'overview' &&
-      documents.length === 0 &&
-      autoDefaultedDealId !== dealCheckpoint.dealId
-    ) {
-      setActiveTab('documents')
-      setAutoDefaultedDealId(dealCheckpoint.dealId)
-    }
-  }, [activeTab, autoDefaultedDealId, dealCheckpoint.dealId, documents.length, initialTab, loading, workspace])
 
   async function handlePhaseLaunch(phaseSlug: string): Promise<void> {
     const workflowId = PHASE_WORKFLOW[phaseSlug] ?? 'full-acquisition-review'
@@ -865,6 +1466,7 @@ export default function DealWorkspace({
         reset: false,
         codexMaxAgents: phaseRuntimeProvider === 'codex' ? phaseCodexMaxAgents : undefined,
         codexConcurrency: phaseRuntimeProvider === 'codex' ? phaseCodexConcurrency : undefined,
+        requireSourceBackedInputs: true,
         notes: criteria?.notes,
       })
       const sourceCount = response.inputSnapshot?.sourceCoverage?.sourceDocumentCount
@@ -893,6 +1495,42 @@ export default function DealWorkspace({
   async function handleExtractDocuments(targetDocuments: SourceDocument[]): Promise<void> {
     for (const document of targetDocuments) {
       await extractDocument(document.documentId)
+    }
+  }
+
+  function focusWorkflowLauncher(): void {
+    setActiveTab('overview')
+    window.requestAnimationFrame(() => {
+      document.getElementById('workspace-workflow-launcher')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+  }
+
+  function handleGuideAction(action: OperatorGuideAction): void {
+    if (action.type === 'edit_details') {
+      onOpenEditDetails?.(dealCheckpoint.dealId)
+      return
+    }
+    if (action.type === 'review_package') {
+      setActiveTab('package')
+      return
+    }
+    if (action.type === 'upload_documents') {
+      setActiveTab('documents')
+      return
+    }
+    if (action.type === 'launch_workflow') {
+      if (isWorkspaceTab(action.target) && action.target !== 'documents' && action.target !== 'package') {
+        setActiveTab(action.target)
+        return
+      }
+      focusWorkflowLauncher()
+      return
+    }
+    if (isWorkspaceTab(action.target)) {
+      setActiveTab(action.target)
     }
   }
 
@@ -930,6 +1568,11 @@ export default function DealWorkspace({
         </div>
       </section>
 
+      <OperatorCommandBar
+        command={workspace?.operatorCommand}
+        onAction={handleGuideAction}
+      />
+
       {(error || launchMessage) && (
         <div className="border border-white/10 bg-black px-4 py-3 text-sm text-gray-300">
           {error || launchMessage}
@@ -955,12 +1598,26 @@ export default function DealWorkspace({
       {!loading && (
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 space-y-4">
+            {activeTab === 'guide' && (
+              <DealProgressionGuideView
+                guide={workspace?.progressionGuide}
+                activeTab={activeTab}
+                onOpenSection={(phaseSlug) => setActiveTab(phaseSlug as WorkspaceTab)}
+                onAction={handleGuideAction}
+                onChecklist={savePhaseChecklist}
+              />
+            )}
+
             {activeTab === 'overview' && (
               <Overview
                 dealCheckpoint={dealCheckpoint}
                 workspace={workspace}
                 criteria={criteria}
                 documents={documents}
+                onOpenDocuments={() => setActiveTab('documents')}
+                onFocusWorkflowLauncher={focusWorkflowLauncher}
+                onOpenPhase={(phaseSlug) => setActiveTab(phaseSlug as WorkspaceTab)}
+                onOpenEditDetails={() => onOpenEditDetails?.(dealCheckpoint.dealId)}
               >
                 {criteria && (
                   <CriteriaPanel
@@ -971,13 +1628,18 @@ export default function DealWorkspace({
                 )}
                 <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,0.72fr)]">
                   <PipelineView dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
-                  <WorkflowLauncher
-                    deals={deals}
-                    initialDealId={dealCheckpoint.dealId}
-                    onLaunchStarted={(response) => void handleWorkspaceLaunch(response)}
-                    onPresetSaved={onPresetSaved}
-                    compact
-                  />
+                  <div id="workspace-workflow-launcher" data-testid="workspace-workflow-launcher">
+                    <WorkflowLauncher
+                      deals={deals}
+                      initialDealId={dealCheckpoint.dealId}
+                      launchReadiness={workspace?.launchReadiness}
+                      defaultRequireSourceBackedInputs
+                      lockDealSelection
+                      onLaunchStarted={(response) => void handleWorkspaceLaunch(response)}
+                      onPresetSaved={onPresetSaved}
+                      compact
+                    />
+                  </div>
                 </section>
               </Overview>
             )}

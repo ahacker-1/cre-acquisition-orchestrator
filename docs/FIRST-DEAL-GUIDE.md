@@ -91,8 +91,10 @@ Open `http://localhost:5173`.
 The dashboard lets you:
 
 - Create or open a deal workspace
+- Use the Deal Progression Guide to see what is missing, why it matters, and what action unlocks the next step
 - Upload local source documents
 - Extract CSV/TXT/MD inputs
+- Mark operator checklist items complete or waived with a short reason while keeping source-backed evidence separate
 - Launch focused workflows
 - Watch phase progress and agent status
 - Review the completion package

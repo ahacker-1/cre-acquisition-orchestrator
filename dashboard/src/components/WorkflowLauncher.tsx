@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useWorkflows } from '../hooks/useWorkflows'
 import type { RunMode, RunSpeed, RuntimeProvider } from '../types/checkpoint'
 import type { DealLibraryItem, LaunchScenario } from '../types/deals'
+import type { LaunchReadinessResult } from '../types/workspace'
 import type {
   WorkflowDefinition,
   WorkflowLaunchResponse,
@@ -16,6 +17,9 @@ interface WorkflowLauncherProps {
   onPresetSaved?: (preset: WorkflowPreset) => void
   className?: string
   compact?: boolean
+  launchReadiness?: LaunchReadinessResult[]
+  defaultRequireSourceBackedInputs?: boolean
+  lockDealSelection?: boolean
 }
 
 const DRAFT_STORAGE_KEY = 'cre.workflowLauncher.v1'
@@ -130,6 +134,13 @@ function workflowLaunchTestId(workflowId: string): string {
   return `workflow-launch-${workflowId}`
 }
 
+function readinessStatusClass(status: string | undefined): string {
+  if (status === 'ready') return 'status-complete'
+  if (status === 'warning') return 'status-running'
+  if (status === 'blocked') return 'status-blocked'
+  return 'status-pending'
+}
+
 async function readCodexStatus(): Promise<CodexAuthStatus> {
   const response = await fetch(`${API_URL}/api/codex/status`)
   const payload = (await response.json()) as CodexAuthStatus & { error?: string }
@@ -152,11 +163,12 @@ function createInitialDraft(
   deals: DealLibraryItem[],
   defaultWorkflowId: string,
   initialDealId?: string,
+  defaultRequireSourceBackedInputs = false,
 ): WorkflowSelectionDraft {
   const stored = readStoredDraft()
   const fallbackDealId = initialDealId || deals[0]?.dealId || ''
   return {
-    dealId: typeof stored.dealId === 'string' ? stored.dealId : fallbackDealId,
+    dealId: initialDealId || (typeof stored.dealId === 'string' ? stored.dealId : fallbackDealId),
     workflowId: typeof stored.workflowId === 'string' ? stored.workflowId : defaultWorkflowId,
     scenario:
       stored.scenario === 'value-add' || stored.scenario === 'distressed'
@@ -178,6 +190,12 @@ function createInitialDraft(
         ? Math.round(stored.codexConcurrency)
         : 1,
     codexSearch: stored.codexSearch === true,
+    requireSourceBackedInputs:
+      defaultRequireSourceBackedInputs
+        ? true
+        : typeof stored.requireSourceBackedInputs === 'boolean'
+        ? stored.requireSourceBackedInputs
+        : defaultRequireSourceBackedInputs,
     notes: typeof stored.notes === 'string' ? stored.notes : '',
     presetName: typeof stored.presetName === 'string' ? stored.presetName : '',
     presetId: typeof stored.presetId === 'string' ? stored.presetId : undefined,
@@ -191,6 +209,9 @@ function WorkflowLauncher({
   onPresetSaved,
   className = '',
   compact = false,
+  launchReadiness = [],
+  defaultRequireSourceBackedInputs = false,
+  lockDealSelection = false,
 }: WorkflowLauncherProps) {
   const {
     workflows,
@@ -206,7 +227,7 @@ function WorkflowLauncher({
   } = useWorkflows()
 
   const [draft, setDraft] = useState<WorkflowSelectionDraft>(() =>
-    createInitialDraft(deals, 'full-acquisition-review', initialDealId)
+    createInitialDraft(deals, 'full-acquisition-review', initialDealId, defaultRequireSourceBackedInputs)
   )
   const [activeStep, setActiveStep] = useState<'deal' | 'workflow' | 'review'>('deal')
   const [localMessage, setLocalMessage] = useState<string | null>(null)
@@ -221,6 +242,14 @@ function WorkflowLauncher({
   const selectedWorkflow = useMemo(
     () => workflows.find((workflow) => workflow.id === draft.workflowId) ?? workflows[0],
     [draft.workflowId, workflows],
+  )
+  const scopedReadiness = useMemo(
+    () => (lockDealSelection ? launchReadiness : []),
+    [lockDealSelection, launchReadiness],
+  )
+  const selectedReadiness = useMemo(
+    () => scopedReadiness.find((entry) => entry.workflowId === draft.workflowId) ?? null,
+    [draft.workflowId, scopedReadiness],
   )
   const compatiblePresets = useMemo(
     () => presets.filter((preset) => !selectedWorkflow || preset.workflowId === selectedWorkflow.id),
@@ -241,10 +270,18 @@ function WorkflowLauncher({
   }, [defaultWorkflowId, workflows])
 
   useEffect(() => {
+    if (lockDealSelection && initialDealId) return
     if (!selectedDeal && deals.length > 0) {
       setDraft((current) => ({ ...current, dealId: deals[0].dealId }))
     }
-  }, [deals, selectedDeal])
+  }, [deals, initialDealId, lockDealSelection, selectedDeal])
+
+  useEffect(() => {
+    if (!initialDealId) return
+    setDraft((current) => (
+      current.dealId === initialDealId ? current : { ...current, dealId: initialDealId }
+    ))
+  }, [initialDealId])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -286,7 +323,7 @@ function WorkflowLauncher({
   function applyPreset(preset: WorkflowPreset): void {
     setDraft((current) => ({
       ...current,
-      dealId: preset.dealId || current.dealId,
+      dealId: lockDealSelection && initialDealId ? initialDealId : preset.dealId || current.dealId,
       workflowId: preset.workflowId,
       scenario: preset.inputs.scenario,
       speed: preset.inputs.speed,
@@ -296,12 +333,34 @@ function WorkflowLauncher({
       codexMaxAgents: preset.inputs.codexMaxAgents ?? 1,
       codexConcurrency: preset.inputs.codexConcurrency ?? 1,
       codexSearch: preset.inputs.codexSearch === true,
+      requireSourceBackedInputs: preset.inputs.requireSourceBackedInputs === true,
       notes: preset.inputs.notes || '',
       presetName: preset.name,
       presetId: preset.id,
     }))
     setActiveStep('review')
     setLocalMessage(`Loaded preset: ${preset.name}`)
+  }
+
+  function readinessForWorkflow(workflowId: string): LaunchReadinessResult | null {
+    return scopedReadiness.find((entry) => entry.workflowId === workflowId) ?? null
+  }
+
+  function launchBlockMessageFor(workflowId: string): string | null {
+    const readiness = readinessForWorkflow(workflowId)
+    if (!readiness) return null
+    if (readiness.blockers[0]) return readiness.blockers[0]
+    if (!draft.requireSourceBackedInputs) return null
+    if (readiness.missingApprovedFields.length > 0) {
+      return `Launch gate is on. Approve ${readiness.missingApprovedFields.length} missing source-backed field${readiness.missingApprovedFields.length === 1 ? '' : 's'} before launching.`
+    }
+    if (readiness.sourceCoverage.staleDocumentCount > 0) {
+      return 'Launch gate is on. Re-extract stale source documents before launching.'
+    }
+    if (readiness.sourceCoverage.invalidApprovedFieldCount > 0) {
+      return 'Launch gate is on. Re-approve fields whose source evidence is missing or stale before launching.'
+    }
+    return null
   }
 
   async function handleSavePreset(): Promise<void> {
@@ -324,6 +383,7 @@ function WorkflowLauncher({
           codexMaxAgents: draft.runtimeProvider === 'codex' ? draft.codexMaxAgents : undefined,
           codexConcurrency: draft.runtimeProvider === 'codex' ? draft.codexConcurrency : undefined,
           codexSearch: draft.runtimeProvider === 'codex' ? draft.codexSearch : undefined,
+          requireSourceBackedInputs: draft.requireSourceBackedInputs,
           notes: draft.notes?.trim() || undefined,
         },
       })
@@ -366,8 +426,18 @@ function WorkflowLauncher({
       setLocalMessage('Workflow catalog is still loading.')
       return
     }
+    const launchBlockMessage = launchBlockMessageFor(workflow.id)
+    if (launchBlockMessage) {
+      setLocalMessage(launchBlockMessage)
+      setActiveStep('review')
+      return
+    }
     if (!selectedDeal) {
-      setLocalMessage('Choose a deal before launching.')
+      setLocalMessage(
+        lockDealSelection && initialDealId
+          ? 'The open workspace deal is not available in the deal library yet. Refresh the deal list before launching.'
+          : 'Choose a deal before launching.',
+      )
       setActiveStep('deal')
       return
     }
@@ -391,6 +461,7 @@ function WorkflowLauncher({
         codexMaxAgents: draft.runtimeProvider === 'codex' ? draft.codexMaxAgents : undefined,
         codexConcurrency: draft.runtimeProvider === 'codex' ? draft.codexConcurrency : undefined,
         codexSearch: draft.runtimeProvider === 'codex' ? draft.codexSearch : undefined,
+        requireSourceBackedInputs: draft.requireSourceBackedInputs,
         notes: draft.notes?.trim() || undefined,
       })
       const sourceCount = response.inputSnapshot?.sourceCoverage?.sourceDocumentCount
@@ -407,6 +478,8 @@ function WorkflowLauncher({
 
   const isCodexRun = draft.runtimeProvider === 'codex'
   const codexReady = Boolean(codexStatus?.installed && codexStatus.loggedIn && codexStatus.usingChatGpt)
+  const selectedLaunchBlockMessage = selectedWorkflow ? launchBlockMessageFor(selectedWorkflow.id) : null
+  const sourceGateBlocked = Boolean(selectedLaunchBlockMessage)
   const codexStatusLabel = !codexStatus
     ? 'Not checked'
     : !codexStatus.installed
@@ -416,7 +489,7 @@ function WorkflowLauncher({
         : codexStatus.usingChatGpt
           ? 'Logged in with ChatGPT'
           : 'Logged in, but not confirmed as ChatGPT'
-  const canLaunch = Boolean(selectedDeal && selectedWorkflow && (!isCodexRun || codexReady))
+  const canLaunch = Boolean(selectedDeal && selectedWorkflow && (!isCodexRun || codexReady) && !sourceGateBlocked)
   const codexAgentLimitLabel =
     typeof draft.codexMaxAgents === 'number' && draft.codexMaxAgents > 0
       ? `${draft.codexMaxAgents} agent${draft.codexMaxAgents === 1 ? '' : 's'}`
@@ -489,18 +562,23 @@ function WorkflowLauncher({
               <div className={dealGridClassName}>
                 {deals.map((deal) => {
                   const selected = deal.dealId === selectedDeal?.dealId
+                  const dealLockedOut = lockDealSelection && deal.dealId !== initialDealId
                   return (
                     <button
                       key={deal.dealId}
                       type="button"
+                      disabled={dealLockedOut}
                       onClick={() => {
+                        if (dealLockedOut) return
                         setDraft((current) => ({ ...current, dealId: deal.dealId }))
                         setLocalMessage(null)
                       }}
                       className={`min-w-0 text-left border p-4 transition-colors ${
                         selected
                           ? 'border-cre-accent bg-cre-accent/10'
-                          : 'border-cre-border bg-black/20 hover:bg-white/5'
+                          : dealLockedOut
+                            ? 'border-cre-border bg-black/20 opacity-45'
+                            : 'border-cre-border bg-black/20 hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -567,6 +645,7 @@ function WorkflowLauncher({
           {workflows.map((workflow) => {
             const selected = workflow.id === selectedWorkflow?.id
             const launching = launchingWorkflowId === workflow.id
+            const workflowBlocked = Boolean(launchBlockMessageFor(workflow.id))
             return (
               <div
                 key={workflow.id}
@@ -608,7 +687,7 @@ function WorkflowLauncher({
                       type="button"
                       data-testid={workflowLaunchTestId(workflow.id)}
                       onClick={() => void handleLaunch(workflow)}
-                      disabled={!selectedDeal || launching || (isCodexRun && !codexReady)}
+                      disabled={!selectedDeal || launching || (isCodexRun && !codexReady) || workflowBlocked}
                       className={buttonClassName('primary')}
                     >
                       {launching ? 'Launching...' : 'Launch'}
@@ -636,6 +715,7 @@ function WorkflowLauncher({
                   onChange={(event) =>
                     setDraft((current) => ({ ...current, dealId: event.target.value }))
                   }
+                  disabled={lockDealSelection}
                   className={inputClassName()}
                 >
                   {deals.map((deal) => (
@@ -644,6 +724,11 @@ function WorkflowLauncher({
                     </option>
                   ))}
                 </select>
+                {lockDealSelection && (
+                  <span className="mt-2 block text-xs leading-5 text-gray-500">
+                    Locked to the open workspace so saved presets cannot switch the launch to another deal.
+                  </span>
+                )}
               </label>
               <label className="block">
                 <span className="block text-sm font-medium text-gray-200 mb-2">Workflow</span>
@@ -826,6 +911,23 @@ function WorkflowLauncher({
                   </div>
                 </>
               )}
+              <label className="md:col-span-2 flex items-start gap-3 border border-cre-border bg-black/20 px-3 py-3 text-sm text-gray-200">
+                <input
+                  type="checkbox"
+                  data-testid="workflow-require-source-backed-inputs"
+                  checked={draft.requireSourceBackedInputs === true}
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, requireSourceBackedInputs: event.target.checked }))
+                  }
+                  className="mt-0.5 h-4 w-4 accent-cre-accent"
+                />
+                <span>
+                  <span className="block font-semibold text-white">Require source-backed launch inputs</span>
+                  <span className="mt-1 block text-xs leading-5 text-gray-500">
+                    Block launch until this workflow's required fields have approved document evidence.
+                  </span>
+                </span>
+              </label>
               <label className="flex items-center gap-3 border border-cre-border bg-black/20 px-3 py-2 text-sm text-gray-200">
                 <input
                   type="checkbox"
@@ -854,6 +956,58 @@ function WorkflowLauncher({
           </div>
 
           <aside className="min-w-0 space-y-4">
+            {selectedReadiness && (
+              <div
+                className="card min-w-0 bg-cre-surface/60"
+                data-testid="workflow-launch-readiness"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
+                      Readiness Check
+                    </h3>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Source-backed confidence for the selected workflow.
+                    </p>
+                  </div>
+                  <span className={`status-badge ${readinessStatusClass(selectedReadiness.status)}`}>
+                    {selectedReadiness.status}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-black/20 px-2 py-2">
+                    <div className="text-sm font-semibold text-white">
+                      {Math.max(
+                        0,
+                        selectedReadiness.sourceCoverage.requiredApprovedFieldCount -
+                          selectedReadiness.sourceCoverage.missingApprovedFieldCount,
+                      )}
+                      /{selectedReadiness.sourceCoverage.requiredApprovedFieldCount}
+                    </div>
+                    <div className="mt-1 text-[11px] uppercase text-gray-500">Inputs</div>
+                  </div>
+                  <div className="bg-black/20 px-2 py-2">
+                    <div className="text-sm font-semibold text-white">
+                      {selectedReadiness.sourceCoverage.reviewReadyDocumentCount}
+                    </div>
+                    <div className="mt-1 text-[11px] uppercase text-gray-500">Review</div>
+                  </div>
+                  <div className="bg-black/20 px-2 py-2">
+                    <div className="text-sm font-semibold text-white">
+                      {selectedReadiness.warnings.length}
+                    </div>
+                    <div className="mt-1 text-[11px] uppercase text-gray-500">Warnings</div>
+                  </div>
+                </div>
+                {(sourceGateBlocked || selectedReadiness.blockers[0] || selectedReadiness.warnings[0]) && (
+                  <p className="mt-3 text-xs leading-5 text-gray-500">
+                    {sourceGateBlocked
+                      ? selectedLaunchBlockMessage
+                      : selectedReadiness.blockers[0] || selectedReadiness.warnings[0]}
+                  </p>
+                )}
+              </div>
+            )}
             <div className="card min-w-0 bg-cre-surface/60">
               <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
                 Launch Package

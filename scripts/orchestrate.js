@@ -57,6 +57,37 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
+function formatCurrency(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 'N/A';
+  return `$${Math.round(value).toLocaleString()}`;
+}
+
+function formatPercent(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 'N/A';
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function issueText(issue) {
+  if (!issue || typeof issue !== 'object') return 'Review item';
+  return issue.description || issue.message || issue.category || 'Review item';
+}
+
+function collectPhaseIssues(phases, fieldName, limit = 6) {
+  const issues = [];
+  PHASES.forEach((phase) => {
+    const phaseState = phases[phase.key] || {};
+    const values = Array.isArray(phaseState?.outputs?.[fieldName])
+      ? phaseState.outputs[fieldName]
+      : Array.isArray(phaseState?.dataForDownstream?.[fieldName])
+        ? phaseState.dataForDownstream[fieldName]
+        : [];
+    values.forEach((issue) => {
+      issues.push({ phase: phase.label, issue });
+    });
+  });
+  return issues.slice(0, limit);
+}
+
 function renderPhaseReport(phaseMeta, phaseState) {
   const findings = phaseState?.outputs?.keyFindings || [];
   const redFlags = Array.isArray(phaseState?.dataForDownstream?.redFlags)
@@ -94,6 +125,15 @@ function renderPhaseReport(phaseMeta, phaseState) {
 function renderFinalReport(checkpoint) {
   const lines = [];
   const phases = checkpoint.phases || {};
+  const property = checkpoint.property || {};
+  const deal = checkpoint.deal || checkpoint.dealConfig || {};
+  const financials = deal.financials || {};
+  const financing = deal.financing || {};
+  const topRedFlags = collectPhaseIssues(phases, 'redFlags');
+  const topDataGaps = collectPhaseIssues(phases, 'dataGaps');
+  const conditionalPhases = PHASES
+    .map((phase) => ({ phase, state: phases[phase.key] || {} }))
+    .filter(({ state }) => ['CONDITIONAL', 'FAIL', 'NEEDS_REVIEW'].includes(String(state.verdict || '').toUpperCase()));
   lines.push(`# Final Acquisition Report - ${checkpoint.dealName}`);
   lines.push('');
   lines.push(`- Deal ID: ${checkpoint.dealId}`);
@@ -110,6 +150,16 @@ function renderFinalReport(checkpoint) {
   lines.push(`- Start: ${checkpoint.startedAt}`);
   lines.push(`- End: ${checkpoint.completedAt || checkpoint.lastUpdatedAt}`);
   lines.push('');
+  lines.push('## Executive Decision Brief');
+  lines.push(`- Property: ${property.address || 'N/A'}, ${property.city || ''} ${property.state || ''}`.trim());
+  lines.push(`- Units: ${property.totalUnits ?? 'N/A'}`);
+  lines.push(`- Asking Price: ${formatCurrency(property.askingPrice || financials.askingPrice)}`);
+  lines.push(`- Current NOI: ${formatCurrency(financials.currentNOI)}`);
+  lines.push(`- Going-In Cap Rate: ${formatPercent(financials.goingInCapRate)}`);
+  lines.push(`- Target IRR / Equity Multiple: ${formatPercent(deal.targetIRR)} / ${deal.targetEquityMultiple ?? 'N/A'}x`);
+  lines.push(`- Target LTV / Rate: ${formatPercent(financing.targetLTV)} / ${formatPercent(financing.estimatedRate)}`);
+  lines.push(`- Conditional or failed phases: ${conditionalPhases.length}`);
+  lines.push('');
   if (checkpoint.inputSnapshot?.sourceCoverage) {
     const coverage = checkpoint.inputSnapshot.sourceCoverage;
     lines.push('## Source-Backed Inputs');
@@ -117,6 +167,29 @@ function renderFinalReport(checkpoint) {
     lines.push(`- Applied Documents: ${coverage.appliedDocumentCount ?? 0}/${coverage.sourceDocumentCount ?? 0}`);
     lines.push(`- Approved Fields: ${coverage.approvedFieldCount ?? 0}`);
     lines.push(`- Missing Required Source Fields: ${coverage.missingApprovedFieldCount ?? 0}`);
+    if (Array.isArray(checkpoint.inputSnapshot.readiness?.warnings) && checkpoint.inputSnapshot.readiness.warnings.length > 0) {
+      checkpoint.inputSnapshot.readiness.warnings.slice(0, 5).forEach((warning) => {
+        lines.push(`- Warning: ${warning}`);
+      });
+    }
+    lines.push('');
+  }
+  if (topRedFlags.length > 0 || topDataGaps.length > 0) {
+    lines.push('## Priority Review Items');
+    if (topRedFlags.length === 0) {
+      lines.push('- No red flags recorded.');
+    } else {
+      topRedFlags.forEach(({ phase, issue }) => {
+        lines.push(`- Red Flag (${phase}): ${issueText(issue)}`);
+      });
+    }
+    if (topDataGaps.length === 0) {
+      lines.push('- No data gaps recorded.');
+    } else {
+      topDataGaps.forEach(({ phase, issue }) => {
+        lines.push(`- Data Gap (${phase}): ${issueText(issue)}`);
+      });
+    }
     lines.push('');
   }
   lines.push('## Phase Outcomes');
@@ -304,6 +377,7 @@ async function main() {
   });
 
   checkpoint.scenario = scenarioName;
+  checkpoint.dealConfig = deal;
   checkpoint.seed = seed;
   checkpoint.runId = runId;
   checkpoint.workflowId = workflow.id;

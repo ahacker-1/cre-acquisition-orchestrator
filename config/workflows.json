@@ -8,6 +8,12 @@
       "summary": "Run the complete acquisition pipeline from diligence through closing.",
       "operatorGoal": "Create a full IC-ready acquisition package.",
       "recommendedScenario": "core-plus",
+      "requiredSourceFields": [
+        "property.totalUnits",
+        "financials.askingPrice",
+        "financials.currentNOI",
+        "financials.inPlaceOccupancy"
+      ],
       "phases": [
         { "phaseKey": "dueDiligence", "agents": ["*"] },
         { "phaseKey": "underwriting", "agents": ["*"] },
@@ -22,6 +28,11 @@
       "summary": "Run a fast go/no-go screen using core diligence and underwriting.",
       "operatorGoal": "Decide whether the deal deserves deeper pursuit.",
       "recommendedScenario": "core-plus",
+      "requiredSourceFields": [
+        "property.totalUnits",
+        "financials.currentNOI",
+        "financials.inPlaceOccupancy"
+      ],
       "phases": [
         {
           "phaseKey": "dueDiligence",
@@ -42,6 +53,10 @@
       "summary": "Refresh the financial model, sensitivity cases, and IC memo.",
       "operatorGoal": "Update the economics without rerunning the whole acquisition file.",
       "recommendedScenario": "value-add",
+      "requiredSourceFields": [
+        "property.totalUnits",
+        "financials.currentNOI"
+      ],
       "phases": [
         { "phaseKey": "underwriting", "agents": ["*"] }
       ]
@@ -52,6 +67,11 @@
       "summary": "Prepare an underwriting-backed financing package and lender comparison.",
       "operatorGoal": "Package the deal for debt sizing and lender outreach.",
       "recommendedScenario": "core-plus",
+      "requiredSourceFields": [
+        "property.totalUnits",
+        "financials.currentNOI",
+        "financing.targetLTV"
+      ],
       "phases": [
         { "phaseKey": "underwriting", "agents": ["*"] },
         { "phaseKey": "financing", "agents": ["*"] }
@@ -63,6 +83,7 @@
       "summary": "Run legal diligence and PSA review without loan-document review unless financing exists.",
       "operatorGoal": "Surface contract, title, insurance, transfer, and environmental blockers.",
       "recommendedScenario": "core-plus",
+      "requiredSourceFields": [],
       "phases": [
         {
           "phaseKey": "dueDiligence",

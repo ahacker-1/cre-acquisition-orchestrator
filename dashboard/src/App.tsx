@@ -12,7 +12,7 @@ import { uploadDealDocument } from './lib/documentUpload'
 import type { DealCheckpoint, PhaseInfo } from './types/checkpoint'
 import type { DealLibraryItem, DealRecordResponse } from './types/deals'
 
-type WorkspaceInitialTab = 'overview' | 'documents'
+type WorkspaceInitialTab = 'guide' | 'overview' | 'documents' | 'package'
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -118,7 +118,7 @@ export default function App() {
   const [launchingDealId, setLaunchingDealId] = useState<string | null>(null)
   const [libraryError, setLibraryError] = useState<string | null>(null)
   const [workspaceCheckpoint, setWorkspaceCheckpoint] = useState<DealCheckpoint | null>(null)
-  const [workspaceInitialTab, setWorkspaceInitialTab] = useState<WorkspaceInitialTab>('overview')
+  const [workspaceInitialTab, setWorkspaceInitialTab] = useState<WorkspaceInitialTab>('guide')
   const [quickCreateFiles, setQuickCreateFiles] = useState<File[]>([])
 
   // Demo-friendly: Default to Pipeline tab, auto-expand relevant sections
@@ -169,7 +169,7 @@ export default function App() {
     setWorkflowOpen(false)
   }
 
-  async function openDealWorkspace(dealId: string, section: WorkspaceInitialTab = 'overview'): Promise<void> {
+  async function openDealWorkspace(dealId: string, section: WorkspaceInitialTab = 'guide'): Promise<void> {
     setLibraryError(null)
     try {
       const record = await loadDeal(dealId)
@@ -191,7 +191,7 @@ export default function App() {
   async function handleQuickDealCreated(dealId: string): Promise<void> {
     setQuickCreateFiles([])
     await refreshDeals()
-    await openDealWorkspace(dealId, 'documents')
+    await openDealWorkspace(dealId, 'guide')
   }
 
   function handleWorkflowLaunchStarted(): void {
@@ -241,18 +241,18 @@ export default function App() {
   return (
     <div className="min-h-screen bg-cre-bg text-gray-100">
       {/* Header */}
-      <header className="bg-cre-surface border-b border-cre-border px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold tracking-tight">CRE Acquisition Dashboard</h1>
+      <header className="bg-cre-surface border-b border-cre-border px-4 py-4 flex flex-col gap-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 flex flex-wrap items-center gap-3">
+          <h1 className="min-w-0 text-xl font-bold tracking-tight">CRE Acquisition Dashboard</h1>
           {visibleDealCheckpoint && (
-            <span className="text-sm text-gray-500">
+            <span className="min-w-0 break-words text-sm text-gray-500">
               | {visibleDealCheckpoint.dealName || 'Unnamed Deal'}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
           {/* Run Status */}
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex min-w-0 items-center gap-2 text-sm">
             <span
               className={`inline-block w-2.5 h-2.5 rounded-full ${
                 runStatus.state === 'RUNNING' || runStatus.state === 'STARTING'
@@ -264,19 +264,19 @@ export default function App() {
                       : 'bg-gray-500'
               }`}
             />
-            <span className="text-gray-400">
+            <span className="min-w-0 break-words text-gray-400">
               Run: {runStateLabel}{runProviderLabel ? ` / ${runProviderLabel}` : ''}
             </span>
           </div>
 
           {/* Connection Status */}
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex min-w-0 items-center gap-2 text-sm">
             <span
               className={`inline-block w-2.5 h-2.5 rounded-full ${
                 connected ? 'bg-cre-success' : 'bg-cre-danger'
               }`}
             />
-            <span className="text-gray-400">
+            <span className="min-w-0 break-words text-gray-400">
               {connected ? 'Connected' : 'Disconnected'}
             </span>
           </div>

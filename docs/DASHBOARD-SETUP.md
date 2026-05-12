@@ -11,11 +11,12 @@ The dashboard provides a local-first operator cockpit for deal setup, source-doc
 - **Deal workspace**: Overview, Underwriting, Due Diligence, Financing, Legal, Closing, Documents, and Package views for each deal
 - **Workflow launcher**: Five outcome workflows with saved local presets and run-now launch
 - **Runtime selector**: Choose offline simulation or live Codex / ChatGPT execution before launching supported workflows
-- **Document intake**: Upload, classify, extract, review, and apply source-backed inputs from local files
+- **Document intake**: Upload queue, classification, extraction preview, bulk review, and source-backed apply from local files
+- **Operator briefing**: Best next move, source-backed input coverage, review queue, phase readiness, and workflow-level launch confidence
 - **Phase progress**: Visual progress bars for each of the 5 phases, including skipped-phase visibility for scoped workflows
 - **Agent status**: Per-agent status indicators (pending, running, complete, failed)
 - **Log viewer**: Live log stream from all agents with filtering
-- **Package viewer**: Read final reports, workpapers, findings, document manifests, and recommendation packages directly in the browser
+- **Package viewer**: Read final reports, IC review briefs, workpapers, findings, document manifests, and recommendation packages directly in the browser
 - **Real-time updates**: WebSocket connection pushes updates as agents write checkpoints
 
 The dashboard consists of three local components:
@@ -148,7 +149,7 @@ Once the pipeline completes, view generated reports and package artifacts direct
 - **Final Report**: The comprehensive deal analysis report
 - **IC Memo**: The Investment Committee memorandum
 - **Phase Outputs**: Individual phase output summaries
-- **Completion Package**: Phase outcomes, workpapers, findings, decision log, document manifest, source-backed inputs, and final recommendation
+- **Completion Package**: Phase outcomes, IC review brief, workpapers, findings, decision log, document manifest, source-backed inputs, and final recommendation
 
 ### Operator Deal Hub
 
@@ -156,14 +157,42 @@ Open a saved deal to work inside its full lifecycle workspace:
 
 | Workspace | What It Provides |
 |-----------|------------------|
-| Overview | Pipeline progress, criteria, source coverage, and embedded workflow launcher |
+| Guide | Deal Progression Guide with phase checklists, missing evidence, helper guidance, recommended actions, and manual complete/waive notes |
+| Briefing | Operator Briefing, best next move, pipeline progress, criteria, source coverage, and embedded workflow launcher |
 | Underwriting | Required documents, checklist, Agent Playbook, and underwriting workflow launch |
 | Due Diligence | Diligence checklist, document coverage, Agent Playbook, and quick-screen launch |
 | Financing | Debt assumptions, required lender package documents, and financing package workflow |
 | Legal | PSA/title/survey readiness, legal Agent Playbook, and legal / PSA review workflow |
 | Closing | Closing readiness checklist, required closing documents, and full review launch |
-| Documents | Source-document upload, classification, extraction preview, and approved-field apply |
-| Package | Completion package for the latest run |
+| Documents | Source-document upload queue, classification, extraction preview, bulk safe-field selection, before/after change summary, and approved-field apply |
+| Package | Completion package, IC Review Brief, source confidence, decision checklist, and final recommendation for the latest run |
+
+### Deal Progression Guide and Operator Command
+
+The **Guide** tab is the default workspace surface after quick deal creation or saved deal reopen. It is powered by `config/operator-guides.json`, which keeps operational checklist content, helper copy, evidence requirements, and workflow mappings out of React components.
+
+Each guide item shows:
+
+- **Status**: `blocked`, `missing`, `ready`, `in_review`, `complete`, or `waived`
+- **Priority and category**: critical/important/optional plus document, extraction, diligence, financing, legal, closing, or package context
+- **Why it matters**: practical operator guidance for the acquisition process
+- **Evidence required**: the document, source field, workflow output, or operator judgment needed to move forward
+- **Recommended action**: upload documents, review extraction, edit criteria, open a phase, launch a workflow from the safe run context, or review the package
+
+Manual completion and waive/defer notes are persisted per deal in `data/deals/{dealId}/phase-state.json`. Source-backed completion remains distinct: uploaded documents, approved extraction fields, launch readiness, and package artifacts still drive the system-derived status.
+
+The persistent **Operator Command Bar** summarizes the active phase, blocker count, warning count, checklist progress, source-backed input coverage, and one primary next action. It is meant to answer the operator's daily question: "What should I do right now to progress this deal?"
+
+### Operator Briefing and Launch Readiness
+
+The Overview tab shows an **Operator Briefing** before the pipeline cards. It is designed to answer: "What should I do next?"
+
+- **Best next move** points the operator toward upload, extraction review, source-backed input approval, phase review, or workflow launch.
+- **Source-backed inputs** shows approved required fields for the full acquisition review.
+- **Review queue** counts documents that still need extraction or operator review.
+- **Workflow readiness cards** explain whether each configured outcome workflow is `ready`, `warning`, or `blocked`.
+
+Warnings are intentionally not always hard blockers. A workflow can still launch with missing source-backed fields unless the runtime request explicitly enforces source-backed inputs. Treat warnings as operator confidence signals, not hidden validation errors.
 
 ### Runtime Selection
 
@@ -219,12 +248,13 @@ POST /api/codex/login
 1. Open a deal workspace.
 2. Select **Documents**.
 3. Upload rent rolls, T12s, offering memoranda, LOIs, PDFs, or XLSX files.
-4. For CSV/TXT/MD files, click **Extract** and review the preview.
-5. Select fields to approve, confirm conflicts if needed, then apply them to deal inputs.
+4. Quick-create uploads show per-file status and can retry failed files. If at least one file succeeds, you can open the workspace and keep working.
+5. For CSV/TXT/MD files, click **Extract** and review the preview.
+6. Use **Select Safe Fields** for apply-ready fields, confirm conflicts if needed, review the before/after change summary, then apply them to deal inputs.
 
 Runtime uploads live under `data/deals/{dealId}/documents/`. Extraction previews live under `data/deals/{dealId}/extractions/`. These local deal files are ignored by git.
 
-PDF and XLSX files are stored and classified in v2.0.0, but deep extraction is intentionally marked pending.
+PDF and XLSX files are stored and classified, but deep extraction is intentionally marked pending.
 
 ---
 

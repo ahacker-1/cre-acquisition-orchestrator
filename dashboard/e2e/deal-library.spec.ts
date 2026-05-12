@@ -335,6 +335,8 @@ test('creates a draft from the document-first homepage and uploads the dropped f
 
   const quickModal = page.getByTestId('quick-deal-modal')
   await expect(quickModal).toBeVisible()
+  await expect(quickModal.getByTestId('quick-upload-progress')).toContainText('0/1 uploaded')
+  await expect(quickModal.getByTestId('quick-upload-item-queued')).toContainText('playwright-hero-rent-roll.csv')
   await quickModal.getByTestId('quick-deal-name-input').fill('Playwright Hero Drop Deal')
 
   const saveResponsePromise = page.waitForResponse((response) => isApiResponse(response, 'POST', '/api/deals'))
@@ -345,7 +347,10 @@ test('creates a draft from the document-first homepage and uploads the dropped f
   const quickDealId = savePayload.item.dealId
 
   await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByTestId('workspace-tab-documents')).toHaveClass(/active/)
+  await expect(page.getByTestId('workspace-tab-guide')).toHaveClass(/active/)
+  await expect(page.getByTestId('operator-command-bar')).toContainText('Upload the first source package')
+  await expect(page.getByTestId('deal-progression-guide')).toContainText('Deal Progression Guide')
+  await page.getByTestId('workspace-tab-documents').click()
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-hero-rent-roll.csv')
 
   const workspaceResponse = await request.get(`${API_URL}/api/deals/${quickDealId}/workspace`)
@@ -379,6 +384,55 @@ test('shows compact recent deals without changing the full deal library modal', 
   await expect(modal).toBeVisible()
   await expect(modal.getByTestId(`deal-card-${RECENT_DEAL_ID}`)).toContainText('Ready')
   await expect(modal.getByTestId(`launch-deal-${RECENT_DEAL_ID}`)).toBeVisible()
+
+  expect(consoleErrors).toEqual([])
+})
+
+test('mobile guided workspace smoke @mobile', async ({ page, request }) => {
+  const consoleErrors = collectConsoleErrors(page)
+
+  await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
+  await waitForDashboardReady(page)
+
+  await page.getByTestId(`workspace-docs-${WORKSPACE_DEAL_ID}`).click()
+  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByTestId('operator-command-bar')).toBeVisible()
+  await page.getByTestId('workspace-tab-guide').click()
+  await expect(page.getByTestId('deal-progression-guide')).toContainText('What is needed next')
+  await expect(page.getByTestId('guide-section-card-underwriting')).toBeVisible()
+  await page.getByTestId('workspace-tab-package').click()
+  await expect(page.getByTestId('completion-package-view')).toBeVisible()
+
+  expect(consoleErrors).toEqual([])
+})
+
+test('keeps the embedded workflow launcher scoped to the open deal', async ({ page, request }) => {
+  const consoleErrors = collectConsoleErrors(page)
+
+  await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
+  await saveLaunchReadyDeal(request, READY_DEAL_ID, READY_DEAL_NAME)
+  await page.addInitScript((storedDealId) => {
+    window.localStorage.setItem('cre.workflowLauncher.v1', JSON.stringify({
+      dealId: storedDealId,
+      workflowId: 'quick-deal-screen',
+      scenario: 'core-plus',
+      speed: 'normal',
+      mode: 'live',
+      runtimeProvider: 'simulation',
+    }))
+  }, READY_DEAL_ID)
+
+  await waitForDashboardReady(page)
+  await page.getByTestId(`workspace-docs-${WORKSPACE_DEAL_ID}`).click()
+  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
+  await page.getByTestId('workspace-tab-overview').click()
+
+  const launcher = page.getByTestId('workspace-workflow-launcher')
+  await launcher.getByTestId('workflow-step-review').click()
+  await expect(launcher.getByTestId('workflow-deal-select')).toHaveValue(WORKSPACE_DEAL_ID)
+  await expect(launcher.getByTestId('workflow-launch-readiness')).toContainText('Readiness Check')
+  await expect(launcher.getByTestId('workflow-require-source-backed-inputs')).toBeChecked()
+  await expect(launcher.getByTestId('workflow-launch-selected')).toBeDisabled()
 
   expect(consoleErrors).toEqual([])
 })
@@ -447,6 +501,45 @@ test('guards local document upload API against unsafe browser origins and malfor
   expect(await malformedUpload.text()).toContain('Invalid base64 document content')
 })
 
+test('enforces source-backed saved presets when launching through the workflow API', async ({ request }) => {
+  await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
+
+  const presetResponse = await request.post(`${API_URL}/api/workflow-presets`, {
+    data: {
+      name: 'Playwright Source-Gated Preset',
+      workflowId: 'quick-deal-screen',
+      dealId: WORKSPACE_DEAL_ID,
+      inputs: {
+        scenario: 'core-plus',
+        speed: 'fast',
+        mode: 'live',
+        runtimeProvider: 'simulation',
+        reset: false,
+        requireSourceBackedInputs: true,
+      },
+    },
+  })
+  await expectApiOk(presetResponse)
+  const presetPayload = (await presetResponse.json()) as { preset: { presetId?: string; id?: string } }
+  const presetId = presetPayload.preset.presetId ?? presetPayload.preset.id
+  expect(presetId).toBeTruthy()
+
+  const launchResponse = await request.post(`${API_URL}/api/workflows/quick-deal-screen/launch`, {
+    data: { presetId },
+  })
+  expect(launchResponse.status()).toBe(400)
+  const payload = (await launchResponse.json()) as {
+    error?: string
+    readiness?: {
+      blockers?: string[]
+      sourceCoverage?: { missingApprovedFieldCount?: number }
+    }
+  }
+  expect(payload.error).toContain('readiness blocked')
+  expect(payload.readiness?.blockers?.join(' ')).toContain('Workflow requires approved source-backed fields')
+  expect(payload.readiness?.sourceCoverage?.missingApprovedFieldCount).toBeGreaterThan(0)
+})
+
 test('launches full acquisition workflow from the launcher', async ({ page, request }) => {
   const consoleErrors = collectConsoleErrors(page)
 
@@ -475,8 +568,18 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await waitForOperatorDealHub(page, WORKSPACE_DEAL_NAME)
   await stopActiveRun(request)
 
-  await expect(page.getByTestId('workspace-tab-documents')).toHaveClass(/active/)
+  await expect(page.getByTestId('workspace-tab-guide')).toHaveClass(/active/)
+  await expect(page.getByTestId('operator-command-bar')).toContainText('Upload the first source package')
+  await expect(page.getByTestId('deal-progression-guide')).toContainText('What is needed next')
+  await expect(page.getByTestId('guide-section-underwriting')).toContainText('Checklist and help guide')
   await page.getByTestId('workspace-tab-overview').click()
+  const briefing = page.getByTestId('operator-briefing')
+  await expect(briefing).toContainText('Launch Readiness')
+  await expect(briefing.getByTestId('operator-next-action')).toContainText('Upload the first source package')
+  await expect(briefing.getByTestId('source-backed-input-score')).toContainText('0/4')
+  await expect(briefing.getByTestId('workflow-readiness-full-acquisition-review')).toContainText('warning')
+  await expect(page.getByTestId('cockpit-launch-readiness')).toContainText('0/4')
+
   await page.getByTestId('criteria-scenario').selectOption('value-add')
   await page.getByTestId('criteria-target-irr').fill('0.185')
   const criteriaSaveResponse = page.waitForResponse(
@@ -548,9 +651,8 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await expect(extractionPreview).toContainText('Parsed 4 rent roll rows')
   await expect(extractionPreview).toContainText('Total Units')
   await expect(extractionPreview).toContainText('In-Place Occupancy')
-  await extractionPreview.locator('[data-field-path="property.totalUnits"]').check()
-  await extractionPreview.locator('[data-field-path="property.unitMix.types"]').check()
-  await extractionPreview.locator('[data-field-path="financials.inPlaceOccupancy"]').check()
+  await extractionPreview.getByTestId('select-all-safe-fields').click()
+  await expect(extractionPreview.getByTestId('selected-field-change-summary')).toContainText('Deal data changes')
   await extractionPreview.getByTestId('confirm-conflict-review').check()
   await page.getByTestId('apply-extraction').click()
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('applied')
@@ -559,12 +661,30 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await expect(extractionPreview).toContainText('3 Fields Found')
   await expect(extractionPreview).toContainText('Trailing T12 Revenue')
   await expect(extractionPreview).toContainText('Current NOI')
-  await extractionPreview.locator('[data-field-path="financials.trailingT12Revenue"]').check()
-  await extractionPreview.locator('[data-field-path="financials.trailingT12Expenses"]').check()
-  await extractionPreview.locator('[data-field-path="financials.currentNOI"]').check()
+  await extractionPreview.getByTestId('select-all-safe-fields').click()
+  await expect(extractionPreview.getByTestId('selected-field-change-summary')).toContainText('Current NOI')
   await extractionPreview.getByTestId('confirm-conflict-review').check()
   await page.getByTestId('apply-extraction').click()
   await expect(page.getByTestId('source-document-t12')).toContainText('applied')
+  await expect(page.getByTestId('cockpit-launch-readiness')).toContainText('3/4')
+
+  await page.getByTestId('workspace-tab-guide').click()
+  await expect(page.getByTestId('operator-command-bar')).toBeVisible()
+  await expect(page.getByTestId('guide-section-underwriting')).toContainText('Run underwriting refresh')
+  await page.getByTestId('guide-note-underwriting-run-workflow').fill('Reviewed by Playwright before phase launch.')
+  await page.getByTestId('guide-complete-underwriting-run-workflow').click()
+  await expect(page.getByTestId('guide-checklist-underwriting-run-workflow')).toContainText('complete')
+
+  const checklistWorkspaceResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
+  await expectApiOk(checklistWorkspaceResponse)
+  const checklistWorkspace = (await checklistWorkspaceResponse.json()) as {
+    progressionGuide: {
+      sections: Array<{ phaseSlug: string; checklist: Array<{ id: string; status: string; note?: string }> }>
+    }
+  }
+  const underwritingGuide = checklistWorkspace.progressionGuide.sections.find((section) => section.phaseSlug === 'underwriting')
+  expect(underwritingGuide?.checklist.find((item) => item.id === 'underwriting-run-workflow')?.status).toBe('complete')
+  expect(underwritingGuide?.checklist.find((item) => item.id === 'underwriting-run-workflow')?.note).toContain('Playwright')
 
   const dealResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}`)
   await expectApiOk(dealResponse)
@@ -674,9 +794,15 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   const packageView = page.getByTestId('completion-package-view')
   await expect(packageView).toBeVisible()
   await expect(packageView).toContainText('Completion Package')
+  await expect(packageView.getByTestId('ic-review-brief')).toContainText('IC Review Brief')
+  await expect(packageView.getByTestId('ic-review-brief')).toContainText('Recommended next decision')
   await expect(packageView).toContainText('Riverside Gardens')
   await expect(packageView.getByTestId('source-backed-input-summary')).toContainText('Source-Backed Inputs')
   await expect(packageView).toContainText('Scoped workflow completed. Review the package outputs before expanding to a full closing run.')
+  await expect(packageView).toContainText('Phase Outcomes')
+  await expect(packageView).toContainText('Workpapers')
+  await expect(packageView).toContainText('Final Recommendation Package')
+  await expect(packageView).toContainText('Priority Flags')
 
   expect(consoleErrors).toEqual([])
 })

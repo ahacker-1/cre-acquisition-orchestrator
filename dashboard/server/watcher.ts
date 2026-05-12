@@ -1062,6 +1062,11 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         return;
       }
 
+      const requireSourceBackedInputs =
+        typeof body.requireSourceBackedInputs === 'boolean'
+          ? body.requireSourceBackedInputs
+          : preset?.requireSourceBackedInputs === true;
+
       const startRequest: StartRunRequest = {
         dealPath: record.item.dealPath,
         mode: body.mode === 'fast' ? 'fast' : 'live',
@@ -1090,7 +1095,7 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         dealId,
         workflowName: workflow.name,
         notes: typeof body.notes === 'string' ? body.notes : undefined,
-        requireSourceBackedInputs: body.requireSourceBackedInputs === true,
+        requireSourceBackedInputs,
       });
       if (inputSnapshot.readiness.blockers.length > 0) {
         sendJson(res, 400, {

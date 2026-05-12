@@ -22,6 +22,7 @@ export interface WorkflowDefinition {
   operatorGoal: string
   recommendedScenario: LaunchScenario
   phases: WorkflowPhaseSelection[]
+  requiredSourceFields?: string[]
 }
 
 export interface WorkflowPreset {
@@ -37,6 +38,7 @@ export interface WorkflowPreset {
   codexMaxAgents: number | null
   codexConcurrency: number | null
   codexSearch: boolean
+  requireSourceBackedInputs: boolean
   notes?: string
   inputs: {
     scenario: LaunchScenario
@@ -47,6 +49,7 @@ export interface WorkflowPreset {
     codexMaxAgents: number | null
     codexConcurrency: number | null
     codexSearch: boolean
+    requireSourceBackedInputs: boolean
     notes?: string
   }
   seed: number | null
@@ -76,6 +79,7 @@ interface SavePresetInput {
   codexMaxAgents?: unknown
   codexConcurrency?: unknown
   codexSearch?: unknown
+  requireSourceBackedInputs?: unknown
   notes?: unknown
   seed?: unknown
   inputs?: unknown
@@ -205,6 +209,7 @@ export function saveWorkflowPreset(
     codexMaxAgents: asPositiveInteger(input.codexMaxAgents ?? nestedInputs.codexMaxAgents, null),
     codexConcurrency: asPositiveInteger(input.codexConcurrency ?? nestedInputs.codexConcurrency, 1),
     codexSearch: input.codexSearch === true || nestedInputs.codexSearch === true,
+    requireSourceBackedInputs: input.requireSourceBackedInputs === true || nestedInputs.requireSourceBackedInputs === true,
     notes:
       typeof input.notes === 'string'
         ? input.notes
@@ -220,6 +225,7 @@ export function saveWorkflowPreset(
       codexMaxAgents: asPositiveInteger(input.codexMaxAgents ?? nestedInputs.codexMaxAgents, null),
       codexConcurrency: asPositiveInteger(input.codexConcurrency ?? nestedInputs.codexConcurrency, 1),
       codexSearch: input.codexSearch === true || nestedInputs.codexSearch === true,
+      requireSourceBackedInputs: input.requireSourceBackedInputs === true || nestedInputs.requireSourceBackedInputs === true,
       notes:
         typeof input.notes === 'string'
           ? input.notes

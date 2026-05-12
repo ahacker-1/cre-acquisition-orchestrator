@@ -25,19 +25,21 @@ Let's bring this industry into the future.
 
 ---
 
-## What's New in v2.2.0
+## What's New in v2.3.0
 
-- **Document-First Front Door** - The dashboard now opens with a large “Drop your deal documents here” surface instead of forcing a full intake wizard before upload.
-- **Quick Draft Creation** - Dropped files open a one-field deal-name modal, save a draft deal, upload files, and route directly to the Documents tab.
-- **Cockpit Sidebar** - The Operator Deal Hub now includes a responsive sidebar showing documents you have, the next action, and phase readiness.
-- **Honest File Scope** - CSV, TXT, and Markdown extract locally; PDFs are stored for review; Excel files are stored and classified while field mapping remains out of scope.
-- **Open-Source Release Hygiene** - Existing selectors and workflows are preserved, the new modal is accessible, transient Windows/OneDrive upload locks retry safely, and E2E coverage now includes the document-first flow.
+- **Operator Briefing** - The workspace overview now explains the best next move, source-backed input coverage, review queue, phase readiness, and workflow-level launch confidence.
+- **Deal Progression Guide** - A new default workspace guide shows phase checklists, missing evidence, why each item matters, what it unlocks, and the recommended action from intake through package review.
+- **Operator Command Bar** - Every deal workspace now keeps the current readiness state, blocker count, checklist progress, source-input coverage, and primary next action in view.
+- **Reliable Upload Queue** - Document-first quick creation now shows per-file upload status, progress, failed-file retry, and an open-workspace path for partial success.
+- **Source-Backed Review** - Extraction preview now supports bulk selection of apply-ready fields and shows before/after deal-data changes before apply.
+- **Safer Workflow Launch** - Embedded workflow launches stay scoped to the open deal instead of inheriting a stale browser draft from local storage.
+- **IC Review Brief** - Completion Package now highlights the next decision, priority red flags, priority data gaps, and source-readiness warnings for operator handoff.
 
 ---
 
 ## Release Journey
 
-This project has grown in five public steps: first the agent architecture, then a usable dashboard, then a real operator workspace, then live Codex-backed agent execution, and now a document-first acquisition cockpit.
+This project has grown in six public steps: first the agent architecture, then a usable dashboard, then a real operator workspace, then live Codex-backed agent execution, then a document-first cockpit, and now a more dependable operator workbench.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -46,6 +48,7 @@ This project has grown in five public steps: first the agent architecture, then 
 | **v2.0.0 - Operator Deal Hub** | Turned the dashboard into a local-first acquisition cockpit with phase workspaces, document intake, source-backed inputs, outcome workflows, presets, and completion packages. | [RELEASE_NOTES_v2.0.0.md](RELEASE_NOTES_v2.0.0.md) |
 | **v2.1.0 - Codex / ChatGPT Workflow Runtime** | Added the optional live-agent path: ChatGPT-authenticated Codex CLI execution, in-app login status, dashboard-launched Codex runs, and release-ready setup validation. | [RELEASE_NOTES_v2.1.0.md](RELEASE_NOTES_v2.1.0.md) |
 | **v2.2.0 - Document-First Acquisition Cockpit** | Made the dashboard front door document-first with quick draft creation, upload-to-documents routing, compact recent deals, and a persistent cockpit sidebar. | [RELEASE_NOTES_v2.2.0.md](RELEASE_NOTES_v2.2.0.md) |
+| **v2.3.0 - Operator Workbench** | Added guided deal progression, workflow readiness, upload queue recovery, source-backed change review, safer embedded launch scoping, and IC review handoff. | [RELEASE_NOTES_v2.3.0.md](RELEASE_NOTES_v2.3.0.md) |
 
 ---
 
@@ -284,20 +287,23 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 
 | View | What It Shows |
 |-----|--------------|
-| **Operator Deal Hub** | Deal lifecycle workspace with Overview, Underwriting, Due Diligence, Financing, Legal, Closing, Documents, and Package tabs |
+| **Operator Deal Hub** | Deal lifecycle workspace with Guide, Briefing, Underwriting, Due Diligence, Financing, Legal, Closing, Documents, and Package tabs |
 | **Document Front Door** | First-run homepage drop zone that creates a draft workspace from uploaded deal files before any long-form intake |
-| **Cockpit Sidebar** | Persistent workspace sidebar with required document coverage, one computed next action, and phase readiness |
-| **Workflow Launcher** | Guided `Choose Deal -> Choose Outcome -> Review Inputs -> Runtime -> Run Now` launcher with saved local presets |
-| **Documents** | Local upload, classification, extraction preview, operator approval, and source-backed input tracking |
+| **Deal Progression Guide** | Default workspace path with phase checklists, missing documents/fields, evidence requirements, helper guidance, recommended actions, and persisted complete/waive notes |
+| **Operator Command Bar** | Persistent workspace command surface with active phase, readiness, blocker count, checklist progress, source-input coverage, and primary next action |
+| **Operator Briefing** | Overview briefing with best next move, source-backed input coverage, review queue, phase readiness, and per-workflow readiness |
+| **Cockpit Sidebar** | Persistent workspace sidebar with required document coverage, one computed next action, launch readiness, and phase readiness |
+| **Workflow Launcher** | Guided `Choose Deal -> Choose Outcome -> Review Inputs -> Runtime -> Run Now` launcher with saved local presets and selected-workflow readiness |
+| **Documents** | Local upload queue, classification, extraction preview, bulk field selection, before/after change review, operator approval, and source-backed input tracking |
 | **Run Status** | Phase-by-phase progress, active runtime provider, completion state, findings, and story events |
 | **Story Narrative** | Human-readable event stream narrating the deal analysis as it progresses, powered by NDJSON story events |
 | **Document Wall** | Visual grid of all documents processed and generated: ingestion status, extraction results, report outputs |
 | **Decision Log** | Chronological record of every go/no-go decision, escalation, conditional pass, and dealbreaker flag |
-| **Completion Package** | Phase outcomes, workpapers, findings, decision log, document manifest, source-backed inputs, and final recommendation |
+| **Completion Package** | Phase outcomes, IC review brief, workpapers, findings, decision log, document manifest, source-backed inputs, and final recommendation |
 
 ## Dashboard Preview
 
-The first screen is designed as a document-first acquisition cockpit: drop source files, confirm a deal name, and land in the Documents workspace before filling the detailed intake. The full New Deal Wizard remains available from the header and from workspace edit actions when the operator needs launch-ready setup.
+The first screen is designed as a document-first acquisition cockpit: drop source files, confirm a deal name, and land in the guided deal workspace before filling the detailed intake. The full New Deal Wizard remains available from the header and from workspace edit actions when the operator needs launch-ready setup.
 
 ![Document-first dashboard front door with the drop zone as the primary action](docs/assets/dashboard-front-door.png)
 
@@ -508,6 +514,7 @@ cre-acquisition-orchestrator/
 │   ├── status/                #   Checkpoints, phase state, agent state, event streams
 │   ├── reports/               #   Generated reports and workpapers
 │   └── logs/                  #   Local run logs
+├── RELEASE_NOTES_v2.3.0.md    # v2.3.0 operator workbench release notes
 ├── RELEASE_NOTES_v2.2.0.md    # v2.2.0 document-first cockpit release notes
 ├── RELEASE_NOTES_v2.1.0.md    # v2.1.0 Codex / ChatGPT workflow release notes
 ├── RELEASE_NOTES_v2.0.0.md    # v2.0.0 Operator Deal Hub release notes

@@ -59,6 +59,9 @@ function normalizeWorkflow(entry: unknown): WorkflowDefinition | null {
       value.recommendedScenario === 'value-add' || value.recommendedScenario === 'distressed'
         ? value.recommendedScenario
         : 'core-plus',
+    requiredSourceFields: Array.isArray(value.requiredSourceFields)
+      ? value.requiredSourceFields.filter((field): field is string => typeof field === 'string')
+      : undefined,
     phases: rawPhases
       .map((phase) => {
         if (!phase || typeof phase !== 'object') return null
@@ -127,6 +130,8 @@ function normalizePreset(entry: unknown): WorkflowPreset | null {
             ? value.codexConcurrency
             : 1,
       codexSearch: rawInputs.codexSearch === true || value.codexSearch === true,
+      requireSourceBackedInputs:
+        rawInputs.requireSourceBackedInputs === true || value.requireSourceBackedInputs === true,
       notes: typeof rawInputs.notes === 'string' ? rawInputs.notes : undefined,
       tags: Array.isArray(rawInputs.tags)
         ? rawInputs.tags.filter((tag): tag is string => typeof tag === 'string')

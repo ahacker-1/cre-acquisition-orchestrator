@@ -1,6 +1,6 @@
 {
   "name": "cre-acquisition-orchestrator",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Multi-agent AI orchestration framework for commercial real estate acquisitions",
   "author": "Avi Hacker",
   "license": "Apache-2.0",
@@ -25,6 +25,7 @@
     "dashboard": "npm --prefix dashboard install && npm --prefix dashboard run dev",
     "dev": "npm run dashboard",
     "validate": "node scripts/validate-contracts.js",
+    "validate:guides": "node scripts/validate-operator-guides.js",
     "validate:codex": "node scripts/validate-contracts.js --codex-run-id codex-smoke",
     "test": "node scripts/system-test.js",
     "test:e2e": "npm --prefix dashboard run test:e2e",

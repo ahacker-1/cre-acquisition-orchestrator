@@ -41,6 +41,13 @@ function documentStatus(doc: SourceDocument | undefined): { label: string; class
   return { label: 'Stored', className: 'status-pending', detail: doc.extractionStatus }
 }
 
+function readinessStatusClass(status: string | undefined): string {
+  if (status === 'ready') return 'status-complete'
+  if (status === 'warning') return 'status-running'
+  if (status === 'blocked') return 'status-blocked'
+  return 'status-pending'
+}
+
 function phaseProgress(dealCheckpoint: DealCheckpoint, phaseKey: string, phaseSlug: string): number {
   const runtimePhase = dealCheckpoint.phases[phaseKey] ?? dealCheckpoint.phases[phaseSlug.replace(/-/g, '_')]
   const total = runtimePhase?.agents.total ?? 0
@@ -66,6 +73,11 @@ export default function DealCockpitSidebar({
   const extractableDocuments = documents.filter((doc) => doc.extractionStatus === 'not-started')
   const reviewReadyDocument = documents.find((doc) => doc.status === 'review_ready')
   const readyPhase = phases.find((phase) => phase.readiness === 'ready')
+  const fullReadiness = workspace?.launchReadiness.find((entry) => entry.workflowId === 'full-acquisition-review')
+    ?? workspace?.launchReadiness[0]
+  const sourceCoverage = fullReadiness?.sourceCoverage
+  const requiredSourceCount = sourceCoverage?.requiredApprovedFieldCount ?? 0
+  const approvedRequiredSourceCount = Math.max(0, requiredSourceCount - (sourceCoverage?.missingApprovedFieldCount ?? 0))
 
   const nextAction = (() => {
     if (documents.length === 0) {
@@ -198,6 +210,27 @@ export default function DealCockpitSidebar({
         >
           {nextAction.cta}
         </button>
+      </section>
+
+      <section className="mt-5 border border-white/10 bg-black p-4" data-testid="cockpit-launch-readiness">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase text-gray-500">Launch readiness</p>
+          <span className={`status-badge ${readinessStatusClass(fullReadiness?.status)}`}>
+            {fullReadiness?.status ?? 'pending'}
+          </span>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+          <div className="border border-white/10 px-3 py-2">
+            <p className="text-xs uppercase text-gray-500">Source inputs</p>
+            <p className="mt-1 font-semibold text-white">
+              {requiredSourceCount > 0 ? `${approvedRequiredSourceCount}/${requiredSourceCount}` : '--'}
+            </p>
+          </div>
+          <div className="border border-white/10 px-3 py-2">
+            <p className="text-xs uppercase text-gray-500">Warnings</p>
+            <p className="mt-1 font-semibold text-white">{fullReadiness?.warnings.length ?? 0}</p>
+          </div>
+        </div>
       </section>
 
       <section className="mt-5">

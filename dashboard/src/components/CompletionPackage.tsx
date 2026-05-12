@@ -32,8 +32,8 @@ function percent(value: number): string {
 
 function statusClass(status: string): string {
   const normalized = status.toLowerCase()
-  if (normalized === 'complete' || normalized === 'completed') return 'status-complete'
-  if (normalized === 'running') return 'status-running'
+  if (normalized === 'complete' || normalized === 'completed' || normalized === 'ready') return 'status-complete'
+  if (normalized === 'running' || normalized === 'warning') return 'status-running'
   if (normalized === 'failed') return 'status-failed'
   if (normalized === 'blocked') return 'status-blocked'
   return 'status-pending'
@@ -81,6 +81,10 @@ function finalRecommendation(
   return 'Package in progress'
 }
 
+function issueText(issue: { description?: string; message?: string; category?: string }): string {
+  return issue.description || issue.message || issue.category || 'Review item'
+}
+
 function CompletionPackage({
   dealCheckpoint,
   storyEvents,
@@ -117,6 +121,24 @@ function CompletionPackage({
     return [...new Set(findings)].slice(0, 12)
   }, [phaseOutcomes, storyEvents])
 
+  const topRedFlags = useMemo(() => {
+    return phaseOutcomes.flatMap((outcome) =>
+      outcome.phase.outputs.redFlags.map((flag) => ({
+        phase: outcome.phase.name || displayLabel(outcome.key),
+        flag,
+      })),
+    ).slice(0, 5)
+  }, [phaseOutcomes])
+
+  const topDataGaps = useMemo(() => {
+    return phaseOutcomes.flatMap((outcome) =>
+      outcome.phase.outputs.dataGaps.map((gap) => ({
+        phase: outcome.phase.name || displayLabel(outcome.key),
+        gap,
+      })),
+    ).slice(0, 5)
+  }, [phaseOutcomes])
+
   const redFlagCount = phaseOutcomes.reduce(
     (sum, outcome) => sum + outcome.phase.outputs.redFlags.length,
     0,
@@ -128,6 +150,14 @@ function CompletionPackage({
   const recommendation = finalRecommendation(dealCheckpoint, decisionEvents)
   const sourceCoverage = dealCheckpoint?.inputSnapshot?.sourceCoverage
   const sourceReadiness = dealCheckpoint?.inputSnapshot?.readiness
+  const nextDecision = (() => {
+    if (!dealCheckpoint) return 'Run a workflow to assemble the first package.'
+    if (sourceReadiness?.blockers?.length) return 'Resolve source-backed launch blockers before relying on this package.'
+    if (redFlagCount > 0) return 'Assign ownership for red flags before advancing the acquisition.'
+    if (dataGapCount > 0) return 'Close open data gaps, then refresh the affected workflow.'
+    if (dealCheckpoint.status === 'complete') return 'Review with IC or expand the workflow scope as needed.'
+    return 'Let the active workflow finish, then review phase outcomes.'
+  })()
 
   if (!dealCheckpoint) {
     return (
@@ -192,7 +222,7 @@ function CompletionPackage({
               </p>
             </div>
             <span className={`status-badge ${statusClass(sourceReadiness?.status || 'pending')}`}>
-              {displayLabel(sourceReadiness?.status || 'warning')}
+              {displayLabel(sourceReadiness?.status || 'not captured')}
             </span>
           </div>
           <div className="grid gap-3 md:grid-cols-4 mt-5">
@@ -218,6 +248,65 @@ function CompletionPackage({
           )}
         </section>
       )}
+
+      <section className="card" data-testid="ic-review-brief">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
+              IC Review Brief
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Operator handoff for the next investment committee or diligence standup.
+            </p>
+          </div>
+          <span className={`status-badge ${statusClass(dealCheckpoint.status)}`}>
+            {displayLabel(dealCheckpoint.status)}
+          </span>
+        </div>
+        <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-lg border border-cre-border bg-black/20 p-4">
+            <p className="text-xs uppercase tracking-wider text-gray-500">Recommended next decision</p>
+            <p className="mt-2 text-lg font-semibold text-white">{nextDecision}</p>
+            <p className="mt-3 text-sm text-gray-400">{recommendation}</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-lg bg-black/20 px-4 py-3">
+              <div className="text-lg font-semibold text-white">{topRedFlags.length}</div>
+              <div className="text-xs uppercase tracking-wider text-gray-500">Priority Flags</div>
+            </div>
+            <div className="rounded-lg bg-black/20 px-4 py-3">
+              <div className="text-lg font-semibold text-white">{topDataGaps.length}</div>
+              <div className="text-xs uppercase tracking-wider text-gray-500">Priority Gaps</div>
+            </div>
+            <div className="rounded-lg bg-black/20 px-4 py-3">
+              <div className="text-lg font-semibold text-white">{sourceReadiness?.warnings?.length ?? 0}</div>
+              <div className="text-xs uppercase tracking-wider text-gray-500">Source Warnings</div>
+            </div>
+          </div>
+        </div>
+        {(topRedFlags.length > 0 || topDataGaps.length > 0 || sourceReadiness?.warnings?.length) && (
+          <div className="mt-5 grid gap-3 lg:grid-cols-3">
+            {topRedFlags.slice(0, 2).map(({ phase, flag }) => (
+              <div key={`${phase}-${issueText(flag)}`} className="red-flag">
+                <p className="text-xs font-semibold uppercase text-cre-danger">{phase}</p>
+                <p className="mt-1 text-sm text-gray-300">{issueText(flag)}</p>
+              </div>
+            ))}
+            {topDataGaps.slice(0, 2).map(({ phase, gap }) => (
+              <div key={`${phase}-${issueText(gap)}`} className="data-gap">
+                <p className="text-xs font-semibold uppercase text-cre-warning">{phase}</p>
+                <p className="mt-1 text-sm text-gray-300">{issueText(gap)}</p>
+              </div>
+            ))}
+            {(sourceReadiness?.warnings ?? []).slice(0, 2).map((warning) => (
+              <div key={warning} className="rounded-lg border border-cre-border bg-black/20 p-3">
+                <p className="text-xs font-semibold uppercase text-gray-500">Source Readiness</p>
+                <p className="mt-1 text-sm text-gray-300">{warning}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="card">
         <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">

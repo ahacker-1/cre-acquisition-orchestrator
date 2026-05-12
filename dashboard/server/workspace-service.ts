@@ -43,6 +43,18 @@ type SourceDocumentStatus =
 type ExtractionReviewStatus = 'candidate' | 'approved' | 'rejected' | 'applied' | 'waived'
 type ExtractionValueType = 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object' | 'null'
 type PhaseReadiness = 'ready' | 'partial' | 'blocked'
+type GuideChecklistStatus = 'blocked' | 'missing' | 'ready' | 'in_review' | 'complete' | 'waived'
+type GuideChecklistPriority = 'critical' | 'important' | 'optional'
+type GuideChecklistCategory =
+  | 'documents'
+  | 'extraction'
+  | 'underwriting'
+  | 'diligence'
+  | 'financing'
+  | 'legal'
+  | 'closing'
+  | 'package'
+type GuideActionType = 'open_tab' | 'edit_details' | 'launch_workflow' | 'upload_documents' | 'review_package'
 
 export interface DealCriteria {
   investmentStrategy: string
@@ -156,7 +168,22 @@ export interface ApprovedFieldManifest {
 export interface PhaseChecklistItem {
   id: string
   label: string
-  status: 'pending' | 'complete'
+  status: GuideChecklistStatus
+  priority: GuideChecklistPriority
+  category: GuideChecklistCategory
+  whyItMatters: string
+  evidenceRequired: string
+  recommendedAction: OperatorGuideAction
+  unlocks: string
+  source: string
+  requiredDocuments: string[]
+  requiredFields: string[]
+  missingDocuments: string[]
+  missingFields: string[]
+  statusReason: string
+  manualStatus: boolean
+  note?: string
+  updatedAt?: string
 }
 
 export interface PhaseAgentPlaybook {
@@ -172,6 +199,7 @@ export interface PhaseWorkspaceStatus {
   phaseSlug: string
   label: string
   summary: string
+  workflowId?: string
   checklist: PhaseChecklistItem[]
   requiredDocuments: string[]
   uploadedDocuments: string[]
@@ -181,11 +209,69 @@ export interface PhaseWorkspaceStatus {
   updatedAt: string
 }
 
+export interface OperatorGuideAction {
+  type: GuideActionType
+  label: string
+  target?: string
+  workflowId?: string
+  phaseSlug?: string
+}
+
+export interface DealProgressionSection {
+  phaseKey: string
+  phaseSlug: string
+  label: string
+  summary: string
+  workflowId?: string
+  runtimePhase: boolean
+  readiness: PhaseReadiness
+  progress: number
+  blockingCount: number
+  warningCount: number
+  requiredDocuments: string[]
+  uploadedDocuments: string[]
+  missingDocuments: string[]
+  checklist: PhaseChecklistItem[]
+  blockers: string[]
+  warnings: string[]
+}
+
+export interface OperatorCommand {
+  activePhaseSlug: string
+  activePhaseLabel: string
+  readiness: PhaseReadiness
+  blockingCount: number
+  warningCount: number
+  completedChecklistCount: number
+  totalChecklistCount: number
+  recommendedAction: {
+    title: string
+    detail: string
+    cta: string
+    action: OperatorGuideAction
+  }
+  sourceCoverage: {
+    sourceDocumentCount: number
+    reviewQueueCount: number
+    approvedFieldCount: number
+    requiredApprovedFieldCount: number
+    missingApprovedFieldCount: number
+  }
+}
+
+export interface DealProgressionGuide {
+  version: number
+  sections: DealProgressionSection[]
+}
+
 export interface DealWorkspace {
   deal: DealRecord
   criteria: DealCriteria
   documents: SourceDocument[]
   phases: PhaseWorkspaceStatus[]
+  launchReadiness: LaunchReadinessResult[]
+  progressionGuide: DealProgressionGuide
+  operatorCommand: OperatorCommand
 }
 
 export type LaunchReadinessStatus = 'ready' | 'warning' | 'blocked'
@@ -207,6 +293,7 @@ export interface LaunchReadinessResult {
     requiredApprovedFieldCount: number
     missingApprovedFieldCount: number
     staleDocumentCount: number
+    invalidApprovedFieldCount: number
   }
   evaluatedAt: string
 }
@@ -237,16 +324,43 @@ interface DocumentManifest {
   documents: SourceDocument[]
 }
 
+interface OperatorGuideChecklistDefinition {
+  id: string
+  label: string
+  priority: GuideChecklistPriority
+  category: GuideChecklistCategory
+  whyItMatters: string
+  evidenceRequired: string
+  recommendedAction: OperatorGuideAction
+  unlocks: string
+  source: string
+  requiredDocuments: string[]
+  requiredFields: string[]
+}
+
 interface PhaseDefinition {
   phaseKey: string
   phaseSlug: string
   label: string
   summary: string
+  workflowId?: string
+  runtimePhase: boolean
   requiredDocuments: string[]
-  checklist: string[]
+  checklist: OperatorGuideChecklistDefinition[]
 }
 
-const PHASE_DEFINITIONS: PhaseDefinition[] = [
+interface OperatorGuideConfig {
+  version: number
+  sections: PhaseDefinition[]
+}
+
+interface ChecklistStateValue {
+  status: GuideChecklistStatus
+  note?: string
+  updatedAt?: string
+}
+
+const FALLBACK_PHASE_DEFINITIONS: PhaseDefinition[] = ([
   {
     phaseKey: 'underwriting',
     phaseSlug: 'underwriting',
@@ -312,7 +426,28 @@ const PHASE_DEFINITIONS: PhaseDefinition[] = [
       'Package final closing checklist',
     ],
   },
-]
+] as Array<Omit<PhaseDefinition, 'runtimePhase' | 'checklist'> & { checklist: string[] }>).map((phase) => ({
+  ...phase,
+  runtimePhase: true,
+  checklist: phase.checklist.map((label, index) => ({
+    id: `${phase.phaseSlug}-${index + 1}`,
+    label,
+    priority: index <= 1 ? 'critical' : 'important',
+    category: index === 1 ? 'documents' : phase.phaseSlug === 'due-diligence' ? 'diligence' : phase.phaseSlug as GuideChecklistCategory,
+    whyItMatters: `${phase.label} needs this step before the operator can rely on the phase output.`,
+    evidenceRequired: 'Operator review or source document evidence is present in the workspace.',
+    recommendedAction: {
+      type: index === 1 ? 'open_tab' : 'launch_workflow',
+      label: index === 1 ? 'Open documents' : `Open ${phase.label}`,
+      target: index === 1 ? 'documents' : phase.phaseSlug,
+      phaseSlug: phase.phaseSlug,
+    },
+    unlocks: phase.summary,
+    source: 'fallback-phase-definition',
+    requiredDocuments: index === 1 ? phase.requiredDocuments : [],
+    requiredFields: [],
+  })),
+}))
 
 const DOCUMENT_TYPES: Record<string, { label: string; phaseSlug: string }> = {
   rent_roll: { label: 'Rent Roll', phaseSlug: 'due-diligence' },
@@ -379,6 +514,152 @@ const WORKFLOW_REQUIRED_SOURCE_FIELDS: Record<string, string[]> = {
 }
 
 const MAX_DOCUMENT_UPLOAD_BYTES = 50 * 1024 * 1024
+
+function workflowCatalogWorkflows(context: ServiceContext): Record<string, unknown>[] {
+  const catalog = readJson<Record<string, unknown>>(join(context.projectRoot, 'config', 'workflows.json'), {})
+  const workflows = Array.isArray(catalog.workflows) ? catalog.workflows : []
+  return workflows
+    .map((workflow) => asObject(workflow))
+    .filter((workflow) => asString(workflow.id).length > 0)
+}
+
+function workflowIdsForReadiness(context: ServiceContext): string[] {
+  const workflows = workflowCatalogWorkflows(context)
+  const workflowIds = workflows
+    .map((workflow) => asString(workflow.id))
+    .filter((workflowId) => workflowId.length > 0)
+  return workflowIds.length > 0 ? workflowIds : Object.keys(WORKFLOW_REQUIRED_SOURCE_FIELDS)
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : []
+}
+
+function asChecklistPriority(value: unknown): GuideChecklistPriority {
+  return value === 'critical' || value === 'important' || value === 'optional' ? value : 'important'
+}
+
+function asChecklistCategory(value: unknown): GuideChecklistCategory {
+  const allowed = new Set<string>([
+    'documents',
+    'extraction',
+    'underwriting',
+    'diligence',
+    'financing',
+    'legal',
+    'closing',
+    'package',
+  ])
+  return typeof value === 'string' && allowed.has(value) ? value as GuideChecklistCategory : 'documents'
+}
+
+function asChecklistStatus(value: unknown): GuideChecklistStatus | null {
+  return value === 'blocked' ||
+    value === 'missing' ||
+    value === 'ready' ||
+    value === 'in_review' ||
+    value === 'complete' ||
+    value === 'waived'
+    ? value
+    : null
+}
+
+function asGuideAction(value: unknown, fallback: OperatorGuideAction): OperatorGuideAction {
+  const action = asObject(value)
+  const type = asString(action.type)
+  const allowed = new Set<string>(['open_tab', 'edit_details', 'launch_workflow', 'upload_documents', 'review_package'])
+  return {
+    type: allowed.has(type) ? type as GuideActionType : fallback.type,
+    label: asString(action.label, fallback.label),
+    target: asString(action.target, fallback.target),
+    workflowId: asString(action.workflowId, fallback.workflowId),
+    phaseSlug: asString(action.phaseSlug, fallback.phaseSlug),
+  }
+}
+
+function normalizeChecklistDefinition(
+  value: unknown,
+  phase: Pick<PhaseDefinition, 'phaseSlug' | 'label' | 'summary' | 'requiredDocuments' | 'workflowId'>,
+  index: number,
+): OperatorGuideChecklistDefinition {
+  const item = asObject(value)
+  const id = asString(item.id, `${phase.phaseSlug}-${index + 1}`)
+  const label = asString(item.label, asString(item.description, `Checklist item ${index + 1}`))
+  const requiredDocuments = asStringArray(item.requiredDocuments)
+  const defaultAction: OperatorGuideAction = {
+    type: requiredDocuments.length > 0 ? 'open_tab' : phase.workflowId ? 'launch_workflow' : 'open_tab',
+    label: requiredDocuments.length > 0 ? 'Open documents' : phase.workflowId ? `Run ${phase.label}` : `Open ${phase.label}`,
+    target: requiredDocuments.length > 0 ? 'documents' : phase.phaseSlug,
+    workflowId: phase.workflowId,
+    phaseSlug: phase.phaseSlug,
+  }
+  return {
+    id,
+    label,
+    priority: asChecklistPriority(item.priority),
+    category: asChecklistCategory(item.category),
+    whyItMatters: asString(item.whyItMatters, `${phase.label} needs this step before the operator can rely on the output.`),
+    evidenceRequired: asString(item.evidenceRequired, 'Operator review or source document evidence is present in the workspace.'),
+    recommendedAction: asGuideAction(item.recommendedAction, defaultAction),
+    unlocks: asString(item.unlocks, phase.summary),
+    source: asString(item.source, 'operator-guide'),
+    requiredDocuments,
+    requiredFields: asStringArray(item.requiredFields),
+  }
+}
+
+function normalizePhaseDefinition(value: unknown, index: number): PhaseDefinition | null {
+  const phase = asObject(value)
+  const phaseSlug = asString(phase.phaseSlug)
+  const phaseKey = asString(phase.phaseKey, phaseSlug.replace(/-([a-z])/g, (_, char: string) => char.toUpperCase()))
+  const label = asString(phase.label)
+  if (!phaseSlug || !label) return null
+  const summary = asString(phase.summary, `${label} operator guide`)
+  const requiredDocuments = asStringArray(phase.requiredDocuments)
+  const workflowId = asString(phase.workflowId) || undefined
+  const base: PhaseDefinition = {
+    phaseKey,
+    phaseSlug,
+    label,
+    summary,
+    workflowId,
+    runtimePhase: phase.runtimePhase !== false,
+    requiredDocuments,
+    checklist: [],
+  }
+  const checklist = Array.isArray(phase.checklist)
+    ? phase.checklist.map((item, itemIndex) => normalizeChecklistDefinition(item, base, itemIndex))
+    : []
+  return {
+    ...base,
+    checklist: checklist.length > 0
+      ? checklist
+      : [normalizeChecklistDefinition({
+        id: `${phaseSlug}-review`,
+        label: `Review ${label}`,
+        priority: index === 0 ? 'critical' : 'important',
+        category: 'documents',
+      }, base, 0)],
+  }
+}
+
+function readOperatorGuideConfig(context: ServiceContext): OperatorGuideConfig {
+  const fallback: OperatorGuideConfig = { version: 1, sections: FALLBACK_PHASE_DEFINITIONS }
+  const raw = readJson<Record<string, unknown>>(join(context.projectRoot, 'config', 'operator-guides.json'), {})
+  const sections = Array.isArray(raw.sections)
+    ? raw.sections
+        .map((section, index) => normalizePhaseDefinition(section, index))
+        .filter((section): section is PhaseDefinition => Boolean(section))
+    : []
+  return {
+    version: typeof raw.version === 'number' && Number.isFinite(raw.version) ? raw.version : fallback.version,
+    sections: sections.length > 0 ? sections : fallback.sections,
+  }
+}
+
+function operatorGuideSections(context: ServiceContext): PhaseDefinition[] {
+  return readOperatorGuideConfig(context).sections
+}
 
 function safeSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').slice(0, 120)
@@ -517,8 +798,8 @@ function cleanupStagedWrites(writes: StagedJsonWrite[]): void {
   }
 }
 
-function phaseLabelForSlug(slug: string): string {
-  return PHASE_DEFINITIONS.find((phase) => phase.phaseSlug === slug)?.label ?? 'Underwriting'
+function phaseLabelForSlug(context: ServiceContext, slug: string): string {
+  return operatorGuideSections(context).find((phase) => phase.phaseSlug === slug)?.label ?? 'Underwriting'
 }
 
 function classifyDocument(fileName: string): string {
@@ -671,48 +952,260 @@ function buildAgentPlaybooks(context: ServiceContext, phaseSlug: string): PhaseA
   })
 }
 
-function readPhaseState(context: ServiceContext, dealId: string): Record<string, Record<string, string>> {
-  return readJson<Record<string, Record<string, string>>>(phaseStatePath(context, dealId), {})
+function readPhaseState(context: ServiceContext, dealId: string): Record<string, Record<string, ChecklistStateValue | string>> {
+  return readJson<Record<string, Record<string, ChecklistStateValue | string>>>(phaseStatePath(context, dealId), {})
+}
+
+function normalizeChecklistState(value: ChecklistStateValue | string | undefined): Partial<ChecklistStateValue> {
+  if (typeof value === 'string') {
+    const status = value === 'pending' ? 'missing' : asChecklistStatus(value)
+    return status ? { status } : {}
+  }
+  if (!value || typeof value !== 'object') return {}
+  const status = asChecklistStatus(value.status)
+  return {
+    ...(status ? { status } : {}),
+    note: asString(value.note),
+    updatedAt: asString(value.updatedAt),
+  }
+}
+
+function checklistStatusReason(
+  item: OperatorGuideChecklistDefinition,
+  status: GuideChecklistStatus,
+  missingDocuments: string[],
+  missingFields: string[],
+): string {
+  if (status === 'waived') return 'Operator waived or deferred this item.'
+  if (status === 'complete') return 'Evidence or operator review is complete.'
+  if (missingDocuments.length > 0) return `Missing documents: ${missingDocuments.join(', ')}.`
+  if (missingFields.length > 0) return `Missing source or deal fields: ${missingFields.join(', ')}.`
+  if (status === 'in_review') return 'Uploaded source documents still need extraction or operator review.'
+  if (status === 'ready') return `${item.recommendedAction.label} is available.`
+  return item.evidenceRequired
+}
+
+function deriveChecklistItem(
+  item: OperatorGuideChecklistDefinition,
+  saved: Partial<ChecklistStateValue>,
+  documents: SourceDocument[],
+  deal: Record<string, unknown>,
+  launchReadiness: LaunchReadinessResult[],
+): PhaseChecklistItem {
+  const uploadedTypes = new Set(documents.map((doc) => doc.type))
+  const sourceFieldMissingSet = new Set(launchReadiness.flatMap((entry) => entry.missingApprovedFields))
+  const missingDocuments = item.requiredDocuments.filter((type) => !uploadedTypes.has(type))
+  const missingFields = item.requiredFields.filter((fieldPath) => {
+    const value = getDeepValue(deal, fieldPath)
+    return value === undefined || value === null || value === '' || sourceFieldMissingSet.has(fieldPath)
+  })
+  const reviewQueueCount = documents.filter((doc) =>
+    doc.status === 'review_ready' ||
+    doc.extractionStatus === 'not-started' ||
+    doc.extractionStatus === 'extraction-pending' ||
+    doc.extractionStatus === 'parse_failed' ||
+    doc.extractionStatus === 'parser-unavailable'
+  ).length
+  const workflowReadiness = item.recommendedAction.workflowId
+    ? launchReadiness.find((entry) => entry.workflowId === item.recommendedAction.workflowId)
+    : null
+
+  let status: GuideChecklistStatus = 'missing'
+  if (saved.status === 'complete' || saved.status === 'waived') {
+    status = saved.status
+  } else if (missingDocuments.length > 0 || missingFields.length > 0) {
+    status = item.priority === 'critical' ? 'blocked' : 'missing'
+  } else if (item.category === 'extraction' && reviewQueueCount > 0) {
+    status = 'in_review'
+  } else if (workflowReadiness?.status === 'blocked') {
+    status = 'blocked'
+  } else if (item.recommendedAction.type === 'launch_workflow') {
+    status = 'ready'
+  } else if (item.requiredDocuments.length > 0 || item.requiredFields.length > 0) {
+    status = 'complete'
+  } else {
+    status = saved.status ?? 'ready'
+  }
+
+  return {
+    ...item,
+    status,
+    missingDocuments,
+    missingFields,
+    statusReason: checklistStatusReason(item, status, missingDocuments, missingFields),
+    manualStatus: saved.status === 'complete' || saved.status === 'waived',
+    note: saved.note || undefined,
+    updatedAt: saved.updatedAt || undefined,
+  }
+}
+
+function phaseReadinessFromChecklist(checklist: PhaseChecklistItem[]): PhaseReadiness {
+  const criticalOpen = checklist.some((item) =>
+    item.priority === 'critical' && (item.status === 'blocked' || item.status === 'missing' || item.status === 'in_review')
+  )
+  if (criticalOpen) return 'blocked'
+  const allActionableDone = checklist.every((item) =>
+    item.priority === 'optional' || item.status === 'complete' || item.status === 'waived' || item.status === 'ready'
+  )
+  return allActionableDone ? 'ready' : 'partial'
+}
+
+function sectionFromDefinition(
+  context: ServiceContext,
+  definition: PhaseDefinition,
+  dealId: string,
+  documents: SourceDocument[],
+  deal: Record<string, unknown>,
+  launchReadiness: LaunchReadinessResult[],
+): DealProgressionSection {
+  const savedState = readPhaseState(context, dealId)
+  const uploadedTypes = new Set(documents.map((doc) => doc.type))
+  const missingDocuments = definition.requiredDocuments.filter((type) => !uploadedTypes.has(type))
+  const uploadedDocuments = definition.requiredDocuments.filter((type) => uploadedTypes.has(type))
+  const savedChecklist = savedState[definition.phaseSlug] ?? {}
+  const checklist = definition.checklist.map((item) =>
+    deriveChecklistItem(item, normalizeChecklistState(savedChecklist[item.id]), documents, deal, launchReadiness)
+  )
+  const readiness = phaseReadinessFromChecklist(checklist)
+  const blockingItems = checklist.filter((item) => item.status === 'blocked' || item.status === 'missing')
+  const warningItems = checklist.filter((item) => item.status === 'in_review')
+  const completed = checklist.filter((item) => item.status === 'complete' || item.status === 'waived').length
+  const progress = checklist.length === 0 ? 0 : Math.round((completed / checklist.length) * 100)
+
+  return {
+    phaseKey: definition.phaseKey,
+    phaseSlug: definition.phaseSlug,
+    label: definition.label,
+    summary: definition.summary,
+    workflowId: definition.workflowId,
+    runtimePhase: definition.runtimePhase,
+    readiness,
+    progress,
+    blockingCount: blockingItems.length,
+    warningCount: warningItems.length,
+    requiredDocuments: definition.requiredDocuments,
+    uploadedDocuments,
+    missingDocuments,
+    checklist,
+    blockers: blockingItems.map((item) => `${item.label}: ${item.statusReason}`),
+    warnings: warningItems.map((item) => `${item.label}: ${item.statusReason}`),
+  }
+}
+
+function buildProgressionSections(
+  context: ServiceContext,
+  dealId: string,
+  documents: SourceDocument[],
+  deal: Record<string, unknown>,
+  launchReadiness: LaunchReadinessResult[],
+): DealProgressionSection[] {
+  return operatorGuideSections(context).map((definition) =>
+    sectionFromDefinition(context, definition, dealId, documents, deal, launchReadiness)
+  )
 }
 
 function buildPhaseWorkspaces(
   context: ServiceContext,
   dealId: string,
   documents: SourceDocument[],
+  deal: Record<string, unknown>,
+  launchReadiness: LaunchReadinessResult[],
 ): PhaseWorkspaceStatus[] {
-  const savedState = readPhaseState(context, dealId)
-  const uploadedTypes = new Set(documents.map((doc) => doc.type))
+  const sections = buildProgressionSections(context, dealId, documents, deal, launchReadiness)
   const now = new Date().toISOString()
-
-  return PHASE_DEFINITIONS.map((phase) => {
-    const missingDocuments = phase.requiredDocuments.filter((type) => !uploadedTypes.has(type))
-    const uploadedDocuments = phase.requiredDocuments.filter((type) => uploadedTypes.has(type))
-    const savedChecklist = savedState[phase.phaseSlug] ?? {}
-    const documentCoverageComplete = missingDocuments.length === 0
-    const checklist = phase.checklist.map((label, index) => {
-      const id = `${phase.phaseSlug}-${index + 1}`
-      const status: PhaseChecklistItem['status'] = savedChecklist[id] === 'complete' || (index === 1 && documentCoverageComplete)
-        ? 'complete'
-        : 'pending'
-      return { id, label, status }
-    })
-    const completed = checklist.filter((item) => item.status === 'complete').length
-    const readiness: PhaseReadiness =
-      missingDocuments.length === 0 ? 'ready' : completed > 0 || uploadedDocuments.length > 0 ? 'partial' : 'blocked'
-    return {
-      phaseKey: phase.phaseKey,
-      phaseSlug: phase.phaseSlug,
-      label: phase.label,
-      summary: phase.summary,
-      checklist,
-      requiredDocuments: phase.requiredDocuments,
-      uploadedDocuments,
-      missingDocuments,
-      readiness,
-      agents: buildAgentPlaybooks(context, phase.phaseSlug),
+  return sections
+    .filter((section) => section.runtimePhase)
+    .map((section) => ({
+      phaseKey: section.phaseKey,
+      phaseSlug: section.phaseSlug,
+      label: section.label,
+      summary: section.summary,
+      workflowId: section.workflowId,
+      checklist: section.checklist,
+      requiredDocuments: section.requiredDocuments,
+      uploadedDocuments: section.uploadedDocuments,
+      missingDocuments: section.missingDocuments,
+      readiness: section.readiness,
+      agents: buildAgentPlaybooks(context, section.phaseSlug),
       updatedAt: now,
+    }))
+}
+
+function bestChecklistAction(sections: DealProgressionSection[]): PhaseChecklistItem | null {
+  const orderedStatuses: GuideChecklistStatus[] = ['blocked', 'missing', 'in_review', 'ready']
+  for (const status of orderedStatuses) {
+    const candidate = sections
+      .flatMap((section) => section.checklist.map((item) => ({ item, section })))
+      .find(({ item }) => item.priority !== 'optional' && item.status === status)
+    if (candidate) {
+      return {
+        ...candidate.item,
+        recommendedAction: {
+          ...candidate.item.recommendedAction,
+          phaseSlug: candidate.item.recommendedAction.phaseSlug ?? candidate.section.phaseSlug,
+        },
+      }
     }
-  })
+  }
+  return null
+}
+
+function buildOperatorCommand(
+  sections: DealProgressionSection[],
+  launchReadiness: LaunchReadinessResult[],
+  documents: SourceDocument[],
+): OperatorCommand {
+  const activeSection =
+    sections.find((section) => section.blockingCount > 0) ??
+    sections.find((section) => section.warningCount > 0) ??
+    sections.find((section) => section.readiness === 'ready' && section.runtimePhase) ??
+    sections[0]
+  const blockingCount = sections.reduce((sum, section) => sum + section.blockingCount, 0)
+  const warningCount = sections.reduce((sum, section) => sum + section.warningCount, 0)
+  const completedChecklistCount = sections.reduce(
+    (sum, section) => sum + section.checklist.filter((item) => item.status === 'complete' || item.status === 'waived').length,
+    0,
+  )
+  const totalChecklistCount = sections.reduce((sum, section) => sum + section.checklist.length, 0)
+  const actionItem = bestChecklistAction(sections)
+  const fullReadiness = launchReadiness.find((entry) => entry.workflowId === 'full-acquisition-review') ?? launchReadiness[0]
+  const reviewQueueCount = documents.filter((doc) =>
+    doc.status === 'review_ready' ||
+    doc.extractionStatus === 'not-started' ||
+    doc.extractionStatus === 'extraction-pending' ||
+    doc.extractionStatus === 'parse_failed' ||
+    doc.extractionStatus === 'parser-unavailable'
+  ).length
+  const sourceCoverage = fullReadiness?.sourceCoverage
+
+  return {
+    activePhaseSlug: activeSection?.phaseSlug ?? 'guide',
+    activePhaseLabel: activeSection?.label ?? 'Guide',
+    readiness: blockingCount > 0 ? 'blocked' : warningCount > 0 ? 'partial' : 'ready',
+    blockingCount,
+    warningCount,
+    completedChecklistCount,
+    totalChecklistCount,
+    recommendedAction: {
+      title: actionItem ? actionItem.label : 'Review the acquisition package',
+      detail: actionItem
+        ? `${actionItem.whyItMatters} ${actionItem.statusReason}`
+        : 'The deal guide has no open critical checklist items. Review the package and lock the next decision.',
+      cta: actionItem?.recommendedAction.label ?? 'Review package',
+      action: actionItem?.recommendedAction ?? {
+        type: 'review_package',
+        label: 'Review package',
+        target: 'package',
+      },
+    },
+    sourceCoverage: {
+      sourceDocumentCount: sourceCoverage?.sourceDocumentCount ?? documents.length,
+      reviewQueueCount,
+      approvedFieldCount: sourceCoverage?.approvedFieldCount ?? 0,
+      requiredApprovedFieldCount: sourceCoverage?.requiredApprovedFieldCount ?? 0,
+      missingApprovedFieldCount: sourceCoverage?.missingApprovedFieldCount ?? 0,
+    },
+  }
 }
 
 function ensureLocalDeal(context: ServiceContext, record: DealRecord): Record<string, unknown> {
@@ -819,12 +1312,19 @@ function validationMessages(validation: ReturnType<typeof validateDealConfig>): 
   }
 }
 
-function requiredSourceFieldsForWorkflow(workflowId: string): string[] {
-  return WORKFLOW_REQUIRED_SOURCE_FIELDS[workflowId] ?? WORKFLOW_REQUIRED_SOURCE_FIELDS['full-acquisition-review']
+function requiredSourceFieldsForWorkflow(context: ServiceContext, workflowId: string): string[] {
+  const workflow = workflowCatalogWorkflows(context).find((entry) => asString(entry.id) === workflowId)
+  if (workflow && Array.isArray(workflow.requiredSourceFields)) {
+    return workflow.requiredSourceFields.filter((field): field is string => typeof field === 'string')
+  }
+  return WORKFLOW_REQUIRED_SOURCE_FIELDS[workflowId] ?? []
 }
 
 function documentHashIsStale(document: SourceDocument): boolean {
-  if (!document.sourceHash || !existsSync(document.path)) return false
+  if (!document.sourceHash) {
+    return document.status === 'applied' || document.status === 'approved' || document.status === 'review_ready'
+  }
+  if (!existsSync(document.path)) return true
   try {
     return fileHash(document.path) !== document.sourceHash
   } catch {
@@ -832,14 +1332,49 @@ function documentHashIsStale(document: SourceDocument): boolean {
   }
 }
 
+function approvedFieldEvidenceIsCurrent(
+  field: ApprovedField,
+  documentsById: Map<string, SourceDocument>,
+): boolean {
+  const sourceRef = field.sourceRef
+  const document = documentsById.get(field.documentId) ?? documentsById.get(sourceRef.documentId)
+  if (!document) return false
+  if (sourceRef.documentId !== document.documentId) return false
+  if (!document.sourceHash || !sourceRef.fileHash || sourceRef.fileHash !== document.sourceHash) return false
+  if (!existsSync(document.path)) return false
+  if (document.parserId && sourceRef.parserId !== document.parserId) return false
+  if (document.parserVersion && sourceRef.parserVersion !== document.parserVersion) return false
+  if (document.status !== 'applied' && document.status !== 'approved') return false
+  try {
+    return fileHash(document.path) === document.sourceHash
+  } catch {
+    return false
+  }
+}
+
+function approvedFieldManifestWithCurrentEvidence(
+  manifest: ApprovedFieldManifest,
+  documents: SourceDocument[],
+): ApprovedFieldManifest {
+  const documentsById = new Map(documents.map((document) => [document.documentId, document]))
+  return {
+    ...manifest,
+    fields: manifest.fields.filter((field) => approvedFieldEvidenceIsCurrent(field, documentsById)),
+  }
+}
+
 function sourceCoverageWarnings(
   documents: SourceDocument[],
   missingApprovedFields: string[],
   staleDocumentCount: number,
+  invalidApprovedFieldCount: number,
 ): string[] {
   const warnings: string[] = []
   if (missingApprovedFields.length > 0) {
     warnings.push(`Missing approved source-backed fields: ${missingApprovedFields.join(', ')}`)
+  }
+  if (invalidApprovedFieldCount > 0) {
+    warnings.push(`${invalidApprovedFieldCount} approved source field(s) have missing or stale evidence and were excluded from launch readiness.`)
   }
   const reviewReadyCount = documents.filter((doc) => doc.status === 'review_ready').length
   if (reviewReadyCount > 0) {
@@ -898,11 +1433,24 @@ export function getDealWorkspace(context: ServiceContext, dealId: string): DealW
   const deal = getDealRecord(context, dealId)
   if (!deal) throw new Error(`Deal not found: ${dealId}`)
   const documents = readManifest(context, dealId).documents
+  const launchReadiness = workflowIdsForReadiness(context).map((workflowId) =>
+    evaluateLaunchReadiness(context, dealId, workflowId),
+  )
+  const guideConfig = readOperatorGuideConfig(context)
+  const progressionSections = guideConfig.sections.map((definition) =>
+    sectionFromDefinition(context, definition, dealId, documents, deal.deal, launchReadiness)
+  )
   return {
     deal,
     criteria: readCriteria(context, deal),
     documents,
-    phases: buildPhaseWorkspaces(context, dealId, documents),
+    phases: buildPhaseWorkspaces(context, dealId, documents, deal.deal, launchReadiness),
+    launchReadiness,
+    progressionGuide: {
+      version: guideConfig.version,
+      sections: progressionSections,
+    },
+    operatorCommand: buildOperatorCommand(progressionSections, launchReadiness, documents),
   }
 }
 
@@ -916,12 +1464,15 @@ export function evaluateLaunchReadiness(
   if (!record) throw new Error(`Deal not found: ${dealId}`)
   const documents = readManifest(context, dealId).documents
   const approved = readApprovedFields(context, dealId)
-  const approvedPathSet = new Set(approved.fields.map((field) => field.path))
-  const requiredApprovedFields = requiredSourceFieldsForWorkflow(workflowId)
+  const currentApproved = approvedFieldManifestWithCurrentEvidence(approved, documents)
+  const validApprovedFields = currentApproved.fields
+  const invalidApprovedFieldCount = Math.max(0, approved.fields.length - validApprovedFields.length)
+  const approvedPathSet = new Set(validApprovedFields.map((field) => field.path))
+  const requiredApprovedFields = requiredSourceFieldsForWorkflow(context, workflowId)
   const missingApprovedFields = requiredApprovedFields.filter((pathValue) => !approvedPathSet.has(pathValue))
   const staleDocumentCount = documents.filter(documentHashIsStale).length
   const warnings = [
-    ...sourceCoverageWarnings(documents, missingApprovedFields, staleDocumentCount),
+    ...sourceCoverageWarnings(documents, missingApprovedFields, staleDocumentCount, invalidApprovedFieldCount),
     ...validationMessages(record.validation).warnings,
   ]
   const blockers = validationMessages(record.validation).errors
@@ -938,17 +1489,18 @@ export function evaluateLaunchReadiness(
     blockers,
     warnings,
     requiredApprovedFields,
-    approvedFields: approved.fields.map((field) => field.path).sort(),
+    approvedFields: validApprovedFields.map((field) => field.path).sort(),
     missingApprovedFields,
     sourceCoverage: {
       sourceDocumentCount: documents.length,
       appliedDocumentCount: documents.filter((doc) => doc.status === 'applied').length,
       reviewReadyDocumentCount: documents.filter((doc) => doc.status === 'review_ready').length,
       pendingExtractionCount: documents.filter((doc) => doc.status !== 'applied').length,
-      approvedFieldCount: approved.fields.length,
+      approvedFieldCount: validApprovedFields.length,
       requiredApprovedFieldCount: requiredApprovedFields.length,
       missingApprovedFieldCount: missingApprovedFields.length,
       staleDocumentCount,
+      invalidApprovedFieldCount,
     },
     evaluatedAt: new Date().toISOString(),
   }
@@ -964,6 +1516,7 @@ export function buildRunInputSnapshot(
   if (!record) throw new Error(`Deal not found: ${dealId}`)
   const documents = readManifest(context, dealId).documents
   const approvedFields = readApprovedFields(context, dealId)
+  const currentApprovedFields = approvedFieldManifestWithCurrentEvidence(approvedFields, documents)
   return {
     version: 1,
     capturedAt: new Date().toISOString(),
@@ -973,7 +1526,7 @@ export function buildRunInputSnapshot(
     launch,
     criteria: readCriteria(context, record),
     deal: record.deal,
-    approvedFields,
+    approvedFields: currentApprovedFields,
     documents,
     readiness: evaluateLaunchReadiness(context, dealId, workflowId, {
       enforceSourceBackedInputs: launch.requireSourceBackedInputs === true,
@@ -1036,12 +1589,12 @@ export function saveSourceDocument(
     type,
     typeLabel: docType.label,
     phase: docType.phaseSlug,
-    phaseLabel: phaseLabelForSlug(docType.phaseSlug),
+    phaseLabel: phaseLabelForSlug(context, docType.phaseSlug),
     status: extractionStatus === 'not-started' ? 'uploaded' : extractionStatus,
     extractionStatus,
     uploadedAt: now,
     sourceHash: fileHash(targetPath),
-    summary: `${docType.label} uploaded for ${phaseLabelForSlug(docType.phaseSlug)}`,
+    summary: `${docType.label} uploaded for ${phaseLabelForSlug(context, docType.phaseSlug)}`,
   }
 
   const manifest = readManifest(context, dealId)
@@ -1265,17 +1818,25 @@ export function savePhaseState(
   dealId: string,
   payload: Record<string, unknown>,
 ): { phases: PhaseWorkspaceStatus[] } {
-  if (!getDealRecord(context, dealId)) throw new Error(`Deal not found: ${dealId}`)
+  const record = getDealRecord(context, dealId)
+  if (!record) throw new Error(`Deal not found: ${dealId}`)
   const current = readPhaseState(context, dealId)
   const phaseSlug = asString(payload.phaseSlug)
-  if (!PHASE_DEFINITIONS.some((phase) => phase.phaseSlug === phaseSlug)) {
+  if (!operatorGuideSections(context).some((phase) => phase.phaseSlug === phaseSlug)) {
     throw new Error(`Unknown phase: ${phaseSlug || 'missing phaseSlug'}`)
   }
   const updates = asObject(payload.checklist)
-  const checklistUpdates: Record<string, string> = {}
+  const noteUpdates = asObject(payload.notes)
+  const checklistUpdates: Record<string, ChecklistStateValue> = {}
+  const now = new Date().toISOString()
   for (const [key, value] of Object.entries(updates)) {
-    if (value === 'pending' || value === 'complete') {
-      checklistUpdates[key] = value
+    const status = value === 'pending' ? 'missing' : asChecklistStatus(value)
+    if (status) {
+      checklistUpdates[key] = {
+        status,
+        note: asString(noteUpdates[key]),
+        updatedAt: now,
+      }
     }
   }
   current[phaseSlug] = {
@@ -1284,5 +1845,8 @@ export function savePhaseState(
   }
   writeJson(phaseStatePath(context, dealId), current)
   const docs = readManifest(context, dealId).documents
-  return { phases: buildPhaseWorkspaces(context, dealId, docs) }
+  const launchReadiness = workflowIdsForReadiness(context).map((workflowId) =>
+    evaluateLaunchReadiness(context, dealId, workflowId),
+  )
+  return { phases: buildPhaseWorkspaces(context, dealId, docs, record.deal, launchReadiness) }
 }

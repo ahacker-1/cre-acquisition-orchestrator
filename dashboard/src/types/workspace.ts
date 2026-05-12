@@ -24,6 +24,19 @@ export type ExtractionStatus =
 export type ExtractionReviewStatus = 'candidate' | 'approved' | 'rejected' | 'applied' | 'waived'
 export type ExtractionValueType = 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object' | 'null'
 export type PhaseReadiness = 'ready' | 'partial' | 'blocked'
+export type LaunchReadinessStatus = 'ready' | 'warning' | 'blocked'
+export type GuideChecklistStatus = 'blocked' | 'missing' | 'ready' | 'in_review' | 'complete' | 'waived'
+export type GuideChecklistPriority = 'critical' | 'important' | 'optional'
+export type GuideChecklistCategory =
+  | 'documents'
+  | 'extraction'
+  | 'underwriting'
+  | 'diligence'
+  | 'financing'
+  | 'legal'
+  | 'closing'
+  | 'package'
+export type GuideActionType = 'open_tab' | 'edit_details' | 'launch_workflow' | 'upload_documents' | 'review_package'
 
 export interface DealCriteria {
   investmentStrategy: string
@@ -148,7 +161,22 @@ export interface ApplyExtractionResult {
 export interface PhaseChecklistItem {
   id: string
   label: string
-  status: 'pending' | 'complete'
+  status: GuideChecklistStatus
+  priority: GuideChecklistPriority
+  category: GuideChecklistCategory
+  whyItMatters: string
+  evidenceRequired: string
+  recommendedAction: OperatorGuideAction
+  unlocks: string
+  source: string
+  requiredDocuments: string[]
+  requiredFields: string[]
+  missingDocuments: string[]
+  missingFields: string[]
+  statusReason: string
+  manualStatus: boolean
+  note?: string
+  updatedAt?: string
 }
 
 export interface PhaseAgentPlaybook {
@@ -164,6 +192,7 @@ export interface PhaseWorkspaceStatus {
   phaseSlug: string
   label: string
   summary: string
+  workflowId?: string
   checklist: PhaseChecklistItem[]
   requiredDocuments: string[]
   uploadedDocuments: string[]
@@ -173,9 +202,89 @@ export interface PhaseWorkspaceStatus {
   updatedAt: string
 }
 
+export interface OperatorGuideAction {
+  type: GuideActionType
+  label: string
+  target?: string
+  workflowId?: string
+  phaseSlug?: string
+}
+
+export interface DealProgressionSection {
+  phaseKey: string
+  phaseSlug: string
+  label: string
+  summary: string
+  workflowId?: string
+  runtimePhase: boolean
+  readiness: PhaseReadiness
+  progress: number
+  blockingCount: number
+  warningCount: number
+  requiredDocuments: string[]
+  uploadedDocuments: string[]
+  missingDocuments: string[]
+  checklist: PhaseChecklistItem[]
+  blockers: string[]
+  warnings: string[]
+}
+
+export interface OperatorCommand {
+  activePhaseSlug: string
+  activePhaseLabel: string
+  readiness: PhaseReadiness
+  blockingCount: number
+  warningCount: number
+  completedChecklistCount: number
+  totalChecklistCount: number
+  recommendedAction: {
+    title: string
+    detail: string
+    cta: string
+    action: OperatorGuideAction
+  }
+  sourceCoverage: {
+    sourceDocumentCount: number
+    reviewQueueCount: number
+    approvedFieldCount: number
+    requiredApprovedFieldCount: number
+    missingApprovedFieldCount: number
+  }
+}
+
+export interface DealProgressionGuide {
+  version: number
+  sections: DealProgressionSection[]
+}
+
+export interface LaunchReadinessResult {
+  workflowId: string
+  status: LaunchReadinessStatus
+  blockers: string[]
+  warnings: string[]
+  requiredApprovedFields: string[]
+  approvedFields: string[]
+  missingApprovedFields: string[]
+  sourceCoverage: {
+    sourceDocumentCount: number
+    appliedDocumentCount: number
+    reviewReadyDocumentCount: number
+    pendingExtractionCount: number
+    approvedFieldCount: number
+    requiredApprovedFieldCount: number
+    missingApprovedFieldCount: number
+    staleDocumentCount: number
+    invalidApprovedFieldCount: number
+  }
+  evaluatedAt: string
+}
+
 export interface DealWorkspace {
   deal: DealRecordResponse
   criteria: DealCriteria
   documents: SourceDocument[]
   phases: PhaseWorkspaceStatus[]
+  launchReadiness: LaunchReadinessResult[]
+  progressionGuide: DealProgressionGuide
+  operatorCommand: OperatorCommand
 }

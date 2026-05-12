@@ -3,6 +3,7 @@ import type {
   DealCriteria,
   DealWorkspace,
   ExtractionPreview,
+  GuideChecklistStatus,
   PhaseWorkspaceStatus,
   SourceDocument,
 } from '../types/workspace'
@@ -134,7 +135,8 @@ export function useDealWorkspace(dealId: string | null | undefined) {
 
   async function savePhaseChecklist(
     phaseSlug: string,
-    checklist: Record<string, 'pending' | 'complete'>,
+    checklist: Record<string, GuideChecklistStatus>,
+    notes?: Record<string, string>,
   ): Promise<PhaseWorkspaceStatus[]> {
     if (!dealId) return workspace?.phases ?? []
     setWorking(true)
@@ -142,11 +144,12 @@ export function useDealWorkspace(dealId: string | null | undefined) {
       const response = await fetch(`${API_URL}/api/deals/${encodeURIComponent(dealId)}/phase-state`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phaseSlug, checklist }),
+        body: JSON.stringify({ phaseSlug, checklist, notes }),
       })
       const payload = await parseJson<{ phases?: PhaseWorkspaceStatus[]; error?: string }>(response)
       if (!response.ok || !payload.phases) throw new Error(payload.error || 'Failed to save phase checklist')
       setWorkspace((current) => (current ? { ...current, phases: payload.phases ?? current.phases } : current))
+      await refreshWorkspace()
       setError(null)
       return payload.phases
     } catch (err) {

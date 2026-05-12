@@ -17,6 +17,7 @@ export interface WorkflowDefinition {
   operatorGoal: string
   recommendedScenario: LaunchScenario
   phases: WorkflowPhaseSelection[]
+  requiredSourceFields?: string[]
 }
 
 export interface WorkflowCatalogResponse {
@@ -34,6 +35,7 @@ export interface WorkflowPresetInputs {
   codexMaxAgents?: number | null
   codexConcurrency?: number | null
   codexSearch?: boolean
+  requireSourceBackedInputs?: boolean
   notes?: string
   tags?: string[]
 }
@@ -75,6 +77,7 @@ export interface WorkflowLaunchRequest {
   codexMaxAgents?: number | null
   codexConcurrency?: number | null
   codexSearch?: boolean
+  requireSourceBackedInputs?: boolean
   notes?: string
 }
 
