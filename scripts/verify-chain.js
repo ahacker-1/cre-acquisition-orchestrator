@@ -57,6 +57,61 @@ function approxEqual(a, b, tolerancePercent) {
   return Math.abs((a - b) / a) <= (tolerancePercent / 100);
 }
 
+function normalizedStatus(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function isCompletedPhase(phase) {
+  const status = normalizedStatus(phase.status);
+  return status === 'COMPLETE' || status === 'COMPLETED';
+}
+
+function isResolvedPhase(phase) {
+  const status = normalizedStatus(phase.status);
+  return status === 'COMPLETE' || status === 'COMPLETED' || status === 'SKIPPED';
+}
+
+function phaseCompletenessChecks(phasesByName) {
+  return Object.entries(phasesByName).map(([name, phase]) => {
+    const status = normalizedStatus(phase.status);
+    const complete = status === 'COMPLETE' || status === 'COMPLETED';
+    return {
+      check: `${name} phase complete`,
+      status: complete ? 'PASS' : 'FAIL',
+      detail: complete
+        ? `${name} is complete`
+        : `${name} is ${status || 'MISSING'}; verify-chain requires the full acquisition chain, not a scoped workflow`
+    };
+  });
+}
+
+function asObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function statusToken(value, preferredKeys = ['status', 'reviewStatus', 'overallStatus', 'overallReadiness']) {
+  if (typeof value === 'boolean') return value ? 'CLEAR' : 'ISSUES';
+  if (typeof value === 'string') return normalizedStatus(value);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return '';
+
+  for (const key of preferredKeys) {
+    const nested = value[key];
+    if (typeof nested === 'string' || typeof nested === 'boolean') {
+      return statusToken(nested, preferredKeys);
+    }
+  }
+  return '';
+}
+
+function sumUnitMix(unitMix) {
+  if (!Array.isArray(unitMix)) return null;
+  const total = unitMix.reduce((sum, item) => {
+    const count = item && typeof item === 'object' ? item.count : null;
+    return sum + (typeof count === 'number' && Number.isFinite(count) ? count : 0);
+  }, 0);
+  return total > 0 ? total : null;
+}
+
 // ------------------------------------------------------------------
 // Verification checks
 // ------------------------------------------------------------------
@@ -66,11 +121,15 @@ function verifyDDtoUW(dd, uw) {
   const uwData = uw.dataForDownstream || {};
 
   // 1. Total units consistency
-  const ddUnits = ddData.rentRoll ? ddData.rentRoll.totalUnits : (ddData.occupiedUnits ? Math.round(ddData.occupiedUnits / ddData.occupancy) : null);
+  const ddUnits = ddData.rentRoll
+    ? ddData.rentRoll.totalUnits
+    : sumUnitMix(ddData.unitMix) || (ddData.occupiedUnits ? Math.round(ddData.occupiedUnits / ddData.occupancy) : null);
   const uwModel = uwData.financialModel || uwData.baseCase || {};
   const uwPPU = uwModel.pricePerUnit;
   const uwPrice = uwModel.purchasePrice;
-  const uwDerivedUnits = (uwPPU && uwPrice) ? Math.round(uwPrice / uwPPU) : null;
+  const uwDerivedUnits = (uwPPU && uwPrice)
+    ? Math.round(uwPrice / uwPPU)
+    : (uwPrice && ddData.pricePerUnit ? Math.round(uwPrice / ddData.pricePerUnit) : null);
 
   if (ddUnits && uwDerivedUnits) {
     const match = ddUnits === uwDerivedUnits;
@@ -212,23 +271,25 @@ function verifyDDFinancingToLegal(dd, financing, legal) {
   const finQuote = finData.bestQuote || finData;
   const finLoanAmount = finQuote.loanAmount || finData.loanAmount;
 
-  if (finLoanAmount && legalData.loanDocsStatus) {
+  const legalLoanDocsStatus = legalData.loanDocsStatus || legalData.loanDocStatus;
+  const legalLoanDocsToken = statusToken(legalLoanDocsStatus);
+  if (finLoanAmount && legalLoanDocsStatus) {
     checks.push({
       check: 'Loan docs status reflects financing selection',
       financingLoanAmount: finLoanAmount,
-      legalLoanDocsStatus: legalData.loanDocsStatus,
-      status: ['EXECUTED', 'APPROVED', 'PREPARED', 'ACCEPTABLE'].includes(legalData.loanDocsStatus) ? 'PASS' : 'WARN',
-      detail: `Loan docs status: ${legalData.loanDocsStatus}`
+      legalLoanDocsStatus,
+      status: ['EXECUTED', 'APPROVED', 'PREPARED', 'ACCEPTABLE', 'REVIEWED', 'CLEAR'].includes(legalLoanDocsToken) ? 'PASS' : 'WARN',
+      detail: `Loan docs status: ${legalLoanDocsToken || JSON.stringify(legalLoanDocsStatus)}`
     });
   }
 
   // 2. Title status from DD matches legal
-  const ddTitle = ddData.title || {};
-  const ddTitleStatus = ddTitle.status || ddData.zoningCompliant;
-  const legalTitleStatus = legalData.titleStatus;
+  const ddTitle = asObject(ddData.title);
+  const ddTitleStatus = statusToken(ddTitle.status || ddData.titleStatus || ddData.zoningCompliant);
+  const legalTitleStatus = statusToken(legalData.titleStatus);
 
   if (ddTitleStatus && legalTitleStatus) {
-    const ddClear = ['CLEAR', 'COMPLIANT', true].includes(ddTitleStatus);
+    const ddClear = ['CLEAR', 'COMPLIANT'].includes(ddTitleStatus);
     const legalClear = ['CLEAR', 'COMPLIANT'].includes(legalTitleStatus);
     const consistent = ddClear === legalClear;
     checks.push({
@@ -241,11 +302,12 @@ function verifyDDFinancingToLegal(dd, financing, legal) {
   }
 
   // 3. Property details match (if legal has property data)
+  const psaStatus = statusToken(legalData.psaStatus, ['reviewStatus', 'status']);
   if (legalData.psaStatus) {
     checks.push({
       check: 'PSA execution status',
-      status: ['EXECUTED', 'APPROVED', 'ACCEPTABLE'].includes(legalData.psaStatus) ? 'PASS' : 'WARN',
-      detail: `PSA status: ${legalData.psaStatus}`
+      status: ['EXECUTED', 'APPROVED', 'ACCEPTABLE', 'REVIEWED'].includes(psaStatus) ? 'PASS' : 'WARN',
+      detail: `PSA status: ${psaStatus || JSON.stringify(legalData.psaStatus)}`
     });
   }
 
@@ -316,18 +378,13 @@ function verifyAllToClosing(dd, uw, financing, legal, closing) {
 
   // 4. All phases completed check
   const phases = [dd, uw, financing, legal, closing];
-  const allCompleted = phases.every(p =>
-    p.status === 'COMPLETED' ||
-    p.status === 'complete' ||
-    p.status === 'SKIPPED' ||
-    p.status === 'skipped'
-  );
+  const allCompleted = phases.every(isCompletedPhase);
   checks.push({
-    check: 'All phases resolved',
+    check: 'All phases completed',
     status: allCompleted ? 'PASS' : 'FAIL',
     detail: allCompleted
-      ? 'All 5 phases show completed or workflow-skipped status'
-      : `Incomplete: ${phases.map((p, i) => ({ name: ['DD', 'UW', 'Financing', 'Legal', 'Closing'][i], status: p.status })).filter(p => !['COMPLETED', 'complete', 'SKIPPED', 'skipped'].includes(p.status)).map(p => `${p.name}(${p.status})`).join(', ')}`
+      ? 'All 5 phases show completed status'
+      : `Incomplete: ${phases.map((p, i) => ({ name: ['DD', 'UW', 'Financing', 'Legal', 'Closing'][i], status: p.status })).filter(p => !isCompletedPhase(p)).map(p => `${p.name}(${p.status})`).join(', ')}`
   });
 
   // 5. Verdict chain is coherent
@@ -426,16 +483,24 @@ function main() {
     console.log('');
   }
 
+  runSection('Full Chain Completeness', phaseCompletenessChecks({
+    'Due Diligence': dd,
+    Underwriting: uw,
+    Financing: financing,
+    Legal: legal,
+    Closing: closing
+  }));
+
   // Run all verifications
-  if (dd.status === 'COMPLETED' || dd.status === 'complete') {
-    if (uw.status === 'COMPLETED' || uw.status === 'complete') {
+  if (isCompletedPhase(dd)) {
+    if (isCompletedPhase(uw)) {
       runSection('DD -> Underwriting', verifyDDtoUW(dd, uw));
 
-      if (financing.status === 'COMPLETED' || financing.status === 'complete') {
+      if (isCompletedPhase(financing)) {
         runSection('Underwriting -> Financing', verifyUWtoFinancing(uw, financing));
         runSection('DD + Financing -> Legal', verifyDDFinancingToLegal(dd, financing, legal));
 
-        if (closing.status === 'COMPLETED' || closing.status === 'complete') {
+        if (isCompletedPhase(closing)) {
           runSection('All -> Closing (Integration)', verifyAllToClosing(dd, uw, financing, legal, closing));
         } else {
           console.log(colorize('Closing phase not completed - skipping final integration checks', 'yellow'));
@@ -451,7 +516,7 @@ function main() {
   }
 
   // Summary
-  const overallStatus = failCount > 0 ? 'FAIL' : (warnCount > 0 ? 'CONDITIONAL' : 'PASS');
+  const overallStatus = totalChecks === 0 || failCount > 0 || skipCount > 0 ? 'FAIL' : (warnCount > 0 ? 'CONDITIONAL' : 'PASS');
 
   console.log(colorize('=== CHAIN VERIFICATION SUMMARY ===', 'bold'));
   console.log(`  Deal: ${checkpoint.dealName || dealId}`);
@@ -488,7 +553,7 @@ function main() {
     console.log(`Results written to ${outputPath}`);
   }
 
-  process.exit(failCount > 0 ? 1 : 0);
+  process.exit(overallStatus === 'FAIL' ? 1 : 0);
 }
 
 main();

@@ -28,9 +28,9 @@
 
     "dealId": {
       "type": "string",
-      "pattern": "^DEAL-\\d{4}-\\d{3}$",
-      "description": "Unique deal identifier. Format: DEAL-YYYY-NNN.",
-      "examples": ["DEAL-2025-001", "DEAL-2025-042"]
+      "pattern": "^(?!.*\\.\\.)[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+      "description": "Unique deal identifier used in local file paths. Use a safe slug up to 120 characters with letters, numbers, dots, underscores, or hyphens.",
+      "examples": ["DEAL-2025-001", "parkview-2026-001"]
     },
 
     "dealName": {

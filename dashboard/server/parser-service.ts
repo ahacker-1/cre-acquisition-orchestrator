@@ -63,12 +63,15 @@ const PARSER_VERSION = 'source-backed-v1'
 
 export function isParserRunnable(fileName: string, mime: string): boolean {
   const extension = extname(fileName).toLowerCase()
-  return ['.csv', '.txt', '.md', '.xlsx'].includes(extension) || mime.startsWith('text/')
+  return ['.csv', '.txt', '.md'].includes(extension) || mime.startsWith('text/')
 }
 
 export function isParserPendingOnly(fileName: string, mime: string): boolean {
   const extension = extname(fileName).toLowerCase()
-  return extension === '.pdf' || mime === 'application/pdf'
+  return extension === '.pdf' ||
+    extension === '.xlsx' ||
+    mime === 'application/pdf' ||
+    mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 }
 
 export function fileHash(filePath: string): string {
@@ -445,14 +448,20 @@ export function runDocumentParser(input: ParserInput): ParserExtractionPreview {
   const hash = fileHash(input.filePath)
 
   if (isParserPendingOnly(input.fileName, input.mime)) {
+    const extension = extname(input.fileName).toLowerCase()
+    const isExcel = extension === '.xlsx' || input.mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     return {
       documentId: input.documentId,
       status: 'extraction-pending',
       extractedAt: new Date().toISOString(),
       fields: [],
       metrics: {},
-      notes: ['PDF was stored and classified. PDF text extraction is not included in this local milestone.'],
-      parserId: 'pdf-pending-parser',
+      notes: [
+        isExcel
+          ? 'Excel was stored and classified. Source-backed field mapping for XLSX is not enabled in this local milestone.'
+          : 'PDF was stored and classified. PDF text extraction is not included in this local milestone.',
+      ],
+      parserId: isExcel ? 'excel-pending-parser' : 'pdf-pending-parser',
       parserVersion: PARSER_VERSION,
       sourceHash: hash,
       reviewStatus: 'candidate',

@@ -345,13 +345,13 @@ export default function DealIntakeWizard({
               <>
                 {stepIndex === 0 && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    <Field label="Deal ID" helper="Suggested format: DEAL-YYYY-NNN">
+                    <Field label="Deal ID" helper="Use up to 120 letters, numbers, dashes, underscores, or dots">
                         <input
                           className={inputClassName()}
                           data-testid="deal-id-input"
                           value={form.dealId}
                         onChange={(event) =>
-                          setForm((current) => ({ ...current, dealId: event.target.value.toUpperCase() }))
+                          setForm((current) => ({ ...current, dealId: event.target.value }))
                         }
                         placeholder={suggestedDealId}
                       />

@@ -353,10 +353,29 @@ test('creates a draft from the document-first homepage and uploads the dropped f
   await page.getByTestId('workspace-tab-documents').click()
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-hero-rent-roll.csv')
 
+  const extractionPreview = page.getByTestId('extraction-preview')
+  await page.getByTestId('extract-document-rent_roll').click()
+  await expect(extractionPreview).toContainText('3 Fields Found')
+  await extractionPreview.locator('[data-field-path="property.totalUnits"]').check()
+  await extractionPreview.locator('[data-field-path="property.unitMix.types"]').check()
+  await extractionPreview.locator('[data-field-path="financials.inPlaceOccupancy"]').check()
+  await page.getByTestId('apply-extraction').click()
+  await expect(page.getByTestId('source-document-rent_roll')).toContainText('applied')
+
   const workspaceResponse = await request.get(`${API_URL}/api/deals/${quickDealId}/workspace`)
   await expectApiOk(workspaceResponse)
   const workspace = (await workspaceResponse.json()) as { documents: Array<{ fileName?: string; type?: string }> }
   expect(workspace.documents.some((doc) => doc.fileName === 'playwright-hero-rent-roll.csv' && doc.type === 'rent_roll')).toBe(true)
+
+  const dealResponse = await request.get(`${API_URL}/api/deals/${quickDealId}`)
+  await expectApiOk(dealResponse)
+  const dealRecord = (await dealResponse.json()) as {
+    deal: { property?: Record<string, unknown>; financials?: Record<string, unknown> }
+    item: { saveState?: string }
+  }
+  expect(dealRecord.deal.property?.totalUnits).toBe(2)
+  expect(dealRecord.deal.financials?.inPlaceOccupancy).toBe(1)
+  expect(dealRecord.item.saveState).toBe('draft')
 
   const modal = await openDealLibraryModal(page)
   await expect(modal.getByTestId(`deal-card-${quickDealId}`)).toContainText('Draft')
@@ -747,6 +766,7 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
   await expect(page.getByTestId('source-document-title')).toContainText('playwright-title.pdf')
   await expect(page.getByTestId('source-document-title')).toContainText('Extraction Pending')
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-rent-roll.xlsx')
+  await expect(page.getByTestId('source-document-rent_roll')).toContainText('Extraction Pending')
   await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('PDF and Excel stay honest')
 
   const workspaceResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
@@ -755,7 +775,7 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
     documents: Array<{ fileName?: string; extractionStatus?: string }>
   }
   expect(workspace.documents.find((doc) => doc.fileName === 'playwright-title.pdf')?.extractionStatus).toBe('extraction-pending')
-  expect(workspace.documents.find((doc) => doc.fileName === 'playwright-rent-roll.xlsx')?.extractionStatus).toBe('not-started')
+  expect(workspace.documents.find((doc) => doc.fileName === 'playwright-rent-roll.xlsx')?.extractionStatus).toBe('extraction-pending')
 
   expect(consoleErrors).toEqual([])
 })
@@ -770,6 +790,7 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   await modal.getByTestId('workflow-deal-select').selectOption(SAMPLE_DEAL_ID)
   await modal.getByTestId('workflow-select').selectOption('quick-deal-screen')
   await modal.getByTestId('workflow-speed-select').selectOption('fast')
+  await modal.getByTestId('workflow-mode-select').selectOption('fast')
   await modal.getByTestId('workflow-launch-selected').click()
 
   await expect(page.getByText('Run: Running')).toBeVisible({ timeout: 15_000 })

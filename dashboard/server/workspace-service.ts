@@ -1723,15 +1723,22 @@ export function applySourceExtraction(
   for (const field of selectedFields) {
     setDeepValue(nextDeal, field.path, field.value)
   }
-  const validation = validateDealConfig(nextDeal, {
+  const draftValidation = validateDealConfig(nextDeal, {
+    projectRoot: context.projectRoot,
+    mode: 'draft',
+    existingIds: [],
+    currentDealId: dealId,
+  })
+  const launchValidation = validateDealConfig(nextDeal, {
     projectRoot: context.projectRoot,
     mode: 'launch',
     existingIds: [],
     currentDealId: dealId,
   })
-  const messages = validationMessages(validation)
-  if (validation.blockingIssues.length > 0) {
-    throw new Error(`Applied extraction would make the deal invalid: ${messages.errors.join('; ')}`)
+  const draftMessages = validationMessages(draftValidation)
+  const launchMessages = validationMessages(launchValidation)
+  if (draftValidation.blockingIssues.length > 0) {
+    throw new Error(`Applied extraction would make the deal invalid: ${draftMessages.errors.join('; ')}`)
   }
   const now = new Date().toISOString()
   const rollbackPath = join(rollbackDir(context, dealId), `${safeSegment(documentId)}-${Date.now()}.json`)
@@ -1774,7 +1781,7 @@ export function applySourceExtraction(
   const previousMeta = asObject(readJson<Record<string, unknown>>(metaPath(context, dealId), {}))
   const nextMeta = {
     dealId,
-    saveState: validation.launchReady ? 'ready' : 'draft',
+    saveState: launchValidation.launchReady ? 'ready' : 'draft',
     createdAt: asString(previousMeta.createdAt, now),
     updatedAt: now,
   }
@@ -1806,9 +1813,10 @@ export function applySourceExtraction(
     deal: refreshed,
     approvedFields,
     validation: {
-      valid: validation.valid,
-      launchReady: validation.launchReady,
-      ...messages,
+      valid: draftValidation.valid,
+      launchReady: launchValidation.launchReady,
+      errors: launchMessages.errors,
+      warnings: [...draftMessages.warnings, ...launchMessages.warnings],
     },
   }
 }

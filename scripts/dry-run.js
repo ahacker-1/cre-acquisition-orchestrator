@@ -237,6 +237,7 @@ function writeCheckpoint(dealId, checkpoint) {
   const dir = path.join(BASE_DIR, 'data', 'status');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const filePath = path.join(dir, `${dealId}.json`);
+  checkpoint.lastUpdatedAt = new Date().toISOString();
   fs.writeFileSync(filePath, JSON.stringify(checkpoint, null, 2));
 }
 
@@ -282,10 +283,14 @@ async function simulatePipeline(deal) {
     },
     strategy: deal.investmentStrategy || 'core-plus',
     status: 'RUNNING',
+    currentPhase: null,
     overallProgress: 0,
     overallVerdict: null,
     startedAt: new Date().toISOString(),
+    lastUpdatedAt: new Date().toISOString(),
     completedAt: null,
+    traceId: `${dealId}-${Date.now()}`,
+    events: [],
     phases: {}
   };
 
@@ -337,6 +342,7 @@ async function simulatePipeline(deal) {
     // Mark phase as RUNNING
     phaseRef.status = 'RUNNING';
     phaseRef.startedAt = new Date().toISOString();
+    checkpoint.currentPhase = phase.key;
     checkpoint.overallProgress = Math.round((pi / 5) * 100);
     writeCheckpoint(dealId, checkpoint);
     appendLog(dealId, phase.key, phase.key + '-orchestrator', 'ACTION', `Phase started: ${phase.label}`);
@@ -361,7 +367,7 @@ async function simulatePipeline(deal) {
     }
 
     // Mark phase as COMPLETED
-    phaseRef.status = 'COMPLETED';
+    phaseRef.status = 'COMPLETE';
     phaseRef.completedAt = new Date().toISOString();
     phaseRef.verdict = phase.verdict;
     phaseRef.riskScore = phase.riskScore;
@@ -377,7 +383,8 @@ async function simulatePipeline(deal) {
   }
 
   // Finalize
-  checkpoint.status = 'COMPLETED';
+  checkpoint.status = 'COMPLETE';
+  checkpoint.currentPhase = null;
   checkpoint.overallProgress = 100;
   checkpoint.overallVerdict = 'CONDITIONAL';
   checkpoint.completedAt = new Date().toISOString();
@@ -386,7 +393,7 @@ async function simulatePipeline(deal) {
 
   console.log(colorize(`\n=== DRY RUN COMPLETE ===`, 'bold'));
   console.log(`  Deal: ${dealName}`);
-  console.log(`  Status: ${colorize('COMPLETED', 'green')}`);
+  console.log(`  Status: ${colorize('COMPLETE', 'green')}`);
   console.log(`  Verdict: ${colorize('CONDITIONAL', 'yellow')}`);
   console.log(`  Checkpoint: data/status/${dealId}.json`);
   console.log(`  Logs: data/logs/${dealId}/`);

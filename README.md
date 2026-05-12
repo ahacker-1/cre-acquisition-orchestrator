@@ -239,7 +239,7 @@ Every agent follows a **19-section prompt anatomy standard** (Identity, Mission,
 | Agent | What It Does | Key Outputs |
 |-------|-------------|-------------|
 | **Document Orchestrator** | Classifies incoming documents, routes to appropriate parser, manages extraction pipeline, validates completeness | Document manifest, extraction status, routing decisions |
-| **Rent Roll Parser** | Extracts structured data from rent roll files (CSV, Excel, PDF): unit numbers, tenant names, lease dates, rents, deposits, status | Structured rent roll JSON, extraction confidence scores |
+| **Rent Roll Parser** | Extracts structured rent roll data from CSV and text/markdown files. PDF and Excel files are classified, routed to the right phase, and marked extraction-pending until a parser is connected. | Structured rent roll JSON, extraction confidence scores, pending extraction status |
 | **Financials Parser** | Extracts T-12 operating statements: income line items, expense categories, month-over-month trends | Structured financials JSON, line-item mapping |
 | **Offering Memo Parser** | Extracts property details, investment highlights, financial projections, and market data from offering memoranda | Structured property data, financial assumptions, market summary |
 

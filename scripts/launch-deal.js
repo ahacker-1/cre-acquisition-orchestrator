@@ -21,15 +21,12 @@
  *   --resume         Resume from existing checkpoint instead of fresh start
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+const fs = require('fs');
+const path = require('path');
 
 // ------------------------------------------------------------------
 // Path resolution
 // ------------------------------------------------------------------
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const BASE_DIR = path.resolve(__dirname, '..');
 
 // ------------------------------------------------------------------
@@ -173,9 +170,9 @@ function validateDealConfig(deal) {
     errors.push('Missing required field: seller.entity');
   }
 
-  // DealId format check
-  if (deal.dealId && !/^DEAL-\d{4}-\d{3}$/.test(deal.dealId)) {
-    errors.push(`dealId format invalid: "${deal.dealId}" (expected DEAL-YYYY-NNN)`);
+  // Deal IDs become file and directory names, so keep them portable and traversal-safe.
+  if (deal.dealId && (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(deal.dealId) || deal.dealId.includes('..'))) {
+    errors.push(`dealId format invalid: "${deal.dealId}" (use 1-120 letters, numbers, dots, underscores, or hyphens)`);
   }
 
   return errors;
@@ -322,15 +319,19 @@ function writeInitialCheckpoint(deal, phases) {
     },
     strategy: deal.investmentStrategy,
     status: 'PENDING',
+    currentPhase: null,
     overallProgress: 0,
     overallVerdict: null,
     startedAt: now,
+    lastUpdatedAt: now,
     completedAt: null,
+    traceId: `${dealId}-${Date.now()}`,
     runtimeParameters: {
       phasesToRun: phases.join(','),
       resumeMode: false
     },
-    phases: phaseEntries
+    phases: phaseEntries,
+    events: []
   };
 
   const checkpointPath = path.join(BASE_DIR, 'data', 'status', `${dealId}.json`);

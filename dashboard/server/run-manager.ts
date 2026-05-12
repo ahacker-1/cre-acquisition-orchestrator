@@ -1,5 +1,5 @@
 import { spawn, spawnSync, type ChildProcessByStdio } from 'child_process'
-import { existsSync, mkdirSync, rmSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'fs'
 import { join } from 'path'
 import type { Readable } from 'stream'
 
@@ -138,6 +138,13 @@ function sanitizeOptionalString(value: unknown): string | null {
   return value.trim()
 }
 
+function commandOutput(result: ReturnType<typeof spawnSync>): string {
+  return [result.stdout, result.stderr]
+    .map((value) => (typeof value === 'string' ? value.trim() : ''))
+    .filter(Boolean)
+    .join('\n')
+}
+
 function speedToDelayMs(speed: RunSpeed): number {
   if (speed === 'fast') return 500
   if (speed === 'slow') return 5000
@@ -206,6 +213,32 @@ export class RunManager {
         error: this.status.error,
       },
     }
+  }
+
+  private validateSimulationRun(dealPath: string): string | null {
+    let resolvedDealId: string | null = null
+    try {
+      const deal = JSON.parse(readFileSync(join(this.projectRoot, dealPath), 'utf8')) as { dealId?: unknown }
+      resolvedDealId = typeof deal.dealId === 'string' && deal.dealId.trim() ? deal.dealId.trim() : null
+    } catch {
+      resolvedDealId = null
+    }
+
+    const validateArgs = [
+      join(this.projectRoot, 'scripts', 'validate-contracts.js'),
+      '--deal',
+      dealPath,
+      ...(resolvedDealId ? ['--deal-id', resolvedDealId] : []),
+    ]
+    const result = spawnSync('node', validateArgs, {
+      cwd: this.projectRoot,
+      encoding: 'utf8',
+      windowsHide: true,
+    })
+    const output = commandOutput(result)
+    if (output) console.log(`[run:${this.status.runId}:validate]\n${output}`)
+    if (result.status === 0) return null
+    return `Post-run contract validation failed${result.status !== null ? ` with code ${result.status}` : ''}${output ? `: ${output}` : ''}`
   }
 
   start(request: StartRunRequest = {}): StartRunResponse {
@@ -285,9 +318,7 @@ export class RunManager {
     const scriptPath =
       runtimeProvider === 'codex'
         ? join(this.projectRoot, 'scripts', 'codex-agent-runner.js')
-        : mode === 'live'
-        ? join(this.projectRoot, 'scripts', 'orchestrate.js')
-        : join(this.projectRoot, 'scripts', 'demo-run.js')
+        : join(this.projectRoot, 'scripts', 'orchestrate.js')
     const agentDelayMs = speedToDelayMs(speed)
 
     const args: string[] =
@@ -311,8 +342,7 @@ export class RunManager {
             ...(codexModel ? ['--model', codexModel] : []),
             ...(codexSearch ? ['--search'] : []),
           ]
-        : mode === 'live'
-        ? [
+        : [
             scriptPath,
             '--deal',
             dealPath,
@@ -326,14 +356,6 @@ export class RunManager {
             ...(seed !== null ? ['--seed', String(seed)] : []),
             '--agent-delay-ms',
             String(agentDelayMs),
-          ]
-        : [
-            scriptPath,
-            '--deal',
-            dealPath,
-            '--scenario',
-            scenario,
-            ...(seed !== null ? ['--seed', String(seed)] : []),
           ]
 
     try {
@@ -413,8 +435,12 @@ export class RunManager {
       if (this.status.runId !== currentRunId) return
       this.clearStopTimer()
       const stoppedByUser = this.status.state === 'STOPPING'
-      const succeeded = !stoppedByUser && code === 0
-      const failed = !stoppedByUser && code !== 0
+      const childSucceeded = !stoppedByUser && code === 0
+      const validationError = childSucceeded && runtimeProvider === 'simulation'
+        ? this.validateSimulationRun(dealPath)
+        : null
+      const succeeded = childSucceeded && !validationError
+      const failed = !stoppedByUser && !succeeded
 
       this.status = {
         ...this.status,
@@ -424,7 +450,7 @@ export class RunManager {
         endedAt: nowIso(),
         pid: null,
         exitCode: code,
-        error: failed ? `Run exited with code ${code}${signal ? ` (${signal})` : ''}` : null,
+        error: validationError ?? (failed ? `Run exited with code ${code}${signal ? ` (${signal})` : ''}` : null),
       }
 
       this.child = null

@@ -28,6 +28,7 @@ function normalizeForDeterministicHash(value) {
     'phaseId',
     'durationMs',
     'traceId',
+    'runId',
     'resumeInstructions',
     'createdAt',
     'updatedAt'

@@ -66,6 +66,10 @@ function isoTimestamp(baseDate, offsetMinutes) {
   return d.toISOString();
 }
 
+function phaseRuntimeStatus(status) {
+  return status === 'COMPLETED' ? 'COMPLETE' : status;
+}
+
 // ------------------------------------------------------------------
 // Data generators - derive realistic metrics from deal config
 // ------------------------------------------------------------------
@@ -439,7 +443,7 @@ function buildCheckpoint(deal) {
     agentNames.forEach(a => { agentStatuses[a] = 'COMPLETED'; });
 
     return {
-      status: 'COMPLETED',
+      status: 'COMPLETE',
       startedAt: phaseStart,
       completedAt: phaseEnd,
       verdict: verdict,
@@ -461,10 +465,14 @@ function buildCheckpoint(deal) {
   phases.closing = buildPhase('closing', 4, PHASE_AGENTS.closing, closingData, 'GO', 95);
 
   // Calculate overall progress
-  const completedPhases = Object.values(phases).filter(p => p.status === 'COMPLETED').length;
+  const completedPhases = Object.values(phases).filter(p => p.status === 'COMPLETE').length;
   const runningPhases = Object.values(phases).filter(p => p.status === 'RUNNING').length;
   const overallProgress = Math.round((completedPhases / 5) * 100 + (runningPhases > 0 ? 10 : 0));
   const allComplete = completedPhases === 5;
+  const lastUpdatedAt = allComplete
+    ? isoTimestamp(startTime, cumulativeMinutes)
+    : isoTimestamp(startTime, Math.max(0, cumulativeMinutes));
+  const currentPhaseEntry = Object.entries(phases).find(([, phase]) => phase.status === 'RUNNING');
 
   const checkpoint = {
     dealId: dealId,
@@ -478,12 +486,16 @@ function buildCheckpoint(deal) {
       class: 'B'
     },
     strategy: strategy,
-    status: allComplete ? 'COMPLETED' : (runningPhases > 0 ? 'RUNNING' : 'PENDING'),
+    status: allComplete ? 'COMPLETE' : (runningPhases > 0 ? 'RUNNING' : 'PENDING'),
+    currentPhase: currentPhaseEntry ? currentPhaseEntry[0] : null,
     overallProgress: allComplete ? 100 : overallProgress,
     overallVerdict: allComplete ? 'CONDITIONAL' : null,
     startedAt: isoTimestamp(startTime, 0),
+    lastUpdatedAt,
     completedAt: allComplete ? isoTimestamp(startTime, cumulativeMinutes) : null,
-    phases: phases
+    traceId: `${dealId}-${Date.now()}`,
+    phases: phases,
+    events: []
   };
 
   return checkpoint;
@@ -522,7 +534,7 @@ function main() {
   console.log(`  Deal: ${checkpoint.dealName}`);
   console.log(`  Status: ${checkpoint.status}`);
   console.log(`  Progress: ${checkpoint.overallProgress}%`);
-  console.log(`  Phases completed: ${Object.values(checkpoint.phases).filter(p => p.status === 'COMPLETED').length}/5`);
+  console.log(`  Phases completed: ${Object.values(checkpoint.phases).filter(p => phaseRuntimeStatus(p.status) === 'COMPLETE').length}/5`);
   console.log(`  Overall verdict: ${checkpoint.overallVerdict || 'N/A'}`);
 }
 
