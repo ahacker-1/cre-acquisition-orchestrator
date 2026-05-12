@@ -14,6 +14,12 @@ This release turns the document-first cockpit into a more dependable operator wo
 - Added a quick-create upload queue with per-file status, progress, stale deal-ID recovery, partial-failure recovery, failed-file retry, and an open-workspace path for successful partial uploads.
 - Improved extraction review with bulk selection of apply-ready fields and a before/after deal-data change summary before applying source-backed inputs.
 - Added an IC Review Brief to the Completion Package with the next decision, priority red flags, priority data gaps, and source-readiness warnings.
+- Hardened dashboard simulation launches so both normal and fast modes use the workflow-aware orchestrator and run contract validation before the UI reports completion.
+- Made document intake claims explicit: CSV, TXT, and Markdown files can produce source-backed extraction previews; PDF and XLSX files are stored, classified, routed, and marked extraction-pending.
+- Tightened `verify-chain` so scoped workflows cannot pass as complete full acquisition chains.
+- Updated legacy CLI helpers (`launch-deal`, `generate-checkpoint`, and `dry-run`) to accept current safe-slug deal IDs and emit checkpoint contracts compatible with current validation.
+- Hardened browser E2E startup so stale project dashboard servers are cleared and unrelated port conflicts fail early instead of silently testing old code.
+- Added release validation coverage for the Codex smoke path, full catalog dry-run, and live quick multi-agent workflow artifacts.
 - Tightened the header layout for narrow viewports so the operator controls wrap instead of forcing document-level horizontal overflow.
 
 ## Operator Impact
@@ -28,16 +34,28 @@ This release turns the document-first cockpit into a more dependable operator wo
 
 ## Honest Scope
 
-- CSV, TXT, and Markdown extraction behavior is unchanged.
-- PDF files remain stored for review.
-- Excel files remain stored and classified; field mapping is still not enabled.
+- CSV, TXT, and Markdown extraction produce source-backed previews.
+- PDF files remain stored and classified for review with extraction pending.
+- Excel files remain stored and classified with extraction pending; field mapping is still not enabled.
 - Simulation remains the safe default runtime. Codex / ChatGPT remains opt-in.
 - The guide is operational acquisition guidance, not legal, investment, or underwriting advice.
 
 ## Verified For Release
 
+- `npm run setup -- --check --require-codex --skip-login`
 - `npm --prefix dashboard run build`
 - `npm run validate:guides`
+- `npm run validate`
 - `npm run test:e2e`
 - `npm run demo`
 - `node .\scripts\validate-contracts.js --deal-id parkview-2026-001`
+- `node .\scripts\verify-chain.js --deal-id parkview-2026-001`
+- `npm test`
+- `node .\scripts\demo-replay.js --deal config\deal.json --scenario core-plus --seed 42`
+- `node .\scripts\run-validation.js`
+- `npm run codex:smoke`
+- `npm run validate:codex`
+- `node .\scripts\codex-agent-runner.js --workflow full-acquisition-review --dry-run --run-id codex-full-dry-run-v23 --concurrency 3`
+- `node .\scripts\validate-contracts.js --codex-run-id codex-full-dry-run-v23`
+- `npm run codex:run -- --run-id codex-quick-live-final`
+- `node .\scripts\validate-contracts.js --codex-run-id codex-quick-live-final`

@@ -34,12 +34,15 @@ Let's bring this industry into the future.
 - **Source-Backed Review** - Extraction preview now supports bulk selection of apply-ready fields and shows before/after deal-data changes before apply.
 - **Safer Workflow Launch** - Embedded workflow launches stay scoped to the open deal instead of inheriting a stale browser draft from local storage.
 - **IC Review Brief** - Completion Package now highlights the next decision, priority red flags, priority data gaps, and source-readiness warnings for operator handoff.
+- **Verified Feature Paths** - Dashboard-launched simulation runs now execute the workflow-aware orchestrator and run contract validation before reporting completion.
+- **Honest Document Intake** - CSV/TXT/MD files remain source-backed extraction paths, while PDF and XLSX files are clearly classified and routed as extraction-pending.
+- **Release-Grade Validation** - Chain verification, legacy CLIs, browser E2E startup, and Codex artifacts are hardened for the public v2.3.0 release.
 
 ---
 
 ## Release Journey
 
-This project has grown in six public steps: first the agent architecture, then a usable dashboard, then a real operator workspace, then live Codex-backed agent execution, then a document-first cockpit, and now a more dependable operator workbench.
+This project has grown in six public steps: first the agent architecture, then a usable dashboard, then a real operator workspace, then live Codex-backed agent execution, then a document-first cockpit, and now a more dependable operator workbench with verified end-to-end feature paths.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -48,7 +51,7 @@ This project has grown in six public steps: first the agent architecture, then a
 | **v2.0.0 - Operator Deal Hub** | Turned the dashboard into a local-first acquisition cockpit with phase workspaces, document intake, source-backed inputs, outcome workflows, presets, and completion packages. | [RELEASE_NOTES_v2.0.0.md](RELEASE_NOTES_v2.0.0.md) |
 | **v2.1.0 - Codex / ChatGPT Workflow Runtime** | Added the optional live-agent path: ChatGPT-authenticated Codex CLI execution, in-app login status, dashboard-launched Codex runs, and release-ready setup validation. | [RELEASE_NOTES_v2.1.0.md](RELEASE_NOTES_v2.1.0.md) |
 | **v2.2.0 - Document-First Acquisition Cockpit** | Made the dashboard front door document-first with quick draft creation, upload-to-documents routing, compact recent deals, and a persistent cockpit sidebar. | [RELEASE_NOTES_v2.2.0.md](RELEASE_NOTES_v2.2.0.md) |
-| **v2.3.0 - Operator Workbench** | Added guided deal progression, workflow readiness, upload queue recovery, source-backed change review, safer embedded launch scoping, and IC review handoff. | [RELEASE_NOTES_v2.3.0.md](RELEASE_NOTES_v2.3.0.md) |
+| **v2.3.0 - Operator Workbench** | Added guided deal progression, workflow readiness, upload queue recovery, source-backed change review, safer embedded launch scoping, IC review handoff, and verified public feature paths. | [RELEASE_NOTES_v2.3.0.md](RELEASE_NOTES_v2.3.0.md) |
 
 ---
 
