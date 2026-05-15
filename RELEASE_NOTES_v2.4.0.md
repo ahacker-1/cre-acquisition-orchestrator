@@ -48,4 +48,4 @@ This release turns the operator workbench into an agentic deal-team workspace. T
 ## Release Tag
 
 - Git tag: `v2.4.0`
-- Release commit: `b05771e4479e041467f9d71c53a73dd7b8f0c1f6`
+- Release commit: `631e05219911535e1a470c709f203197389267b4`
