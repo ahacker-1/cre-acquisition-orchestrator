@@ -80,6 +80,18 @@ async function executeAgent({
       title: `${agentName} started`,
       status: 'running'
     });
+    storyEngine.emitAgentMessage({
+      phase: phaseKey,
+      phaseLabel: phaseLabel || phaseKey,
+      fromAgent: `${phaseKey}-orchestrator`,
+      toAgent: agentName,
+      messageType: 'task_assignment',
+      title: `${phaseLabel || phaseKey} assigned ${agentName}`,
+      summary: `${agentName} is reviewing assigned inputs for ${phaseLabel || phaseKey}.`,
+      importance: 'normal',
+      requiresHuman: false,
+      tags: ['simulation', 'task-assignment']
+    });
   }
 
   const runningCheckpoint = makeAgentCheckpoint({
@@ -141,6 +153,20 @@ async function executeAgent({
         agent: agentName,
         title: `${agentName} failed`,
         error: `Injected failure for ${agentName}`
+      });
+      storyEngine.emitAgentDependency({
+        phase: phaseKey,
+        phaseLabel: phaseLabel || phaseKey,
+        fromAgent: agentName,
+        toAgent: `${phaseKey}-orchestrator`,
+        messageType: 'blocker',
+        title: `${agentName} blocked ${phaseLabel || phaseKey}`,
+        summary: `Injected failure for ${agentName}`,
+        dependencyType: 'agent_failure',
+        importance: 'critical',
+        requiresHuman: true,
+        impact: ['Run marked FAILED', 'Resume required from failed phase'],
+        tags: ['simulation', 'blocker']
       });
     }
     const err = new Error(`Injected failure for ${agentName}`);
@@ -211,7 +237,7 @@ async function executeAgent({
     const redFlagLines = extractedRedFlags.map(
       (flag) => `- [${flag.severity || 'MEDIUM'}] ${flag.message || 'Flag'}`
     );
-    storyEngine.createDocument({
+    const workpaper = storyEngine.createDocument({
       phase: phaseKey,
       agent: agentName,
       title: `${agentName} Workpaper`,
@@ -239,6 +265,37 @@ async function executeAgent({
       mime: 'text/markdown',
       extension: 'md',
       tags: ['agent', 'workpaper']
+    });
+    storyEngine.emitAgentHandoff({
+      phase: phaseKey,
+      phaseLabel: phaseLabel || phaseKey,
+      fromAgent: agentName,
+      toAgent: `${phaseKey}-orchestrator`,
+      messageType: 'workpaper_ready',
+      title: `${agentName} handed workpaper to ${phaseLabel || phaseKey}`,
+      summary: completeCheckpoint.outputs.summary,
+      artifactRefs: [workpaper],
+      importance: extractedRedFlags.length > 0 || extractedGaps.length > 0 ? 'high' : 'normal',
+      requiresHuman: extractedGaps.length > 0,
+      confidence: completeCheckpoint.outputs.metrics.confidence,
+      impact: [
+        `${extractedRedFlags.length} red flags`,
+        `${extractedGaps.length} data gaps`
+      ],
+      tags: ['simulation', 'agent-handoff', 'workpaper']
+    });
+    storyEngine.emitAgentReview({
+      phase: phaseKey,
+      phaseLabel: phaseLabel || phaseKey,
+      fromAgent: agentName,
+      toAgent: `${phaseKey}-orchestrator`,
+      messageType: 'self_review',
+      title: `${agentName} completed self-review`,
+      summary: `Verdict ${completeCheckpoint.outputs.verdict}; confidence ${completeCheckpoint.outputs.metrics.confidence}.`,
+      importance: 'normal',
+      requiresHuman: extractedGaps.length > 0,
+      confidence: completeCheckpoint.outputs.metrics.confidence,
+      tags: ['simulation', 'self-review']
     });
   }
 

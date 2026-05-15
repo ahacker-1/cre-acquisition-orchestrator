@@ -235,4 +235,204 @@
   .portal-metric strong {
     @apply mt-2 block font-mono text-lg text-white;
   }
+
+  .war-room-strip {
+    position: relative;
+  }
+
+  .agent-scan-line {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .agent-scan-line::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.035) 45%, transparent 58%);
+    transform: translateX(-120%);
+    animation: agentScan 5.5s ease-in-out infinite;
+  }
+
+  .agent-live-pulse {
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.25), 0 0 18px rgba(255,255,255,0.11);
+    animation: agentPulse 1.8s ease-in-out infinite;
+  }
+
+  .handoff-card-enter {
+    border-left: 2px solid rgba(255,255,255,0.35);
+  }
+
+  .mission-command-layout {
+    @apply space-y-5;
+  }
+
+  .mission-command-hero {
+    @apply border border-white/10 bg-cre-surface px-5 py-6 md:px-8 md:py-8;
+    border-radius: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  .mission-command-title {
+    @apply mt-3 max-w-5xl font-serif text-3xl font-semibold leading-tight text-white md:text-5xl;
+    letter-spacing: 0;
+  }
+
+  .mission-command-copy {
+    @apply mt-3 max-w-4xl text-sm leading-6 text-gray-400 md:text-base;
+  }
+
+  .mission-command-metrics {
+    @apply mt-7 grid gap-5 border-t border-white/10 pt-5 md:grid-cols-3;
+  }
+
+  .mission-command-metric span {
+    @apply block text-xs font-semibold uppercase text-gray-500;
+  }
+
+  .mission-command-metric strong {
+    @apply mt-2 block font-serif text-3xl font-semibold leading-none text-white;
+  }
+
+  .mission-orchestration-stage {
+    @apply border border-white/10 bg-black px-5 py-6 md:px-8 md:py-8;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+
+  .orchestration-map {
+    @apply grid gap-3 md:grid-cols-2 xl:grid-cols-7;
+  }
+
+  .orchestration-phase {
+    @apply relative min-h-36 border border-white/10 bg-white/[0.025] p-4;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.035);
+  }
+
+  .orchestration-phase::after {
+    content: '';
+    @apply absolute left-full top-1/2 hidden h-px w-3 bg-white/10 xl:block;
+  }
+
+  .orchestration-phase:last-child::after {
+    display: none;
+  }
+
+  .orchestration-phase-running {
+    @apply border-white/30 bg-white/[0.045];
+    box-shadow: 0 0 34px rgba(255,255,255,0.045), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .orchestration-phase-complete {
+    @apply border-cre-success/25 bg-cre-success/[0.035];
+  }
+
+  .orchestration-phase-blocked {
+    @apply border-cre-warning/35 bg-cre-warning/[0.055];
+  }
+
+  .orchestration-step {
+    @apply font-mono text-xs text-gray-600;
+  }
+
+  .orchestration-phase h4 {
+    @apply mt-5 text-sm font-semibold text-white;
+  }
+
+  .orchestration-phase p {
+    @apply mt-2 text-xs leading-5 text-gray-500;
+  }
+
+  .orchestration-agent-row {
+    @apply mt-4 flex flex-wrap gap-2;
+  }
+
+  .orchestration-agent-token {
+    @apply inline-grid h-8 w-8 place-items-center border border-white/15 bg-black text-[10px] font-bold text-white;
+    border-radius: 999px;
+  }
+
+  .orchestration-agent-token-live {
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.25), 0 0 18px rgba(255,255,255,0.12);
+    animation: agentPulse 1.8s ease-in-out infinite;
+  }
+
+  .mission-intelligence-rail {
+    @apply grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px];
+  }
+
+  .mission-attention-card,
+  .mission-latest-card,
+  .mission-package-preview {
+    @apply border border-white/10 bg-cre-surface p-5;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+
+  .mission-attention-card-hot {
+    @apply grid gap-4 border-cre-warning/35 bg-cre-warning/[0.07] xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center;
+  }
+
+  .mission-agent-pulse-row {
+    @apply flex items-center gap-3 border-t border-white/10 pt-3 first:border-t-0 first:pt-0;
+  }
+
+  .mission-package-preview {
+    @apply grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.55fr)_auto] xl:items-center;
+  }
+
+  .mission-package-artifacts {
+    @apply space-y-2;
+  }
+
+  .mission-package-artifacts div {
+    @apply border-l border-white/15 pl-3;
+  }
+
+  .mission-package-artifacts strong {
+    @apply block truncate text-sm text-white;
+  }
+
+  .mission-package-artifacts span,
+  .mission-package-artifacts p {
+    @apply mt-1 block text-xs text-gray-500;
+  }
+
+  .mission-disclosure {
+    @apply border border-white/10 bg-cre-surface;
+  }
+
+  .mission-disclosure summary {
+    @apply flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4;
+  }
+
+  .mission-disclosure summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mission-disclosure summary strong {
+    @apply mt-1 block text-base font-semibold text-white;
+  }
+
+  .mission-disclosure[open] summary {
+    @apply border-b border-white/10;
+  }
+
+  .mission-disclosure-body {
+    @apply p-5;
+  }
+
+  .handoff-ledger-row {
+    @apply border border-white/10 bg-black p-3;
+  }
+}
+
+
+@keyframes agentPulse {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
+@keyframes agentScan {
+  0%, 70% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
 }

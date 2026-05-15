@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useCheckpointData } from './hooks/useCheckpointData'
 import ErrorBoundary from './components/ErrorBoundary'
 import DealIntakeWizard from './components/DealIntakeWizard'
-import DropZoneHero from './components/DropZoneHero'
+import DropZoneHero, { type OutcomeIntent } from './components/DropZoneHero'
 import QuickDealCreate from './components/QuickDealCreate'
 import SavedDealsPanel from './components/SavedDealsPanel'
 import WorkflowLauncher from './components/WorkflowLauncher'
@@ -12,7 +12,7 @@ import { uploadDealDocument } from './lib/documentUpload'
 import type { DealCheckpoint, PhaseInfo } from './types/checkpoint'
 import type { DealLibraryItem, DealRecordResponse } from './types/deals'
 
-type WorkspaceInitialTab = 'guide' | 'overview' | 'documents' | 'package'
+type WorkspaceInitialTab = 'mission' | 'documents' | 'agents' | 'workpapers' | 'package' | 'advanced'
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -118,8 +118,10 @@ export default function App() {
   const [launchingDealId, setLaunchingDealId] = useState<string | null>(null)
   const [libraryError, setLibraryError] = useState<string | null>(null)
   const [workspaceCheckpoint, setWorkspaceCheckpoint] = useState<DealCheckpoint | null>(null)
-  const [workspaceInitialTab, setWorkspaceInitialTab] = useState<WorkspaceInitialTab>('guide')
+  const [workspaceInitialTab, setWorkspaceInitialTab] = useState<WorkspaceInitialTab>('documents')
   const [quickCreateFiles, setQuickCreateFiles] = useState<File[]>([])
+  const [quickCreateIntent, setQuickCreateIntent] = useState<OutcomeIntent>('ic-package')
+  const [quickCreateGoal, setQuickCreateGoal] = useState('Build an IC-ready acquisition package')
 
   // Demo-friendly: Default to Pipeline tab, auto-expand relevant sections
   const runActive = runStatus.state === 'STARTING' || runStatus.state === 'RUNNING' || runStatus.state === 'STOPPING'
@@ -169,7 +171,7 @@ export default function App() {
     setWorkflowOpen(false)
   }
 
-  async function openDealWorkspace(dealId: string, section: WorkspaceInitialTab = 'guide'): Promise<void> {
+  async function openDealWorkspace(dealId: string, section: WorkspaceInitialTab = 'documents'): Promise<void> {
     setLibraryError(null)
     try {
       const record = await loadDeal(dealId)
@@ -183,15 +185,17 @@ export default function App() {
     }
   }
 
-  function handleQuickFiles(files: File[]): void {
+  function handleQuickFiles(files: File[], intent: OutcomeIntent, goalText: string): void {
     setLibraryError(null)
+    setQuickCreateIntent(intent)
+    setQuickCreateGoal(goalText)
     setQuickCreateFiles(files)
   }
 
   async function handleQuickDealCreated(dealId: string): Promise<void> {
     setQuickCreateFiles([])
     await refreshDeals()
-    await openDealWorkspace(dealId, 'guide')
+    await openDealWorkspace(dealId, 'documents')
   }
 
   function handleWorkflowLaunchStarted(): void {
@@ -243,7 +247,7 @@ export default function App() {
       {/* Header */}
       <header className="bg-cre-surface border-b border-cre-border px-4 py-4 flex flex-col gap-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex flex-wrap items-center gap-3">
-          <h1 className="min-w-0 text-xl font-bold tracking-tight">CRE Acquisition Dashboard</h1>
+          <h1 className="min-w-0 text-xl font-bold tracking-tight">CRE Acquisition Orchestrator</h1>
           {visibleDealCheckpoint && (
             <span className="min-w-0 break-words text-sm text-gray-500">
               | {visibleDealCheckpoint.dealName || 'Unnamed Deal'}
@@ -286,7 +290,7 @@ export default function App() {
             data-testid="header-workflows-button"
             className="px-3 py-1.5 text-xs font-semibold uppercase bg-white text-black hover:bg-gray-200 transition-colors"
           >
-            Workflows
+            Advanced
           </button>
 
           <button
@@ -387,7 +391,7 @@ export default function App() {
       {/* Footer - minimal, demo-friendly */}
       <footer className="border-t border-cre-border px-6 py-3 text-center">
         <p className="text-xs text-gray-600">
-          CRE Acquisition Orchestrator | AI-Powered Deal Analysis
+          CRE Acquisition Orchestrator | Open-source multi-orchestration for CRE acquisitions
         </p>
       </footer>
 
@@ -443,9 +447,9 @@ export default function App() {
               <div className="border-b border-cre-border px-6 py-5 flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.24em] text-cre-accent font-semibold">
-                    Acquisition Cockpit
+                    Advanced Orchestration Controls
                   </p>
-                  <h2 className="text-2xl font-bold text-white mt-2">Workflow Launcher</h2>
+                  <h2 className="text-2xl font-bold text-white mt-2">Launch Orchestration</h2>
                 </div>
                 <button
                   onClick={() => setWorkflowOpen(false)}
@@ -494,6 +498,8 @@ export default function App() {
 
       <QuickDealCreate
         files={quickCreateFiles}
+        intent={quickCreateIntent}
+        goalText={quickCreateGoal}
         suggestedDealId={suggestedDealId}
         isOpen={quickCreateFiles.length > 0}
         onCancel={() => setQuickCreateFiles([])}

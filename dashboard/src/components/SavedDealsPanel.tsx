@@ -6,7 +6,7 @@ interface SavedDealsPanelProps {
   loading: boolean
   error: string | null
   onEditDeal: (dealId: string) => void
-  onOpenWorkspace: (dealId: string, section?: 'overview' | 'documents') => void
+  onOpenWorkspace: (dealId: string, section?: 'mission' | 'documents') => void
   onLaunchDeal: (dealId: string) => void
   onViewAll?: () => void
   launchingDealId?: string | null
@@ -67,7 +67,7 @@ function DealCard({
 }: {
   item: DealLibraryItem
   onEditDeal: (dealId: string) => void
-  onOpenWorkspace: (dealId: string, section?: 'overview' | 'documents') => void
+  onOpenWorkspace: (dealId: string, section?: 'mission' | 'documents') => void
   onLaunchDeal: (dealId: string) => void
   launchingDealId?: string | null
   activeRunDealPath?: string | null
@@ -187,7 +187,7 @@ export default function SavedDealsPanel({
         {error && <p className="mt-3 text-xs text-cre-danger">{error}</p>}
         {recentDeals.length === 0 ? (
           <div className="mt-4 border border-white/10 bg-black p-4 text-sm text-gray-500">
-            No saved deals yet. Drop a document above to create your first upload workspace.
+            No saved deals yet. Drop a document above to create your first agent team workspace.
           </div>
         ) : (
           <div className="mt-4 grid gap-3 lg:grid-cols-3 2xl:grid-cols-5">
@@ -217,7 +217,7 @@ export default function SavedDealsPanel({
                     onClick={() => (isDraft ? onEditDeal(item.dealId) : onOpenWorkspace(item.dealId, 'documents'))}
                     data-testid={isDraft ? `edit-deal-${item.dealId}` : `workspace-docs-${item.dealId}`}
                   >
-                    {isDraft ? 'Continue' : 'Open Docs'}
+                    {isDraft ? 'Continue' : 'Open Workspace'}
                   </button>
                 </article>
               )

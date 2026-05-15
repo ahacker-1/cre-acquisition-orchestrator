@@ -320,8 +320,8 @@ test('creates a draft from the document-first homepage and uploads the dropped f
   const consoleErrors = collectConsoleErrors(page)
 
   await waitForDashboardReady(page)
-  await expect(page.getByTestId('drop-zone-hero')).toContainText('Drop your deal documents here')
-  await expect(page.getByTestId('drop-zone-hero')).toContainText('Excel files are stored and classified')
+  await expect(page.getByTestId('drop-zone-hero')).toContainText('Drop the deal. Watch the team go to work.')
+  await expect(page.getByTestId('drop-zone-hero')).toContainText('PDFs and Excel stay stored for review/classification')
 
   await page.getByTestId('drop-zone-input').setInputFiles({
     name: 'playwright-hero-rent-roll.csv',
@@ -347,9 +347,8 @@ test('creates a draft from the document-first homepage and uploads the dropped f
   const quickDealId = savePayload.item.dealId
 
   await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByTestId('workspace-tab-guide')).toHaveClass(/active/)
+  await expect(page.getByTestId('workspace-tab-documents')).toHaveClass(/active/)
   await expect(page.getByTestId('operator-command-bar')).toContainText('Upload the first source package')
-  await expect(page.getByTestId('deal-progression-guide')).toContainText('Deal Progression Guide')
   await page.getByTestId('workspace-tab-documents').click()
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-hero-rent-roll.csv')
 
@@ -416,9 +415,10 @@ test('mobile guided workspace smoke @mobile', async ({ page, request }) => {
   await page.getByTestId(`workspace-docs-${WORKSPACE_DEAL_ID}`).click()
   await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
   await expect(page.getByTestId('operator-command-bar')).toBeVisible()
-  await page.getByTestId('workspace-tab-guide').click()
+  await page.getByTestId('workspace-tab-mission').click()
+  await expect(page.getByTestId('mission-control')).toContainText('Acquisition Command')
+  await page.getByTestId('workspace-tab-advanced').click()
   await expect(page.getByTestId('deal-progression-guide')).toContainText('What is needed next')
-  await expect(page.getByTestId('guide-section-card-underwriting')).toBeVisible()
   await page.getByTestId('workspace-tab-package').click()
   await expect(page.getByTestId('completion-package-view')).toBeVisible()
 
@@ -444,7 +444,7 @@ test('keeps the embedded workflow launcher scoped to the open deal', async ({ pa
   await waitForDashboardReady(page)
   await page.getByTestId(`workspace-docs-${WORKSPACE_DEAL_ID}`).click()
   await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
-  await page.getByTestId('workspace-tab-overview').click()
+  await page.getByTestId('workspace-tab-advanced').click()
 
   const launcher = page.getByTestId('workspace-workflow-launcher')
   await launcher.getByTestId('workflow-step-review').click()
@@ -587,11 +587,13 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await waitForOperatorDealHub(page, WORKSPACE_DEAL_NAME)
   await stopActiveRun(request)
 
-  await expect(page.getByTestId('workspace-tab-guide')).toHaveClass(/active/)
-  await expect(page.getByTestId('operator-command-bar')).toContainText('Upload the first source package')
+  await expect(page.getByTestId('workspace-tab-documents')).toHaveClass(/active/)
+  await expect(page.getByTestId('operator-command-bar')).toContainText('Sample evidence is driving the active run')
+  await page.getByTestId('workspace-tab-mission').click()
+  await expect(page.getByTestId('mission-control')).toContainText('Acquisition Command')
+  await page.getByTestId('workspace-tab-advanced').click()
   await expect(page.getByTestId('deal-progression-guide')).toContainText('What is needed next')
   await expect(page.getByTestId('guide-section-underwriting')).toContainText('Checklist and help guide')
-  await page.getByTestId('workspace-tab-overview').click()
   const briefing = page.getByTestId('operator-briefing')
   await expect(briefing).toContainText('Launch Readiness')
   await expect(briefing.getByTestId('operator-next-action')).toContainText('Upload the first source package')
@@ -660,7 +662,7 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('Environmental')
   await expect(page.getByTestId('cockpit-next-action')).toContainText('Run extraction')
   await page.getByTestId('cockpit-phase-underwriting').click()
-  await expect(page.getByTestId('workspace-tab-underwriting')).toHaveClass(/active/)
+  await expect(page.getByRole('heading', { name: 'Underwriting' })).toBeVisible()
   await page.getByTestId('workspace-tab-documents').click()
 
   const extractionPreview = page.getByTestId('extraction-preview')
@@ -687,7 +689,7 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await expect(page.getByTestId('source-document-t12')).toContainText('applied')
   await expect(page.getByTestId('cockpit-launch-readiness')).toContainText('3/4')
 
-  await page.getByTestId('workspace-tab-guide').click()
+  await page.getByTestId('workspace-tab-advanced').click()
   await expect(page.getByTestId('operator-command-bar')).toBeVisible()
   await expect(page.getByTestId('guide-section-underwriting')).toContainText('Run underwriting refresh')
   await page.getByTestId('guide-note-underwriting-run-workflow').fill('Reviewed by Playwright before phase launch.')
@@ -714,22 +716,22 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   expect(dealRecord.deal.financials?.currentNOI).toBe(260_000)
   expect(dealRecord.deal.financials?.trailingT12Revenue).toBe(520_000)
 
-  await page.getByTestId('workspace-tab-underwriting').click()
+  await page.getByTestId('cockpit-phase-underwriting').click()
   await expect(page.getByRole('heading', { name: 'Agent Playbook' })).toBeVisible()
   await expect(documentCoverageStat(page)).toContainText('100%')
   await expect(page.getByText('Required Documents').locator('..')).toContainText('Offering Memo')
   await page.getByTestId('cockpit-phase-due-diligence').click()
-  await expect(page.getByTestId('workspace-tab-due-diligence')).toHaveClass(/active/)
+  await expect(page.getByRole('heading', { name: 'Due Diligence' })).toBeVisible()
 
-  await page.getByTestId('workspace-tab-due-diligence').click()
-  await expect(page.getByTestId('workspace-tab-due-diligence')).toHaveClass(/active/)
+  await page.getByTestId('cockpit-phase-due-diligence').click()
+  await expect(page.getByRole('heading', { name: 'Due Diligence' })).toBeVisible()
   await expect(documentCoverageStat(page)).toContainText('20%')
 
-  await page.getByTestId('workspace-tab-financing').click()
-  await expect(page.getByTestId('workspace-tab-financing')).toHaveClass(/active/)
+  await page.getByTestId('cockpit-phase-financing').click()
+  await expect(page.getByRole('heading', { name: 'Financing' })).toBeVisible()
   await expect(documentCoverageStat(page)).toContainText('67%')
 
-  await page.getByTestId('workspace-tab-underwriting').click()
+  await page.getByTestId('cockpit-phase-underwriting').click()
   await stopActiveRun(request)
   await page.getByTestId('phase-launch-underwriting').click()
   await expect(page.getByText(/Run: (Starting|Running|Completed)/)).toBeVisible({ timeout: 15_000 })
@@ -808,7 +810,24 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
 
   await expect(page.getByText('Run: Completed')).toBeVisible({ timeout: 20_000 })
   await expect(page.getByTestId('operator-deal-hub')).toBeVisible()
-  await page.getByTestId('workspace-tab-overview').click()
+
+  await page.getByTestId('workspace-tab-mission').click()
+  const mission = page.getByTestId('mission-control')
+  await expect(mission).toContainText('Acquisition Command')
+  await expect(mission).toContainText('Decision package is ready for committee review')
+  await expect(mission).toContainText('Decision package')
+  await expect(mission).toContainText('Ready for IC')
+  await expect(mission.getByTestId('agent-war-room-strip')).toBeVisible()
+  await mission.getByTestId('agent-handoffs').locator('summary').click()
+  await expect(mission.getByTestId('agent-handoffs')).toContainText(/handed off|filed|raised|review/i)
+
+  await page.getByTestId('workspace-tab-agents').click()
+  await expect(page.getByTestId('agent-tree')).toContainText('Deal Team Lead')
+  await expect(page.getByTestId('agent-phase-row-due-diligence')).toContainText(/Complete|Running|Skipped/)
+  await expect(page.getByTestId('agent-row-rent-roll-analyst')).toContainText(/Filed|Working now|Queued/)
+  await expect(page.getByTestId('agent-row-financial-model-builder')).toContainText(/Stress-testing returns|Filed/)
+
+  await page.getByTestId('workspace-tab-advanced').click()
   await expect(page.getByText('skipped').first()).toBeVisible({ timeout: 20_000 })
 
   await page.getByTestId('workspace-tab-package').click()

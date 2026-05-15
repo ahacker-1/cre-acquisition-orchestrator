@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { createDraftDealFromFiles } from '../lib/dealForm'
 import type { DealFormData, SaveDealResponse } from '../types/deals'
 import type { SourceDocument } from '../types/workspace'
+import type { OutcomeIntent } from './DropZoneHero'
 
 type UploadStatus = 'queued' | 'uploading' | 'uploaded' | 'failed'
 
@@ -14,6 +15,8 @@ interface UploadQueueItem {
 
 interface QuickDealCreateProps {
   files: File[]
+  intent: OutcomeIntent
+  goalText: string
   suggestedDealId: string
   isOpen: boolean
   onCancel: () => void
@@ -63,8 +66,26 @@ function isDealIdConflictError(error: unknown): boolean {
   )))
 }
 
+const WORKFLOW_BY_INTENT: Record<OutcomeIntent, string> = {
+  'screen-deal': 'quick-deal-screen',
+  'ic-package': 'full-acquisition-review',
+  'legal-blockers': 'legal-psa-review',
+  'financing-package': 'financing-package',
+  'underwriting-refresh': 'underwriting-refresh',
+}
+
+const OUTCOME_LABEL_BY_INTENT: Record<OutcomeIntent, string> = {
+  'screen-deal': 'Screen this deal',
+  'ic-package': 'Build IC package',
+  'legal-blockers': 'Review legal blockers',
+  'financing-package': 'Prepare financing package',
+  'underwriting-refresh': 'Refresh underwriting',
+}
+
 export default function QuickDealCreate({
   files,
+  intent,
+  goalText,
   suggestedDealId,
   isOpen,
   onCancel,
@@ -137,7 +158,11 @@ export default function QuickDealCreate({
     let lastConflict: unknown = null
     for (let attempt = 0; attempt < 100; attempt += 1) {
       const dealId = attempt === 0 ? suggestedDealId : nextDealId(suggestedDealId, attempt)
-      const form = createDraftDealFromFiles(files.map((file) => file.name), name, dealId)
+      const form = createDraftDealFromFiles(files.map((file) => file.name), name, dealId, {
+        goalText,
+        outcomeIntent: intent,
+        recommendedWorkflowId: WORKFLOW_BY_INTENT[intent],
+      })
       try {
         return await saveDeal(form, 'draft')
       } catch (err) {
@@ -229,10 +254,11 @@ export default function QuickDealCreate({
           className="my-4 flex max-h-[calc(100vh-2rem)] w-full max-w-xl flex-col border border-cre-border bg-cre-surface shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:my-6 sm:max-h-[calc(100vh-3rem)]"
         >
           <div className="border-b border-cre-border px-6 py-5">
-            <p className="portal-kicker">Create Upload Workspace</p>
-            <h2 id="quick-deal-title" className="portal-title">Name this deal</h2>
+            <p className="portal-kicker">Create agent team workspace</p>
+            <h2 id="quick-deal-title" className="portal-title">Name this mission</h2>
             <p id="quick-deal-description" className="mt-3 text-sm text-gray-400">
-              I will create a draft, upload {files.length} file{files.length === 1 ? '' : 's'}, and open the Documents tab.
+              I will create a deal workspace, upload {files.length} file{files.length === 1 ? '' : 's'},
+              and prepare the team for: {OUTCOME_LABEL_BY_INTENT[intent]}.
             </p>
           </div>
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
@@ -244,6 +270,18 @@ export default function QuickDealCreate({
                 onChange={(event) => setDealName(event.target.value)}
               />
             </label>
+            <div className="border border-white/10 bg-black p-3">
+              <p className="text-xs font-semibold uppercase text-gray-500">Requested outcome</p>
+              <p className="mt-2 text-sm text-gray-200">{goalText}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="status-badge status-pending">
+                  Recommended workflow: {WORKFLOW_BY_INTENT[intent]}
+                </span>
+                <span className="status-badge status-pending">
+                  Team preview available after workspace opens
+                </span>
+              </div>
+            </div>
             <div className="border border-white/10 bg-black p-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-semibold uppercase text-gray-500">Upload Queue</p>
@@ -312,7 +350,7 @@ export default function QuickDealCreate({
               disabled={working || Boolean(savedDealId)}
               onClick={() => void handleCreate()}
             >
-              {working ? 'Creating' : 'Create & Upload'}
+              {working ? 'Preparing Team' : 'Create Workspace & Upload'}
             </button>
           </div>
         </section>

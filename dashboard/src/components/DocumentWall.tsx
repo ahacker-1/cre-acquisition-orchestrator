@@ -46,9 +46,9 @@ export default function DocumentWall({ documentArtifacts }: DocumentWallProps) {
     return (
       <div className="card flex items-center justify-center h-64 text-center">
         <div>
-          <p className="text-gray-400">No artifacts created yet.</p>
+          <p className="text-gray-400">No workpapers assembled yet.</p>
           <p className="text-xs text-gray-600 mt-1">
-            Each agent and phase will publish documents here as the run progresses.
+            As agents produce memos, risk registers, extracts, and package sections, they will appear here with source context.
           </p>
         </div>
       </div>
@@ -60,19 +60,22 @@ export default function DocumentWall({ documentArtifacts }: DocumentWallProps) {
       <div className="card">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
-            Document Wall
+            Workpapers & Evidence
           </h3>
           <span className="status-badge status-complete">
-            {documentArtifacts.length} artifacts
+            {documentArtifacts.length} workpapers
           </span>
         </div>
+        <p className="mt-2 text-xs leading-5 text-gray-500">
+          Team-produced deliverables, evidence traces, and package materials grouped by workstream.
+        </p>
       </div>
 
       {grouped.map(({ phase, docs }) => (
         <div key={phase} className="card">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-gray-200">{displayPhase(phase)}</h4>
-            <span className="text-xs text-gray-500">{docs.length} docs</span>
+            <span className="text-xs text-gray-500">{docs.length} workpapers</span>
           </div>
           <div className="grid gap-2 md:grid-cols-2">
             {docs.map((doc) => (
@@ -87,8 +90,10 @@ export default function DocumentWall({ documentArtifacts }: DocumentWallProps) {
                 <p className="text-sm text-gray-200 font-medium">{doc.title}</p>
                 {doc.summary && <p className="text-xs text-gray-500 mt-1">{doc.summary}</p>}
                 <div className="text-xs text-gray-600 mt-2 space-y-1">
-                  <p>Agent: {doc.agent}</p>
-                  <p>Path: {doc.path}</p>
+                  <p>Produced by: {doc.agent}</p>
+                  <p>Evidence path: {doc.path}</p>
+                  {doc.dependsOn && doc.dependsOn.length > 0 && <p>Uses: {doc.dependsOn.join(', ')}</p>}
+                  {doc.tags && doc.tags.length > 0 && <p>Tags: {doc.tags.join(', ')}</p>}
                 </div>
               </div>
             ))}

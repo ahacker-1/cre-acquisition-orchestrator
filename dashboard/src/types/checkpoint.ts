@@ -180,6 +180,17 @@ export interface StoryEvent {
   phase?: string
   phaseLabel?: string
   agent?: string
+  fromAgent?: string
+  toAgent?: string
+  fromPhase?: string
+  toPhase?: string
+  messageType?: string
+  artifactRefs?: Array<string | Record<string, unknown>>
+  threadId?: string
+  correlationId?: string
+  importance?: 'low' | 'normal' | 'high' | 'critical' | string
+  requiresHuman?: boolean
+  confidence?: number
   title?: string
   subtitle?: string
   summary?: string

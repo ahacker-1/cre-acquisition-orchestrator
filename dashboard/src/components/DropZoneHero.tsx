@@ -1,11 +1,26 @@
 import { useRef, useState } from 'react'
 
+export type OutcomeIntent =
+  | 'screen-deal'
+  | 'ic-package'
+  | 'legal-blockers'
+  | 'financing-package'
+  | 'underwriting-refresh'
+
 interface DropZoneHeroProps {
-  onFilesSelected: (files: File[]) => void
+  onFilesSelected: (files: File[], intent: OutcomeIntent, goalText: string) => void
   onTryDemo: () => void
   starting: boolean
   runError: string | null
 }
+
+const OUTCOME_CHIPS: Array<{ id: OutcomeIntent; label: string; goal: string }> = [
+  { id: 'screen-deal', label: 'Run go/no-go screen', goal: 'Tell me if this deal is worth pursuing' },
+  { id: 'ic-package', label: 'Build IC package', goal: 'Build an IC-ready acquisition package' },
+  { id: 'legal-blockers', label: 'Find legal blockers', goal: 'Review the PSA and diligence materials for blockers' },
+  { id: 'financing-package', label: 'Compare financing paths', goal: 'Prepare a financing package and lender comparison' },
+  { id: 'underwriting-refresh', label: 'Refresh the model', goal: 'Refresh the model and economics from the latest files' },
+]
 
 function toFileArray(files: FileList | null): File[] {
   return files ? Array.from(files) : []
@@ -18,12 +33,14 @@ export default function DropZoneHero({
   runError,
 }: DropZoneHeroProps) {
   const [dragging, setDragging] = useState(false)
+  const [selectedIntent, setSelectedIntent] = useState<OutcomeIntent>('ic-package')
+  const [goalText, setGoalText] = useState('Build an IC-ready acquisition package')
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   function handleFiles(files: File[]): void {
     if (files.length === 0) return
     setDragging(false)
-    onFilesSelected(files)
+    onFilesSelected(files, selectedIntent, goalText.trim())
   }
 
   return (
@@ -54,34 +71,55 @@ export default function DropZoneHero({
             <path d="M12 16V9.5M9.5 12l2.5-2.5 2.5 2.5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <p className="portal-kicker">Acquisition Cockpit</p>
+        <p className="portal-kicker">Give your acquisition team a deal</p>
         <h2 className="mt-3 max-w-4xl font-serif text-4xl font-semibold leading-none text-white md:text-6xl">
-          Drop your deal documents here
+          Drop the deal. Watch the team go to work.
         </h2>
         <p className="mt-5 max-w-3xl text-sm leading-6 text-gray-400 md:text-base">
-          Rent rolls, T12s, OMs, LOIs, PSAs, title, insurance, and lender files can start the deal workspace before you fill out the full intake.
+          Upload the source package, choose the outcome, and the orchestrator will staff specialist agents for diligence, underwriting, legal review, financing, blockers, and IC package assembly.
         </p>
         <p className="mt-3 text-xs font-semibold uppercase text-gray-500">
-          CSV, TXT, and Markdown extract locally. PDFs are stored for review. Excel files are stored and classified; field mapping is coming.
+          Source-backed extraction is local-first. CSV, TXT, and Markdown extract now; PDFs and Excel stay stored for review/classification.
         </p>
 
+        <div className="mt-8 w-full max-w-3xl">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+            What should the team accomplish?
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {OUTCOME_CHIPS.map((chip) => (
+              <button
+                key={chip.id}
+                type="button"
+                className={`portal-button ${selectedIntent === chip.id ? 'portal-button-primary' : 'portal-button-secondary'}`}
+                data-testid={`outcome-chip-${chip.id}`}
+                onClick={() => {
+                  setSelectedIntent(chip.id)
+                  setGoalText(chip.goal)
+                }}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+          <label className="portal-field mt-4 text-left">
+            <span>Mission goal</span>
+            <textarea
+              data-testid="drop-zone-goal-input"
+              rows={3}
+              value={goalText}
+              onChange={(event) => setGoalText(event.target.value)}
+              placeholder="Example: Tell me if this deal is worth pursuing and identify the diligence blockers."
+            />
+          </label>
+        </div>
+
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <button
-            type="button"
-            data-testid="drop-zone-browse"
-            className="portal-button portal-button-primary"
-            onClick={() => inputRef.current?.click()}
-          >
-            Browse Files
+          <button type="button" data-testid="drop-zone-browse" className="portal-button portal-button-primary" onClick={() => inputRef.current?.click()}>
+            Upload Source Package
           </button>
-          <button
-            type="button"
-            data-testid="drop-zone-demo"
-            className="portal-button portal-button-secondary"
-            disabled={starting}
-            onClick={onTryDemo}
-          >
-            {starting ? 'Starting Demo' : 'Try Demo Deal'}
+          <button type="button" data-testid="drop-zone-demo" className="portal-button portal-button-secondary" disabled={starting} onClick={onTryDemo}>
+            {starting ? 'Staffing Demo Team' : 'Watch Demo Team Work'}
           </button>
         </div>
         {runError && <p className="mt-4 text-xs text-cre-danger">{runError}</p>}

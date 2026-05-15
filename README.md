@@ -1,6 +1,6 @@
 # CRE Acquisition Orchestrator
 
-**A multi-agent AI framework for commercial real estate multifamily acquisitions - from due diligence through closing.**
+**An open-source, multi-orchestrator workspace for commercial real estate multifamily acquisitions — drop documents, state the goal, watch agents coordinate, and review the acquisition package.**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
@@ -24,6 +24,13 @@ Let's bring this industry into the future.
 > **Disclaimer:** This project is a reference architecture and educational framework, not production software for making investment decisions. The financial calculations, legal checklists, and agent outputs are for demonstration and learning purposes only. Nothing in this repository constitutes financial, legal, or investment advice. Always consult qualified professionals before making real estate investment decisions. This software is provided "as is" without warranty of any kind - see [LICENSE](LICENSE) for full terms.
 
 ---
+
+## What's New in v2.4.0
+
+- **Agentic Deal Team Workspace** - The dashboard now opens around a simple product journey: add source documents, declare the desired outcome, watch the acquisition team coordinate, and review the package.
+- **Mission-First IA** - Workspace navigation is now Documents, Mission, Agents, Workpapers, Package, and Advanced, so workflow configuration no longer obscures the core user journey.
+- **Visible Agent Communication** - The story pipeline now emits agent messages, handoffs, reviews, dependencies, and phase handoffs so the UI can show why work is moving between agents instead of only showing status ticks.
+- **Workpapers and Package Assembly** - Workpapers/evidence and final package review are first-class surfaces, with source artifacts linked back to the coordinating agents and phase handoffs.
 
 ## What's New in v2.3.0
 
@@ -59,14 +66,14 @@ This project has grown in six public steps: first the agent architecture, then a
 
 | | | | |
 |---|---|---|---|
-| **31** AI Agents | **8** Domain Knowledge Skills | **10** JSON Schema Contracts | **8** Deal Workspace Views |
+| **31** AI Roles | **8** Domain Knowledge Skills | **10** JSON Schema Contracts | **6** Mission Workspace Views |
 | **5** Deal Phases | **5** Outcome Workflows | **65,000+** Lines of Code + Prompts | **250+** Files |
 
 ---
 
 ## Architecture
 
-The system uses a **three-level agent hierarchy** - a master orchestrator coordinates five phase orchestrators, which in turn manage 21 specialist agents across the deal pipeline, plus 4 document ingestion agents. Each agent is defined as a detailed markdown prompt file encoding deep CRE domain knowledge.
+The system uses a **three-level agent hierarchy** - a master orchestrator coordinates five phase orchestrators, which in turn manage 21 specialist agents across the deal pipeline, plus 4 document ingestion roles. That is **31 named AI roles** in the open-source catalog: 27 core acquisition orchestration roles plus 4 source-document ingestion roles. Each agent is defined as a detailed markdown prompt file encoding deep CRE domain knowledge.
 
 ```mermaid
 graph TD
@@ -157,6 +164,8 @@ flowchart LR
 ```
 
 The offline simulation path stays local after dependencies are installed. The live Codex path sends selected prompts and deal context through the user's ChatGPT-authenticated Codex CLI session, then writes both raw Codex outputs and dashboard-readable package artifacts back into the local `data/` tree. Authentication is not stored in this repository; the dashboard only asks the local Codex CLI whether it is installed and logged in, and the **Login to ChatGPT** button starts the Codex CLI login flow on the user's machine.
+
+Story events are not just progress pings. Runs now publish explicit `agent_message`, `agent_handoff`, `agent_review`, `agent_dependency`, and `phase_handoff` events. The dashboard uses these events to explain what the deal team is doing, which agent handed context to whom, what evidence moved with the handoff, and whether the operator is needed for a blocker.
 
 ---
 

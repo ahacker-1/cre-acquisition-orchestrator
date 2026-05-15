@@ -6,7 +6,7 @@ Technical architecture of the CRE Acquisition Orchestration System. This documen
 
 ## 1. Agent Hierarchy
 
-The system uses a three-level hierarchy: Master Orchestrator, Phase Orchestrators, and Specialist Agents.
+The system uses a three-level hierarchy: Master Orchestrator, Phase Orchestrators, and Specialist Agents. The acquisition pipeline has 27 core orchestration roles, and the dashboard/runtime also model 4 document ingestion roles, for 31 named AI roles in the public catalog.
 
 ```mermaid
 graph TD
@@ -59,12 +59,15 @@ graph TD
 | Master Orchestrator | 1 | master-orchestrator |
 | Phase Orchestrators | 5 | due-diligence-orchestrator, underwriting-orchestrator, financing-orchestrator, legal-orchestrator, closing-orchestrator |
 | Specialist Agents | 21 | rent-roll-analyst, scenario-analyst, psa-reviewer, etc. |
-| **Total** | **27** | |
+| Document Ingestion Roles | 4 | source-document-classifier, rent-roll-extractor, financial-statement-extractor, deal-metadata-extractor |
+| **Total Named AI Roles** | **31** | 27 core acquisition roles + 4 document ingestion roles |
 
 Additionally, some specialists spawn child agents at runtime:
 - **scenario-analyst** spawns up to 27 scenario sub-agents
 - **lender-outreach** spawns up to 12 lender-specific sub-agents
 - **estoppel-tracker** spawns up to 200 per-unit estoppel sub-agents
+
+Use **27** when referring only to the core acquisition hierarchy. Use **31** when describing the complete open-source AI role catalog exposed by the dashboard and runtime.
 
 ---
 

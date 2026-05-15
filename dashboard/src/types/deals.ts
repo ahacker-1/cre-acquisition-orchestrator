@@ -72,6 +72,11 @@ export interface DealFormData {
     ddExpirationDate: string
     closingDate: string
   }
+  mission?: {
+    goalText?: string
+    outcomeIntent?: string
+    recommendedWorkflowId?: string
+  }
   notes: string
   launch: {
     scenario: LaunchScenario

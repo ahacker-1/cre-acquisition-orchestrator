@@ -6,10 +6,11 @@ Guide to installing, configuring, and using the real-time monitoring dashboard f
 
 ## Overview
 
-The dashboard provides a local-first operator cockpit for deal setup, source-document intake, workflow launch, and pipeline execution:
+The dashboard provides a local-first agentic deal team workspace for deal setup, source-document intake, mission control, workflow launch, and pipeline execution:
 
-- **Deal workspace**: Overview, Underwriting, Due Diligence, Financing, Legal, Closing, Documents, and Package views for each deal
-- **Workflow launcher**: Five outcome workflows with saved local presets and run-now launch
+- **Document + goal entry**: Drop deal files, state the desired outcome, and let the workspace recommend the first orchestration path
+- **Mission workspace**: Documents, Mission, Agents, Workpapers, Package, and Advanced views for each deal
+- **Advanced workflow launcher**: Five outcome workflows with saved local presets and run-now launch for operators who want manual control
 - **Runtime selector**: Choose offline simulation or live Codex / ChatGPT execution before launching supported workflows
 - **Document intake**: Upload queue, classification, extraction preview, bulk review, and source-backed apply from local files
 - **Operator briefing**: Best next move, source-backed input coverage, review queue, phase readiness, and workflow-level launch confidence
@@ -151,25 +152,24 @@ Once the pipeline completes, view generated reports and package artifacts direct
 - **Phase Outputs**: Individual phase output summaries
 - **Completion Package**: Phase outcomes, IC review brief, workpapers, findings, decision log, document manifest, source-backed inputs, and final recommendation
 
-### Operator Deal Hub
+### Agentic Deal Team Workspace
 
-Open a saved deal to work inside its full lifecycle workspace:
+Open a saved deal to work inside its full lifecycle workspace. The default experience is not workflow configuration; it is the acquisition-team journey: source documents, mission, visible agent work, workpapers, and package.
 
 | Workspace | What It Provides |
 |-----------|------------------|
-| Guide | Deal Progression Guide with phase checklists, missing evidence, helper guidance, recommended actions, and manual complete/waive notes |
-| Briefing | Operator Briefing, best next move, pipeline progress, criteria, source coverage, and embedded workflow launcher |
-| Underwriting | Required documents, checklist, Agent Playbook, and underwriting workflow launch |
-| Due Diligence | Diligence checklist, document coverage, Agent Playbook, and quick-screen launch |
-| Financing | Debt assumptions, required lender package documents, and financing package workflow |
-| Legal | PSA/title/survey readiness, legal Agent Playbook, and legal / PSA review workflow |
-| Closing | Closing readiness checklist, required closing documents, and full review launch |
 | Documents | Source-document upload queue, classification, extraction preview, bulk safe-field selection, before/after change summary, and approved-field apply |
-| Package | Completion package, IC Review Brief, source confidence, decision checklist, and final recommendation for the latest run |
+| Mission | Deal-team command center showing the requested goal, readiness, blockers, live agent activity, and next best operator action |
+| Agents | Acquisition Team view showing active and planned specialist agents, phase groupings, statuses, confidence, data gaps, and red flags |
+| Workpapers | Evidence wall of generated workpapers, reports, outputs, source artifacts, and their creating agents |
+| Package | Completion package, IC Review Brief, source confidence, decision checklist, decision log, and final recommendation for the latest run |
+| Advanced | Operator Briefing, Deal Progression Guide, phase workspaces, runtime selector, and embedded workflow launcher for manual orchestration control |
 
-### Deal Progression Guide and Operator Command
+### Mission, Agent Activity, and Operator Command
 
-The **Guide** tab is the default workspace surface after quick deal creation or saved deal reopen. It is powered by `config/operator-guides.json`, which keeps operational checklist content, helper copy, evidence requirements, and workflow mappings out of React components.
+The **Mission** tab is the default workspace surface for an active run. It summarizes the deal goal, source-document readiness, blockers, active handoffs, recent agent messages, and package readiness. The older guide/briefing/runtime controls remain available in **Advanced** for power users.
+
+The **Deal Progression Guide** is powered by `config/operator-guides.json`, which keeps operational checklist content, helper copy, evidence requirements, and workflow mappings out of React components.
 
 Each guide item shows:
 
@@ -185,7 +185,7 @@ The persistent **Operator Command Bar** summarizes the active phase, blocker cou
 
 ### Operator Briefing and Launch Readiness
 
-The Overview tab shows an **Operator Briefing** before the pipeline cards. It is designed to answer: "What should I do next?"
+The Advanced tab shows an **Operator Briefing** before the pipeline cards. It is designed to answer: "What should I do next if I want manual control?"
 
 - **Best next move** points the operator toward upload, extraction review, source-backed input approval, phase review, or workflow launch.
 - **Source-backed inputs** shows approved required fields for the full acquisition review.
@@ -193,6 +193,18 @@ The Overview tab shows an **Operator Briefing** before the pipeline cards. It is
 - **Workflow readiness cards** explain whether each configured outcome workflow is `ready`, `warning`, or `blocked`.
 
 Warnings are intentionally not always hard blockers. A workflow can still launch with missing source-backed fields unless the runtime request explicitly enforces source-backed inputs. Treat warnings as operator confidence signals, not hidden validation errors.
+
+### Agent Communication Events
+
+The story event stream now includes explicit communication events in addition to status milestones:
+
+- `agent_message`: task briefs, reviews, and collaboration notes between orchestrators and specialists
+- `agent_handoff`: agent-to-orchestrator or orchestrator-to-operator handoffs with linked artifacts
+- `agent_review`: self-review or peer-review notes, confidence, and escalation hints
+- `agent_dependency`: blockers and dependencies that may require human input
+- `phase_handoff`: downstream phase context handoffs with evidence references and risk/data-gap counts
+
+These events are written to `data/status/{dealId}/run-{runId}-events.ndjson` and rendered in Mission/Agent Activity so users can see the multi-orchestration layer working instead of guessing from a progress bar.
 
 ### Runtime Selection
 

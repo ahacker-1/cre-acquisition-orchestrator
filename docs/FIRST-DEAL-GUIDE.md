@@ -37,7 +37,8 @@ The repo ships with `config/deal.json` populated for Parkview Apartments, a 200-
 
 To create your own deal later, either:
 
-- Use the dashboard New Deal flow.
+- Use the dashboard front door: drop files, state the goal, and create an agent-team workspace.
+- Use the dashboard New Deal flow for manual field entry.
 - Copy `config/deal-example.json` into `config/deal.json` and edit the fields.
 
 ```powershell
@@ -90,13 +91,14 @@ Open `http://localhost:5173`.
 
 The dashboard lets you:
 
-- Create or open a deal workspace
-- Use the Deal Progression Guide to see what is missing, why it matters, and what action unlocks the next step
+- Drop source documents and state the outcome you want: quick screen, IC package, legal blocker review, financing package, or underwriting refresh
+- Create or open an agentic deal team workspace
+- Use the Mission tab to see readiness, blockers, agent activity, handoffs, and package progress
 - Upload local source documents
 - Extract CSV/TXT/MD inputs
 - Mark operator checklist items complete or waived with a short reason while keeping source-backed evidence separate
-- Launch focused workflows
-- Watch phase progress and agent status
+- Launch focused workflows from Advanced when you want manual runtime control
+- Watch phase progress, agent status, and communication events
 - Review the completion package
 
 ---
@@ -138,6 +140,10 @@ node scripts/codex-agent-runner.js --workflow quick-deal-screen --concurrency 2 
 ---
 
 ## Step 6: Read Results
+
+Start in the dashboard Package tab if you want the product experience. It collects the final recommendation, IC review brief, red flags, data gaps, decision log, and workpapers.
+
+If you want to inspect files directly, use these paths:
 
 Offline demo report:
 

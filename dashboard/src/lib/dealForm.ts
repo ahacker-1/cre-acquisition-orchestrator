@@ -69,6 +69,11 @@ export function createEmptyDealForm(suggestedDealId = ''): DealFormData {
       ddExpirationDate: '',
       closingDate: '',
     },
+    mission: {
+      goalText: '',
+      outcomeIntent: '',
+      recommendedWorkflowId: '',
+    },
     notes: '',
     launch: {
       scenario: 'core-plus',
@@ -88,6 +93,11 @@ export function createDraftDealFromFiles(
   fileNames: string[],
   suggestedName: string,
   suggestedDealId = '',
+  mission?: {
+    goalText?: string
+    outcomeIntent?: string
+    recommendedWorkflowId?: string
+  },
 ): DealFormData {
   const firstFileName = fileNames[0] ?? ''
   const fallbackName = firstFileName
@@ -98,6 +108,12 @@ export function createDraftDealFromFiles(
   return {
     ...createEmptyDealForm(suggestedDealId),
     dealName,
+    mission: {
+      goalText: mission?.goalText ?? '',
+      outcomeIntent: mission?.outcomeIntent ?? '',
+      recommendedWorkflowId: mission?.recommendedWorkflowId ?? '',
+    },
+    notes: mission?.goalText ? `Mission goal: ${mission.goalText}` : '',
   }
 }
 
@@ -135,6 +151,7 @@ export function hydrateDealFormData(deal: Record<string, unknown>, suggestedDeal
   const financing = asObject(deal.financing)
   const seller = asObject(deal.seller)
   const timeline = asObject(deal.timeline)
+  const mission = asObject(deal.mission)
   const unitMix = asObject(property.unitMix)
   const strategy = asString(deal.investmentStrategy, empty.investmentStrategy) as InvestmentStrategy
 
@@ -193,6 +210,11 @@ export function hydrateDealFormData(deal: Record<string, unknown>, suggestedDeal
       ddStartDate: asString(timeline.ddStartDate),
       ddExpirationDate: asString(timeline.ddExpirationDate),
       closingDate: asString(timeline.closingDate),
+    },
+    mission: {
+      goalText: asString(mission.goalText),
+      outcomeIntent: asString(mission.outcomeIntent),
+      recommendedWorkflowId: asString(mission.recommendedWorkflowId),
     },
     notes: asString(deal.notes),
     launch: {
@@ -256,6 +278,17 @@ export function serializeDealFormData(form: DealFormData): Record<string, unknow
       ...withObject(form.timeline.ddExpirationDate.trim().length > 0, { ddExpirationDate: form.timeline.ddExpirationDate.trim() }),
       ...withObject(form.timeline.closingDate.trim().length > 0, { closingDate: form.timeline.closingDate.trim() }),
     },
+    ...withObject(Boolean(
+      form.mission?.goalText?.trim()
+      || form.mission?.outcomeIntent?.trim()
+      || form.mission?.recommendedWorkflowId?.trim(),
+    ), {
+      mission: {
+        ...withObject(Boolean(form.mission?.goalText?.trim()), { goalText: form.mission?.goalText?.trim() }),
+        ...withObject(Boolean(form.mission?.outcomeIntent?.trim()), { outcomeIntent: form.mission?.outcomeIntent?.trim() }),
+        ...withObject(Boolean(form.mission?.recommendedWorkflowId?.trim()), { recommendedWorkflowId: form.mission?.recommendedWorkflowId?.trim() }),
+      },
+    }),
     ...withObject(form.notes.trim().length > 0, { notes: form.notes.trim() }),
   }
 }

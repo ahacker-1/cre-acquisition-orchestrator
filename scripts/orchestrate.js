@@ -514,6 +514,19 @@ async function main() {
       totalAgents: selectedAgents.length,
       skippedAgents: phaseMeta.agents.length - selectedAgents.length
     });
+    storyEngine.emitAgentMessage({
+      phase: phaseMeta.key,
+      phaseLabel: phaseMeta.label,
+      fromAgent: 'master-orchestrator',
+      toAgent: `${phaseMeta.key}-orchestrator`,
+      messageType: 'phase_brief',
+      title: `${phaseMeta.label} team briefed`,
+      summary: `Master orchestrator opened ${phaseMeta.label} and assigned ${selectedAgents.length} specialist agents.`,
+      importance: 'normal',
+      requiresHuman: false,
+      impact: [`${selectedAgents.length} active agents`, `${phaseMeta.agents.length - selectedAgents.length} skipped agents`],
+      tags: ['phase-start', 'orchestration']
+    });
     storyEngine.emitMilestone(
       `${phaseMeta.label} Started`,
       `Spawning ${selectedAgents.length} specialist agents`,
@@ -678,6 +691,32 @@ async function main() {
       dataGapCount: phaseState.dataGapCount,
       findings: keyFindings.slice(0, 4)
     });
+    const nextPhase = PHASES.slice(i + 1).find((candidate) => workflowRunPlan.phaseSelections.has(candidate.key));
+    storyEngine.emitPhaseHandoff({
+      fromPhase: phaseMeta.key,
+      toPhase: nextPhase?.key || 'package',
+      phaseLabel: phaseMeta.label,
+      fromAgent: `${phaseMeta.key}-orchestrator`,
+      toAgent: nextPhase ? `${nextPhase.key}-orchestrator` : 'master-orchestrator',
+      messageType: nextPhase ? 'downstream_context' : 'package_ready_context',
+      title: nextPhase
+        ? `${phaseMeta.label} handed context to ${nextPhase.label}`
+        : `${phaseMeta.label} handed context to final package`,
+      summary: `${phaseMeta.label} completed with verdict ${verdict}, risk ${phaseState.riskScore}, ${phaseState.redFlagCount} red flags, and ${phaseState.dataGapCount} data gaps.`,
+      artifactRefs: [
+        { title: `${phaseMeta.label} Structured Output`, path: path.relative(BASE_DIR, phaseOutputPath).replace(/\\/g, '/'), docType: `${phaseMeta.slug}-output` },
+        { title: `${phaseMeta.label} Phase Report`, path: path.relative(BASE_DIR, phaseReportPath).replace(/\\/g, '/'), docType: `${phaseMeta.slug}-report` }
+      ],
+      importance: phaseState.redFlagCount > 0 || phaseState.dataGapCount > 0 ? 'high' : 'normal',
+      requiresHuman: phaseState.dataGapCount > 0,
+      inputs: keyFindings,
+      impact: [
+        `${phaseState.redFlagCount} red flags`,
+        `${phaseState.dataGapCount} data gaps`,
+        nextPhase ? `${nextPhase.label} enabled` : 'Final package enabled'
+      ],
+      tags: ['phase-handoff', 'orchestration']
+    });
     storyEngine.emitDecision({
       phase: phaseMeta.key,
       title: `${phaseMeta.label} Verdict: ${verdict}`,
@@ -707,6 +746,17 @@ async function main() {
     checkpoint.currentPhase = null;
     appendLog(masterLog, 'orchestrator', 'COMPLETE', 'Pipeline completed successfully');
     storyEngine.emitMilestone('Pipeline Complete', 'All phases executed successfully', 'success');
+    storyEngine.emitAgentHandoff({
+      phase: 'package',
+      fromAgent: 'master-orchestrator',
+      toAgent: 'operator',
+      messageType: 'final_package_ready',
+      title: 'Final acquisition package ready',
+      summary: 'All selected orchestrators completed and the final report is ready for local review.',
+      importance: 'high',
+      requiresHuman: true,
+      tags: ['final-package', 'operator-handoff']
+    });
   } else if (encounteredFailure) {
     checkpoint.status = 'FAILED';
     appendLog(masterLog, 'orchestrator', 'ERROR', 'Pipeline halted due to agent failure');

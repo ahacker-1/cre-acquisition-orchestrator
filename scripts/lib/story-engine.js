@@ -25,6 +25,45 @@ function normalizePhase(phase) {
     .toLowerCase();
 }
 
+const COMM_EVENT_KINDS = new Set([
+  'agent_message',
+  'agent_handoff',
+  'agent_review',
+  'agent_dependency',
+  'phase_handoff'
+]);
+
+const IMPORTANCE_VALUES = new Set(['low', 'normal', 'high', 'critical']);
+
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function normalizeImportance(value) {
+  return IMPORTANCE_VALUES.has(value) ? value : 'normal';
+}
+
+function normalizeArtifactRefs(artifactRefs = []) {
+  return safeArray(artifactRefs)
+    .filter(Boolean)
+    .map((artifact) => {
+      if (typeof artifact === 'string') return { docId: artifact };
+      return {
+        docId: artifact.docId,
+        title: artifact.title,
+        path: artifact.path,
+        docType: artifact.docType,
+        phase: artifact.phase,
+        agent: artifact.agent
+      };
+    })
+    .filter((artifact) => artifact.docId || artifact.path || artifact.title);
+}
+
+function createCorrelationId(parts) {
+  return parts.filter(Boolean).join(':');
+}
+
 function readJsonIfExists(filePath, fallback) {
   if (!fs.existsSync(filePath)) return fallback;
   try {
@@ -125,6 +164,60 @@ class StoryEngine {
     fs.appendFileSync(this.eventsPath, `${JSON.stringify(event)}\n`);
     return event;
   }
+
+  emitCommunication(kind, payload = {}) {
+    if (!COMM_EVENT_KINDS.has(kind)) {
+      throw new Error(`Unsupported communication event kind: ${kind}`);
+    }
+    const fromPhase = payload.fromPhase ? normalizePhase(payload.fromPhase) : undefined;
+    const toPhase = payload.toPhase ? normalizePhase(payload.toPhase) : undefined;
+    const phase = payload.phase ? normalizePhase(payload.phase) : fromPhase || toPhase || undefined;
+    return this.emit(kind, {
+      schemaVersion: 1,
+      phase,
+      fromPhase,
+      toPhase,
+      phaseLabel: payload.phaseLabel,
+      fromAgent: payload.fromAgent,
+      toAgent: payload.toAgent,
+      agent: payload.agent || payload.fromAgent || payload.toAgent,
+      messageType: payload.messageType || kind.replace(/^agent_|^phase_/, ''),
+      title: payload.title,
+      summary: payload.summary || '',
+      artifactRefs: normalizeArtifactRefs(payload.artifactRefs),
+      threadId: payload.threadId || createCorrelationId([
+        this.runId,
+        fromPhase || phase,
+        payload.fromAgent,
+        payload.toAgent
+      ]),
+      correlationId: payload.correlationId || createCorrelationId([
+        this.runId,
+        kind,
+        fromPhase || phase,
+        toPhase,
+        payload.fromAgent,
+        payload.toAgent
+      ]),
+      importance: normalizeImportance(payload.importance),
+      requiresHuman: Boolean(payload.requiresHuman),
+      confidence:
+        typeof payload.confidence === 'number' && Number.isFinite(payload.confidence)
+          ? payload.confidence
+          : undefined,
+      status: payload.status,
+      dependencyType: payload.dependencyType,
+      inputs: safeArray(payload.inputs),
+      impact: safeArray(payload.impact),
+      tags: safeArray(payload.tags)
+    });
+  }
+
+  emitAgentMessage(payload) { return this.emitCommunication('agent_message', payload); }
+  emitAgentHandoff(payload) { return this.emitCommunication('agent_handoff', payload); }
+  emitAgentReview(payload) { return this.emitCommunication('agent_review', payload); }
+  emitAgentDependency(payload) { return this.emitCommunication('agent_dependency', payload); }
+  emitPhaseHandoff(payload) { return this.emitCommunication('phase_handoff', payload); }
 
   emitMilestone(title, subtitle, emphasis = 'info') {
     return this.emit('milestone', { title, subtitle, emphasis });
