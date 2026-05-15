@@ -49,7 +49,7 @@ Let's bring this industry into the future.
 
 ## Release Journey
 
-This project has grown in six public steps: first the agent architecture, then a usable dashboard, then a real operator workspace, then live Codex-backed agent execution, then a document-first cockpit, and now a more dependable operator workbench with verified end-to-end feature paths.
+This project has grown in seven public steps: first the agent architecture, then a usable dashboard, then a real operator workspace, then live Codex-backed agent execution, then a document-first cockpit, then a dependable operator workbench, and now an agentic deal-team workspace where users can drop documents, state the goal, watch specialists coordinate, and review the acquisition package.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -59,6 +59,7 @@ This project has grown in six public steps: first the agent architecture, then a
 | **v2.1.0 - Codex / ChatGPT Workflow Runtime** | Added the optional live-agent path: ChatGPT-authenticated Codex CLI execution, in-app login status, dashboard-launched Codex runs, and release-ready setup validation. | [RELEASE_NOTES_v2.1.0.md](RELEASE_NOTES_v2.1.0.md) |
 | **v2.2.0 - Document-First Acquisition Cockpit** | Made the dashboard front door document-first with quick draft creation, upload-to-documents routing, compact recent deals, and a persistent cockpit sidebar. | [RELEASE_NOTES_v2.2.0.md](RELEASE_NOTES_v2.2.0.md) |
 | **v2.3.0 - Operator Workbench** | Added guided deal progression, workflow readiness, upload queue recovery, source-backed change review, safer embedded launch scoping, IC review handoff, and verified public feature paths. | [RELEASE_NOTES_v2.3.0.md](RELEASE_NOTES_v2.3.0.md) |
+| **v2.4.0 - Agentic Deal Team Workspace** | Reframed the dashboard around Acquisition Command, mission intent, visible agent handoffs, specialist team activity, workpapers/evidence, and IC package assembly. | [RELEASE_NOTES_v2.4.0.md](RELEASE_NOTES_v2.4.0.md) |
 
 ---
 
