@@ -28,6 +28,7 @@
     "validate:guides": "node scripts/validate-operator-guides.js",
     "validate:codex": "node scripts/validate-contracts.js --codex-run-id codex-smoke",
     "test": "node scripts/system-test.js",
+    "screenshots": "node dashboard/scripts/capture-v24-screenshots.mjs",
     "test:e2e": "npm --prefix dashboard run test:e2e",
     "codex:status": "node scripts/codex-status.js",
     "codex:smoke": "node scripts/codex-agent-runner.js --workflow underwriting-refresh --max-agents 1 --concurrency 1 --run-id codex-smoke",

@@ -331,11 +331,17 @@ For the current v2.4 demo flow, use the [Demo Journey](docs/DEMO-JOURNEY.md). It
 
 ![Document-first dashboard front door with the drop zone as the primary action](docs/assets/dashboard-front-door.png)
 
-![Quick deal creation modal opened from an uploaded rent roll](docs/assets/quick-deal-create.png)
+![Acquisition Command showing a completed sample run with a committee-ready package](docs/assets/acquisition-command.png)
 
-| Documents Cockpit | Overview With Sidebar |
-|-------------------|-----------------------|
-| ![Documents workspace with uploaded rent roll, T12, offering memo, extraction preview, and cockpit sidebar](docs/assets/document-cockpit-workspace.png) | ![Operator overview with the persistent cockpit sidebar showing document coverage and phase readiness](docs/assets/cockpit-overview-sidebar.png) |
+![Mission control details showing the agentic acquisition command surface](docs/assets/mission-control.png)
+
+![Deal Team view showing specialist agents and handoff-ready coordination](docs/assets/deal-team-handoffs.png)
+
+![Workpapers and evidence view showing filed specialist outputs](docs/assets/workpapers-evidence.png)
+
+![IC Package view showing the reviewable recommendation package](docs/assets/ic-package.png)
+
+![Quick deal creation modal opened from an uploaded rent roll](docs/assets/quick-deal-create.png)
 
 ![Workflow launcher with the current workflow catalog](docs/assets/workflow-launcher-current.png)
 

@@ -53,7 +53,7 @@ Why it matters:
 - This is the v2.4 product center: it makes the agentic workspace legible before the user studies the underlying orchestration engine.
 - It is the best first screenshot to update after v2.4.0.
 
-Screenshot needed:
+Current screenshot asset:
 
 - `docs/assets/acquisition-command.png`
 
@@ -69,7 +69,7 @@ Why it matters:
 
 - It communicates that the agents are working toward an investment objective, not simply running generic analyses.
 
-Screenshot needed:
+Current screenshot asset:
 
 - `docs/assets/mission-control.png`
 
@@ -85,7 +85,7 @@ Why it matters:
 
 - This proves the system is not just a progress bar. It exposes the coordination layer between CRE specialists.
 
-Screenshot needed:
+Current screenshot asset:
 
 - `docs/assets/deal-team-handoffs.png`
 
@@ -101,7 +101,7 @@ Why it matters:
 
 - Serious CRE users need auditability. Workpapers turn the demo from a flashy dashboard into a reviewable diligence workspace.
 
-Screenshot needed:
+Current screenshot asset:
 
 - `docs/assets/workpapers-evidence.png`
 
@@ -118,7 +118,7 @@ Why it matters:
 
 - This is the payoff: a human operator can review the package instead of trusting an opaque AI answer.
 
-Screenshot needed:
+Current screenshot asset:
 
 - `docs/assets/ic-package.png`
 
@@ -137,8 +137,8 @@ Before the next public release:
 
 - [ ] Run `npm run demo` to regenerate sample artifacts.
 - [ ] Run `npm run dashboard` and open the completed sample workspace.
-- [ ] Capture current v2.4 surfaces for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package.
-- [ ] Replace stale v2.2/v2.3-only screenshots in `docs/assets/` or add a current v2.4 gallery.
-- [ ] Update README image alt text so each screenshot explains the operator value.
+- [x] Capture current v2.4 surfaces for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package.
+- [x] Add a current v2.4 screenshot gallery in `docs/assets/`.
+- [x] Update README image alt text so each screenshot explains the operator value.
 - [ ] Run `git diff --check`.
 - [ ] Run `npm --prefix dashboard run build`.

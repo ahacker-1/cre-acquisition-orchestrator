@@ -665,7 +665,7 @@ function OperatorCommandBar({
     )
   }
 
-  const isSampleEvidence = hasRuntimeEvidence && command.recommendedAction.title.toLowerCase().includes('upload')
+  const isSampleEvidence = (hasRuntimeEvidence || isCompleteRun) && command.recommendedAction.title.toLowerCase().includes('upload')
   const progressLabel = isSampleEvidence ? 'sample run' : `${command.completedChecklistCount}/${command.totalChecklistCount}`
   const sourceLabel = isSampleEvidence && command.sourceCoverage.requiredApprovedFieldCount > 0
     ? 'sample'

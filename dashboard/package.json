@@ -10,6 +10,7 @@
     "start:client:test": "vite --host 127.0.0.1 --port 4173 --strictPort",
     "start:server:test": "tsx server/watcher.ts",
     "build": "tsc -p tsconfig.server.json && tsc && vite build",
+    "screenshots": "node scripts/capture-v24-screenshots.mjs",
     "preview": "vite preview",
     "test:e2e": "node ./scripts/run-e2e.mjs",
     "test:e2e:headed": "node ./scripts/run-e2e.mjs --headed"
