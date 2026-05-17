@@ -2,7 +2,7 @@
 
 Use these as approval-ready GitHub issues after v2.4.0. They are intentionally scoped to make the project more legible, impressive, and contributor-friendly for first-time visitors.
 
-Do not create these issues automatically from automation. Review the text, adjust labels/milestones, then publish from the GitHub UI or `gh issue create` when ready.
+Do not create these issues automatically from automation. Review the text, adjust labels/milestones, then publish from the GitHub UI or `gh issue create` when ready. If using the CLI snippets below, save each issue body to the referenced `/tmp/*.md` file first.
 
 ## Recommended Labels
 
