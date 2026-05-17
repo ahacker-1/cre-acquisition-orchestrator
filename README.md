@@ -25,6 +25,15 @@ Let's bring this industry into the future.
 
 ---
 
+## First-Time Visitor Path
+
+- **Understand the product in 2 minutes:** read the [Demo Journey](docs/DEMO-JOURNEY.md) for the v2.4 operator storyboard: front door, Acquisition Command, Mission, Deal Team, Workpapers, and IC Package.
+- **Run locally in 10 minutes:** follow [Quick Start](#quick-start). The default demo is deterministic and runs offline after dependencies are installed.
+- **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially screenshot automation, source-backed extraction, review-grade workpapers, and live-runtime hardening.
+- **Open public follow-up issues:** use the approval-ready [Issue Seeds](docs/ISSUE-SEEDS.md) for screenshot refresh, deterministic capture, source-backed XLSX extraction, workpaper gates, and runtime docs.
+
+---
+
 ## What's New in v2.4.0
 
 - **Agentic Deal Team Workspace** - The dashboard now opens around a simple product journey: add source documents, declare the desired outcome, watch the acquisition team coordinate, and review the package.
@@ -318,6 +327,8 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 
 The first screen is designed as a document-first acquisition cockpit: drop source files, confirm a deal name, and land in the guided deal workspace before filling the detailed intake. The full New Deal Wizard remains available from the header and from workspace edit actions when the operator needs launch-ready setup.
 
+For the current v2.4 demo flow, use the [Demo Journey](docs/DEMO-JOURNEY.md). It maps the public story from document intake to Acquisition Command, mission intent, visible agent handoffs, workpapers/evidence, and IC package review.
+
 ![Document-first dashboard front door with the drop zone as the primary action](docs/assets/dashboard-front-door.png)
 
 ![Quick deal creation modal opened from an uploaded rent roll](docs/assets/quick-deal-create.png)
@@ -516,7 +527,7 @@ cre-acquisition-orchestrator/
 ├── templates/                 # Output templates (report, IC memo, checkpoints)
 ├── validation/                # Test fixtures and validation runner
 ├── documents/                 # Sample deal documents (rent roll CSV, T12, offering memo)
-├── docs/                      # Architecture, configuration guide, glossary, troubleshooting
+├── docs/                      # Architecture, demo journey, issue seeds, configuration guide, glossary, troubleshooting
 ├── demo/                      # Demo scripts, one-pager, FAQ, executive/technical demo guides
 ├── data/                      # Local runtime data, ignored except curated examples
 │   ├── examples/              #   Complete sample run output (Parkview Apartments)
@@ -527,11 +538,8 @@ cre-acquisition-orchestrator/
 │   ├── status/                #   Checkpoints, phase state, agent state, event streams
 │   ├── reports/               #   Generated reports and workpapers
 │   └── logs/                  #   Local run logs
-├── RELEASE_NOTES_v2.3.0.md    # v2.3.0 operator workbench release notes
-├── RELEASE_NOTES_v2.2.0.md    # v2.2.0 document-first cockpit release notes
-├── RELEASE_NOTES_v2.1.0.md    # v2.1.0 Codex / ChatGPT workflow release notes
-├── RELEASE_NOTES_v2.0.0.md    # v2.0.0 Operator Deal Hub release notes
-├── RELEASE_NOTES_v1.1.0.md    # v1.1.0 Dashboard Deal Wizard release notes
+├── RELEASE_NOTES_v*.md        # Versioned public release notes
+├── ROADMAP.md                 # Public product and contributor roadmap
 └── package.json               # Root validation and orchestration scripts
 ```
 
