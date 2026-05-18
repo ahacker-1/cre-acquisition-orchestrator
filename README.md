@@ -27,11 +27,43 @@ Let's bring this industry into the future.
 
 ## First-Time Visitor Path
 
-- **Understand the product in 2 minutes:** read the [Demo Journey](docs/DEMO-JOURNEY.md) for the v2.4 operator storyboard: front door, Acquisition Command, Mission, Deal Team, Workpapers, and IC Package.
+- **Understand the product in 2 minutes:** skim the [Visual Demo Tour](#visual-demo-tour) below, then read the [Demo Journey](docs/DEMO-JOURNEY.md) for the v2.4 operator storyboard: front door, Acquisition Command, Mission, Deal Team, Workpapers, and IC Package.
 - **Run the product in 5 minutes:** follow the [Quick Demo](docs/QUICK-DEMO.md) for the shortest offline path from clone to local dashboard.
 - **Install from scratch:** follow [Quick Start](#quick-start). The default demo is deterministic and runs offline after dependencies are installed.
 - **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially screenshot automation, source-backed extraction, review-grade workpapers, and live-runtime hardening.
 - **Open public follow-up issues:** use the approval-ready [Issue Seeds](docs/ISSUE-SEEDS.md) for screenshot refresh, deterministic capture, source-backed XLSX extraction, workpaper gates, and runtime docs.
+
+---
+
+## Visual Demo Tour
+
+The public demo is intentionally visual: a first-time visitor should understand the workspace before they read the architecture. The offline sample below runs locally with deterministic artifacts and no API keys.
+
+### 1. Acquisition Command — executive state of the deal
+
+![Acquisition Command showing package readiness, active stage, team pulse, and latest agent movement](docs/assets/acquisition-command.png)
+
+### 2. Mission — turn operator intent into a specialist swarm
+
+![Swarm Goal Console translating an acquisition goal into recommended workflow, specialists, blockers, and handoff path](docs/assets/swarm-goal-console.png)
+
+### 3. Mission Control — preserve goals, readiness, and next action
+
+![Mission Control showing acquisition goal, source coverage, phase readiness, and operator next action](docs/assets/mission-control.png)
+
+### 4. Deal Team — visible specialist coordination
+
+![Deal Team view showing agent messages, handoffs, dependencies, reviews, and phase movement](docs/assets/deal-team-handoffs.png)
+
+### 5. Workpapers — reviewable evidence and outputs
+
+![Workpapers view showing filed specialist outputs, evidence state, and package-linked diligence artifacts](docs/assets/workpapers-evidence.png)
+
+### 6. IC Package — decision-ready acquisition package
+
+![IC Package view showing recommendation, phase outcomes, red flags, data gaps, manifest, and review trail](docs/assets/ic-package.png)
+
+See [`docs/DEMO-JOURNEY.md`](docs/DEMO-JOURNEY.md) for the full storyboard and [`docs/QUICK-DEMO.md`](docs/QUICK-DEMO.md) for the shortest local run path.
 
 ---
 
