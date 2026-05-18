@@ -32,6 +32,16 @@ http://localhost:5173
 
 The dashboard runs locally. The default demo does not call external AI APIs.
 
+## Verify the Offline Demo
+
+Before showing the project to someone else, run the one-command verification path:
+
+```powershell
+npm run demo:verify
+```
+
+This command regenerates deterministic demo artifacts, validates contracts and operator guides, runs the system scenarios, and verifies the dashboard production build. It is offline and credential-free by default.
+
 ## Screens to Review
 
 After the dashboard opens, use the sample deal/workspace and review these surfaces in order:
@@ -152,12 +162,15 @@ npm --prefix dashboard run build
 
 ### Validate the local repo
 
-For a stronger local confidence check:
+For a stronger local confidence check, start with:
 
 ```powershell
-npm run validate
-npm run validate:guides
-npm test
+npm run demo:verify
+```
+
+For browser-level coverage, add:
+
+```powershell
 npm --prefix dashboard run test:e2e
 ```
 

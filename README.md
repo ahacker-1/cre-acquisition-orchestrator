@@ -396,6 +396,14 @@ npm run demo
 
 This runs a complete acquisition pipeline for the sample Parkview Apartments deal (200 units, Austin TX, $32M) using the deterministic simulation engine. No API key or AI subscription is required for this path. All 5 phases execute, all 21 specialist agents produce outputs, and a final report with go/no-go recommendation is generated.
 
+To verify the full offline demo path before opening the dashboard, run:
+
+```powershell
+npm run demo:verify
+```
+
+This regenerates demo artifacts, validates contracts and operator guides, runs the system scenarios, and verifies the dashboard production build.
+
 ### Start the Dashboard
 
 ```powershell

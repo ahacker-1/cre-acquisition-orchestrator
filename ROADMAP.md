@@ -29,13 +29,13 @@ Candidate issues:
 - Keep the Quick Demo path short, repeatable, and credential-free as the default public proof point.
 - Add a short guided demo script that maps each screenshot to the operator action it proves.
 - Extend the deterministic screenshot capture script to include the front door and quick-create modal, not just the completed workspace surfaces.
-- Add a one-command verification path that runs the offline demo, validates contracts, and confirms the dashboard build.
 
 Already shipped after v2.4.0:
 
 - Current v2.4 screenshots for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package live under `docs/assets/`.
 - `npm run screenshots` captures the core v2.4 workspace gallery against a locally running dashboard.
 - `docs/QUICK-DEMO.md` gives first-time visitors the shortest offline path from clone to local dashboard.
+- `npm run demo:verify` runs the offline demo, contract checks, guide validation, system tests, and dashboard build in one command.
 
 Approval-ready issue text for the first public follow-ups lives in [`docs/ISSUE-SEEDS.md`](docs/ISSUE-SEEDS.md).
 

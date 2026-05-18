@@ -21,6 +21,7 @@
     "setup": "node scripts/setup.js",
     "first-run": "node scripts/setup.js --with-demo",
     "demo": "node scripts/demo-run.js --deal config/deal.json --scenario core-plus --seed 42",
+    "demo:verify": "node scripts/demo-verify.js",
     "simulate": "node scripts/orchestrate.js --deal config/deal.json --scenario core-plus --seed 42",
     "dashboard": "npm --prefix dashboard install && npm --prefix dashboard run dev",
     "dev": "npm run dashboard",

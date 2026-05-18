@@ -13,45 +13,12 @@ Do not create these issues automatically from automation. Review the text, adjus
 - `demo`
 - `validation`
 
-## 1. Add one-command Quick Demo verification
+## Shipped after v2.4.0
 
-Suggested labels: `documentation`, `demo`, `validation`, `good first issue`
+- `docs/QUICK-DEMO.md` gives first-time visitors a five-minute offline path from clone to dashboard.
+- `npm run demo:verify` runs the deterministic demo, contract validation, guide validation, system tests, and dashboard production build in one command.
 
-```bash
-gh issue create \
-  --title "Add one-command Quick Demo verification" \
-  --label documentation --label demo --label validation --label "good first issue" \
-  --body-file /tmp/cre-quick-demo-verify.md
-```
-
-Issue body:
-
-```markdown
-## Goal
-
-Make the `docs/QUICK-DEMO.md` path easier to trust by adding one command that proves the offline demo, contracts, guide validation, and dashboard build still work together.
-
-## Scope
-
-Add a root script that runs the same checks a first-time evaluator cares about after cloning the repo:
-
-- regenerate deterministic demo artifacts
-- validate contracts
-- validate operator guides
-- run system tests
-- verify the dashboard production build
-
-## Acceptance Criteria
-
-- [ ] Add a root script such as `npm run demo:verify`.
-- [ ] Document the command in `docs/QUICK-DEMO.md`.
-- [ ] Keep the command offline and credential-free by default.
-- [ ] Ensure failures clearly identify which stage failed.
-- [ ] Run `npm run demo:verify`.
-- [ ] Run `git diff --check`.
-```
-
-## 2. Extend deterministic screenshot capture to front door and quick-create surfaces
+## 1. Extend deterministic screenshot capture to front door and quick-create surfaces
 
 Suggested labels: `enhancement`, `demo`, `validation`
 
@@ -84,7 +51,7 @@ Extend the existing `npm run screenshots` / `dashboard/scripts/capture-v24-scree
 - [ ] Run relevant Playwright tests.
 ```
 
-## 3. Add source-backed XLSX rent-roll extraction
+## 2. Add source-backed XLSX rent-roll extraction
 
 Suggested labels: `enhancement`, `dashboard`, `validation`
 
@@ -119,7 +86,7 @@ Support common multifamily rent-roll workbook structures while preserving the cu
 - [ ] Run `npm --prefix dashboard run build`.
 ```
 
-## 4. Add workpaper quality gates and reviewer signoff states
+## 3. Add workpaper quality gates and reviewer signoff states
 
 Suggested labels: `enhancement`, `validation`
 
@@ -153,7 +120,7 @@ Define and validate minimum workpaper fields for cited inputs, assumptions, calc
 - [ ] Run `npm --prefix dashboard run build`.
 ```
 
-## 5. Document offline simulation vs live Codex execution
+## 4. Document offline simulation vs live Codex execution
 
 Suggested labels: `documentation`, `good first issue`
 
