@@ -27,8 +27,8 @@ Let's bring this industry into the future.
 
 ## First-Time Visitor Path
 
-- **Understand the product in 2 minutes:** skim the [Visual Demo Tour](#visual-demo-tour) below, then read the [Demo Journey](docs/DEMO-JOURNEY.md) for the v2.4 operator storyboard: front door, Acquisition Command, Mission, Deal Team, Workpapers, and IC Package.
-- **Run the product in 5 minutes:** follow the [Quick Demo](docs/QUICK-DEMO.md) for the shortest offline path from clone to local dashboard.
+- **Understand the product in 2 minutes:** skim the [Visual Demo Tour](#visual-demo-tour) below, then run the dashboard and click **Start Guided Demo** to walk the deterministic Parkview sample through Command, Swarm Goal Console, Deal Team, Workpapers, and IC Package.
+- **Run the product in 5 minutes:** follow the [Quick Demo](docs/QUICK-DEMO.md) for the shortest offline path from clone to local dashboard. The dashboard Guided Demo Mode does not require uploads or API keys.
 - **Install from scratch:** follow [Quick Start](#quick-start). The default demo is deterministic and runs offline after dependencies are installed.
 - **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially screenshot automation, source-backed extraction, review-grade workpapers, and live-runtime hardening.
 - **Open public follow-up issues:** use the approval-ready [Issue Seeds](docs/ISSUE-SEEDS.md) for screenshot refresh, deterministic capture, source-backed XLSX extraction, workpaper gates, and runtime docs.
@@ -681,7 +681,7 @@ Potential future directions:
 | Document | Description |
 |----------|-------------|
 | [Quick Demo](docs/QUICK-DEMO.md) | Five-minute offline path from clone to the v2.4 Acquisition Command workspace |
-| [Demo Journey](docs/DEMO-JOURNEY.md) | Public v2.4 operator storyboard, screenshot path, and launch-video outline |
+| [Demo Journey](docs/DEMO-JOURNEY.md) | Public v2.4 operator storyboard, screenshot path, and guided demo checklist |
 | [Architecture](docs/ARCHITECTURE.md) | Agent hierarchy, phase dependencies, data flow, checkpoint system, file structure |
 | [First Deal Guide](docs/FIRST-DEAL-GUIDE.md) | Step-by-step walkthrough for running your first acquisition analysis |
 | [Deal Configuration](docs/DEAL-CONFIGURATION.md) | Complete field reference for `deal.json` |

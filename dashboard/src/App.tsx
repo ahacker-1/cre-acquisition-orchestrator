@@ -14,6 +14,8 @@ import type { DealLibraryItem, DealRecordResponse } from './types/deals'
 
 type WorkspaceInitialTab = 'mission' | 'documents' | 'agents' | 'workpapers' | 'package' | 'advanced'
 
+const GUIDED_DEMO_DEAL_ID = 'parkview-2026-001'
+
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -119,6 +121,8 @@ export default function App() {
   const [libraryError, setLibraryError] = useState<string | null>(null)
   const [workspaceCheckpoint, setWorkspaceCheckpoint] = useState<DealCheckpoint | null>(null)
   const [workspaceInitialTab, setWorkspaceInitialTab] = useState<WorkspaceInitialTab>('documents')
+  const [guidedDemoAutoStart, setGuidedDemoAutoStart] = useState(false)
+  const [guidedDemoLoading, setGuidedDemoLoading] = useState(false)
   const [quickCreateFiles, setQuickCreateFiles] = useState<File[]>([])
   const [quickCreateIntent, setQuickCreateIntent] = useState<OutcomeIntent>('ic-package')
   const [quickCreateGoal, setQuickCreateGoal] = useState('Build an IC-ready acquisition package')
@@ -171,7 +175,7 @@ export default function App() {
     setWorkflowOpen(false)
   }
 
-  async function openDealWorkspace(dealId: string, section: WorkspaceInitialTab = 'documents'): Promise<void> {
+  async function openDealWorkspace(dealId: string, section: WorkspaceInitialTab = 'documents'): Promise<boolean> {
     setLibraryError(null)
     try {
       const record = await loadDeal(dealId)
@@ -180,9 +184,21 @@ export default function App() {
       setLibraryOpen(false)
       setWorkflowOpen(false)
       setWizardOpen(false)
+      return true
     } catch (err) {
       setLibraryError(err instanceof Error ? err.message : String(err))
+      return false
     }
+  }
+
+  async function openGuidedDemo(): Promise<void> {
+    setGuidedDemoLoading(true)
+    setGuidedDemoAutoStart(false)
+    const opened = await openDealWorkspace(GUIDED_DEMO_DEAL_ID, 'mission')
+    if (opened) {
+      setGuidedDemoAutoStart(true)
+    }
+    setGuidedDemoLoading(false)
   }
 
   function handleQuickFiles(files: File[], intent: OutcomeIntent, goalText: string): void {
@@ -309,6 +325,17 @@ export default function App() {
             Deals
           </button>
 
+          {visibleDealCheckpoint && (
+            <button
+              onClick={() => void openGuidedDemo()}
+              data-testid="guided-demo-header-cta"
+              disabled={guidedDemoLoading}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-black hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {guidedDemoLoading ? 'Opening Parkview...' : 'Parkview Demo'}
+            </button>
+          )}
+
           <button
             onClick={() => void startLiveRun()}
             disabled={!canStart}
@@ -353,8 +380,8 @@ export default function App() {
             <div className="space-y-6">
               <DropZoneHero
                 onFilesSelected={handleQuickFiles}
-                onTryDemo={() => void startLiveRun()}
-                starting={runRequestPending || runStatus.state === 'STARTING'}
+                onTryDemo={() => void openGuidedDemo()}
+                starting={guidedDemoLoading}
                 runError={runStatus.error}
               />
               <SavedDealsPanel
@@ -380,6 +407,8 @@ export default function App() {
               documentArtifacts={visibleDocumentArtifacts}
               deals={deals}
               initialTab={workspaceInitialTab}
+              startGuidedDemo={guidedDemoAutoStart}
+              onGuidedDemoConsumed={() => setGuidedDemoAutoStart(false)}
               onOpenEditDetails={openEditDealWizard}
               onLaunchStarted={handleWorkflowLaunchStarted}
               onPresetSaved={() => void refreshDeals()}

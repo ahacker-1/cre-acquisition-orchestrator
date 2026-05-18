@@ -417,6 +417,47 @@ test('shows compact recent deals without changing the full deal library modal', 
   expect(consoleErrors).toEqual([])
 })
 
+test('guided demo mode opens the sample deal, advances through major sections, and closes', async ({ page }) => {
+  const consoleErrors = collectConsoleErrors(page)
+
+  await waitForDashboardReady(page)
+  await page.getByTestId('guided-demo-front-door-cta').click()
+
+  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByRole('main').getByRole('heading', { name: 'Parkview Apartments' })).toBeVisible({ timeout: 20_000 })
+
+  const tour = page.getByTestId('guided-demo-overlay')
+  await expect(tour).toBeVisible()
+  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('Acquisition Command')
+  await expect(page.getByTestId('workspace-tab-mission')).toHaveClass(/active/)
+  await expect(page.getByTestId('mission-control')).toBeVisible()
+
+  await tour.getByTestId('guided-demo-next').click()
+  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('Swarm Goal Console')
+  await expect(page.getByTestId('workspace-tab-mission')).toHaveClass(/active/)
+  await expect(page.getByTestId('swarm-goal-console')).toBeVisible()
+
+  await tour.getByTestId('guided-demo-next').click()
+  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('Deal Team')
+  await expect(page.getByTestId('workspace-tab-agents')).toHaveClass(/active/)
+  await expect(page.getByTestId('agent-tree')).toBeVisible()
+
+  await tour.getByTestId('guided-demo-next').click()
+  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('Workpapers & Evidence')
+  await expect(page.getByTestId('workspace-tab-workpapers')).toHaveClass(/active/)
+  await expect(page.getByTestId('workpapers-evidence-view')).toBeVisible()
+
+  await tour.getByTestId('guided-demo-next').click()
+  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('IC Package')
+  await expect(page.getByTestId('workspace-tab-package')).toHaveClass(/active/)
+  await expect(page.getByTestId('completion-package-view')).toBeVisible()
+
+  await tour.getByTestId('guided-demo-close').click()
+  await expect(tour).toBeHidden()
+
+  expect(consoleErrors).toEqual([])
+})
+
 test('mobile guided workspace smoke @mobile', async ({ page, request }) => {
   const consoleErrors = collectConsoleErrors(page)
 

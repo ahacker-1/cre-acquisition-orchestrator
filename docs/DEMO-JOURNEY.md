@@ -34,6 +34,12 @@ npm run screenshots
 
 `npm run screenshots` updates the v2.4 public gallery under `docs/assets/` for Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
 
+## Guided Demo Mode
+
+For a no-video first impression, run the dashboard and click **Start Guided Demo** on the front door. If a workspace is already open, click **Parkview Demo** in the header to reopen the deterministic sample. The app presents an in-product tour through Acquisition Command, Swarm Goal Console, Deal Team, Workpapers & Evidence, and IC Package.
+
+Use this when you want a first-time visitor to understand the product without uploads, API keys, or a recorded walkthrough.
+
 ## Operator Storyboard
 
 ### 1. Front Door — Document-First Intake
@@ -138,21 +144,13 @@ Current screenshot asset:
 
 - `docs/assets/ic-package.png`
 
-## 60-Second Launch Video Outline
-
-1. **0-10s:** Show the front door and say: “This is an open-source AI-native workspace for multifamily acquisitions.”
-2. **10-20s:** Drop sample docs or open the Parkview sample deal.
-3. **20-30s:** Show Acquisition Command and Mission: “The operator states the outcome and the workspace tracks readiness.”
-4. **30-42s:** Show Deal Team: “Specialist agents coordinate through visible handoffs, dependencies, and reviews.”
-5. **42-52s:** Show Workpapers: “Outputs are reviewable, source-aware workpapers.”
-6. **52-60s:** Show IC Package and close with: “Run it locally with no API keys; connect Codex/ChatGPT only if you want live agents.”
-
-## Screenshot Refresh Checklist
+## Guided Demo Checklist
 
 Before the next public release:
 
 - [ ] Run `npm run demo` to regenerate sample artifacts.
-- [ ] Run `npm run dashboard` and open the completed sample workspace.
+- [ ] Run `npm run dashboard` and click **Start Guided Demo**.
+- [ ] Confirm the guided tour advances through Acquisition Command, Swarm Goal Console, Deal Team, Workpapers & Evidence, and IC Package.
 - [ ] Run `npm run screenshots` while the dashboard is available at `http://localhost:5173`.
 - [x] Capture current v2.4 surfaces for Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
 - [x] Add a current v2.4 screenshot gallery in `docs/assets/`.

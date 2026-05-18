@@ -6,6 +6,7 @@ import DecisionLog from './DecisionLog'
 import DocumentWall from './DocumentWall'
 import FinalReport from './FinalReport'
 import FindingsPanel from './FindingsPanel'
+import GuidedDemoTour, { type GuidedDemoTab } from './GuidedDemoTour'
 import LogStream from './LogStream'
 import MissionControl from './MissionControl'
 import PhaseDetail from './PhaseDetail'
@@ -47,6 +48,8 @@ interface DealWorkspaceProps {
   documentArtifacts: DocumentArtifact[]
   deals: DealLibraryItem[]
   initialTab?: WorkspaceTab
+  startGuidedDemo?: boolean
+  onGuidedDemoConsumed?: () => void
   onOpenEditDetails?: (dealId: string) => void
   onLaunchStarted?: (response: WorkflowLaunchResponse) => void
   onPresetSaved?: (preset: WorkflowPreset) => void
@@ -1444,6 +1447,8 @@ export default function DealWorkspace({
   documentArtifacts,
   deals,
   initialTab,
+  startGuidedDemo = false,
+  onGuidedDemoConsumed,
   onOpenEditDetails,
   onLaunchStarted,
   onPresetSaved,
@@ -1474,6 +1479,8 @@ export default function DealWorkspace({
   const [phaseRuntimeProvider, setPhaseRuntimeProvider] = useState<RuntimeProvider>('simulation')
   const [phaseCodexMaxAgents, setPhaseCodexMaxAgents] = useState<number | null>(1)
   const [phaseCodexConcurrency, setPhaseCodexConcurrency] = useState(1)
+  const [guidedDemoActive, setGuidedDemoActive] = useState(false)
+  const [guidedDemoStep, setGuidedDemoStep] = useState(0)
 
   useEffect(() => {
     setActiveTab(initialTab ?? (
@@ -1484,6 +1491,14 @@ export default function DealWorkspace({
           : 'documents'
     ))
   }, [dealCheckpoint.dealId, dealCheckpoint.status, initialTab])
+
+  useEffect(() => {
+    if (!startGuidedDemo) return
+    setGuidedDemoStep(0)
+    setGuidedDemoActive(true)
+    setActiveTab('mission')
+    onGuidedDemoConsumed?.()
+  }, [onGuidedDemoConsumed, startGuidedDemo])
 
   const phaseTabs = workspace?.phases ?? []
   const activePhase = phaseTabs.find((phase) => phase.phaseSlug === activeTab)
@@ -1556,6 +1571,16 @@ export default function DealWorkspace({
     })
   }
 
+  function openGuidedTour(): void {
+    setGuidedDemoStep(0)
+    setGuidedDemoActive(true)
+    setActiveTab('mission')
+  }
+
+  function setGuidedTab(tab: GuidedDemoTab): void {
+    setActiveTab(tab)
+  }
+
   function handleGuideAction(action: OperatorGuideAction): void {
     if (action.type === 'edit_details') {
       onOpenEditDetails?.(dealCheckpoint.dealId)
@@ -1608,6 +1633,14 @@ export default function DealWorkspace({
               onClick={() => setActiveTab('documents')}
             >
               Add Source Material
+            </button>
+            <button
+              type="button"
+              data-testid="guided-demo-workspace-cta"
+              className="portal-button portal-button-secondary"
+              onClick={openGuidedTour}
+            >
+              Start Guided Tour
             </button>
             <button
               type="button"
@@ -1794,6 +1827,14 @@ export default function DealWorkspace({
           )}
         </section>
       )}
+
+      <GuidedDemoTour
+        active={guidedDemoActive}
+        stepIndex={guidedDemoStep}
+        onStepIndexChange={setGuidedDemoStep}
+        onTabChange={setGuidedTab}
+        onClose={() => setGuidedDemoActive(false)}
+      />
     </div>
   )
 }

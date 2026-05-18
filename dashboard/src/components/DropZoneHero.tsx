@@ -118,10 +118,19 @@ export default function DropZoneHero({
           <button type="button" data-testid="drop-zone-browse" className="portal-button portal-button-primary" onClick={() => inputRef.current?.click()}>
             Upload Source Package
           </button>
-          <button type="button" data-testid="drop-zone-demo" className="portal-button portal-button-secondary" disabled={starting} onClick={onTryDemo}>
-            {starting ? 'Staffing Demo Team' : 'Watch Demo Team Work'}
+          <button
+            type="button"
+            data-testid="guided-demo-front-door-cta"
+            className="portal-button portal-button-secondary"
+            disabled={starting}
+            onClick={onTryDemo}
+          >
+            {starting ? 'Opening Guided Demo' : 'Start Guided Demo'}
           </button>
         </div>
+        <p className="mt-3 max-w-2xl text-xs leading-5 text-gray-500">
+          No uploads or API keys required. Guided Demo Mode opens the deterministic Parkview sample and walks through Command, Swarm, Deal Team, Workpapers, and IC Package.
+        </p>
         {runError && <p className="mt-4 text-xs text-cre-danger">{runError}</p>}
       </div>
 

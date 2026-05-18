@@ -26,7 +26,7 @@ async function waitForWorkspace(page) {
   await waitForRunIdle(page)
 
   if (!(await page.getByTestId('operator-deal-hub').isVisible().catch(() => false))) {
-    const demoButton = page.getByTestId('drop-zone-demo')
+    const demoButton = page.getByTestId('guided-demo-front-door-cta')
     if (await demoButton.isVisible().catch(() => false)) {
       await demoButton.click()
       await page.getByTestId('operator-deal-hub').waitFor({ timeout: 30_000 })

@@ -44,7 +44,7 @@ export default function DocumentWall({ documentArtifacts }: DocumentWallProps) {
 
   if (documentArtifacts.length === 0) {
     return (
-      <div className="card flex items-center justify-center h-64 text-center">
+      <div className="card flex items-center justify-center h-64 text-center" data-testid="workpapers-evidence-view">
         <div>
           <p className="text-gray-400">No workpapers assembled yet.</p>
           <p className="text-xs text-gray-600 mt-1">
@@ -56,7 +56,7 @@ export default function DocumentWall({ documentArtifacts }: DocumentWallProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="workpapers-evidence-view">
       <div className="card">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">

@@ -142,7 +142,12 @@
     "financingCommitmentDeadline": "2026-03-15",
     "closingDate": "2026-03-31",
     "extensionOptions": [
-      "15 days with $50,000 hard deposit"
+      {
+        "type": "dd",
+        "days": 15,
+        "cost": 50000,
+        "description": "Due diligence extension - 15 days for additional $50K hard deposit"
+      }
     ]
   },
   "valueAddPlan": {

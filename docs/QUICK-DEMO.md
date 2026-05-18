@@ -32,6 +32,18 @@ http://localhost:5173
 
 The dashboard runs locally. The default demo does not call external AI APIs.
 
+## Use Guided Demo Mode
+
+Once the dashboard is open, click **Start Guided Demo** on the front door. If a workspace is already open, click **Parkview Demo** in the header to reopen the deterministic sample.
+
+Guided Demo Mode opens the deterministic Parkview sample without uploads or API keys, then walks through:
+
+1. **Acquisition Command** — executive state, readiness, blockers, package status, and latest movement.
+2. **Swarm Goal Console** — how a plain-English acquisition goal maps to workflow, specialists, gaps, and handoffs.
+3. **Deal Team** — specialist coordination across diligence, underwriting, financing, legal, and closing.
+4. **Workpapers & Evidence** — reviewable outputs and audit trail.
+5. **IC Package** — recommendation, phase outcomes, source-backed inputs, decision log, and package review.
+
 ## Verify the Offline Demo
 
 Before showing the project to someone else, run the one-command verification path:
