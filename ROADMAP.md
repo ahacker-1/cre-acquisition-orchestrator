@@ -22,14 +22,20 @@ Release-grade validation for the baseline includes:
 
 ### 1. Demo Journey and Public Proof
 
-Goal: make a first-time GitHub visitor understand the product in under two minutes and run it locally in under ten.
+Goal: make a first-time GitHub visitor understand the product in under two minutes and run it locally in under five.
 
 Candidate issues:
 
-- Add current v2.4 screenshots for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package.
+- Keep the Quick Demo path short, repeatable, and credential-free as the default public proof point.
 - Add a short guided demo script that maps each screenshot to the operator action it proves.
-- Add a lightweight screen-recording checklist for a 60-90 second public demo video.
-- Add a deterministic screenshot capture script so release images stay current.
+- Extend the deterministic screenshot capture script to include the front door and quick-create modal, not just the completed workspace surfaces.
+- Add a one-command verification path that runs the offline demo, validates contracts, and confirms the dashboard build.
+
+Already shipped after v2.4.0:
+
+- Current v2.4 screenshots for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package live under `docs/assets/`.
+- `npm run screenshots` captures the core v2.4 workspace gallery against a locally running dashboard.
+- `docs/QUICK-DEMO.md` gives first-time visitors the shortest offline path from clone to local dashboard.
 
 Approval-ready issue text for the first public follow-ups lives in [`docs/ISSUE-SEEDS.md`](docs/ISSUE-SEEDS.md).
 

@@ -13,15 +13,15 @@ Do not create these issues automatically from automation. Review the text, adjus
 - `demo`
 - `validation`
 
-## 1. Add v2.4 screenshot gallery for the agentic deal-team workspace
+## 1. Add one-command Quick Demo verification
 
-Suggested labels: `documentation`, `demo`, `good first issue`
+Suggested labels: `documentation`, `demo`, `validation`, `good first issue`
 
 ```bash
 gh issue create \
-  --title "Add v2.4 screenshot gallery for the agentic deal-team workspace" \
-  --label documentation --label demo --label "good first issue" \
-  --body-file /tmp/cre-v24-screenshot-gallery.md
+  --title "Add one-command Quick Demo verification" \
+  --label documentation --label demo --label validation --label "good first issue" \
+  --body-file /tmp/cre-quick-demo-verify.md
 ```
 
 Issue body:
@@ -29,39 +29,37 @@ Issue body:
 ```markdown
 ## Goal
 
-Make a first-time GitHub visitor understand the v2.4 product journey without running the app first.
+Make the `docs/QUICK-DEMO.md` path easier to trust by adding one command that proves the offline demo, contracts, guide validation, and dashboard build still work together.
 
 ## Scope
 
-Capture and add current screenshots for:
+Add a root script that runs the same checks a first-time evaluator cares about after cloning the repo:
 
-- Acquisition Command
-- Mission / intent state
-- Deal Team handoffs
-- Workpapers & Evidence
-- IC Package review
+- regenerate deterministic demo artifacts
+- validate contracts
+- validate operator guides
+- run system tests
+- verify the dashboard production build
 
 ## Acceptance Criteria
 
-- [ ] Run `npm run demo` so the sample deal has current artifacts.
-- [ ] Run `npm run dashboard` and open the completed sample workspace.
-- [ ] Capture the five screenshots listed above.
-- [ ] Save images under `docs/assets/` using stable, descriptive names.
-- [ ] Update `README.md` Dashboard Preview with the new gallery.
-- [ ] Update `docs/DEMO-JOURNEY.md` so no completed v2.4 screenshot is still marked "needed".
+- [ ] Add a root script such as `npm run demo:verify`.
+- [ ] Document the command in `docs/QUICK-DEMO.md`.
+- [ ] Keep the command offline and credential-free by default.
+- [ ] Ensure failures clearly identify which stage failed.
+- [ ] Run `npm run demo:verify`.
 - [ ] Run `git diff --check`.
-- [ ] Run `npm --prefix dashboard run build`.
 ```
 
-## 2. Add deterministic screenshot capture for release hygiene
+## 2. Extend deterministic screenshot capture to front door and quick-create surfaces
 
 Suggested labels: `enhancement`, `demo`, `validation`
 
 ```bash
 gh issue create \
-  --title "Add deterministic screenshot capture for release hygiene" \
+  --title "Extend deterministic screenshot capture to front door and quick-create surfaces" \
   --label enhancement --label demo --label validation \
-  --body-file /tmp/cre-deterministic-screenshot-capture.md
+  --body-file /tmp/cre-front-door-screenshot-capture.md
 ```
 
 Issue body:
@@ -69,18 +67,18 @@ Issue body:
 ```markdown
 ## Goal
 
-Make public screenshots part of the release process instead of a manual, easy-to-forget step.
+Make the entire first-time visitor path reproducible, including the front door before a workspace is open.
 
 ## Scope
 
-Add a script or Playwright flow that can launch the dashboard against the deterministic sample run and capture the core v2.4 surfaces.
+Extend the existing `npm run screenshots` / `dashboard/scripts/capture-v24-screenshots.mjs` flow so it captures the first-run front door and quick-create modal in addition to the completed workspace surfaces.
 
 ## Acceptance Criteria
 
-- [ ] Add a repeatable command, for example `npm run screenshots` or `npm --prefix dashboard run screenshots`.
-- [ ] Capture front door, Acquisition Command, Mission, Deal Team, Workpapers, and IC Package surfaces.
-- [ ] Store generated screenshots in a documented output folder or update `docs/assets/` intentionally.
-- [ ] Document prerequisites and how to refresh screenshots before a release.
+- [ ] Preserve the existing `npm run screenshots` command.
+- [ ] Capture front door and quick-create modal without depending on stale browser local storage.
+- [ ] Continue capturing Acquisition Command, Mission, Deal Team, Workpapers, and IC Package surfaces.
+- [ ] Update `docs/assets/dashboard-front-door.png` and `docs/assets/quick-deal-create.png` intentionally.
 - [ ] Ensure the command fails clearly if the dashboard cannot start or sample data is missing.
 - [ ] Run `npm --prefix dashboard run build`.
 - [ ] Run relevant Playwright tests.

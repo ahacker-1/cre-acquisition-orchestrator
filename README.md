@@ -28,7 +28,8 @@ Let's bring this industry into the future.
 ## First-Time Visitor Path
 
 - **Understand the product in 2 minutes:** read the [Demo Journey](docs/DEMO-JOURNEY.md) for the v2.4 operator storyboard: front door, Acquisition Command, Mission, Deal Team, Workpapers, and IC Package.
-- **Run locally in 10 minutes:** follow [Quick Start](#quick-start). The default demo is deterministic and runs offline after dependencies are installed.
+- **Run the product in 5 minutes:** follow the [Quick Demo](docs/QUICK-DEMO.md) for the shortest offline path from clone to local dashboard.
+- **Install from scratch:** follow [Quick Start](#quick-start). The default demo is deterministic and runs offline after dependencies are installed.
 - **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially screenshot automation, source-backed extraction, review-grade workpapers, and live-runtime hardening.
 - **Open public follow-up issues:** use the approval-ready [Issue Seeds](docs/ISSUE-SEEDS.md) for screenshot refresh, deterministic capture, source-backed XLSX extraction, workpaper gates, and runtime docs.
 
@@ -309,7 +310,7 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 
 | View | What It Shows |
 |-----|--------------|
-| **Operator Deal Hub** | Deal lifecycle workspace with Guide, Briefing, Underwriting, Due Diligence, Financing, Legal, Closing, Documents, and Package tabs |
+| **Operator Deal Hub** | Deal lifecycle workspace organized around the current v2.4 journey: Command, Evidence, Deal Team, Workpapers, IC Package, and Controls |
 | **Document Front Door** | First-run homepage drop zone that creates a draft workspace from uploaded deal files before any long-form intake |
 | **Deal Progression Guide** | Default workspace path with phase checklists, missing documents/fields, evidence requirements, helper guidance, recommended actions, and persisted complete/waive notes |
 | **Operator Command Bar** | Persistent workspace command surface with active phase, readiness, blocker count, checklist progress, source-input coverage, and primary next action |
@@ -328,6 +329,8 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 The first screen is designed as a document-first acquisition cockpit: drop source files, confirm a deal name, and land in the guided deal workspace before filling the detailed intake. The full New Deal Wizard remains available from the header and from workspace edit actions when the operator needs launch-ready setup.
 
 For the current v2.4 demo flow, use the [Demo Journey](docs/DEMO-JOURNEY.md). It maps the public story from document intake to Acquisition Command, mission intent, visible agent handoffs, workpapers/evidence, and IC package review.
+
+Release operators can refresh the v2.4 workspace screenshots with `npm run demo`, `npm run dashboard`, then `npm run screenshots` while the dashboard is running locally.
 
 ![Document-first dashboard front door with the drop zone as the primary action](docs/assets/dashboard-front-door.png)
 
@@ -468,6 +471,19 @@ Run the browser test suite for the dashboard workflow:
 ```powershell
 npm run test:e2e
 ```
+
+### Refresh Public Screenshots
+
+When preparing release notes, README updates, or launch materials, regenerate the deterministic sample artifacts and capture the current v2.4 dashboard gallery:
+
+```powershell
+npm run demo
+npm run dashboard
+# in a second terminal while the dashboard is running:
+npm run screenshots
+```
+
+The capture script writes the public gallery images under `docs/assets/` for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package. Review the diff before committing because these images are part of the first-time GitHub visitor journey.
 
 ---
 
@@ -621,6 +637,8 @@ Potential future directions:
 
 | Document | Description |
 |----------|-------------|
+| [Quick Demo](docs/QUICK-DEMO.md) | Five-minute offline path from clone to the v2.4 Acquisition Command workspace |
+| [Demo Journey](docs/DEMO-JOURNEY.md) | Public v2.4 operator storyboard, screenshot path, and launch-video outline |
 | [Architecture](docs/ARCHITECTURE.md) | Agent hierarchy, phase dependencies, data flow, checkpoint system, file structure |
 | [First Deal Guide](docs/FIRST-DEAL-GUIDE.md) | Step-by-step walkthrough for running your first acquisition analysis |
 | [Deal Configuration](docs/DEAL-CONFIGURATION.md) | Complete field reference for `deal.json` |

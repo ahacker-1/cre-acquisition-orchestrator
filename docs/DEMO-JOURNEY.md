@@ -21,6 +21,19 @@ npm run dashboard
 
 Open `http://localhost:5173`.
 
+## Screenshot Refresh Command
+
+For release hygiene, refresh the deterministic sample and then run the Playwright capture flow against the local dashboard:
+
+```powershell
+npm run demo
+npm run dashboard
+# in a second terminal while the dashboard is running:
+npm run screenshots
+```
+
+`npm run screenshots` updates the v2.4 public gallery under `docs/assets/` for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package.
+
 ## Operator Storyboard
 
 ### 1. Front Door — Document-First Intake
@@ -137,6 +150,7 @@ Before the next public release:
 
 - [ ] Run `npm run demo` to regenerate sample artifacts.
 - [ ] Run `npm run dashboard` and open the completed sample workspace.
+- [ ] Run `npm run screenshots` while the dashboard is available at `http://localhost:5173`.
 - [x] Capture current v2.4 surfaces for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package.
 - [x] Add a current v2.4 screenshot gallery in `docs/assets/`.
 - [x] Update README image alt text so each screenshot explains the operator value.
