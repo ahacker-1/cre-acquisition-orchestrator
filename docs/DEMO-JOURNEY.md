@@ -32,7 +32,7 @@ npm run dashboard
 npm run screenshots
 ```
 
-`npm run screenshots` updates the v2.4 public gallery under `docs/assets/` for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package.
+`npm run screenshots` updates the v2.4 public gallery under `docs/assets/` for Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
 
 ## Operator Storyboard
 
@@ -75,15 +75,18 @@ Current screenshot asset:
 What to show:
 
 - The stated acquisition goal/outcome intent.
-- Recommended workflow selection and the operator's desired review package.
+- The Swarm Goal Console after `Plan Swarm` converts a plain-English goal into a recommended workflow.
+- The specialist roster, data gaps, handoff path, and `Launch This Swarm` action.
 - How mission metadata persists with the deal instead of living only in a launch modal.
 
 Why it matters:
 
 - It communicates that the agents are working toward an investment objective, not simply running generic analyses.
+- It proves the core product loop: state an outcome, inspect the selected specialist team, then launch the swarm.
 
-Current screenshot asset:
+Current screenshot assets:
 
+- `docs/assets/swarm-goal-console.png`
 - `docs/assets/mission-control.png`
 
 ### 4. Deal Team — Visible Agent Coordination
@@ -151,7 +154,7 @@ Before the next public release:
 - [ ] Run `npm run demo` to regenerate sample artifacts.
 - [ ] Run `npm run dashboard` and open the completed sample workspace.
 - [ ] Run `npm run screenshots` while the dashboard is available at `http://localhost:5173`.
-- [x] Capture current v2.4 surfaces for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package.
+- [x] Capture current v2.4 surfaces for Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
 - [x] Add a current v2.4 screenshot gallery in `docs/assets/`.
 - [x] Update README image alt text so each screenshot explains the operator value.
 - [ ] Run `git diff --check`.

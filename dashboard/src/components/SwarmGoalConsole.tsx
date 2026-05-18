@@ -140,7 +140,10 @@ function agentsFromPlan(plan: SwarmPlan | null, fallbackAgents: SwarmAgent[]): S
 
 function buildBlockers(workspace: DealWorkspace | null, plan: SwarmPlan | null): string[] {
   const blockers = new Set<string>()
-  plan?.dataGaps?.slice(0, 4).forEach((gap) => blockers.add(gap))
+  if (plan) {
+    plan.dataGaps?.slice(0, 4).forEach((gap) => blockers.add(gap))
+    return [...blockers].slice(0, 4)
+  }
   workspace?.launchReadiness?.forEach((entry) => entry.blockers.slice(0, 2).forEach((blocker) => blockers.add(blocker)))
   workspace?.progressionGuide?.sections?.forEach((section) => section.blockers.slice(0, 2).forEach((blocker) => blockers.add(blocker)))
   return [...blockers].slice(0, 4)

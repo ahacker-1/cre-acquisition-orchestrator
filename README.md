@@ -336,6 +336,8 @@ Release operators can refresh the v2.4 workspace screenshots with `npm run demo`
 
 ![Acquisition Command showing a completed sample run with a committee-ready package](docs/assets/acquisition-command.png)
 
+![Swarm Goal Console after planning an IC-ready go/no-go package from a plain-English operator goal](docs/assets/swarm-goal-console.png)
+
 ![Mission control details showing the agentic acquisition command surface](docs/assets/mission-control.png)
 
 ![Deal Team view showing specialist agents and handoff-ready coordination](docs/assets/deal-team-handoffs.png)
@@ -491,7 +493,7 @@ npm run dashboard
 npm run screenshots
 ```
 
-The capture script writes the public gallery images under `docs/assets/` for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package. Review the diff before committing because these images are part of the first-time GitHub visitor journey.
+The capture script writes the public gallery images under `docs/assets/` for Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package. Review the diff before committing because these images are part of the first-time GitHub visitor journey.
 
 ---
 

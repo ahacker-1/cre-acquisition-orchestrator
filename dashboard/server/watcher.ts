@@ -46,7 +46,10 @@ const goalHelper = require('../../scripts/lib/goal-helper') as {
     registry: Record<string, unknown>;
     phaseMetadata: Array<Record<string, unknown>>;
     dealSummary?: Record<string, unknown>;
-  }) => Record<string, unknown>;
+  }) => {
+    workflowId: string;
+    [key: string]: unknown;
+  };
 };
 const runtimeCore = require('../../scripts/lib/runtime-core') as {
   PHASES: Array<Record<string, unknown>>;
@@ -1066,7 +1069,7 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         const sourceCoverage = operatorCommand.sourceCoverage && typeof operatorCommand.sourceCoverage === 'object'
           ? operatorCommand.sourceCoverage as Record<string, unknown>
           : {};
-        const plan = goalHelper.suggestSwarmGoal({
+        const initialPlan = goalHelper.suggestSwarmGoal({
           goal,
           catalog: workflowCatalog,
           registry: agentRegistry,
@@ -1074,6 +1077,25 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
           dealSummary: {
             dealId,
             sourceCoverage,
+          },
+        });
+        const workflowReadiness = evaluateLaunchReadiness(
+          { ...dealServiceContext, projectRoot },
+          dealId,
+          initialPlan.workflowId,
+          { enforceSourceBackedInputs: false },
+        );
+        const plan = goalHelper.suggestSwarmGoal({
+          goal,
+          catalog: workflowCatalog,
+          registry: agentRegistry,
+          phaseMetadata: runtimeCore.PHASES,
+          dealSummary: {
+            dealId,
+            sourceCoverage: {
+              ...workflowReadiness.sourceCoverage,
+              sampleComplete: record.item.kind === 'sample',
+            },
           },
         });
         sendJson(res, 200, {

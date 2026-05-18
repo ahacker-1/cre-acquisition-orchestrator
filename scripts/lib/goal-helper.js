@@ -100,6 +100,7 @@ function buildAgentPlan({ workflow, registry, phaseMetadata }) {
 }
 
 function sourceCoverageGaps(sourceCoverage, workflow) {
+  if (sourceCoverage?.sampleComplete === true) return [];
   const required = Array.isArray(workflow?.requiredSourceFields) ? workflow.requiredSourceFields : [];
   const approved = Number(sourceCoverage?.approvedFieldCount || 0);
   const requiredCount = Number(sourceCoverage?.requiredApprovedFieldCount || required.length || 0);

@@ -67,7 +67,20 @@ await clickTab(page, 'mission')
 await page.getByTestId('mission-control').waitFor({ timeout: 20_000 })
 await capture(page, 'acquisition-command.png')
 
-await page.evaluate(() => window.scrollTo(0, Math.floor(window.innerHeight * 0.55)))
+const swarmConsole = page.getByTestId('swarm-goal-console')
+if (await swarmConsole.isVisible().catch(() => false)) {
+  await swarmConsole
+    .getByTestId('swarm-goal-input')
+    .fill('Build an IC-ready go/no-go package and show me which specialists should work the deal')
+  await swarmConsole.getByTestId('swarm-plan-button').click()
+  await swarmConsole.getByTestId('swarm-recommended-workflow').waitFor({ timeout: 20_000 })
+  await page.waitForTimeout(250)
+}
+await page.evaluate(() => window.scrollTo(0, Math.floor(window.innerHeight * 0.45)))
+await page.waitForTimeout(200)
+await capture(page, 'swarm-goal-console.png')
+
+await page.evaluate(() => window.scrollTo(0, Math.floor(window.innerHeight * 0.75)))
 await page.waitForTimeout(200)
 await capture(page, 'mission-control.png')
 await page.evaluate(() => window.scrollTo(0, 0))

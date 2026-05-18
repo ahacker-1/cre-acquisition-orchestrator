@@ -106,6 +106,7 @@ npm run screenshots
 This updates the v2.4 public gallery under `docs/assets/` for:
 
 - Acquisition Command
+- Swarm Goal Console
 - Mission
 - Deal Team
 - Workpapers
