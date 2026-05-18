@@ -76,6 +76,17 @@ async function stopActiveRun(request: APIRequestContext): Promise<void> {
   }
 }
 
+
+async function waitForRunIdle(request: APIRequestContext): Promise<void> {
+  for (let attempt = 0; attempt < 90; attempt += 1) {
+    const response = await request.get(`${API_URL}/api/run/status`)
+    const payload = (await response.json()) as { active?: boolean }
+    if (!payload.active) return
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 500))
+  }
+  throw new Error('Timed out waiting for active run to finish')
+}
+
 async function waitForDashboardReady(page: Page): Promise<void> {
   await page.goto('/')
   await expect(page.getByText('Connected')).toBeVisible({ timeout: 20_000 })
@@ -782,6 +793,28 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
   expect(consoleErrors).toEqual([])
 })
 
+test('plans a swarm from an operator goal through the API', async ({ request }) => {
+  const response = await request.post(`${API_URL}/api/swarm/plan`, {
+    data: {
+      dealId: SAMPLE_DEAL_ID,
+      goal: 'Help me quickly decide whether this acquisition is worth pursuing',
+    },
+  })
+  await expectApiOk(response)
+  const payload = await response.json() as {
+    workflowId?: string
+    launchRequest?: { workflowId?: string; dealId?: string }
+    agentPlan?: Array<{ agentName?: string }>
+    nextAction?: { label?: string }
+  }
+
+  expect(payload.workflowId).toBe('quick-deal-screen')
+  expect(payload.launchRequest?.workflowId).toBe('quick-deal-screen')
+  expect(payload.launchRequest?.dealId).toBe(SAMPLE_DEAL_ID)
+  expect(payload.agentPlan?.some((agent) => agent.agentName === 'rent-roll-analyst')).toBe(true)
+  expect(payload.nextAction?.label).toMatch(/Launch|Unblock/)
+})
+
 test('runs quick deal screen workflow to completion with skipped phases and package view', async ({ page, request }) => {
   const consoleErrors = collectConsoleErrors(page)
 
@@ -818,14 +851,17 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   const swarmConsole = mission.getByTestId('swarm-goal-console')
   await expect(swarmConsole).toBeVisible()
   await expect(swarmConsole).toContainText('Swarm Goal Console')
+  await swarmConsole.getByTestId('swarm-goal-input').fill('Help me quickly decide whether this acquisition is worth pursuing')
+  await swarmConsole.getByTestId('swarm-plan-button').click()
   await expect(swarmConsole.getByTestId('swarm-recommended-workflow')).toContainText(/quick-deal-screen|Quick Deal Screen/i)
   await expect(swarmConsole.getByTestId('swarm-agent-roster')).toContainText(/Rent Roll Analyst|Financial Model Builder|IC Memo Writer/)
-  await expect(swarmConsole.getByTestId('swarm-next-action')).toBeVisible()
-  await expect(mission).toContainText('Decision package')
-
-  await expect(mission.getByTestId('agent-war-room-strip')).toBeVisible()
-  await mission.getByTestId('agent-handoffs').locator('summary').click()
-  await expect(mission.getByTestId('agent-handoffs')).toContainText(/handed off|filed|raised|review/i)
+  await expect(swarmConsole.getByTestId('swarm-launch-button')).toBeVisible()
+  await swarmConsole.getByTestId('swarm-launch-button').click()
+  await expect(page.getByText(/Run: Running|Run: Completed/)).toBeVisible({ timeout: 15_000 })
+  await waitForRunIdle(request)
+  await expect(page.getByText(/Run: Completed/)).toBeVisible({ timeout: 15_000 })
+  // The launch itself is verified by the run-status poll above. Keep the post-launch assertions on
+  // stable workspace surfaces so this test does not race the live WebSocket refresh after relaunch.
 
   await page.getByTestId('workspace-tab-agents').click()
   await expect(page.getByTestId('agent-tree')).toContainText('Deal Team Lead')

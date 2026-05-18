@@ -169,7 +169,7 @@ function suggestSwarmGoal({ goal, catalog, registry, phaseMetadata, dealSummary 
       workflowId: workflow.id,
       scenario,
       speed: 'fast',
-      mode: 'normal',
+      mode: 'fast',
       runtimeProvider: 'simulation',
       requireSourceBackedInputs: true,
       reset: true,

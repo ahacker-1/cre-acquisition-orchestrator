@@ -39,6 +39,20 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const require = createRequire(import.meta.url);
+const goalHelper = require('../../scripts/lib/goal-helper') as {
+  suggestSwarmGoal: (input: {
+    goal?: string;
+    catalog: Record<string, unknown>;
+    registry: Record<string, unknown>;
+    phaseMetadata: Array<Record<string, unknown>>;
+    dealSummary?: Record<string, unknown>;
+  }) => Record<string, unknown>;
+};
+const runtimeCore = require('../../scripts/lib/runtime-core') as {
+  PHASES: Array<Record<string, unknown>>;
+};
+const workflowCatalog = require('../../config/workflows.json') as Record<string, unknown>;
+const agentRegistry = require('../../config/agent-registry.json') as Record<string, unknown>;
 const codexCli = require('../../scripts/lib/codex-cli') as {
   getCodexStatus: (cwd?: string) => {
     installed: boolean;
@@ -1011,6 +1025,64 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         path: normalizedRelPath(statusDir, documentsPath),
         ...(payload as Record<string, unknown>),
       });
+      return;
+    }
+
+    // POST /api/swarm/plan - turn an operator goal into a recommended specialist swarm
+    if (method === 'POST' && url === '/api/swarm/plan') {
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown> = {};
+      if (rawBody.trim().length > 0) {
+        try {
+          body = JSON.parse(rawBody);
+        } catch {
+          sendJson(res, 400, { error: 'Invalid JSON body' });
+          return;
+        }
+      }
+
+      const dealId = typeof body.dealId === 'string' ? body.dealId.trim() : '';
+      const goal = typeof body.goal === 'string' ? body.goal.trim() : '';
+      if (!dealId) {
+        sendJson(res, 400, { error: 'Missing required field: dealId' });
+        return;
+      }
+      if (!goal) {
+        sendJson(res, 400, { error: 'Missing required field: goal' });
+        return;
+      }
+
+      const record = getDealRecord(dealServiceContext, dealId);
+      if (!record) {
+        sendJson(res, 404, { error: `Deal not found: ${dealId}` });
+        return;
+      }
+
+      try {
+        const workspace = getDealWorkspace({ ...dealServiceContext, projectRoot }, dealId) as unknown as Record<string, unknown>;
+        const operatorCommand = workspace.operatorCommand && typeof workspace.operatorCommand === 'object'
+          ? workspace.operatorCommand as Record<string, unknown>
+          : {};
+        const sourceCoverage = operatorCommand.sourceCoverage && typeof operatorCommand.sourceCoverage === 'object'
+          ? operatorCommand.sourceCoverage as Record<string, unknown>
+          : {};
+        const plan = goalHelper.suggestSwarmGoal({
+          goal,
+          catalog: workflowCatalog,
+          registry: agentRegistry,
+          phaseMetadata: runtimeCore.PHASES,
+          dealSummary: {
+            dealId,
+            sourceCoverage,
+          },
+        });
+        sendJson(res, 200, {
+          ...plan,
+          deal: record.item,
+        });
+      } catch (err) {
+        sendJson(res, 400, { error: err instanceof Error ? err.message : 'Failed to plan swarm' });
+      }
       return;
     }
 
