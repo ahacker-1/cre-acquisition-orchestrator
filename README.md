@@ -504,6 +504,7 @@ The capture script writes the public gallery images under `docs/assets/` for Acq
 - **10 JSON Schema Contracts** - Every data handoff validated at runtime - phase outputs, checkpoints, flags, and events all have formal schemas
 - **Operator Deal Hub** - React dashboard workspace for criteria, phase playbooks, source documents, workflow launching, and completion packages
 - **Workflow Launcher** - Five deterministic outcome workflows with saved local presets and skipped-phase visibility
+- **Swarm Goal Console** - Mission-tab helper that turns an operator goal into a recommended specialist swarm, blockers, handoff path, and next best action
 - **Live Codex Harness** - Optional ChatGPT-login runtime that runs selected markdown agents through Codex CLI and publishes workpapers back into dashboard packages
 - **Deterministic Simulation** - Seeded RNG engine produces realistic CRE financials for demo and testing without any API calls
 - **3 Investment Scenarios** - Core-Plus, Value-Add, and Distressed configurations with different market assumptions and risk tolerances

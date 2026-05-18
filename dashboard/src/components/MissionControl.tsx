@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import StoryNarrative from './StoryNarrative'
+import SwarmGoalConsole from './SwarmGoalConsole'
 import type { AgentCheckpoint, DealCheckpoint, DocumentArtifact, StoryEvent } from '../types/checkpoint'
 import type { DealWorkspace, SourceDocument } from '../types/workspace'
 
@@ -403,6 +404,17 @@ export default function MissionControl({
           <div className="mission-command-metric"><span>Package state</span><strong>{packageLabel}</strong></div>
         </div>
       </section>
+
+      <SwarmGoalConsole
+        workspace={workspace}
+        dealCheckpoint={dealCheckpoint}
+        agentCheckpoints={agentCheckpoints}
+        storyEvents={storyEvents}
+        onOpenDocuments={onOpenDocuments}
+        onOpenAgents={onOpenAgents}
+        onOpenPackage={onOpenPackage}
+        onOpenAdvanced={onOpenAdvanced}
+      />
 
       <section className="mission-orchestration-stage" data-testid="agent-war-room-strip">
         <div className="portal-section-header">

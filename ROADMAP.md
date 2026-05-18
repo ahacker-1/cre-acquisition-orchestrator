@@ -36,6 +36,7 @@ Already shipped after v2.4.0:
 - `npm run screenshots` captures the core v2.4 workspace gallery against a locally running dashboard.
 - `docs/QUICK-DEMO.md` gives first-time visitors the shortest offline path from clone to local dashboard.
 - `npm run demo:verify` runs the offline demo, contract checks, guide validation, system tests, and dashboard build in one command.
+- Mission now includes a Swarm Goal Console that maps an operator goal to a recommended specialist swarm, blockers, handoffs, and next action.
 
 Approval-ready issue text for the first public follow-ups lives in [`docs/ISSUE-SEEDS.md`](docs/ISSUE-SEEDS.md).
 

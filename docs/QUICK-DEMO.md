@@ -40,7 +40,7 @@ Before showing the project to someone else, run the one-command verification pat
 npm run demo:verify
 ```
 
-This command regenerates deterministic demo artifacts, validates contracts and operator guides, runs the system scenarios, and verifies the dashboard production build. It is offline and credential-free by default.
+This command regenerates deterministic demo artifacts, validates contracts and operator guides, checks the deterministic swarm-goal helper, runs the system scenarios, and verifies the dashboard production build. It is offline and credential-free by default.
 
 ## Screens to Review
 
@@ -50,7 +50,7 @@ After the dashboard opens, use the sample deal/workspace and review these surfac
 |--------|------------------|
 | **Front Door** | Document-first intake and quick deal creation. |
 | **Acquisition Command** | The executive state of the deal: stage, readiness, blockers, package status, and latest movement. |
-| **Mission** | The goal/outcome intent the acquisition team is working toward. |
+| **Mission** | The goal/outcome intent plus the Swarm Goal Console: recommended specialist team, blockers, handoff path, and next action. |
 | **Deal Team** | Specialist agents, status, handoffs, reviews, dependencies, and selected-agent detail. |
 | **Workpapers** | Filed diligence outputs and evidence-oriented artifacts. |
 | **IC Package** | Recommendation, phase outcomes, risks, data gaps, manifest, and package review state. |

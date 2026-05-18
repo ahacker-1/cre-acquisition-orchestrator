@@ -20,6 +20,10 @@ const steps = [
     command: ['run', 'validate'],
   },
   {
+    name: 'Validate goal-helper swarm recommendations',
+    command: ['run', 'test:goal-helper'],
+  },
+  {
     name: 'Validate operator guide contract',
     command: ['run', 'validate:guides'],
   },
