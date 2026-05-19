@@ -1,7 +1,13 @@
 import { createHash } from 'crypto'
 import { existsSync, readFileSync } from 'fs'
 import { extname, join } from 'path'
+import { createRequire } from 'module'
 import { spawnSync } from 'child_process'
+
+const require = createRequire(import.meta.url)
+const safePaths = require('../../scripts/lib/safe-paths') as {
+  assertWithinBase: (base: string, candidate: string, label?: string) => string
+}
 
 export type ParserStatus = 'extracted' | 'extraction-pending' | 'parse_failed' | 'parser-unavailable' | 'unsupported'
 export type ParserValueType = 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object' | 'null'
@@ -57,6 +63,7 @@ export interface ParserInput {
   mime: string
   type: string
   projectRoot: string
+  allowedBasePath?: string
 }
 
 const PARSER_VERSION = 'source-backed-v1'
@@ -73,6 +80,11 @@ export function isParserPendingOnly(fileName: string, mime: string): boolean {
 
 export function fileHash(filePath: string): string {
   return createHash('sha256').update(readFileSync(filePath)).digest('hex')
+}
+
+export function sanitizeCsvCell(value: string): string {
+  const trimmed = value.trim()
+  return /^[=+\-@]/.test(trimmed) ? `'${trimmed}` : trimmed
 }
 
 function valueType(value: unknown): ParserValueType {
@@ -153,14 +165,14 @@ function parseCsvRows(raw: string): string[][] {
     }
 
     if (char === ',' && !inQuotes) {
-      row.push(cell.trim())
+      row.push(sanitizeCsvCell(cell))
       cell = ''
       continue
     }
 
     if ((char === '\n' || char === '\r') && !inQuotes) {
       if (char === '\r' && next === '\n') index += 1
-      row.push(cell.trim())
+      row.push(sanitizeCsvCell(cell))
       if (row.some((entry) => entry.length > 0)) rows.push(row)
       row = []
       cell = ''
@@ -170,7 +182,7 @@ function parseCsvRows(raw: string): string[][] {
     cell += char
   }
 
-  row.push(cell.trim())
+  row.push(sanitizeCsvCell(cell))
   if (row.some((entry) => entry.length > 0)) rows.push(row)
   if (inQuotes) {
     throw new Error('Malformed CSV: unclosed quoted field.')
@@ -179,7 +191,7 @@ function parseCsvRows(raw: string): string[][] {
 }
 
 function numberFromCell(value: string): number | null {
-  const normalized = value.replace(/[$,%]/g, '').replace(/,/g, '').trim()
+  const normalized = value.replace(/^'/, '').replace(/[$,%]/g, '').replace(/,/g, '').trim()
   if (!normalized) return null
   const parsed = Number(normalized)
   return Number.isFinite(parsed) ? parsed : null
@@ -397,7 +409,7 @@ function pythonCandidates(): Array<{ command: string; args: string[] }> {
 }
 
 function runExcelPythonParser(input: ParserInput, documentType: string): { parsed?: Record<string, unknown>; error?: string } {
-  const scriptPath = join(input.projectRoot, 'scripts', 'parse_excel.py')
+  const scriptPath = safePaths.assertWithinBase(input.projectRoot, join(input.projectRoot, 'scripts', 'parse_excel.py'), 'Excel parser script path')
   const errors: string[] = []
   for (const candidate of pythonCandidates()) {
     const result = spawnSync(candidate.command, [...candidate.args, scriptPath, input.filePath, '--type', documentType], {
@@ -575,11 +587,27 @@ function unavailable(input: ParserInput, hash: string, parserId: string, error: 
 
 export function runDocumentParser(input: ParserInput): ParserExtractionPreview {
   const extension = extname(input.fileName).toLowerCase()
-  const hash = fileHash(input.filePath)
+  const candidateBases = [input.allowedBasePath, input.projectRoot].filter((base): base is string => typeof base === 'string' && base.length > 0)
+  let safeFilePath = ''
+  let safePathError: Error | null = null
+  for (const base of candidateBases) {
+    try {
+      safeFilePath = safePaths.assertWithinBase(base, input.filePath, 'parser input file path')
+      safePathError = null
+      break
+    } catch (error) {
+      safePathError = error instanceof Error ? error : new Error(String(error))
+    }
+  }
+  if (!safeFilePath) {
+    throw safePathError ?? new Error('Parser input file path is not within an allowed base')
+  }
+  const safeInput: ParserInput = { ...input, filePath: safeFilePath }
+  const hash = fileHash(safeFilePath)
 
-  if (isParserPendingOnly(input.fileName, input.mime)) {
+  if (isParserPendingOnly(safeInput.fileName, safeInput.mime)) {
     return {
-      documentId: input.documentId,
+      documentId: safeInput.documentId,
       status: 'extraction-pending',
       extractedAt: new Date().toISOString(),
       fields: [],
@@ -592,10 +620,10 @@ export function runDocumentParser(input: ParserInput): ParserExtractionPreview {
     }
   }
 
-  if (extension === '.xlsx') return parseExcelIfAvailable(input, hash)
-  if (!isParserRunnable(input.fileName, input.mime)) {
+  if (extension === '.xlsx') return parseExcelIfAvailable(safeInput, hash)
+  if (!isParserRunnable(safeInput.fileName, safeInput.mime)) {
     return {
-      documentId: input.documentId,
+      documentId: safeInput.documentId,
       status: 'unsupported',
       extractedAt: new Date().toISOString(),
       fields: [],
@@ -610,17 +638,17 @@ export function runDocumentParser(input: ParserInput): ParserExtractionPreview {
 
   let raw = ''
   try {
-    raw = readFileSync(input.filePath, 'utf8')
-    if (input.type === 'offering_memo') return parseOfferingMemo(input, raw, hash)
+    raw = readFileSync(safeFilePath, 'utf8')
+    if (safeInput.type === 'offering_memo') return parseOfferingMemo(safeInput, raw, hash)
     const rows = parseCsvRows(raw)
-    if (input.type === 'rent_roll') return parseRentRoll(input, rows, hash)
-    if (input.type === 't12') return parseT12(input, rows, hash)
+    if (safeInput.type === 'rent_roll') return parseRentRoll(safeInput, rows, hash)
+    if (safeInput.type === 't12') return parseT12(safeInput, rows, hash)
   } catch (error) {
-    return parseFailed(input, hash, 'text-parser', error instanceof Error ? error.message : String(error))
+    return parseFailed(safeInput, hash, 'text-parser', error instanceof Error ? error.message : String(error))
   }
 
   return {
-    documentId: input.documentId,
+    documentId: safeInput.documentId,
     status: 'unsupported',
     extractedAt: new Date().toISOString(),
     fields: [],

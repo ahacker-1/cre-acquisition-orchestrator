@@ -1,7 +1,7 @@
 import { watch } from 'chokidar';
 import { WebSocketServer, WebSocket } from 'ws';
 import { readFileSync, readdirSync, existsSync, mkdirSync, statSync, writeFileSync } from 'fs';
-import { resolve, relative, dirname, join, basename } from 'path';
+import { resolve, dirname, join, basename, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
@@ -70,12 +70,17 @@ const codexCli = require('../../scripts/lib/codex-cli') as {
   };
   runDetached: (command: string, args?: string[], options?: { cwd?: string }) => number | null;
 };
+const safePaths = require('../../scripts/lib/safe-paths') as {
+  assertSafeSegment: (value: string, label?: string) => string;
+  assertWithinBase: (base: string, candidate: string, label?: string) => string;
+  toRelativePath: (base: string, candidate: string, label?: string) => string;
+};
 
 const customDataPath: string | undefined = process.argv[2];
-const dataRoot: string = customDataPath
-  ? resolve(customDataPath)
-  : resolve(__dirname, '..', '..', 'data');
 const projectRoot: string = resolve(__dirname, '..', '..');
+const dataRoot: string = customDataPath
+  ? safePaths.assertWithinBase(projectRoot, resolve(customDataPath), 'data root')
+  : join(projectRoot, 'data');
 
 const statusDir: string = join(dataRoot, 'status');
 const logsDir: string = join(dataRoot, 'logs');
@@ -184,7 +189,53 @@ function readIncrementalLines(filePath: string): string[] {
 }
 
 function normalizedRelPath(basePath: string, filePath: string): string {
-  return relative(basePath, filePath).replace(/\\/g, '/');
+  return safePaths.toRelativePath(basePath, filePath, 'API artifact path');
+}
+
+function repoRelativePath(filePath: string): string {
+  return normalizedRelPath(projectRoot, filePath);
+}
+
+function pathForApi(value: string): string {
+  if (!isAbsolute(value)) return value.replace(/\\/g, '/');
+  try {
+    return repoRelativePath(value);
+  } catch {
+    return basename(value);
+  }
+}
+
+function sanitizeApiResponse(value: unknown, seen = new WeakSet<object>()): unknown {
+  if (typeof value === 'string') return pathForApi(value);
+  if (!value || typeof value !== 'object') return value;
+  if (seen.has(value)) return null;
+  seen.add(value);
+  if (Array.isArray(value)) return value.map((entry) => sanitizeApiResponse(entry, seen));
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, sanitizeApiResponse(entry, seen)]),
+  );
+}
+
+function isLoopbackRequest(req: IncomingMessage): boolean {
+  const remoteAddress = req.socket.remoteAddress;
+  return remoteAddress === '127.0.0.1' ||
+    remoteAddress === '::1' ||
+    remoteAddress === '::ffff:127.0.0.1' ||
+    remoteAddress === undefined;
+}
+
+function ensureLoopbackRequest(req: IncomingMessage, res: ServerResponse): boolean {
+  if (isLoopbackRequest(req)) return true;
+  sendJson(res, 403, { error: 'This local-only endpoint is restricted to loopback requests.' });
+  return false;
+}
+
+function safeDealId(value: string): string {
+  return safePaths.assertSafeSegment(value, 'deal ID');
+}
+
+function safeRunId(value: string): string {
+  return safePaths.assertSafeSegment(value, 'run ID');
 }
 
 function asRuntimeProvider(value: unknown): 'simulation' | 'codex' {
@@ -405,7 +456,7 @@ function readAllCheckpoints(): Record<string, unknown> {
     if (!existsSync(statusDir)) return checkpoints;
     const jsonFiles = walkJsonFiles(statusDir);
     for (const fullPath of jsonFiles) {
-      const relPath: string = relative(statusDir, fullPath);
+      const relPath: string = normalizedRelPath(statusDir, fullPath);
       if (isRunArtifactJson(relPath)) continue;
       const data: unknown | null = readJsonSafe(fullPath);
       if (data !== null) {
@@ -434,7 +485,7 @@ function readAllLogs(): Record<string, string[]> {
           );
           for (const logFile of logFiles) {
             const fullPath: string = join(entryPath, logFile);
-            const relPath: string = relative(logsDir, fullPath);
+            const relPath: string = normalizedRelPath(logsDir, fullPath);
             const lines: string[] = readLastLines(fullPath, 500);
             logLineOffsets.set(fullPath, readAllLines(fullPath).length);
             if (lines.length > 0) {
@@ -524,16 +575,16 @@ function createRunInputSnapshotFile(
 } {
   const snapshot = buildRunInputSnapshot({ ...dealServiceContext, projectRoot }, dealId, workflowId, launch);
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const absolutePath = join(
+  const absolutePath = safePaths.assertWithinBase(dataRoot, join(
     dataRoot,
     'runs',
-    safeFileSegment(dealId),
+    safeDealId(dealId),
     `${timestamp}-${safeFileSegment(workflowId)}-input-snapshot.json`,
-  );
+  ), 'run input snapshot path');
   writeJsonFile(absolutePath, snapshot);
   return {
     absolutePath,
-    relativePath: relative(projectRoot, absolutePath).replace(/\\/g, '/'),
+    relativePath: repoRelativePath(absolutePath),
     snapshot,
     readiness: snapshot.readiness,
   };
@@ -543,8 +594,19 @@ function createRunInputSnapshotFile(
 // WebSocket server
 // ---------------------------------------------------------------------------
 
+const LOCAL_API_HOST = '127.0.0.1';
 const WS_PORT = 8080;
-const wss: WebSocketServer = new WebSocketServer({ port: WS_PORT });
+const wss: WebSocketServer = new WebSocketServer({
+  port: WS_PORT,
+  host: LOCAL_API_HOST,
+  verifyClient: (info, done) => {
+    if (isAllowedBrowserOrigin(info.origin)) {
+      done(true);
+      return;
+    }
+    done(false, 403, 'Browser origin is not allowed for this local WebSocket.');
+  },
+});
 
 wss.on('connection', (ws: WebSocket) => {
   console.log('[watcher] Client connected');
@@ -581,7 +643,7 @@ wss.on('error', (err: Error) => {
   console.error('[watcher] WebSocket server error', err);
 });
 
-console.log(`[watcher] WebSocket server listening on ws://localhost:${WS_PORT}`);
+console.log(`[watcher] WebSocket server listening on ws://${LOCAL_API_HOST}:${WS_PORT}`);
 
 // ---------------------------------------------------------------------------
 // File watchers
@@ -683,7 +745,18 @@ console.log('[watcher] Watcher started');
 // ---------------------------------------------------------------------------
 
 const API_PORT = 8081;
-const MAX_REQUEST_BODY_BYTES = 80 * 1024 * 1024;
+const MAX_REQUEST_BODY_BYTES = 25 * 1024 * 1024;
+const DOCUMENT_ROUTE_RATE_LIMIT = {
+  capacity: 8,
+  refillPerMinute: 8,
+};
+
+interface TokenBucket {
+  tokens: number;
+  updatedAt: number;
+}
+
+const documentRouteBuckets: Map<string, TokenBucket> = new Map();
 
 class RequestBodyTooLargeError extends Error {
   readonly statusCode = 413;
@@ -719,7 +792,7 @@ function applyCorsHeaders(req: IncomingMessage, res: ServerResponse): void {
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
-  const payload = JSON.stringify(body);
+  const payload = JSON.stringify(sanitizeApiResponse(body));
   res.writeHead(status, {
     'Content-Type': 'application/json',
   });
@@ -728,6 +801,12 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
 
 function readBody(req: IncomingMessage, limitBytes = MAX_REQUEST_BODY_BYTES): Promise<string> {
   return new Promise((resolve, reject) => {
+    const contentLength = Number(req.headers['content-length'] || 0);
+    if (Number.isFinite(contentLength) && contentLength > limitBytes) {
+      req.destroy();
+      reject(new RequestBodyTooLargeError(limitBytes));
+      return;
+    }
     const chunks: Buffer[] = [];
     let totalBytes = 0;
     let settled = false;
@@ -737,6 +816,7 @@ function readBody(req: IncomingMessage, limitBytes = MAX_REQUEST_BODY_BYTES): Pr
       totalBytes += chunk.length;
       if (totalBytes > limitBytes) {
         settled = true;
+        req.destroy();
         reject(new RequestBodyTooLargeError(limitBytes));
         return;
       }
@@ -758,16 +838,21 @@ function readBody(req: IncomingMessage, limitBytes = MAX_REQUEST_BODY_BYTES): Pr
 function parseDealId(url: string): string | null {
   // Match /api/deal/:id  or /api/deal/:id/pause  or /api/deal/:id/resume
   const match = url.match(/^\/api\/deal\/([^/]+)/);
-  return match ? match[1] : null;
+  if (!match) return null;
+  try {
+    return safeDealId(decodeUrlPart(match[1]));
+  } catch {
+    return null;
+  }
 }
 
 function parseRunId(url: string, suffix: 'events' | 'documents'): string | null {
   const match = url.match(new RegExp(`^/api/run/([^/]+)/${suffix}$`));
   if (!match) return null;
   try {
-    return decodeURIComponent(match[1]);
+    return safeRunId(decodeURIComponent(match[1]));
   } catch {
-    return match[1];
+    return null;
   }
 }
 
@@ -775,9 +860,9 @@ function parseLibraryDealId(url: string): string | null {
   const match = url.match(/^\/api\/deals\/([^/]+)/);
   if (!match) return null;
   try {
-    return decodeURIComponent(match[1]);
+    return safeDealId(decodeURIComponent(match[1]));
   } catch {
-    return match[1];
+    return null;
   }
 }
 
@@ -785,9 +870,9 @@ function parseWorkflowId(url: string): string | null {
   const match = url.match(/^\/api\/workflows\/([^/]+)/);
   if (!match) return null;
   try {
-    return decodeURIComponent(match[1]);
+    return safePaths.assertSafeSegment(decodeURIComponent(match[1]), 'workflow ID');
   } catch {
-    return match[1];
+    return null;
   }
 }
 
@@ -801,7 +886,12 @@ function decodeUrlPart(value: string): string {
 
 function parseDealWorkspaceId(url: string, suffix: string): string | null {
   const match = url.match(new RegExp(`^/api/deals/([^/]+)/${suffix}$`));
-  return match ? decodeUrlPart(match[1]) : null;
+  if (!match) return null;
+  try {
+    return safeDealId(decodeUrlPart(match[1]));
+  } catch {
+    return null;
+  }
 }
 
 function parseDealDocumentRoute(url: string, suffix: 'extract' | 'extraction' | 'apply-extraction' | 'review-extraction'): {
@@ -810,10 +900,44 @@ function parseDealDocumentRoute(url: string, suffix: 'extract' | 'extraction' | 
 } | null {
   const match = url.match(new RegExp(`^/api/deals/([^/]+)/documents/([^/]+)/${suffix}$`));
   if (!match) return null;
-  return {
-    dealId: decodeUrlPart(match[1]),
-    documentId: decodeUrlPart(match[2]),
+  try {
+    return {
+      dealId: safeDealId(decodeUrlPart(match[1])),
+      documentId: safePaths.assertSafeSegment(decodeUrlPart(match[2]), 'document ID'),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function clientIp(req: IncomingMessage): string {
+  return req.socket.remoteAddress || 'local';
+}
+
+function consumeDocumentRouteToken(req: IncomingMessage): boolean {
+  const key = clientIp(req);
+  const now = Date.now();
+  const current = documentRouteBuckets.get(key) ?? {
+    tokens: DOCUMENT_ROUTE_RATE_LIMIT.capacity,
+    updatedAt: now,
   };
+  const elapsedMinutes = Math.max(0, (now - current.updatedAt) / 60000);
+  const refilled = Math.min(
+    DOCUMENT_ROUTE_RATE_LIMIT.capacity,
+    current.tokens + elapsedMinutes * DOCUMENT_ROUTE_RATE_LIMIT.refillPerMinute,
+  );
+
+  if (refilled < 1) {
+    documentRouteBuckets.set(key, { tokens: refilled, updatedAt: now });
+    return false;
+  }
+
+  documentRouteBuckets.set(key, { tokens: refilled - 1, updatedAt: now });
+  return true;
+}
+
+function isDocumentMutationRoute(method: string, url: string): boolean {
+  return method === 'POST' && /^\/api\/deals\/[^/]+\/documents(?:\/|$)/.test(url);
 }
 
 const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
@@ -823,6 +947,11 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
 
   if (!isAllowedBrowserOrigin(req.headers.origin)) {
     sendJson(res, 403, { error: 'Browser origin is not allowed for this local API.' });
+    return;
+  }
+
+  if (isDocumentMutationRoute(method, url) && !consumeDocumentRouteToken(req)) {
+    sendJson(res, 429, { error: 'Too many document requests from this local client. Try again shortly.' });
     return;
   }
 
@@ -842,12 +971,14 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
 
     // GET /api/codex/status - report local Codex CLI auth state without exposing credentials
     if (method === 'GET' && url === '/api/codex/status') {
+      if (!ensureLoopbackRequest(req, res)) return;
       sendJson(res, 200, readCodexStatus());
       return;
     }
 
     // POST /api/codex/login - start Codex login so users can choose ChatGPT in the browser
     if (method === 'POST' && url === '/api/codex/login') {
+      if (!ensureLoopbackRequest(req, res)) return;
       const result = startCodexLogin();
       sendJson(res, Number(result.statusCode || 202), result);
       return;
@@ -1552,13 +1683,19 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         return;
       }
 
-      const dealId = body.dealId as string;
+      let dealId = '';
+      try {
+        dealId = typeof body.dealId === 'string' ? safeDealId(body.dealId) : '';
+      } catch {
+        sendJson(res, 400, { error: 'Invalid deal ID' });
+        return;
+      }
       if (!dealId) {
         sendJson(res, 400, { error: 'Missing required field: dealId' });
         return;
       }
 
-      const checkpointPath = join(statusDir, `${dealId}.json`);
+      const checkpointPath = safePaths.assertWithinBase(statusDir, join(statusDir, `${dealId}.json`), 'checkpoint path');
       const checkpoint = {
         dealId,
         dealName: (body.dealName as string) || dealId,
@@ -1574,7 +1711,7 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
 
       writeFileSync(checkpointPath, JSON.stringify(checkpoint, null, 2));
       console.log(`[api] Created deal checkpoint: ${dealId}`);
-      sendJson(res, 201, { dealId, path: checkpointPath, checkpoint });
+      sendJson(res, 201, { dealId, path: repoRelativePath(checkpointPath), checkpoint });
       return;
     }
 
@@ -1586,7 +1723,7 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         return;
       }
 
-      const checkpointPath = join(statusDir, `${dealId}.json`);
+      const checkpointPath = safePaths.assertWithinBase(statusDir, join(statusDir, `${dealId}.json`), 'checkpoint path');
       if (!existsSync(checkpointPath)) {
         sendJson(res, 404, { error: `Deal not found: ${dealId}` });
         return;
@@ -1599,12 +1736,12 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
       }
 
       // Also gather agent-level checkpoints if they exist
-      const agentsDir = join(statusDir, dealId, 'agents');
+      const agentsDir = safePaths.assertWithinBase(statusDir, join(statusDir, dealId, 'agents'), 'agent checkpoint directory');
       const agentCheckpoints: Record<string, unknown> = {};
       if (existsSync(agentsDir)) {
         const agentFiles = walkJsonFiles(agentsDir);
         for (const agentFile of agentFiles) {
-          const relPath = relative(agentsDir, agentFile);
+          const relPath = normalizedRelPath(agentsDir, agentFile);
           const agentData = readJsonSafe(agentFile);
           if (agentData !== null) {
             agentCheckpoints[relPath] = agentData;
@@ -1624,7 +1761,7 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         return;
       }
 
-      const checkpointPath = join(statusDir, `${dealId}.json`);
+      const checkpointPath = safePaths.assertWithinBase(statusDir, join(statusDir, `${dealId}.json`), 'checkpoint path');
       if (!existsSync(checkpointPath)) {
         sendJson(res, 404, { error: `Deal not found: ${dealId}` });
         return;
@@ -1654,7 +1791,7 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         return;
       }
 
-      const checkpointPath = join(statusDir, `${dealId}.json`);
+      const checkpointPath = safePaths.assertWithinBase(statusDir, join(statusDir, `${dealId}.json`), 'checkpoint path');
       if (!existsSync(checkpointPath)) {
         sendJson(res, 404, { error: `Deal not found: ${dealId}` });
         return;
@@ -1688,6 +1825,6 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
   }
 });
 
-httpServer.listen(API_PORT, () => {
-  console.log(`[watcher] REST API listening on http://localhost:${API_PORT}`);
+httpServer.listen(API_PORT, LOCAL_API_HOST, () => {
+  console.log(`[watcher] REST API listening on http://${LOCAL_API_HOST}:${API_PORT}`);
 });

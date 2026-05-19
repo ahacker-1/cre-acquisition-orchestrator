@@ -571,7 +571,7 @@ const WORKFLOW_REQUIRED_SOURCE_FIELDS: Record<string, string[]> = {
   'legal-psa-review': [],
 }
 
-const MAX_DOCUMENT_UPLOAD_BYTES = 50 * 1024 * 1024
+const MAX_DOCUMENT_UPLOAD_BYTES = 25 * 1024 * 1024
 
 function workflowCatalogWorkflows(context: ServiceContext): Record<string, unknown>[] {
   const catalog = readJson<Record<string, unknown>>(join(context.projectRoot, 'config', 'workflows.json'), {})
@@ -1824,6 +1824,7 @@ export function extractSourceDocument(
     mime: document.mime,
     type: document.type,
     projectRoot: context.projectRoot,
+    allowedBasePath: context.dataRoot,
   }), record.deal)
   ensureDir(extractionsDir(context, dealId))
   writeJson(extractionPath(context, dealId, documentId), extraction)

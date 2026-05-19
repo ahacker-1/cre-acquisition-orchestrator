@@ -31,6 +31,7 @@ const {
 const { renderFinalAcquisitionReport } = require('./lib/workpaper-renderer');
 const { executeAgent } = require('./agent-executor');
 const { StoryEngine } = require('./lib/story-engine');
+const { assertSafeSegment, assertWithinBase } = require('./lib/safe-paths');
 
 const BASE_DIR = path.resolve(__dirname, '..');
 
@@ -40,8 +41,10 @@ function parseArgs() {
     const index = args.indexOf(flag);
     return index !== -1 && args[index + 1] ? args[index + 1] : fallback;
   }
+  const rawDealPath = getArg('--deal', 'config/deal.json');
+  const rawInputSnapshotPath = getArg('--input-snapshot', null);
   return {
-    dealPath: path.resolve(BASE_DIR, getArg('--deal', 'config/deal.json')),
+    dealPath: assertWithinBase(BASE_DIR, path.resolve(BASE_DIR, rawDealPath), 'deal config path'),
     scenarioName: getArg('--scenario', null),
     seedArg: getArg('--seed', null),
     runId: getArg('--run-id', null),
@@ -50,7 +53,9 @@ function parseArgs() {
     fromPhase: phaseFromArg(getArg('--from-phase', null)),
     failAgent: getArg('--fail-agent', null),
     workflowId: getArg('--workflow', null),
-    inputSnapshotPath: getArg('--input-snapshot', null)
+    inputSnapshotPath: rawInputSnapshotPath
+      ? assertWithinBase(BASE_DIR, path.resolve(BASE_DIR, rawInputSnapshotPath), 'input snapshot path')
+      : null
   };
 }
 
@@ -263,12 +268,17 @@ function persistSkippedAgentCheckpoint({ baseDir, agentStatusDir, agentName, pha
 }
 
 function clearDealRuntimeArtifacts(baseDir, dealId) {
+  assertSafeSegment(dealId, 'deal ID');
+  const statusRoot = path.join(baseDir, 'data', 'status');
+  const logsRoot = path.join(baseDir, 'data', 'logs');
+  const phaseOutputsRoot = path.join(baseDir, 'data', 'phase-outputs');
+  const reportsRoot = path.join(baseDir, 'data', 'reports');
   const targets = [
-    path.join(baseDir, 'data', 'status', `${dealId}.json`),
-    path.join(baseDir, 'data', 'status', dealId),
-    path.join(baseDir, 'data', 'logs', dealId),
-    path.join(baseDir, 'data', 'phase-outputs', dealId),
-    path.join(baseDir, 'data', 'reports', dealId)
+    assertWithinBase(statusRoot, path.join(statusRoot, `${dealId}.json`), 'deal checkpoint path'),
+    assertWithinBase(statusRoot, path.join(statusRoot, dealId), 'deal status directory'),
+    assertWithinBase(logsRoot, path.join(logsRoot, dealId), 'deal log directory'),
+    assertWithinBase(phaseOutputsRoot, path.join(phaseOutputsRoot, dealId), 'phase output directory'),
+    assertWithinBase(reportsRoot, path.join(reportsRoot, dealId), 'report directory')
   ];
   targets.forEach((target) => fs.rmSync(target, { recursive: true, force: true }));
 }
@@ -346,6 +356,7 @@ async function main() {
   if (!deal.dealId) {
     throw new Error(`Deal config missing dealId: ${args.dealPath}`);
   }
+  assertSafeSegment(deal.dealId, 'deal ID');
 
   const scenarioName = args.scenarioName || runtimeConfig.defaultScenario || 'core-plus';
   const scenarioConfig = readScenarioConfig(BASE_DIR, scenarioName);
@@ -396,7 +407,7 @@ async function main() {
   checkpoint.workflowName = workflow.name || workflow.id;
   checkpoint.runtimeProvider = 'simulation';
   if (args.inputSnapshotPath) {
-    const snapshotPath = path.resolve(BASE_DIR, args.inputSnapshotPath);
+    const snapshotPath = assertWithinBase(BASE_DIR, args.inputSnapshotPath, 'input snapshot path');
     const inputSnapshot = readJsonIfExists(snapshotPath);
     if (inputSnapshot) {
       checkpoint.inputSnapshot = {
@@ -429,12 +440,13 @@ async function main() {
     mode: args.resume ? 'resume' : 'fresh'
   });
   if (args.inputSnapshotPath && checkpoint.inputSnapshot) {
+    const snapshotPath = assertWithinBase(BASE_DIR, args.inputSnapshotPath, 'input snapshot document path');
     storyEngine.registerExternalDocument({
       phase: 'underwriting',
       agent: 'source-backed-inputs',
       title: 'Run Input Snapshot',
       docType: 'input-snapshot',
-      absolutePath: path.resolve(BASE_DIR, args.inputSnapshotPath),
+      absolutePath: snapshotPath,
       summary: 'Criteria, approved fields, source documents, and launch readiness captured before workflow execution',
       mime: 'application/json',
       tags: ['source-backed-inputs', 'launch-snapshot']
