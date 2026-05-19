@@ -8,15 +8,15 @@ This document defines every formula and calculation used during underwriting ana
 
 ### Gross Potential Income (GPI)
 
-Total income if the property were 100% occupied at market rents with no concessions or losses.
+Total income if the property were 100% occupied at market rents with no concessions or losses. RUBS recoveries are not income in the EGI walk; treat them as utility expense offsets.
 
 ```
-GPI = Sum of all unit market rents (annualized) + Other Income
+GPI = Sum of all unit market rents (annualized) + Other Income excluding RUBS
 ```
 
 For multifamily:
 ```
-GPI = (Unit Count x Average Market Rent x 12) + Annual Other Income
+GPI = (Unit Count x Average Market Rent x 12) + Annual Other Income excluding RUBS
 ```
 
 ### Effective Gross Income (EGI)
@@ -24,15 +24,17 @@ GPI = (Unit Count x Average Market Rent x 12) + Annual Other Income
 Actual expected income after accounting for vacancy, credit loss, and concessions.
 
 ```
+GPI = Gross Potential Rent + Other Income excluding RUBS
+Vacancy Loss = GPI x Vacancy Rate
+Credit Loss = GPI x Credit Loss Rate (Bad Debt; typically 1-2%)
+Concessions = Total annualized value of free rent, move-in specials, etc. (contra-revenue)
 EGI = GPI - Vacancy Loss - Credit Loss - Concessions
+RUBS Recovery = Utility reimbursement applied as an offset to utility expense, not as Other Income
+Total Operating Expenses = Operating Expenses after RUBS Recovery
+NOI = EGI - Total Operating Expenses
 ```
 
-Where:
-```
-Vacancy Loss = GPI x Vacancy Rate
-Credit Loss = GPI x Credit Loss Rate (typically 1-2%)
-Concessions = Total annualized value of free rent, move-in specials, etc.
-```
+Bad debt/credit loss must stay separate from concessions. Concessions reduce revenue as contra-revenue; RUBS recoveries reduce owner-paid utilities.
 
 ### Net Operating Income (NOI)
 
@@ -298,15 +300,16 @@ Adjusted GPI = GPI - Total Concession Drag
 Multifamily properties generate income beyond base rent. Quantify each line item:
 
 ```
-Other Income = Laundry Income + Parking Income + Pet Fees + RUBS Income
+Other Income = Laundry Income + Parking Income + Pet Fees
                + Application Fees + Late Fees + Storage Income
                + Vending Income + Cable/Internet Revenue Share
 ```
 
 **RUBS (Ratio Utility Billing System):**
 ```
-RUBS Revenue = Number of Units on RUBS x Average Monthly RUBS Charge x 12
-RUBS Recovery Rate = RUBS Revenue / Total Utility Expense
+RUBS Recovery = Number of Units on RUBS x Average Monthly RUBS Charge x 12
+Net Utility Expense = Gross Utility Expense - RUBS Recovery
+RUBS Recovery Rate = RUBS Recovery / Gross Utility Expense
 ```
 
 Target RUBS recovery: 60-85% of utility costs.
@@ -595,30 +598,35 @@ GPR = 200 units x $1,500/mo x 12
 GPR = $3,600,000
 ```
 
-**Step 2 -- Vacancy, Credit, Loss-to-Lease, and Concessions**
+**Step 2 -- Loss-to-Lease Adjustment**
 
-Parkview separates vacancy, loss-to-lease, concessions, and bad debt so the income waterfall matches `config/deal.json`.
+Parkview tracks loss-to-lease separately so the scheduled rent basis reconciles back to `config/deal.json`.
 
 ```
-Vacancy Loss = $180,000
 Loss to Lease = $84,000
-Concessions = $30,000
-Bad Debt = $12,000
+Gross Potential Rent after Loss-to-Lease = $3,600,000 - $84,000 = $3,516,000
 ```
 
 **Step 3 -- Other Income**
 
-Other income includes laundry, parking, late fees, application fees, and utility recoveries that are reported outside scheduled rent.
+Other income includes laundry, parking, late fees, application fees, storage, and other ancillary revenue excluding RUBS. RUBS recoveries are utility expense offsets, not other income.
 
 ```
-Other Income = $120,000
+Other Income excluding RUBS = $120,000
+GPI = Gross Potential Rent after Loss-to-Lease + Other Income excluding RUBS
+GPI = $3,516,000 + $120,000
+GPI = $3,636,000
 ```
 
 **Step 4 -- Effective Gross Income (EGI)**
 
 ```
-EGI = GPR - Vacancy Loss - Loss to Lease - Concessions - Bad Debt + Other Income
-    = $3,600,000 - $180,000 - $84,000 - $30,000 - $12,000 + $120,000
+Vacancy Loss = $180,000
+Credit Loss = $12,000
+Concessions = $30,000
+RUBS Recovery = $0 in this sample income walk; any RUBS would reduce utility expense
+EGI = GPI - Vacancy Loss - Credit Loss - Concessions
+    = $3,636,000 - $180,000 - $12,000 - $30,000
     = $3,414,000
 ```
 
@@ -1189,7 +1197,8 @@ In-Place Metrics (Day 1):
 Stabilized Metrics (Month 24+, all 200 units renovated):
   New GPR = unit mix market rent roll = $3,864,000
   Vacancy (5%): $193,200
-  Other Income: $180,000 (additional RUBS/amenity recovery)
+  Other Income excluding RUBS: $180,000 (amenity and ancillary income)
+  RUBS Recovery: treated as a utility expense offset
   Stabilized EGI: $3,864,000 - $193,200 + $180,000 = $3,850,800
   Stabilized OpEx: $1,450,800 (post-tax-appeal stabilized run-rate)
   Stabilized NOI: $3,850,800 - $1,450,800 = $2,400,000

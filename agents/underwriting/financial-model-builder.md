@@ -51,33 +51,22 @@ Build the base case financial model (5-year pro forma) from due diligence data. 
 Construct the full income waterfall from validated DD data:
 
 ```
-Gross Potential Rent (GPR)
-  Source: rent-roll-analysis.md (in-place rents + loss-to-lease capture)
-  - Use validated unit count and in-place rent per unit
-  - Annualize: monthly rent x 12 x total units
-
-(-) Loss to Lease Adjustment
-  - Current gap between in-place rents and market rents
-  - Capture schedule: X% recaptured in Year 1 (from deal config or default 50%)
-
-(-) Vacancy & Credit Loss
-  - Physical vacancy: from market study occupancy data
-  - Economic vacancy: credit loss allowance (default 1-2% of GPR)
-  - Combined rate applied to GPR
-
-(-) Concessions / Free Rent
-  - From rent roll analysis: any active concession programs
-  - Annualized concession cost
-
-(+) Other Income
-  - Laundry revenue
-  - Parking revenue
-  - Pet rent / pet deposits (amortized)
-  - RUBS (Ratio Utility Billing System) income
-  - Late fees, application fees, other ancillary
-
-= Effective Gross Income (EGI)
+GPI = Gross Potential Rent + Other Income excluding RUBS
+Vacancy Loss = GPI x Vacancy Rate
+Credit Loss = GPI x Credit Loss Rate (Bad Debt; typically 1-2%)
+Concessions = Total annualized value of free rent, move-in specials, etc. (contra-revenue)
+EGI = GPI - Vacancy Loss - Credit Loss - Concessions
+RUBS Recovery = Utility reimbursement applied as an offset to utility expense, not as Other Income
+Total Operating Expenses = Operating Expenses after RUBS Recovery
+NOI = EGI - Total Operating Expenses
 ```
+
+Inputs:
+- Gross Potential Rent source: rent-roll-analysis.md (validated unit count, in-place rent, market rent, and loss-to-lease capture schedule)
+- Other Income excludes RUBS: laundry, parking, pet rent / pet deposits (amortized), late fees, application fees, storage, vending, cable/internet revenue share
+- Vacancy Loss uses physical vacancy from market study occupancy data
+- Credit Loss uses bad debt allowance separately from concessions
+- Concessions / free rent come from active concession programs in the rent roll analysis
 
 ### Step 2: Build Year 1 Expense Schedule
 
@@ -224,10 +213,10 @@ Write to: `data/reports/{deal-id}/financial-model.md`
 | Line Item | Year 1 | Year 2 | Year 3 | Year 4 | Year 5 |
 |-----------|--------|--------|--------|--------|--------|
 | Gross Potential Rent | | | | | |
-| (-) Loss to Lease | | | | | |
-| (-) Vacancy & Credit Loss | | | | | |
+| (-) Vacancy Loss | | | | | |
+| (-) Credit Loss / Bad Debt | | | | | |
 | (-) Concessions | | | | | |
-| (+) Other Income | | | | | |
+| (+) Other Income excluding RUBS | | | | | |
 | = Effective Gross Income | | | | | |
 | (-) Total Operating Expenses | | | | | |
 | = Net Operating Income | | | | | |
@@ -568,11 +557,11 @@ Before final output, compare key metrics against `config/thresholds.json`:
 
 | Output Metric | Threshold Key | Pass | Conditional | Fail |
 |--------------|---------------|------|-------------|------|
-| DSCR | primaryCriteria.dscr | >= 1.25 | >= 1.0 | < 1.0 |
-| Cap Rate Spread | primaryCriteria.capRateSpread | >= 100 bps | >= 0 bps | < 0 bps |
-| Cash-on-Cash | primaryCriteria.cashOnCash | >= 0.08 | >= 0.05 | < 0.05 |
-| Debt Yield | primaryCriteria.debtYield | >= 0.09 | >= 0.07 | < 0.07 |
-| LTV | primaryCriteria.ltv | <= 0.75 | <= 0.80 | > 0.80 |
+| DSCR | primaryCriteria.dscr | >= 1.25 | >= 1.10 | < 1.00 |
+| Cap Rate Spread | primaryCriteria.capRateSpread | >= 150 bps | >= 100 bps | < 50 bps |
+| Cash-on-Cash | primaryCriteria.cashOnCash | >= 0.08 | >= 0.05 | < 0.03 |
+| Debt Yield | primaryCriteria.debtYield | >= 0.09 | >= 0.075 | < 0.065 |
+| LTV | primaryCriteria.ltv | <= 0.75 | <= 0.80 | > 0.85 |
 | IRR | underwriting.minIRR | >= 0.15 | N/A | < 0.15 |
 | Equity Multiple | underwriting.minEquityMultiple | >= 1.8 | N/A | < 1.8 |
 

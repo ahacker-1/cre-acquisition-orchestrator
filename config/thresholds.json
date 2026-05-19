@@ -6,11 +6,11 @@
     "CONDITIONAL": "Marginal on some criteria but no dealbreakers"
   },
   "primaryCriteria": {
-    "dscr": { "pass": 1.25, "conditional": 1.0, "fail": 1.0, "description": "Debt Service Coverage Ratio" },
-    "capRateSpread": { "pass": 100, "conditional": 0, "fail": 0, "unit": "bps", "description": "Cap rate minus debt rate in basis points" },
-    "cashOnCash": { "pass": 0.08, "conditional": 0.05, "fail": 0.05, "description": "Annual cash flow / equity invested" },
-    "debtYield": { "pass": 0.09, "conditional": 0.07, "fail": 0.07, "description": "NOI / loan amount" },
-    "ltv": { "maxPass": 0.75, "maxConditional": 0.80, "fail": 0.80, "description": "Loan to value ratio" }
+    "dscr": { "pass": 1.25, "conditional": 1.10, "fail": 1.0, "description": "Debt Service Coverage Ratio" },
+    "capRateSpread": { "pass": 150, "conditional": 100, "fail": 50, "unit": "bps", "description": "Cap rate minus 10-Year Treasury yield in basis points" },
+    "cashOnCash": { "pass": 0.08, "conditional": 0.05, "fail": 0.03, "description": "Annual cash flow / equity invested" },
+    "debtYield": { "pass": 0.09, "conditional": 0.075, "fail": 0.065, "description": "NOI / loan amount" },
+    "ltv": { "maxPass": 0.75, "maxConditional": 0.80, "fail": 0.85, "description": "Loan to value ratio; 100% LTV is a separate dealbreaker" }
   },
   "secondaryCriteria": {
     "occupancy": { "strong": 0.95, "acceptable": 0.90, "concern": 0.85, "distressed": 0.80 },
@@ -28,6 +28,9 @@
     "Criminal activity nexus",
     "Fraud in title chain",
     "DSCR below 0.80 without clear value-add thesis",
+    "100% LTV proposed",
+    "Interest-only period exceeds planned hold period",
+    "Occupancy below 70% without committed bridge structure or funded lease-up plan",
     "Structural failure requiring demolition",
     "Uninsurable property condition"
   ],

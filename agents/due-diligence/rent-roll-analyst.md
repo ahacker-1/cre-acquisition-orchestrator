@@ -73,8 +73,17 @@ Validate the property rent roll. Analyze in-place rents vs market, identify loss
 - **Physical Occupancy**: Occupied units / total units * 100
 - **Economic Occupancy**: Actual collected rent / gross potential rent * 100
   - Account for: vacancies, concessions, bad debt, loss-to-lease, model/employee units
-- **Gross Potential Rent (GPR)**: Total units * market rent (by unit type)
-- **Effective Gross Income (EGI)**: GPR - vacancy loss - concessions - bad debt + other income
+- **EGI/NOI walk**:
+  ```
+  GPI = Gross Potential Rent + Other Income excluding RUBS
+  Vacancy Loss = GPI x Vacancy Rate
+  Credit Loss = GPI x Credit Loss Rate (Bad Debt; typically 1-2%)
+  Concessions = Total annualized value of free rent, move-in specials, etc. (contra-revenue)
+  EGI = GPI - Vacancy Loss - Credit Loss - Concessions
+  RUBS Recovery = Utility reimbursement applied as an offset to utility expense, not as Other Income
+  Total Operating Expenses = Operating Expenses after RUBS Recovery
+  NOI = EGI - Total Operating Expenses
+  ```
 
 ### Step 5: Identify Tenant Concentration Risks
 
@@ -110,7 +119,7 @@ Run anomaly detection across the rent roll:
   - Laundry revenue (per unit per month estimate)
   - Parking fees (reserved spaces, garages)
   - Pet fees (pet rent, pet deposits)
-  - RUBS (Ratio Utility Billing System) recovery
+  - RUBS (Ratio Utility Billing System) recovery, reported separately as a utility expense offset
   - Late fees and NSF charges
   - Application fees
   - Storage units
@@ -156,7 +165,8 @@ Run anomaly detection across the rent roll:
     "effective_gross_income_monthly": 0,
     "vacancy_loss_monthly": 0,
     "concessions_monthly": 0,
-    "bad_debt_monthly": 0
+    "bad_debt_monthly": 0,
+    "rubs_recovery_monthly": 0
   },
 
   "rent_analysis": {
@@ -200,7 +210,6 @@ Run anomaly detection across the rent roll:
       "laundry": 0,
       "parking": 0,
       "pet_fees": 0,
-      "rubs": 0,
       "late_fees": 0,
       "application_fees": 0,
       "storage": 0,
