@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { Suspense, lazy, useMemo } from 'react'
 import StoryNarrative from './StoryNarrative'
-import SwarmGoalConsole from './SwarmGoalConsole'
 import type { AgentCheckpoint, DealCheckpoint, DocumentArtifact, StoryEvent } from '../types/checkpoint'
 import type { DealWorkspace, SourceDocument } from '../types/workspace'
+
+const SwarmGoalConsole = lazy(() => import('./SwarmGoalConsole'))
 
 interface MissionControlProps {
   dealCheckpoint: DealCheckpoint
@@ -27,6 +28,15 @@ type WarRoomAgent = {
   action: string
   subline: string
   live: boolean
+}
+
+function MissionPanelSkeleton() {
+  return (
+    <div className="portal-panel animate-pulse">
+      <div className="h-4 w-44 bg-white/10" />
+      <div className="mt-4 h-24 bg-white/5" />
+    </div>
+  )
 }
 
 type MissionStage = {
@@ -405,16 +415,18 @@ export default function MissionControl({
         </div>
       </section>
 
-      <SwarmGoalConsole
-        workspace={workspace}
-        dealCheckpoint={dealCheckpoint}
-        agentCheckpoints={agentCheckpoints}
-        storyEvents={storyEvents}
-        onOpenDocuments={onOpenDocuments}
-        onOpenAgents={onOpenAgents}
-        onOpenPackage={onOpenPackage}
-        onOpenAdvanced={onOpenAdvanced}
-      />
+      <Suspense fallback={<MissionPanelSkeleton />}>
+        <SwarmGoalConsole
+          workspace={workspace}
+          dealCheckpoint={dealCheckpoint}
+          agentCheckpoints={agentCheckpoints}
+          storyEvents={storyEvents}
+          onOpenDocuments={onOpenDocuments}
+          onOpenAgents={onOpenAgents}
+          onOpenPackage={onOpenPackage}
+          onOpenAdvanced={onOpenAdvanced}
+        />
+      </Suspense>
 
       <section className="mission-orchestration-stage" data-testid="agent-war-room-strip">
         <div className="portal-section-header">

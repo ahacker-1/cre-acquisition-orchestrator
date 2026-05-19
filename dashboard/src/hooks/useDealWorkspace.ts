@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { API_URL } from '../config'
 import type {
   DealCriteria,
   DealWorkspace,
@@ -11,8 +12,6 @@ import type {
   SourceDocument,
 } from '../types/workspace'
 import { uploadDealDocument } from '../lib/documentUpload'
-
-const API_URL = 'http://localhost:8081'
 
 async function parseJson<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>

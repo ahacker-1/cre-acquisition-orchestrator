@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from 'react'
 import AgentTree from './AgentTree'
-import CompletionPackage from './CompletionPackage'
 import DealCockpitSidebar from './DealCockpitSidebar'
 import DecisionLog from './DecisionLog'
 import DocumentWall from './DocumentWall'
@@ -8,12 +7,10 @@ import FinalReport from './FinalReport'
 import FindingsPanel from './FindingsPanel'
 import GuidedDemoTour, { type GuidedDemoTab } from './GuidedDemoTour'
 import LogStream from './LogStream'
-import MissionControl from './MissionControl'
 import PhaseDetail from './PhaseDetail'
 import PipelineView from './PipelineView'
 import StoryNarrative from './StoryNarrative'
 import TimelineView from './TimelineView'
-import WorkflowLauncher from './WorkflowLauncher'
 import { useDealWorkspace } from '../hooks/useDealWorkspace'
 import { useWorkflows } from '../hooks/useWorkflows'
 import type {
@@ -40,6 +37,10 @@ import type {
   SourceDocument,
 } from '../types/workspace'
 import type { WorkflowLaunchResponse, WorkflowPreset } from '../types/workflows'
+
+const CompletionPackage = lazy(() => import('./CompletionPackage'))
+const MissionControl = lazy(() => import('./MissionControl'))
+const WorkflowLauncher = lazy(() => import('./WorkflowLauncher'))
 
 interface DealWorkspaceProps {
   dealCheckpoint: DealCheckpoint
@@ -91,6 +92,16 @@ const DOCUMENT_LABELS: Record<string, string> = {
   loan_documents: 'Loan Docs',
   closing_statement: 'Closing Statement',
   other: 'Other',
+}
+
+function WorkspacePanelSkeleton({ label }: { label: string }) {
+  return (
+    <div className="portal-panel animate-pulse">
+      <div className="h-4 w-44 bg-white/10" />
+      <div className="mt-4 h-28 bg-white/5" />
+      <p className="mt-3 text-sm text-gray-500">{label}</p>
+    </div>
+  )
 }
 
 const RUNTIME_OPTIONS: { value: RuntimeProvider; label: string }[] = [
@@ -1905,19 +1916,21 @@ export default function DealWorkspace({
         <section className={`grid gap-5 ${activeTab === 'mission' ? '' : 'xl:grid-cols-[minmax(0,1fr)_320px]'}`}>
           <div className="min-w-0 space-y-4">
             {activeTab === 'mission' && (
-              <MissionControl
-                dealCheckpoint={dealCheckpoint}
-                agentCheckpoints={agentCheckpoints}
-                storyEvents={storyEvents}
-                documentArtifacts={documentArtifacts}
-                documents={documents}
-                workspace={workspace}
-                onOpenDocuments={() => setActiveTab('documents')}
-                onOpenAgents={() => setActiveTab('agents')}
-                onOpenWorkpapers={() => setActiveTab('workpapers')}
-                onOpenPackage={() => setActiveTab('package')}
-                onOpenAdvanced={focusWorkflowLauncher}
-              />
+              <Suspense fallback={<WorkspacePanelSkeleton label="Loading mission control..." />}>
+                <MissionControl
+                  dealCheckpoint={dealCheckpoint}
+                  agentCheckpoints={agentCheckpoints}
+                  storyEvents={storyEvents}
+                  documentArtifacts={documentArtifacts}
+                  documents={documents}
+                  workspace={workspace}
+                  onOpenDocuments={() => setActiveTab('documents')}
+                  onOpenAgents={() => setActiveTab('agents')}
+                  onOpenWorkpapers={() => setActiveTab('workpapers')}
+                  onOpenPackage={() => setActiveTab('package')}
+                  onOpenAdvanced={focusWorkflowLauncher}
+                />
+              </Suspense>
             )}
 
             {activeTab === 'documents' && (
@@ -1951,14 +1964,16 @@ export default function DealWorkspace({
 
             {activeTab === 'package' && (
               <div className="space-y-4">
-                <CompletionPackage
-                  dealCheckpoint={dealCheckpoint}
-                  storyEvents={storyEvents}
-                  documentArtifacts={documentArtifacts}
-                  onExportPackage={handlePackageExport}
-                  exportingPackage={working}
-                  exportMessage={packageExportMessage}
-                />
+                <Suspense fallback={<WorkspacePanelSkeleton label="Loading IC package..." />}>
+                  <CompletionPackage
+                    dealCheckpoint={dealCheckpoint}
+                    storyEvents={storyEvents}
+                    documentArtifacts={documentArtifacts}
+                    onExportPackage={handlePackageExport}
+                    exportingPackage={working}
+                    exportMessage={packageExportMessage}
+                  />
+                </Suspense>
                 <div className="grid gap-4 xl:grid-cols-2">
                   <FindingsPanel dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
                   <DecisionLog storyEvents={storyEvents} />
@@ -1989,16 +2004,18 @@ export default function DealWorkspace({
                   <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,0.72fr)]">
                     <PipelineView dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
                     <div id="workspace-workflow-launcher" data-testid="workspace-workflow-launcher">
-                      <WorkflowLauncher
-                        deals={deals}
-                        initialDealId={dealCheckpoint.dealId}
-                        launchReadiness={workspace?.launchReadiness}
-                        defaultRequireSourceBackedInputs
-                        lockDealSelection
-                        onLaunchStarted={(response) => void handleWorkspaceLaunch(response)}
-                        onPresetSaved={onPresetSaved}
-                        compact
-                      />
+                      <Suspense fallback={<WorkspacePanelSkeleton label="Loading workflow launcher..." />}>
+                        <WorkflowLauncher
+                          deals={deals}
+                          initialDealId={dealCheckpoint.dealId}
+                          launchReadiness={workspace?.launchReadiness}
+                          defaultRequireSourceBackedInputs
+                          lockDealSelection
+                          onLaunchStarted={(response) => void handleWorkspaceLaunch(response)}
+                          onPresetSaved={onPresetSaved}
+                          compact
+                        />
+                      </Suspense>
                     </div>
                   </section>
                 </Overview>

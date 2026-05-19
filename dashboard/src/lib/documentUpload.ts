@@ -1,7 +1,7 @@
 import type { SourceDocument } from '../types/workspace'
+import { API_URL } from '../config'
 
-const API_URL = 'http://localhost:8081'
-const MAX_DOCUMENT_UPLOAD_BYTES = 50 * 1024 * 1024
+const MAX_DOCUMENT_UPLOAD_BYTES = 25 * 1024 * 1024
 
 function readFileAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -28,7 +28,7 @@ function isTransientFileLock(error: unknown): boolean {
 export async function uploadDealDocument(dealId: string, file: File): Promise<SourceDocument> {
   if (!dealId) throw new Error('Choose a deal before uploading documents.')
   if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
-    throw new Error(`${file.name} is larger than the 50 MB local upload limit.`)
+    throw new Error(`${file.name} is larger than the 25 MB local upload limit.`)
   }
 
   const contentBase64 = await readFileAsBase64(file)

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { API_URL, WS_URL } from '../config'
 import type {
   DealCheckpoint,
   PhaseStatus,
@@ -17,8 +18,6 @@ import type {
   DocumentArtifact,
 } from '../types/checkpoint'
 
-const WS_URL = 'ws://localhost:8080'
-const API_URL = 'http://localhost:8081'
 const MAX_RECONNECT_DELAY = 30000
 const MAX_RECONNECT_ATTEMPTS = 20
 

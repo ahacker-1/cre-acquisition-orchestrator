@@ -2,6 +2,8 @@ import React from 'react'
 
 interface ErrorBoundaryProps {
   children: React.ReactNode
+  routeName?: string
+  onGoHome?: () => void
 }
 
 interface ErrorBoundaryState {
@@ -9,6 +11,7 @@ interface ErrorBoundaryState {
   error: Error | null
   showDetails: boolean
   errorInfo: React.ErrorInfo | null
+  correlationId: string | null
 }
 
 // Common error patterns and their user-friendly explanations
@@ -81,6 +84,7 @@ export default class ErrorBoundary extends React.Component<
       error: null,
       showDetails: false,
       errorInfo: null,
+      correlationId: null,
     }
   }
 
@@ -89,9 +93,10 @@ export default class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error('[ErrorBoundary] Uncaught rendering error:', error)
-    console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack)
-    this.setState({ errorInfo })
+    const correlationId = `ui-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+    console.error(`[ErrorBoundary:${correlationId}] ${this.props.routeName || 'Dashboard'} render failure`, error)
+    console.error(`[ErrorBoundary:${correlationId}] Component stack:`, errorInfo.componentStack)
+    this.setState({ errorInfo, correlationId })
   }
 
   resetErrorBoundary = (): void => {
@@ -100,6 +105,7 @@ export default class ErrorBoundary extends React.Component<
       error: null,
       showDetails: false,
       errorInfo: null,
+      correlationId: null,
     })
   }
 
@@ -114,6 +120,7 @@ export default class ErrorBoundary extends React.Component<
       `Error: ${this.state.error.message}`,
       `Time: ${new Date().toISOString()}`,
       `URL: ${window.location.href}`,
+      `Correlation ID: ${this.state.correlationId || 'Not available'}`,
       '',
       'Stack Trace:',
       this.state.error.stack || 'Not available',
@@ -155,7 +162,7 @@ export default class ErrorBoundary extends React.Component<
 
             {/* Error Title */}
             <h2 className="text-xl font-semibold mb-2 text-gray-200">
-              {title}
+              {this.props.routeName ? `${this.props.routeName}: ${title}` : title}
             </h2>
 
             {/* User-Friendly Message */}
@@ -192,7 +199,25 @@ export default class ErrorBoundary extends React.Component<
               >
                 Try Again
               </button>
+
+              {this.props.onGoHome && (
+                <button
+                  onClick={() => {
+                    this.resetErrorBoundary()
+                    this.props.onGoHome?.()
+                  }}
+                  className="px-5 py-2.5 rounded-lg bg-cre-surface text-gray-300 text-sm font-medium hover:bg-cre-surface/80 transition-colors border border-cre-border"
+                >
+                  Go Home
+                </button>
+              )}
             </div>
+
+            {this.state.correlationId && (
+              <p className="mb-4 text-xs text-gray-500">
+                Correlation ID: {this.state.correlationId}
+              </p>
+            )}
 
             {/* Show/Hide Details Toggle */}
             <button

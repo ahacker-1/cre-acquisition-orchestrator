@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { useCheckpointData } from './hooks/useCheckpointData'
 import ErrorBoundary from './components/ErrorBoundary'
 import DealIntakeWizard from './components/DealIntakeWizard'
 import DropZoneHero, { type OutcomeIntent } from './components/DropZoneHero'
 import QuickDealCreate from './components/QuickDealCreate'
 import SavedDealsPanel from './components/SavedDealsPanel'
-import WorkflowLauncher from './components/WorkflowLauncher'
-import DealWorkspace from './components/DealWorkspace'
 import { useDealLibrary } from './hooks/useDealLibrary'
 import { uploadDealDocument } from './lib/documentUpload'
 import type { DealCheckpoint, PhaseInfo } from './types/checkpoint'
@@ -15,6 +13,18 @@ import type { DealLibraryItem, DealRecordResponse } from './types/deals'
 type WorkspaceInitialTab = 'mission' | 'documents' | 'agents' | 'workpapers' | 'package' | 'advanced'
 
 const GUIDED_DEMO_DEAL_ID = 'parkview-2026-001'
+const DealWorkspace = lazy(() => import('./components/DealWorkspace'))
+const WorkflowLauncher = lazy(() => import('./components/WorkflowLauncher'))
+
+function RouteSkeleton({ label }: { label: string }) {
+  return (
+    <div className="portal-panel animate-pulse">
+      <div className="h-4 w-40 bg-white/10" />
+      <div className="mt-4 h-24 bg-white/5" />
+      <p className="mt-3 text-sm text-gray-500">{label}</p>
+    </div>
+  )
+}
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -420,44 +430,50 @@ export default function App() {
 
       {/* Content */}
       <main className="p-6 max-w-[1440px] mx-auto">
-        <ErrorBoundary>
+        <ErrorBoundary routeName={visibleDealCheckpoint ? 'Deal workspace' : 'Home'} onGoHome={openUploadFrontDoor}>
           {!visibleDealCheckpoint ? (
-            <div className="space-y-6">
-              <DropZoneHero
-                onFilesSelected={handleQuickFiles}
-                onTryDemo={() => void openGuidedDemo()}
-                starting={guidedDemoLoading}
-                runError={runStatus.error}
-              />
-              <SavedDealsPanel
-                variant="compact"
-                deals={deals}
-                loading={dealsLoading}
-                error={libraryError || dealsError}
-                onEditDeal={openEditDealWizard}
-                onOpenWorkspace={(dealId, section) => void openDealWorkspace(dealId, section)}
-                onLaunchDeal={(dealId) => void handleLaunchDeal(dealId)}
-                onViewAll={() => setLibraryOpen(true)}
-                launchingDealId={launchingDealId}
-                activeRunDealPath={runStatus.dealPath}
-                activeRunState={runStatus.state}
-              />
-            </div>
+            <ErrorBoundary routeName="Upload package">
+              <div className="space-y-6">
+                <DropZoneHero
+                  onFilesSelected={handleQuickFiles}
+                  onTryDemo={() => void openGuidedDemo()}
+                  starting={guidedDemoLoading}
+                  runError={runStatus.error}
+                />
+                <SavedDealsPanel
+                  variant="compact"
+                  deals={deals}
+                  loading={dealsLoading}
+                  error={libraryError || dealsError}
+                  onEditDeal={openEditDealWizard}
+                  onOpenWorkspace={(dealId, section) => void openDealWorkspace(dealId, section)}
+                  onLaunchDeal={(dealId) => void handleLaunchDeal(dealId)}
+                  onViewAll={() => setLibraryOpen(true)}
+                  launchingDealId={launchingDealId}
+                  activeRunDealPath={runStatus.dealPath}
+                  activeRunState={runStatus.state}
+                />
+              </div>
+            </ErrorBoundary>
           ) : (
-            <DealWorkspace
-              dealCheckpoint={visibleDealCheckpoint}
-              agentCheckpoints={showingManualWorkspace ? new Map() : agentCheckpoints}
-              logEntries={showingManualWorkspace ? [] : logEntries}
-              storyEvents={visibleStoryEvents}
-              documentArtifacts={visibleDocumentArtifacts}
-              deals={deals}
-              initialTab={workspaceInitialTab}
-              startGuidedDemo={guidedDemoAutoStart}
-              onGuidedDemoConsumed={() => setGuidedDemoAutoStart(false)}
-              onOpenEditDetails={openEditDealWizard}
-              onLaunchStarted={handleWorkflowLaunchStarted}
-              onPresetSaved={() => void refreshDeals()}
-            />
+            <ErrorBoundary routeName="Deal workspace" onGoHome={openUploadFrontDoor}>
+              <Suspense fallback={<RouteSkeleton label="Loading workspace..." />}>
+                <DealWorkspace
+                  dealCheckpoint={visibleDealCheckpoint}
+                  agentCheckpoints={showingManualWorkspace ? new Map() : agentCheckpoints}
+                  logEntries={showingManualWorkspace ? [] : logEntries}
+                  storyEvents={visibleStoryEvents}
+                  documentArtifacts={visibleDocumentArtifacts}
+                  deals={deals}
+                  initialTab={workspaceInitialTab}
+                  startGuidedDemo={guidedDemoAutoStart}
+                  onGuidedDemoConsumed={() => setGuidedDemoAutoStart(false)}
+                  onOpenEditDetails={openEditDealWizard}
+                  onLaunchStarted={handleWorkflowLaunchStarted}
+                  onPresetSaved={() => void refreshDeals()}
+                />
+              </Suspense>
+            </ErrorBoundary>
           )}
         </ErrorBoundary>
       </main>
@@ -494,17 +510,19 @@ export default function App() {
                 </button>
               </div>
               <div className="p-6">
-                <SavedDealsPanel
-                  deals={deals}
-                  loading={dealsLoading}
-                  error={libraryError || dealsError}
-                  onEditDeal={openEditDealWizard}
-                  onOpenWorkspace={(dealId, section) => void openDealWorkspace(dealId, section)}
-                  onLaunchDeal={(dealId) => void handleLaunchDeal(dealId)}
-                  launchingDealId={launchingDealId}
-                  activeRunDealPath={runStatus.dealPath}
-                  activeRunState={runStatus.state}
-                />
+                <ErrorBoundary routeName="Deal library" onGoHome={openUploadFrontDoor}>
+                  <SavedDealsPanel
+                    deals={deals}
+                    loading={dealsLoading}
+                    error={libraryError || dealsError}
+                    onEditDeal={openEditDealWizard}
+                    onOpenWorkspace={(dealId, section) => void openDealWorkspace(dealId, section)}
+                    onLaunchDeal={(dealId) => void handleLaunchDeal(dealId)}
+                    launchingDealId={launchingDealId}
+                    activeRunDealPath={runStatus.dealPath}
+                    activeRunState={runStatus.state}
+                  />
+                </ErrorBoundary>
               </div>
             </div>
           </div>
@@ -536,12 +554,16 @@ export default function App() {
                 </button>
               </div>
               <div className="p-6">
-                <WorkflowLauncher
-                  deals={deals}
-                  initialDealId={visibleDealCheckpoint?.dealId}
-                  onLaunchStarted={handleWorkflowLaunchStarted}
-                  onPresetSaved={() => void refreshDeals()}
-                />
+                <ErrorBoundary routeName="Workflow launcher" onGoHome={openUploadFrontDoor}>
+                  <Suspense fallback={<RouteSkeleton label="Loading workflow launcher..." />}>
+                    <WorkflowLauncher
+                      deals={deals}
+                      initialDealId={visibleDealCheckpoint?.dealId}
+                      onLaunchStarted={handleWorkflowLaunchStarted}
+                      onPresetSaved={() => void refreshDeals()}
+                    />
+                  </Suspense>
+                </ErrorBoundary>
               </div>
             </div>
           </div>

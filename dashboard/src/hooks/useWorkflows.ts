@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { API_URL } from '../config'
 import type {
   WorkflowCatalogResponse,
   WorkflowDefinition,
@@ -9,8 +10,6 @@ import type {
   WorkflowPresetSaveResponse,
   WorkflowPresetsResponse,
 } from '../types/workflows'
-
-const API_URL = 'http://localhost:8081'
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   const payload = (await response.json()) as T

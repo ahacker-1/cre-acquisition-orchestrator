@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { API_URL } from '../config'
 import type { RunSpeed } from '../types/checkpoint'
 import type {
   DealFormData,
@@ -11,8 +12,6 @@ import type {
   SaveDealResponse,
 } from '../types/deals'
 import { serializeDealFormData } from '../lib/dealForm'
-
-const API_URL = 'http://localhost:8081'
 
 interface LaunchOptions {
   scenario: string

@@ -1,8 +1,7 @@
 import { useState } from 'react'
+import { API_URL } from '../config'
 import type { AgentCheckpoint, DealCheckpoint, StoryEvent } from '../types/checkpoint'
 import type { DealWorkspace } from '../types/workspace'
-
-const API_URL = 'http://localhost:8081'
 
 type SwarmGoalConsoleProps = {
   workspace: DealWorkspace | null

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useWorkflows } from '../hooks/useWorkflows'
+import { API_URL } from '../config'
 import type { RunMode, RunSpeed, RuntimeProvider } from '../types/checkpoint'
 import type { DealLibraryItem, LaunchScenario } from '../types/deals'
 import type { LaunchReadinessResult } from '../types/workspace'
@@ -23,7 +24,6 @@ interface WorkflowLauncherProps {
 }
 
 const DRAFT_STORAGE_KEY = 'cre.workflowLauncher.v1'
-const API_URL = 'http://localhost:8081'
 
 interface CodexAuthStatus {
   installed: boolean
