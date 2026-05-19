@@ -23,6 +23,7 @@
     "demo": "node scripts/demo-run.js --deal config/deal.json --scenario core-plus --seed 42",
     "demo:verify": "node scripts/demo-verify.js",
     "test:goal-helper": "node scripts/goal-helper.test.js",
+    "test:enums": "node scripts/check-legacy-enums.js",
     "test:parsers": "cd dashboard && npm exec tsx ../scripts/parser-service.test.mjs",
     "test:workspace": "cd dashboard && npm exec tsx ../scripts/workspace-service.test.mjs",
     "simulate": "node scripts/orchestrate.js --deal config/deal.json --scenario core-plus --seed 42",
@@ -31,7 +32,7 @@
     "validate": "node scripts/validate-contracts.js",
     "validate:guides": "node scripts/validate-operator-guides.js",
     "validate:codex": "node scripts/validate-contracts.js --codex-run-id codex-smoke",
-    "test": "node scripts/system-test.js",
+    "test": "node scripts/check-legacy-enums.js && node scripts/system-test.js",
     "screenshots": "node dashboard/scripts/capture-release-screenshots.mjs",
     "test:e2e": "npm --prefix dashboard run test:e2e",
     "codex:status": "node scripts/codex-status.js",
@@ -41,5 +42,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
   }
 }

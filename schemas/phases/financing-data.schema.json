@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "phases/financing-data.schema.json",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/phases/financing-data.schema.json",
   "title": "Financing Downstream Data",
   "type": "object",
   "required": [
@@ -16,40 +16,184 @@
     "bestQuote"
   ],
   "properties": {
-    "selectedLender": { "type": "string" },
-    "selectedLenderFull": { "type": "string" },
-    "loanAmount": { "type": "number" },
-    "ltv": { "type": "number" },
-    "rate": { "type": "number" },
-    "rateType": { "type": "string" },
-    "term": { "type": "number" },
-    "amortization": { "type": "number" },
-    "interestOnlyMonths": { "type": "number" },
-    "annualDebtServiceIO": { "type": "number" },
-    "annualDebtServiceAmort": { "type": "number" },
-    "dscrIO": { "type": "number" },
-    "dscrAmort": { "type": "number" },
-    "dscrCovenant": { "type": "number" },
-    "prepayment": { "type": "string" },
-    "recourse": { "type": "string" },
-    "reserves": { "type": "object" },
-    "quotesReceived": { "type": "number" },
+    "selectedLender": {
+      "type": "string"
+    },
+    "selectedLenderFull": {
+      "type": "string"
+    },
+    "loanAmount": {
+      "type": "number"
+    },
+    "ltv": {
+      "type": "number"
+    },
+    "rate": {
+      "type": "number"
+    },
+    "rateType": {
+      "type": "string"
+    },
+    "term": {
+      "type": "number"
+    },
+    "amortization": {
+      "type": "number"
+    },
+    "interestOnlyMonths": {
+      "type": "number"
+    },
+    "annualDebtServiceIO": {
+      "type": "number"
+    },
+    "annualDebtServiceAmort": {
+      "type": "number"
+    },
+    "dscrIO": {
+      "type": "number"
+    },
+    "dscrAmort": {
+      "type": "number"
+    },
+    "dscrCovenant": {
+      "type": "number"
+    },
+    "prepayment": {
+      "type": "string"
+    },
+    "recourse": {
+      "type": "string"
+    },
+    "reserves": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "taxMonthly": {
+          "type": "number"
+        },
+        "insuranceMonthly": {
+          "type": "number"
+        },
+        "capexMonthly": {
+          "type": "number"
+        },
+        "renovationEscrow": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
     "lenderComparison": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "type": "object",
+        "required": [
+          "rank",
+          "lender",
+          "category",
+          "ltv",
+          "ltvValue",
+          "rate",
+          "rateValue",
+          "term",
+          "io",
+          "dscrIO",
+          "dscrIOValue",
+          "status"
+        ],
+        "properties": {
+          "rank": {
+            "type": "number"
+          },
+          "lender": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string"
+          },
+          "ltv": {
+            "type": "string"
+          },
+          "ltvValue": {
+            "type": "number"
+          },
+          "rate": {
+            "type": "string"
+          },
+          "rateValue": {
+            "type": "number"
+          },
+          "term": {
+            "type": "string"
+          },
+          "io": {
+            "type": "string"
+          },
+          "dscrIO": {
+            "type": "string"
+          },
+          "dscrIOValue": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SELECTED",
+              "REVIEWED",
+              "DISQUALIFIED"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "quotesReceived": {
+      "type": "number"
     },
     "bestQuote": {
       "type": "object",
-      "required": ["lenderName", "interestRate", "loanAmount"],
+      "required": [
+        "lenderName",
+        "interestRate",
+        "loanAmount"
+      ],
       "properties": {
-        "lenderName": { "type": "string" },
-        "interestRate": { "type": "number" },
-        "loanAmount": { "type": "number" }
+        "lenderName": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "interestRate": {
+          "type": "number"
+        },
+        "ltv": {
+          "type": "number"
+        },
+        "loanAmount": {
+          "type": "number"
+        },
+        "dscr": {
+          "type": "number"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "agentFindings": {
-      "type": "object"
+      "type": "object",
+      "patternProperties": {
+        "^lender-outreach$": {
+          "$ref": "../agents/financing/lender-outreach.schema.json"
+        },
+        "^quote-comparator$": {
+          "$ref": "../agents/financing/quote-comparator.schema.json"
+        },
+        "^term-sheet-builder$": {
+          "$ref": "../common/agent-finding.schema.json"
+        }
+      },
+      "additionalProperties": false
     },
     "riskScore": {
       "type": "number"
@@ -61,7 +205,19 @@
     "dataGapCount": {
       "type": "number",
       "minimum": 0
+    },
+    "redFlags": {
+      "type": "array",
+      "items": {
+        "$ref": "../common/flag.schema.json"
+      }
+    },
+    "dataGaps": {
+      "type": "array",
+      "items": {
+        "$ref": "../common/flag.schema.json"
+      }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

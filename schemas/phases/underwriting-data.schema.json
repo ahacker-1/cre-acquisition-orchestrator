@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "phases/underwriting-data.schema.json",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/phases/underwriting-data.schema.json",
   "title": "Underwriting Downstream Data",
   "type": "object",
   "required": [
@@ -29,56 +29,334 @@
         "equityRequired"
       ],
       "properties": {
-        "purchasePrice": { "type": "number" },
-        "totalBasis": { "type": "number" },
-        "goingInCapRate": { "type": "number" },
-        "year1NOI": { "type": "number" },
-        "stabilizedNOI": { "type": "number" },
-        "leveragedIRR": { "type": "number" },
-        "equityMultiple": { "type": "number" },
-        "equityRequired": { "type": "number" }
+        "purchasePrice": {
+          "type": "number"
+        },
+        "totalBasis": {
+          "type": "number"
+        },
+        "goingInCapRate": {
+          "type": "number"
+        },
+        "stabilizedCapRate": {
+          "type": "number"
+        },
+        "year1NOI": {
+          "type": "number"
+        },
+        "stabilizedNOI": {
+          "type": "number"
+        },
+        "leveragedIRR": {
+          "type": "number"
+        },
+        "equityMultiple": {
+          "type": "number"
+        },
+        "cashOnCash": {
+          "type": "number"
+        },
+        "equityRequired": {
+          "type": "number"
+        },
+        "debtRequest": {
+          "type": "number"
+        },
+        "targetLTV": {
+          "type": "number"
+        },
+        "targetDSCR": {
+          "type": "number"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "scenarioSummary": {
       "type": "object",
-      "required": ["baseIRR", "worstIRR", "bestIRR", "passRate"],
+      "required": [
+        "baseIRR",
+        "worstIRR",
+        "bestIRR",
+        "passRate"
+      ],
       "properties": {
-        "baseIRR": { "type": "number" },
-        "worstIRR": { "type": "number" },
-        "bestIRR": { "type": "number" },
-        "passRate": { "type": "number" }
+        "baseIRR": {
+          "type": "number"
+        },
+        "worstIRR": {
+          "type": "number"
+        },
+        "bestIRR": {
+          "type": "number"
+        },
+        "medianIRR": {
+          "type": "number"
+        },
+        "passRate": {
+          "type": "number"
+        },
+        "dscrRange": {
+          "type": "object",
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "debtSizing": {
       "type": "object",
-      "required": ["requestedLoanAmount", "maxLTV", "interestRate"],
+      "required": [
+        "requestedLoanAmount",
+        "maxLTV",
+        "interestRate"
+      ],
       "properties": {
-        "requestedLoanAmount": { "type": "number" },
-        "maxLTV": { "type": "number" },
-        "interestRate": { "type": "number" }
+        "requestedLoanAmount": {
+          "type": "number"
+        },
+        "maxLTV": {
+          "type": "number"
+        },
+        "constrainingMetric": {
+          "type": "string"
+        },
+        "interestRate": {
+          "type": "number"
+        },
+        "term": {
+          "type": "number"
+        },
+        "amortization": {
+          "type": "number"
+        },
+        "ioPeriod": {
+          "type": "number"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "capExBudget": {
       "type": "object",
-      "required": ["total5Year"],
+      "required": [
+        "total5Year"
+      ],
       "properties": {
-        "total5Year": { "type": "number" }
+        "total5Year": {
+          "type": "number"
+        },
+        "yearlySchedule": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "immediateNeeds": {
+          "type": "number"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "proForma": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "type": "object",
+        "required": [
+          "year",
+          "revenue",
+          "expenses",
+          "noi",
+          "debtService",
+          "dscr",
+          "cashFlow"
+        ],
+        "properties": {
+          "year": {
+            "type": "number"
+          },
+          "revenue": {
+            "type": "number"
+          },
+          "expenses": {
+            "type": "number"
+          },
+          "noi": {
+            "type": "number"
+          },
+          "debtService": {
+            "type": "number"
+          },
+          "dscr": {
+            "type": "number"
+          },
+          "cashFlow": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "proFormaAssumptions": {
+      "type": "string"
     },
     "returnMetrics": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "type": "object",
+        "required": [
+          "metric",
+          "value",
+          "target"
+        ],
+        "properties": {
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "exitAnalysis": {
+      "type": "object",
+      "required": [
+        "holdYears",
+        "exitCapRate",
+        "exitNOI",
+        "grossExitValue",
+        "netSaleProceeds"
+      ],
+      "properties": {
+        "holdYears": {
+          "type": "number"
+        },
+        "exitCapRate": {
+          "type": "number"
+        },
+        "exitNOI": {
+          "type": "number"
+        },
+        "grossExitValue": {
+          "type": "number"
+        },
+        "netSaleProceeds": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "scenarioMatrix": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "scenario",
+          "rentCase",
+          "vacancyCase",
+          "exitCapCase",
+          "rentShock",
+          "vacancyShock",
+          "exitCapRate",
+          "probability",
+          "irr",
+          "equityMultiple",
+          "dscr",
+          "exitValue",
+          "pass"
+        ],
+        "properties": {
+          "scenario": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rentCase": {
+            "type": "string"
+          },
+          "vacancyCase": {
+            "type": "string"
+          },
+          "exitCapCase": {
+            "type": "string"
+          },
+          "rentShock": {
+            "type": "number"
+          },
+          "vacancyShock": {
+            "type": "number"
+          },
+          "exitCapRate": {
+            "type": "number"
+          },
+          "probability": {
+            "type": "number"
+          },
+          "irr": {
+            "type": "number"
+          },
+          "equityMultiple": {
+            "type": "number"
+          },
+          "dscr": {
+            "type": "number"
+          },
+          "exitValue": {
+            "type": "number"
+          },
+          "pass": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "icMemoPath": {
+      "type": "string"
+    },
+    "modelPath": {
+      "type": "string"
+    },
+    "scenarioMatrixPath": {
+      "type": "string"
+    },
+    "verdict": {
+      "$ref": "../common/enums.schema.json#/$defs/verdict"
+    },
+    "conditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "agentFindings": {
-      "type": "object"
+      "type": "object",
+      "patternProperties": {
+        "^financial-model-builder$": {
+          "$ref": "../agents/underwriting/financial-model-builder.schema.json"
+        },
+        "^scenario-analyst$": {
+          "$ref": "../agents/underwriting/scenario-analyst.schema.json"
+        },
+        "^ic-memo-writer$": {
+          "$ref": "../common/agent-finding.schema.json"
+        }
+      },
+      "additionalProperties": false
     },
     "riskScore": {
       "type": "number"
@@ -90,7 +368,19 @@
     "dataGapCount": {
       "type": "number",
       "minimum": 0
+    },
+    "redFlags": {
+      "type": "array",
+      "items": {
+        "$ref": "../common/flag.schema.json"
+      }
+    },
+    "dataGaps": {
+      "type": "array",
+      "items": {
+        "$ref": "../common/flag.schema.json"
+      }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

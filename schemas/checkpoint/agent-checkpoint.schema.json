@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "checkpoint/agent-checkpoint.schema.json",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/checkpoint/agent-checkpoint.schema.json",
   "title": "Agent Checkpoint",
   "type": "object",
   "required": [
@@ -28,8 +28,7 @@
       "minLength": 1
     },
     "status": {
-      "type": "string",
-      "enum": ["pending", "running", "complete", "failed", "skipped"]
+      "$ref": "../common/enums.schema.json#/$defs/status"
     },
     "progress": {
       "type": "number",
@@ -37,49 +36,109 @@
       "maximum": 1
     },
     "startedAt": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
     },
     "completedAt": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
     },
     "lastUpdatedAt": {
-      "type": "string"
+      "type": "string",
+      "format": "date-time"
     },
     "resumePoint": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "outputs": {
       "type": "object",
-      "required": ["summary", "findings", "metrics", "verdict"],
+      "required": [
+        "summary",
+        "findings",
+        "metrics",
+        "verdict"
+      ],
       "properties": {
-        "summary": { "type": "string" },
+        "summary": {
+          "type": "string"
+        },
         "findings": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
-        "metrics": { "type": "object" },
+        "metrics": {
+          "type": "object",
+          "required": [],
+          "properties": {
+            "confidence": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
         "verdict": {
-          "type": ["string", "null"]
+          "$ref": "../common/enums.schema.json#/$defs/nullableVerdict"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "dataGaps": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "$ref": "../common/flag.schema.json"
+      }
     },
     "errors": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "type": "object",
+        "required": [
+          "message",
+          "timestamp",
+          "recoverable"
+        ],
+        "properties": {
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recoverable": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
     },
     "redFlags": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "$ref": "../common/flag.schema.json"
+      }
     },
     "childAgents": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "type": "object",
+        "required": [],
+        "properties": {},
+        "additionalProperties": false
+      }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

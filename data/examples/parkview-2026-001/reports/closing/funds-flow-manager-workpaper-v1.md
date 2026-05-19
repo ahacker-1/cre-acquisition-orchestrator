@@ -5,10 +5,10 @@
 - Property: Parkview Apartments
 - Phase: Closing
 - Agent: funds-flow-manager
-- Started: 2026-05-19T19:05:31.615Z
-- Completed: 2026-05-19T19:05:31.616Z
+- Started: 2026-05-19T19:25:55.603Z
+- Completed: 2026-05-19T19:25:55.604Z
 - Verdict: PASS
-- Summary: funds-flow-manager completed analysis with no material exceptions.
+- Summary: Sources and uses are balanced.
 
 ## Deal Snapshot
 | Metric | Value |
@@ -49,10 +49,10 @@
 - QC15: Reviewer can trace every major figure to a table above.
 
 ## Findings
-- funds-flow-manager completed analysis with no material exceptions.
+- Sources and uses are balanced.
 
 ## Agent Analysis
-Primary finding: funds-flow-manager completed the assigned review using the deterministic Parkview fixture.
+Primary finding: Sources and uses are balanced.
 
 ### Closing and Funds Flow
 | Source | Amount |

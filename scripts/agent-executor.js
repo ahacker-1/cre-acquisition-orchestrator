@@ -33,7 +33,7 @@ function makeAgentCheckpoint({
     startedAt,
     completedAt,
     lastUpdatedAt: nowIso(),
-    resumePoint: status === 'failed' ? 'rerun-agent' : null,
+    resumePoint: status === 'FAILED' ? 'rerun-agent' : null,
     outputs: {
       summary,
       findings,
@@ -80,7 +80,7 @@ async function executeAgent({
       phaseLabel: phaseLabel || phaseKey,
       agent: agentName,
       title: `${agentName} started`,
-      status: 'running'
+      status: 'RUNNING'
     });
     storyEngine.emitAgentMessage({
       phase: phaseKey,
@@ -100,7 +100,7 @@ async function executeAgent({
     agentName,
     phaseKey,
     dealId,
-    status: 'running',
+    status: 'RUNNING',
     progress: 0.35,
     startedAt,
     completedAt: null,
@@ -123,7 +123,7 @@ async function executeAgent({
       agentName,
       phaseKey,
       dealId,
-      status: 'failed',
+      status: 'FAILED',
       progress: 1,
       startedAt,
       completedAt: nowIso(),
@@ -204,7 +204,7 @@ async function executeAgent({
     agentName,
     phaseKey,
     dealId,
-    status: 'complete',
+    status: 'COMPLETE',
     progress: 1,
     startedAt,
     completedAt: nowIso(),

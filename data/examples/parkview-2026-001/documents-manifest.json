@@ -1,11 +1,11 @@
 {
-  "runId": "local-1779217531454",
+  "runId": "local-1779218755341",
   "dealId": "parkview-2026-001",
-  "updatedAt": "2026-05-19T19:05:31.625Z",
+  "updatedAt": "2026-05-19T19:25:55.613Z",
   "documents": [
     {
       "docId": "due-diligence:rent-roll-analyst:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "rent-roll-analyst",
@@ -24,11 +24,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.490Z"
+      "createdAt": "2026-05-19T19:25:55.421Z"
     },
     {
       "docId": "due-diligence:opex-analyst:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "opex-analyst",
@@ -47,11 +47,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.497Z"
+      "createdAt": "2026-05-19T19:25:55.482Z"
     },
     {
       "docId": "due-diligence:physical-inspection:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "physical-inspection",
@@ -70,11 +70,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.502Z"
+      "createdAt": "2026-05-19T19:25:55.490Z"
     },
     {
       "docId": "due-diligence:legal-title-review:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "legal-title-review",
@@ -93,11 +93,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.508Z"
+      "createdAt": "2026-05-19T19:25:55.495Z"
     },
     {
       "docId": "due-diligence:market-study:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "market-study",
@@ -116,11 +116,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.513Z"
+      "createdAt": "2026-05-19T19:25:55.502Z"
     },
     {
       "docId": "due-diligence:tenant-credit:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "tenant-credit",
@@ -139,11 +139,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.518Z"
+      "createdAt": "2026-05-19T19:25:55.508Z"
     },
     {
       "docId": "due-diligence:environmental-review:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "environmental-review",
@@ -162,11 +162,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.523Z"
+      "createdAt": "2026-05-19T19:25:55.513Z"
     },
     {
       "docId": "due-diligence:phase-orchestrator:due-diligence-output-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "phase-orchestrator",
@@ -184,11 +184,11 @@
         "phase-output"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.526Z"
+      "createdAt": "2026-05-19T19:25:55.515Z"
     },
     {
       "docId": "due-diligence:phase-orchestrator:due-diligence-report-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "phase-orchestrator",
@@ -206,11 +206,11 @@
         "phase-report"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.527Z"
+      "createdAt": "2026-05-19T19:25:55.516Z"
     },
     {
       "docId": "underwriting:financial-model-builder:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
       "agent": "financial-model-builder",
@@ -229,11 +229,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.536Z"
+      "createdAt": "2026-05-19T19:25:55.526Z"
     },
     {
       "docId": "underwriting:scenario-analyst:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
       "agent": "scenario-analyst",
@@ -252,11 +252,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.541Z"
+      "createdAt": "2026-05-19T19:25:55.531Z"
     },
     {
       "docId": "underwriting:ic-memo-writer:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
       "agent": "ic-memo-writer",
@@ -275,11 +275,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.547Z"
+      "createdAt": "2026-05-19T19:25:55.537Z"
     },
     {
       "docId": "underwriting:phase-orchestrator:underwriting-output-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
       "agent": "phase-orchestrator",
@@ -297,11 +297,11 @@
         "phase-output"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.550Z"
+      "createdAt": "2026-05-19T19:25:55.539Z"
     },
     {
       "docId": "underwriting:phase-orchestrator:underwriting-report-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
       "agent": "phase-orchestrator",
@@ -319,11 +319,11 @@
         "phase-report"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.550Z"
+      "createdAt": "2026-05-19T19:25:55.540Z"
     },
     {
       "docId": "financing:lender-outreach:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "financing",
       "agent": "lender-outreach",
@@ -342,11 +342,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.558Z"
+      "createdAt": "2026-05-19T19:25:55.548Z"
     },
     {
       "docId": "financing:quote-comparator:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "financing",
       "agent": "quote-comparator",
@@ -365,11 +365,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.563Z"
+      "createdAt": "2026-05-19T19:25:55.552Z"
     },
     {
       "docId": "financing:term-sheet-builder:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "financing",
       "agent": "term-sheet-builder",
@@ -388,11 +388,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.569Z"
+      "createdAt": "2026-05-19T19:25:55.557Z"
     },
     {
       "docId": "financing:phase-orchestrator:financing-output-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "financing",
       "agent": "phase-orchestrator",
@@ -410,11 +410,11 @@
         "phase-output"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.572Z"
+      "createdAt": "2026-05-19T19:25:55.559Z"
     },
     {
       "docId": "financing:phase-orchestrator:financing-report-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "financing",
       "agent": "phase-orchestrator",
@@ -432,11 +432,11 @@
         "phase-report"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.572Z"
+      "createdAt": "2026-05-19T19:25:55.560Z"
     },
     {
       "docId": "legal:psa-reviewer:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "psa-reviewer",
@@ -455,11 +455,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.579Z"
+      "createdAt": "2026-05-19T19:25:55.568Z"
     },
     {
       "docId": "legal:loan-doc-reviewer:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "loan-doc-reviewer",
@@ -478,11 +478,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.584Z"
+      "createdAt": "2026-05-19T19:25:55.572Z"
     },
     {
       "docId": "legal:title-survey-reviewer:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "title-survey-reviewer",
@@ -501,11 +501,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.589Z"
+      "createdAt": "2026-05-19T19:25:55.577Z"
     },
     {
       "docId": "legal:estoppel-tracker:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "estoppel-tracker",
@@ -524,11 +524,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.594Z"
+      "createdAt": "2026-05-19T19:25:55.582Z"
     },
     {
       "docId": "legal:insurance-coordinator:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "insurance-coordinator",
@@ -547,11 +547,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.599Z"
+      "createdAt": "2026-05-19T19:25:55.587Z"
     },
     {
       "docId": "legal:transfer-doc-preparer:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "transfer-doc-preparer",
@@ -570,11 +570,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.603Z"
+      "createdAt": "2026-05-19T19:25:55.592Z"
     },
     {
       "docId": "legal:phase-orchestrator:legal-output-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "phase-orchestrator",
@@ -592,11 +592,11 @@
         "phase-output"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.606Z"
+      "createdAt": "2026-05-19T19:25:55.594Z"
     },
     {
       "docId": "legal:phase-orchestrator:legal-report-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "phase-orchestrator",
@@ -614,11 +614,11 @@
         "phase-report"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.606Z"
+      "createdAt": "2026-05-19T19:25:55.594Z"
     },
     {
       "docId": "closing:closing-coordinator:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "closing",
       "agent": "closing-coordinator",
@@ -627,7 +627,7 @@
       "path": "data/examples/parkview-2026-001/reports/closing/closing-coordinator-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
-      "summary": "closing-coordinator completed analysis with no material exceptions.",
+      "summary": "Closing checklist is complete.",
       "dependsOn": [],
       "tags": [
         "closing",
@@ -637,11 +637,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.613Z"
+      "createdAt": "2026-05-19T19:25:55.601Z"
     },
     {
       "docId": "closing:funds-flow-manager:workpaper-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "closing",
       "agent": "funds-flow-manager",
@@ -650,7 +650,7 @@
       "path": "data/examples/parkview-2026-001/reports/closing/funds-flow-manager-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
-      "summary": "funds-flow-manager completed analysis with no material exceptions.",
+      "summary": "Sources and uses are balanced.",
       "dependsOn": [],
       "tags": [
         "closing",
@@ -660,11 +660,11 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.618Z"
+      "createdAt": "2026-05-19T19:25:55.606Z"
     },
     {
       "docId": "closing:phase-orchestrator:closing-output-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "closing",
       "agent": "phase-orchestrator",
@@ -682,11 +682,11 @@
         "phase-output"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.620Z"
+      "createdAt": "2026-05-19T19:25:55.608Z"
     },
     {
       "docId": "closing:phase-orchestrator:closing-report-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "closing",
       "agent": "phase-orchestrator",
@@ -704,11 +704,11 @@
         "phase-report"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.620Z"
+      "createdAt": "2026-05-19T19:25:55.609Z"
     },
     {
       "docId": "closing:master-orchestrator:final-report-v1",
-      "runId": "local-1779217531454",
+      "runId": "local-1779218755341",
       "dealId": "parkview-2026-001",
       "phase": "closing",
       "agent": "master-orchestrator",
@@ -726,7 +726,7 @@
         "final-report"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:05:31.625Z"
+      "createdAt": "2026-05-19T19:25:55.613Z"
     }
   ]
 }

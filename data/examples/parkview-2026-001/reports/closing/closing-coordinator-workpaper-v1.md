@@ -5,10 +5,10 @@
 - Property: Parkview Apartments
 - Phase: Closing
 - Agent: closing-coordinator
-- Started: 2026-05-19T19:05:31.610Z
-- Completed: 2026-05-19T19:05:31.611Z
+- Started: 2026-05-19T19:25:55.598Z
+- Completed: 2026-05-19T19:25:55.599Z
 - Verdict: PASS
-- Summary: closing-coordinator completed analysis with no material exceptions.
+- Summary: Closing checklist is complete.
 
 ## Deal Snapshot
 | Metric | Value |
@@ -49,10 +49,10 @@
 - QC15: Reviewer can trace every major figure to a table above.
 
 ## Findings
-- closing-coordinator completed analysis with no material exceptions.
+- Closing checklist is complete.
 
 ## Agent Analysis
-Primary finding: closing-coordinator completed the assigned review using the deterministic Parkview fixture.
+Primary finding: Closing checklist is complete.
 
 ### Closing and Funds Flow
 | Source | Amount |

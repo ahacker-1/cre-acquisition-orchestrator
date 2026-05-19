@@ -204,8 +204,8 @@ function main() {
         errors.push(`${phase.key} expected COMPLETE, received ${phaseState.status}`);
       }
       selected.forEach((agentName) => {
-        if (agentStatuses[agentName] !== 'COMPLETED') {
-          errors.push(`${agentName} expected COMPLETED, received ${agentStatuses[agentName] || 'missing'}`);
+        if (agentStatuses[agentName] !== 'COMPLETE') {
+          errors.push(`${agentName} expected COMPLETE, received ${agentStatuses[agentName] || 'missing'}`);
         }
       });
       phase.agents

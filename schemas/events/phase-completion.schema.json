@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "events/phase-completion.schema.json",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/events/phase-completion.schema.json",
   "title": "Phase Completion Event",
   "type": "object",
   "required": [
@@ -17,27 +17,26 @@
   "properties": {
     "type": {
       "type": "string",
-      "enum": ["PHASE_COMPLETION"]
+      "enum": [
+        "PHASE_COMPLETION"
+      ]
     },
     "dealId": {
       "type": "string",
       "minLength": 1
     },
     "phase": {
-      "type": "string",
-      "enum": ["dueDiligence", "underwriting", "financing", "legal", "closing"]
+      "$ref": "../common/enums.schema.json#/$defs/phaseKey"
     },
     "phaseId": {
       "type": "string",
       "minLength": 1
     },
     "status": {
-      "type": "string",
-      "enum": ["COMPLETE", "FAILED", "CONDITIONAL"]
+      "$ref": "../common/enums.schema.json#/$defs/status"
     },
     "verdict": {
-      "type": "string",
-      "enum": ["PASS", "FAIL", "CONDITIONAL", "GO", "NO_GO"]
+      "$ref": "../common/enums.schema.json#/$defs/verdict"
     },
     "durationMs": {
       "type": "number",
@@ -54,20 +53,33 @@
     "criticalFlags": {
       "type": "array",
       "items": {
-        "type": "object"
+        "$ref": "../common/flag.schema.json"
       }
     },
     "metrics": {
-      "type": "object"
+      "type": "object",
+      "required": [],
+      "properties": {
+        "riskScore": {
+          "type": "number"
+        },
+        "redFlagCount": {
+          "type": "number"
+        },
+        "dataGapCount": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
     },
     "timestamp": {
       "type": "string",
-      "minLength": 10
+      "format": "date-time"
     },
     "traceId": {
       "type": "string",
       "minLength": 1
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

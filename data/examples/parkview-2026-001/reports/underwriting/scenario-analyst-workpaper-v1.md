@@ -5,8 +5,8 @@
 - Property: Parkview Apartments
 - Phase: Underwriting
 - Agent: scenario-analyst
-- Started: 2026-05-19T19:05:31.538Z
-- Completed: 2026-05-19T19:05:31.539Z
+- Started: 2026-05-19T19:25:55.527Z
+- Completed: 2026-05-19T19:25:55.529Z
 - Verdict: PASS
 - Summary: 1/27 sensitivity scenarios pass constraints.
 

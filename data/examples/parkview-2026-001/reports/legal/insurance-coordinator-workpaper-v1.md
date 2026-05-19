@@ -5,8 +5,8 @@
 - Property: Parkview Apartments
 - Phase: Legal
 - Agent: insurance-coordinator
-- Started: 2026-05-19T19:05:31.596Z
-- Completed: 2026-05-19T19:05:31.597Z
+- Started: 2026-05-19T19:25:55.584Z
+- Completed: 2026-05-19T19:25:55.585Z
 - Verdict: PASS
 - Summary: Primary insurance coverages bound.
 

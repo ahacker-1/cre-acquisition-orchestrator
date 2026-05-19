@@ -24,6 +24,10 @@ const steps = [
     command: ['run', 'test:goal-helper'],
   },
   {
+    name: 'Check canonical enum migration',
+    command: ['run', 'test:enums'],
+  },
+  {
     name: 'Validate source-backed parser fixtures',
     command: ['run', 'test:parsers'],
   },

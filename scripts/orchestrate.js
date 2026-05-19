@@ -216,7 +216,7 @@ function renderFinalReport(checkpoint) {
   lines.push('');
   lines.push('## Recommendation');
   const closingVerdict = phases.closing?.verdict;
-  if (closingVerdict === 'GO') {
+  if (closingVerdict === 'PASS' || closingVerdict === 'PROCEED_WITH_MITIGATIONS') {
     lines.push('Proceed with closing package execution.');
   } else if (closingVerdict === 'CONDITIONAL') {
     lines.push('Proceed with conditions and complete pending checklist items.');
@@ -237,7 +237,7 @@ function makeSkippedAgentCheckpoint({ agentName, phaseKey, dealId, reason }) {
     agentName,
     phase: phaseKey,
     dealId,
-    status: 'skipped',
+    status: 'SKIPPED',
     progress: 1,
     startedAt: null,
     completedAt: timestamp,
@@ -569,7 +569,7 @@ async function main() {
           failAgent: args.failAgent,
           agentDelayMs: args.agentDelayMs
         });
-        phaseState.agentStatuses[agentName] = 'COMPLETED';
+        phaseState.agentStatuses[agentName] = 'COMPLETE';
         completedAgents += 1;
         phaseState.progress = round(completedAgents / selectedAgents.length, 3);
         checkpoint.lastUpdatedAt = nowIso();
@@ -645,7 +645,7 @@ async function main() {
     };
     phaseMeta.agents.forEach((agentName) => {
       if (selectedAgentSet.has(agentName) && phaseState.agentStatuses[agentName] !== 'FAILED') {
-        phaseState.agentStatuses[agentName] = 'COMPLETED';
+        phaseState.agentStatuses[agentName] = 'COMPLETE';
       }
     });
 
@@ -744,7 +744,7 @@ async function main() {
     storyEngine.emitMilestone(
       `${phaseMeta.label} Complete`,
       `Verdict ${verdict} - Risk ${phaseState.riskScore}`,
-      verdict === 'PASS' || verdict === 'GO' ? 'success' : 'warning'
+      verdict === 'PASS' ? 'success' : 'warning'
     );
 
     summarizeProgress(checkpoint);
@@ -790,7 +790,7 @@ async function main() {
   checkpoint.lastUpdatedAt = nowIso();
   validateMasterCheckpoint(BASE_DIR, checkpoint);
   writeJson(checkpointPath, checkpoint);
-  storyEngine.finalize(checkpoint.status === 'COMPLETE' ? 'COMPLETED' : 'FAILED', {
+  storyEngine.finalize(checkpoint.status === 'COMPLETE' ? 'COMPLETE' : 'FAILED', {
     checkpointPath: path.relative(BASE_DIR, checkpointPath).replace(/\\/g, '/'),
     finalReportPath: path.relative(BASE_DIR, finalReportPath).replace(/\\/g, '/'),
     scenario: scenarioName,

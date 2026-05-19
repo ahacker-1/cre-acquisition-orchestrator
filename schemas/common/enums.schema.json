@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/common/enums.schema.json",
+  "title": "Common Contract Enums",
+  "$defs": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "RUNNING",
+        "COMPLETE",
+        "FAILED",
+        "SKIPPED"
+      ]
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "CONDITIONAL",
+        "NEEDS_REVIEW",
+        "PROCEED_WITH_MITIGATIONS"
+      ]
+    },
+    "nullableVerdict": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/verdict"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ]
+    },
+    "flagStatus": {
+      "type": "string",
+      "enum": [
+        "OPEN",
+        "ACKNOWLEDGED",
+        "MITIGATED",
+        "WAIVED",
+        "CLOSED"
+      ]
+    },
+    "checklistStatus": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "RUNNING",
+        "COMPLETE",
+        "FAILED",
+        "SKIPPED",
+        "WAIVED"
+      ]
+    },
+    "phaseKey": {
+      "type": "string",
+      "enum": [
+        "dueDiligence",
+        "underwriting",
+        "financing",
+        "legal",
+        "closing"
+      ]
+    }
+  }
+}

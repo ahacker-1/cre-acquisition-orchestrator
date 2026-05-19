@@ -5,8 +5,8 @@
 - Property: Parkview Apartments
 - Phase: Legal
 - Agent: loan-doc-reviewer
-- Started: 2026-05-19T19:05:31.581Z
-- Completed: 2026-05-19T19:05:31.582Z
+- Started: 2026-05-19T19:25:55.569Z
+- Completed: 2026-05-19T19:25:55.570Z
 - Verdict: PASS
 - Summary: Loan docs align with selected financing terms.
 

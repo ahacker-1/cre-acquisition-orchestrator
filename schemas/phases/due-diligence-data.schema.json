@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "phases/due-diligence-data.schema.json",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/phases/due-diligence-data.schema.json",
   "title": "Due Diligence Downstream Data",
   "type": "object",
   "required": [
@@ -17,80 +17,443 @@
     "dataGapCount"
   ],
   "properties": {
+    "propertyName": {
+      "type": "string"
+    },
+    "yearBuilt": {
+      "type": "number"
+    },
+    "construction": {
+      "type": "string"
+    },
+    "currentOwner": {
+      "type": "string"
+    },
+    "occupancy": {
+      "type": "number"
+    },
+    "zoningCompliant": {
+      "type": "boolean"
+    },
+    "zoning": {
+      "type": "string"
+    },
+    "unitMix": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "count",
+          "avgSqFt",
+          "marketRent",
+          "inPlaceRent"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "count": {
+            "type": "number"
+          },
+          "avgSqFt": {
+            "type": "number"
+          },
+          "marketRent": {
+            "type": "number"
+          },
+          "inPlaceRent": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "avgInPlaceRent": {
+      "type": "number"
+    },
+    "avgMarketRent": {
+      "type": "number"
+    },
+    "lossToLease": {
+      "type": "number"
+    },
+    "lossToLeasePct": {
+      "type": "number"
+    },
+    "pricePerUnit": {
+      "type": "number"
+    },
+    "marketPPU": {
+      "type": "number"
+    },
+    "populationGrowth": {
+      "type": "number"
+    },
+    "supplyPipeline": {
+      "type": "string"
+    },
+    "jurisdiction": {
+      "type": "string"
+    },
+    "rentControl": {
+      "type": "boolean"
+    },
+    "renovationBudget": {
+      "type": "number"
+    },
+    "renovationPerUnit": {
+      "type": "number"
+    },
+    "marketVacancy": {
+      "type": "number"
+    },
+    "supplyDelivered2025": {
+      "type": "number"
+    },
+    "supplyForecast2026": {
+      "type": "string"
+    },
+    "absorptionNote": {
+      "type": "string"
+    },
+    "marketCycle": {
+      "type": "string"
+    },
+    "rentGrowthTrailing": {
+      "type": "number"
+    },
+    "rentGrowthForecast": {
+      "type": "number"
+    },
+    "environmentalRisk": {
+      "type": "string"
+    },
+    "floodZone": {
+      "type": "string"
+    },
+    "opexBenchmark": {
+      "type": "string"
+    },
+    "opexBreakdown": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "category",
+          "amount",
+          "pct"
+        ],
+        "properties": {
+          "category": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amount": {
+            "type": "number"
+          },
+          "pct": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "rentRoll": {
       "type": "object",
-      "required": ["totalUnits", "occupancy", "avgRent", "avgMarketRent", "lossToLease"],
+      "required": [
+        "totalUnits",
+        "occupancy",
+        "avgRent",
+        "avgMarketRent",
+        "lossToLease"
+      ],
       "properties": {
-        "totalUnits": { "type": "number" },
-        "occupancy": { "type": "number" },
-        "avgRent": { "type": "number" },
-        "avgMarketRent": { "type": "number" },
-        "lossToLease": { "type": "number" },
-        "lossToLeasePercent": { "type": "number" }
+        "totalUnits": {
+          "type": "number"
+        },
+        "occupancy": {
+          "type": "number"
+        },
+        "avgRent": {
+          "type": "number"
+        },
+        "avgMarketRent": {
+          "type": "number"
+        },
+        "lossToLease": {
+          "type": "number"
+        },
+        "lossToLeasePercent": {
+          "type": "number"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "expenses": {
       "type": "object",
-      "required": ["totalOpEx", "opExPerUnit", "opExRatio", "adjustedExpenses"],
+      "required": [
+        "totalOpEx",
+        "opExPerUnit",
+        "opExRatio",
+        "adjustedExpenses"
+      ],
       "properties": {
-        "totalOpEx": { "type": "number" },
-        "opExPerUnit": { "type": "number" },
-        "opExRatio": { "type": "number" },
-        "adjustedExpenses": { "type": "object" }
+        "totalOpEx": {
+          "type": "number"
+        },
+        "opExPerUnit": {
+          "type": "number"
+        },
+        "opExRatio": {
+          "type": "number"
+        },
+        "adjustedExpenses": {
+          "type": "object",
+          "required": [],
+          "properties": {
+            "taxes": {
+              "type": "number"
+            },
+            "insurance": {
+              "type": "number"
+            },
+            "utilities": {
+              "type": "number"
+            },
+            "repairs": {
+              "type": "number"
+            },
+            "management": {
+              "type": "number"
+            },
+            "payroll": {
+              "type": "number"
+            },
+            "admin": {
+              "type": "number"
+            },
+            "marketing": {
+              "type": "number"
+            },
+            "contractServices": {
+              "type": "number"
+            },
+            "other": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "physical": {
       "type": "object",
-      "required": ["condition", "conditionScore", "capExTotal5Year"],
+      "required": [
+        "condition",
+        "conditionScore",
+        "capExTotal5Year"
+      ],
       "properties": {
-        "condition": { "type": "string" },
-        "conditionScore": { "type": "number" },
-        "capExTotal5Year": { "type": "number" }
+        "condition": {
+          "type": "string"
+        },
+        "conditionScore": {
+          "type": "number"
+        },
+        "capExTotal5Year": {
+          "type": "number"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "title": {
       "type": "object",
-      "required": ["status"],
+      "required": [
+        "status"
+      ],
       "properties": {
-        "status": { "type": "string" }
+        "status": {
+          "type": "string"
+        },
+        "zoningCompliance": {
+          "type": "string"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "market": {
       "type": "object",
-      "required": ["submarket", "capRateRange", "populationGrowth"],
+      "required": [
+        "submarket",
+        "capRateRange",
+        "populationGrowth"
+      ],
       "properties": {
-        "submarket": { "type": "string" },
-        "capRateRange": { "type": "object" },
-        "populationGrowth": { "type": "number" }
+        "submarket": {
+          "type": "string"
+        },
+        "capRateRange": {
+          "type": "object",
+          "required": [
+            "low",
+            "mid",
+            "high"
+          ],
+          "properties": {
+            "low": {
+              "type": "number"
+            },
+            "mid": {
+              "type": "number"
+            },
+            "high": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "populationGrowth": {
+          "type": "number"
+        },
+        "rentGrowthTrailing12": {
+          "type": "number"
+        },
+        "rentGrowthProjected": {
+          "type": "number"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "tenants": {
       "type": "object",
-      "required": ["creditSummary", "concentrationRisk", "delinquencyRate"],
+      "required": [
+        "creditSummary",
+        "concentrationRisk",
+        "delinquencyRate"
+      ],
       "properties": {
-        "creditSummary": { "type": "string" },
-        "concentrationRisk": { "type": "string" },
-        "delinquencyRate": { "type": "number" }
+        "creditSummary": {
+          "type": "string"
+        },
+        "concentrationRisk": {
+          "type": "string"
+        },
+        "delinquencyRate": {
+          "type": "number"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "environmental": {
       "type": "object",
-      "required": ["phase1Status", "floodZone", "regulatoryCompliance"],
+      "required": [
+        "phase1Status",
+        "floodZone",
+        "regulatoryCompliance"
+      ],
       "properties": {
-        "phase1Status": { "type": "string" },
-        "floodZone": { "type": "string" },
-        "regulatoryCompliance": { "type": "string" }
+        "phase1Status": {
+          "type": "string"
+        },
+        "floodZone": {
+          "type": "string"
+        },
+        "regulatoryCompliance": {
+          "type": "string"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
+    },
+    "marketDetail": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "msaPopulation": {
+          "type": "number"
+        },
+        "populationGrowth": {
+          "type": "number"
+        },
+        "populationGrowthRank": {
+          "type": "string"
+        },
+        "jobGrowth": {
+          "type": "number"
+        },
+        "unemployment": {
+          "type": "number"
+        },
+        "marketVacancy": {
+          "type": "number"
+        },
+        "marketPPU": {
+          "type": "number"
+        },
+        "marketCapRateRange": {
+          "type": "string"
+        },
+        "supplyDelivered2025": {
+          "type": "number"
+        },
+        "supplyForecast2026": {
+          "type": "string"
+        },
+        "absorptionNote": {
+          "type": "string"
+        },
+        "marketCycle": {
+          "type": "string"
+        },
+        "concessionRate": {
+          "type": "number"
+        },
+        "concessionNote": {
+          "type": "string"
+        },
+        "rentGrowthTrailing": {
+          "type": "number"
+        },
+        "rentGrowthForecast2026": {
+          "type": "string"
+        },
+        "rentGrowthLongTerm": {
+          "type": "number"
+        },
+        "sb38Note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
     },
     "agentFindings": {
-      "type": "object"
+      "type": "object",
+      "patternProperties": {
+        "^rent-roll-analyst$": {
+          "$ref": "../agents/due-diligence/rent-roll-analyst.schema.json"
+        },
+        "^opex-analyst$": {
+          "$ref": "../agents/due-diligence/opex-analyst.schema.json"
+        },
+        "^physical-inspection$": {
+          "$ref": "../common/agent-finding.schema.json"
+        },
+        "^legal-title-review$": {
+          "$ref": "../common/agent-finding.schema.json"
+        },
+        "^market-study$": {
+          "$ref": "../common/agent-finding.schema.json"
+        },
+        "^tenant-credit$": {
+          "$ref": "../common/agent-finding.schema.json"
+        },
+        "^environmental-review$": {
+          "$ref": "../common/agent-finding.schema.json"
+        }
+      },
+      "additionalProperties": false
     },
     "riskScore": {
       "type": "number"
@@ -105,12 +468,16 @@
     },
     "redFlags": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "$ref": "../common/flag.schema.json"
+      }
     },
     "dataGaps": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "$ref": "../common/flag.schema.json"
+      }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

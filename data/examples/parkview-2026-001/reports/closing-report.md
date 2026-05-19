@@ -1,7 +1,7 @@
 # Closing Report
 
 - Status: COMPLETE
-- Verdict: GO
+- Verdict: PROCEED_WITH_MITIGATIONS
 - Risk Score: 93
 - Red Flags: 0
 - Data Gaps: 0

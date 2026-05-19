@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "phases/legal-data.schema.json",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/phases/legal-data.schema.json",
   "title": "Legal Downstream Data",
   "type": "object",
   "required": [
@@ -17,53 +17,155 @@
   ],
   "properties": {
     "agentFindings": {
-      "type": "object"
+      "type": "object",
+      "patternProperties": {
+        "^psa-reviewer$": {
+          "$ref": "../agents/legal/psa-reviewer.schema.json"
+        },
+        "^loan-doc-reviewer$": {
+          "$ref": "../common/agent-finding.schema.json"
+        },
+        "^title-survey-reviewer$": {
+          "$ref": "../common/agent-finding.schema.json"
+        },
+        "^estoppel-tracker$": {
+          "$ref": "../agents/legal/estoppel-tracker.schema.json"
+        },
+        "^insurance-coordinator$": {
+          "$ref": "../agents/legal/insurance-coordinator.schema.json"
+        },
+        "^transfer-doc-preparer$": {
+          "$ref": "../agents/legal/transfer-doc-preparer.schema.json"
+        }
+      },
+      "additionalProperties": false
     },
     "psaStatus": {
       "type": "object",
-      "required": ["reviewStatus"],
+      "required": [
+        "reviewStatus"
+      ],
       "properties": {
-        "reviewStatus": { "type": "string" }
+        "reviewStatus": {
+          "type": "string"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "titleStatus": {
       "type": "object",
-      "required": ["status"],
+      "required": [
+        "status"
+      ],
       "properties": {
-        "status": { "type": "string" }
+        "status": {
+          "type": "string"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "estoppelStatus": {
       "type": "object",
-      "required": ["returnRate"],
+      "required": [
+        "returnRate"
+      ],
       "properties": {
-        "returnRate": { "type": "number" }
+        "returnRate": {
+          "type": "number"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "insuranceStatus": {
       "type": "object",
-      "required": ["overallStatus"],
+      "required": [
+        "overallStatus"
+      ],
       "properties": {
-        "overallStatus": { "type": "string" }
+        "overallStatus": {
+          "type": "string"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "loanDocStatus": {
-      "type": "object"
+      "type": "object",
+      "required": [],
+      "properties": {},
+      "additionalProperties": false
     },
     "transferDocStatus": {
       "type": "object",
-      "required": ["overallReadiness"],
+      "required": [
+        "overallReadiness"
+      ],
       "properties": {
-        "overallReadiness": { "type": "string" }
+        "overallReadiness": {
+          "type": "string"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "closingChecklistStatus": {
-      "type": "object"
+      "type": "object",
+      "required": [],
+      "properties": {
+        "preClosingItems": {
+          "type": "object",
+          "required": [
+            "completed",
+            "total"
+          ],
+          "properties": {
+            "completed": {
+              "type": "number"
+            },
+            "total": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "closingDayItems": {
+          "type": "object",
+          "required": [
+            "completed",
+            "total"
+          ],
+          "properties": {
+            "completed": {
+              "type": "number"
+            },
+            "total": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "postClosingItems": {
+          "type": "object",
+          "required": [
+            "identified",
+            "total"
+          ],
+          "properties": {
+            "identified": {
+              "type": "number"
+            },
+            "total": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "criticalPathItems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
     },
     "riskScore": {
       "type": "number"
@@ -75,7 +177,19 @@
     "dataGapCount": {
       "type": "number",
       "minimum": 0
+    },
+    "redFlags": {
+      "type": "array",
+      "items": {
+        "$ref": "../common/flag.schema.json"
+      }
+    },
+    "dataGaps": {
+      "type": "array",
+      "items": {
+        "$ref": "../common/flag.schema.json"
+      }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

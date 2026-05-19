@@ -106,7 +106,7 @@ Matrix dimensions: 3 rent cases x 3 vacancy cases x 3 exit-cap cases. Rent and e
 - Underwriting: COMPLETE | Verdict: FAIL | Risk: 76 | Red flags: 2 | Data gaps: 1.
 - Financing: COMPLETE | Verdict: CONDITIONAL | Risk: 81 | Red flags: 1 | Data gaps: 1.
 - Legal: COMPLETE | Verdict: PASS | Risk: 82 | Red flags: 0 | Data gaps: 0.
-- Closing: COMPLETE | Verdict: GO | Risk: 93 | Red flags: 0 | Data gaps: 0.
+- Closing: COMPLETE | Verdict: PROCEED_WITH_MITIGATIONS | Risk: 93 | Red flags: 0 | Data gaps: 0.
 
 ## Closing Sources and Uses
 | Source | Amount |

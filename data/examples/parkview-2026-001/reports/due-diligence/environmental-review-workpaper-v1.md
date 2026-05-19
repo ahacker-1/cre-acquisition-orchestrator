@@ -5,8 +5,8 @@
 - Property: Parkview Apartments
 - Phase: Due Diligence
 - Agent: environmental-review
-- Started: 2026-05-19T19:05:31.520Z
-- Completed: 2026-05-19T19:05:31.521Z
+- Started: 2026-05-19T19:25:55.509Z
+- Completed: 2026-05-19T19:25:55.511Z
 - Verdict: PASS
 - Summary: No material environmental constraints.
 

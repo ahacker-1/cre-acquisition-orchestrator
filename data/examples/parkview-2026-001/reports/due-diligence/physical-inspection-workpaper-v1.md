@@ -5,8 +5,8 @@
 - Property: Parkview Apartments
 - Phase: Due Diligence
 - Agent: physical-inspection
-- Started: 2026-05-19T19:05:31.498Z
-- Completed: 2026-05-19T19:05:31.500Z
+- Started: 2026-05-19T19:25:55.484Z
+- Completed: 2026-05-19T19:25:55.486Z
 - Verdict: PASS
 - Summary: Capex schedule drafted across five-year horizon.
 

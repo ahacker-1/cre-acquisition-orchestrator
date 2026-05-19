@@ -1,93 +1,81 @@
 const fs = require('fs');
 const path = require('path');
+const Ajv = require('ajv');
+const addFormats = require('ajv-formats');
+
+const SCHEMA_ROOT = path.resolve(__dirname, '..', '..', 'schemas');
+
+let cachedAjv = null;
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
-function typeMatches(expectedType, value) {
-  if (expectedType === 'null') return value === null;
-  if (expectedType === 'array') return Array.isArray(value);
-  if (expectedType === 'object') return value !== null && typeof value === 'object' && !Array.isArray(value);
-  if (expectedType === 'number') return typeof value === 'number' && Number.isFinite(value);
-  if (expectedType === 'integer') return Number.isInteger(value);
-  if (expectedType === 'string') return typeof value === 'string';
-  if (expectedType === 'boolean') return typeof value === 'boolean';
-  return true;
+function walkSchemaFiles(dirPath, files = []) {
+  if (!fs.existsSync(dirPath)) return files;
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    const fullPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) walkSchemaFiles(fullPath, files);
+    else if (entry.isFile() && entry.name.endsWith('.schema.json')) files.push(fullPath);
+  }
+  return files;
 }
 
-function validateNode(schema, value, nodePath, errors) {
-  if (!schema || typeof schema !== 'object') return;
+function createAjv() {
+  const ajv = new Ajv({
+    allErrors: true,
+    strict: true,
+    allowUnionTypes: true
+  });
+  addFormats(ajv);
 
-  if (schema.type) {
-    const allowedTypes = Array.isArray(schema.type) ? schema.type : [schema.type];
-    const ok = allowedTypes.some((t) => typeMatches(t, value));
-    if (!ok) {
-      errors.push(`${nodePath}: expected type ${allowedTypes.join('|')}`);
-      return;
-    }
+  for (const filePath of walkSchemaFiles(SCHEMA_ROOT)) {
+    const schema = readJson(filePath);
+    ajv.addSchema(schema, schema.$id || path.relative(SCHEMA_ROOT, filePath).replace(/\\/g, '/'));
   }
 
-  if (schema.enum && !schema.enum.includes(value)) {
-    errors.push(`${nodePath}: expected one of ${schema.enum.join(', ')}`);
-    return;
-  }
+  return ajv;
+}
 
-  if (typeof value === 'string') {
-    if (typeof schema.minLength === 'number' && value.length < schema.minLength) {
-      errors.push(`${nodePath}: length must be >= ${schema.minLength}`);
-    }
-    if (typeof schema.maxLength === 'number' && value.length > schema.maxLength) {
-      errors.push(`${nodePath}: length must be <= ${schema.maxLength}`);
-    }
-  }
+function getAjv() {
+  if (!cachedAjv) cachedAjv = createAjv();
+  return cachedAjv;
+}
 
-  if (typeof value === 'number') {
-    if (typeof schema.minimum === 'number' && value < schema.minimum) {
-      errors.push(`${nodePath}: must be >= ${schema.minimum}`);
-    }
-    if (typeof schema.maximum === 'number' && value > schema.maximum) {
-      errors.push(`${nodePath}: must be <= ${schema.maximum}`);
-    }
+function formatError(error, rootName) {
+  const pathParts = [rootName];
+  if (error.instancePath) {
+    pathParts.push(
+      error.instancePath
+        .replace(/^\//, '')
+        .split('/')
+        .filter(Boolean)
+        .map((part) => part.replace(/~1/g, '/').replace(/~0/g, '~'))
+        .join('.')
+    );
   }
-
-  if (Array.isArray(value)) {
-    if (typeof schema.minItems === 'number' && value.length < schema.minItems) {
-      errors.push(`${nodePath}: items must be >= ${schema.minItems}`);
-    }
-    if (typeof schema.maxItems === 'number' && value.length > schema.maxItems) {
-      errors.push(`${nodePath}: items must be <= ${schema.maxItems}`);
-    }
-    if (schema.items) {
-      value.forEach((item, index) => {
-        validateNode(schema.items, item, `${nodePath}[${index}]`, errors);
-      });
-    }
+  if (error.keyword === 'required' && error.params?.missingProperty) {
+    pathParts.push(error.params.missingProperty);
   }
+  const dataPath = pathParts.filter(Boolean).join('.');
+  return `${dataPath}: ${error.message}`;
+}
 
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    const required = Array.isArray(schema.required) ? schema.required : [];
-    required.forEach((key) => {
-      if (!(key in value)) {
-        errors.push(`${nodePath}.${key}: missing required field`);
-      }
-    });
-
-    if (schema.properties && typeof schema.properties === 'object') {
-      Object.entries(schema.properties).forEach(([key, propertySchema]) => {
-        if (key in value) {
-          validateNode(propertySchema, value[key], `${nodePath}.${key}`, errors);
-        }
-      });
-    }
+function validatorForSchema(schema) {
+  const ajv = getAjv();
+  if (schema.$id) {
+    const validate = ajv.getSchema(schema.$id);
+    if (validate) return validate;
   }
+  return ajv.compile(schema);
 }
 
 function validateData(schema, data, rootName = 'data') {
-  const errors = [];
-  validateNode(schema, data, rootName, errors);
+  const validate = validatorForSchema(schema);
+  const valid = validate(data);
+  const errors = valid ? [] : (validate.errors || []).map((error) => formatError(error, rootName));
   return {
-    valid: errors.length === 0,
+    valid,
     errors
   };
 }
@@ -101,7 +89,7 @@ function assertValid(schemaPath, data, rootName = 'data') {
   const result = validateFile(schemaPath, data, rootName);
   if (!result.valid) {
     const rel = path.relative(process.cwd(), schemaPath);
-    const details = result.errors.map((e) => `  - ${e}`).join('\n');
+    const details = result.errors.map((error) => `  - ${error}`).join('\n');
     throw new Error(`Schema validation failed (${rel})\n${details}`);
   }
 }

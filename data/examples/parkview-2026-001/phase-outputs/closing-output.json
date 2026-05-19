@@ -1,7 +1,7 @@
 {
-  "scenarioVerdict": "GO",
+  "scenarioVerdict": "PROCEED_WITH_MITIGATIONS",
   "preClosingStatus": {
-    "complete": 6,
+    "completedCount": 6,
     "total": 6,
     "pendingItems": []
   },
@@ -72,5 +72,15 @@
   "redFlagCount": 0,
   "dataGapCount": 0,
   "redFlags": [],
-  "dataGaps": []
+  "dataGaps": [],
+  "agentFindings": {
+    "closing-coordinator": {
+      "status": "COMPLETE",
+      "finding": "Closing checklist is complete."
+    },
+    "funds-flow-manager": {
+      "status": "COMPLETE",
+      "finding": "Sources and uses are balanced."
+    }
+  }
 }

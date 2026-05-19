@@ -11,5 +11,5 @@
     "legalComplexity": "high",
     "environmentalRisk": "high"
   },
-  "expectedVerdict": "NO_GO"
+  "expectedVerdict": "FAIL"
 }

@@ -12,18 +12,18 @@
   "status": "COMPLETE",
   "currentPhase": null,
   "overallProgress": 100,
-  "startedAt": "2026-05-19T19:05:31.465Z",
-  "lastUpdatedAt": "2026-05-19T19:05:31.625Z",
-  "completedAt": "2026-05-19T19:05:31.623Z",
-  "traceId": "parkview-2026-001-1779217531466",
+  "startedAt": "2026-05-19T19:25:55.348Z",
+  "lastUpdatedAt": "2026-05-19T19:25:55.614Z",
+  "completedAt": "2026-05-19T19:25:55.611Z",
+  "traceId": "parkview-2026-001-1779218755349",
   "scenario": "core-plus",
   "seed": 42,
   "phases": {
     "dueDiligence": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-05-19T19:05:31.469Z",
-      "completedAt": "2026-05-19T19:05:31.525Z",
+      "startedAt": "2026-05-19T19:25:55.351Z",
+      "completedAt": "2026-05-19T19:25:55.514Z",
       "verdict": "PASS",
       "confidence": 1,
       "riskScore": 82,
@@ -42,13 +42,13 @@
         "phaseVerdict": "PASS"
       },
       "agentStatuses": {
-        "rent-roll-analyst": "COMPLETED",
-        "opex-analyst": "COMPLETED",
-        "physical-inspection": "COMPLETED",
-        "legal-title-review": "COMPLETED",
-        "market-study": "COMPLETED",
-        "tenant-credit": "COMPLETED",
-        "environmental-review": "COMPLETED"
+        "rent-roll-analyst": "COMPLETE",
+        "opex-analyst": "COMPLETE",
+        "physical-inspection": "COMPLETE",
+        "legal-title-review": "COMPLETE",
+        "market-study": "COMPLETE",
+        "tenant-credit": "COMPLETE",
+        "environmental-review": "COMPLETE"
       },
       "dataForDownstream": {
         "propertyName": "Parkview Apartments",
@@ -257,8 +257,8 @@
     "underwriting": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-05-19T19:05:31.530Z",
-      "completedAt": "2026-05-19T19:05:31.549Z",
+      "startedAt": "2026-05-19T19:25:55.519Z",
+      "completedAt": "2026-05-19T19:25:55.539Z",
       "verdict": "FAIL",
       "confidence": 0.97,
       "riskScore": 76,
@@ -281,7 +281,7 @@
             "impact": "Can reduce lender proceeds and increase risk",
             "owner": "financial-model-builder",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:05:31.531Z"
+            "createdAt": "2026-05-19T19:25:55.520Z"
           },
           {
             "id": "uw-pass-rate",
@@ -291,7 +291,7 @@
             "impact": "Increases downside loss probability",
             "owner": "scenario-analyst",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:05:31.531Z"
+            "createdAt": "2026-05-19T19:25:55.520Z"
           }
         ],
         "dataGaps": [
@@ -303,15 +303,15 @@
             "impact": "Could reduce confidence in recommendation",
             "owner": "financial-model-builder",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:05:31.531Z"
+            "createdAt": "2026-05-19T19:25:55.520Z"
           }
         ],
         "phaseVerdict": "FAIL"
       },
       "agentStatuses": {
-        "financial-model-builder": "COMPLETED",
-        "scenario-analyst": "COMPLETED",
-        "ic-memo-writer": "COMPLETED"
+        "financial-model-builder": "COMPLETE",
+        "scenario-analyst": "COMPLETE",
+        "ic-memo-writer": "COMPLETE"
       },
       "dataForDownstream": {
         "baseCase": {
@@ -903,7 +903,7 @@
             "impact": "Can reduce lender proceeds and increase risk",
             "owner": "financial-model-builder",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:05:31.531Z"
+            "createdAt": "2026-05-19T19:25:55.520Z"
           },
           {
             "id": "uw-pass-rate",
@@ -913,7 +913,7 @@
             "impact": "Increases downside loss probability",
             "owner": "scenario-analyst",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:05:31.531Z"
+            "createdAt": "2026-05-19T19:25:55.520Z"
           }
         ],
         "dataGaps": [
@@ -925,7 +925,7 @@
             "impact": "Could reduce confidence in recommendation",
             "owner": "financial-model-builder",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:05:31.531Z"
+            "createdAt": "2026-05-19T19:25:55.520Z"
           }
         ],
         "agentFindings": {
@@ -947,8 +947,8 @@
     "financing": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-05-19T19:05:31.553Z",
-      "completedAt": "2026-05-19T19:05:31.571Z",
+      "startedAt": "2026-05-19T19:25:55.542Z",
+      "completedAt": "2026-05-19T19:25:55.559Z",
       "verdict": "CONDITIONAL",
       "confidence": 0.982,
       "riskScore": 81,
@@ -971,7 +971,7 @@
             "impact": "Could reduce certainty of execution",
             "owner": "quote-comparator",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:05:31.554Z"
+            "createdAt": "2026-05-19T19:25:55.544Z"
           }
         ],
         "dataGaps": [
@@ -983,15 +983,15 @@
             "impact": "Could reduce confidence in recommendation",
             "owner": "lender-outreach",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:05:31.554Z"
+            "createdAt": "2026-05-19T19:25:55.544Z"
           }
         ],
         "phaseVerdict": "CONDITIONAL"
       },
       "agentStatuses": {
-        "lender-outreach": "COMPLETED",
-        "quote-comparator": "COMPLETED",
-        "term-sheet-builder": "COMPLETED"
+        "lender-outreach": "COMPLETE",
+        "quote-comparator": "COMPLETE",
+        "term-sheet-builder": "COMPLETE"
       },
       "dataForDownstream": {
         "selectedLender": "Freddie Mac",
@@ -1109,7 +1109,7 @@
             "impact": "Could reduce certainty of execution",
             "owner": "quote-comparator",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:05:31.554Z"
+            "createdAt": "2026-05-19T19:25:55.544Z"
           }
         ],
         "dataGaps": [
@@ -1121,7 +1121,7 @@
             "impact": "Could reduce confidence in recommendation",
             "owner": "lender-outreach",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:05:31.554Z"
+            "createdAt": "2026-05-19T19:25:55.544Z"
           }
         ],
         "agentFindings": {
@@ -1143,8 +1143,8 @@
     "legal": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-05-19T19:05:31.575Z",
-      "completedAt": "2026-05-19T19:05:31.605Z",
+      "startedAt": "2026-05-19T19:25:55.562Z",
+      "completedAt": "2026-05-19T19:25:55.593Z",
       "verdict": "PASS",
       "confidence": 1,
       "riskScore": 82,
@@ -1163,12 +1163,12 @@
         "phaseVerdict": "PASS"
       },
       "agentStatuses": {
-        "psa-reviewer": "COMPLETED",
-        "loan-doc-reviewer": "COMPLETED",
-        "title-survey-reviewer": "COMPLETED",
-        "estoppel-tracker": "COMPLETED",
-        "insurance-coordinator": "COMPLETED",
-        "transfer-doc-preparer": "COMPLETED"
+        "psa-reviewer": "COMPLETE",
+        "loan-doc-reviewer": "COMPLETE",
+        "title-survey-reviewer": "COMPLETE",
+        "estoppel-tracker": "COMPLETE",
+        "insurance-coordinator": "COMPLETE",
+        "transfer-doc-preparer": "COMPLETE"
       },
       "dataForDownstream": {
         "agentFindings": {
@@ -1268,16 +1268,16 @@
     "closing": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-05-19T19:05:31.608Z",
-      "completedAt": "2026-05-19T19:05:31.619Z",
-      "verdict": "GO",
+      "startedAt": "2026-05-19T19:25:55.597Z",
+      "completedAt": "2026-05-19T19:25:55.608Z",
+      "verdict": "PROCEED_WITH_MITIGATIONS",
       "confidence": 1,
       "riskScore": 93,
       "redFlagCount": 0,
       "dataGapCount": 0,
       "findings": 3,
       "outputs": {
-        "phaseSummary": "Closing completed with verdict GO",
+        "phaseSummary": "Closing completed with verdict PROCEED_WITH_MITIGATIONS",
         "keyFindings": [
           "Pre-close items 6/6",
           "Funds flow balanced: yes",
@@ -1285,16 +1285,16 @@
         ],
         "redFlags": [],
         "dataGaps": [],
-        "phaseVerdict": "GO"
+        "phaseVerdict": "PROCEED_WITH_MITIGATIONS"
       },
       "agentStatuses": {
-        "closing-coordinator": "COMPLETED",
-        "funds-flow-manager": "COMPLETED"
+        "closing-coordinator": "COMPLETE",
+        "funds-flow-manager": "COMPLETE"
       },
       "dataForDownstream": {
-        "scenarioVerdict": "GO",
+        "scenarioVerdict": "PROCEED_WITH_MITIGATIONS",
         "preClosingStatus": {
-          "complete": 6,
+          "completedCount": 6,
           "total": 6,
           "pendingItems": []
         },
@@ -1365,7 +1365,17 @@
         "redFlagCount": 0,
         "dataGapCount": 0,
         "redFlags": [],
-        "dataGaps": []
+        "dataGaps": [],
+        "agentFindings": {
+          "closing-coordinator": {
+            "status": "COMPLETE",
+            "finding": "Closing checklist is complete."
+          },
+          "funds-flow-manager": {
+            "status": "COMPLETE",
+            "finding": "Sources and uses are balanced."
+          }
+        }
       }
     }
   },
@@ -1374,10 +1384,10 @@
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "dueDiligence",
-      "phaseId": "parkview-2026-001-dueDiligence-1779217531527",
+      "phaseId": "parkview-2026-001-dueDiligence-1779218755516",
       "status": "COMPLETE",
       "verdict": "PASS",
-      "durationMs": 58,
+      "durationMs": 165,
       "dataGapCount": 0,
       "redFlagCount": 0,
       "criticalFlags": [],
@@ -1386,14 +1396,14 @@
         "redFlagCount": 0,
         "dataGapCount": 0
       },
-      "timestamp": "2026-05-19T19:05:31.527Z",
-      "traceId": "parkview-2026-001-1779217531466"
+      "timestamp": "2026-05-19T19:25:55.516Z",
+      "traceId": "parkview-2026-001-1779218755349"
     },
     {
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
-      "phaseId": "parkview-2026-001-underwriting-1779217531551",
+      "phaseId": "parkview-2026-001-underwriting-1779218755540",
       "status": "COMPLETE",
       "verdict": "FAIL",
       "durationMs": 21,
@@ -1405,17 +1415,17 @@
         "redFlagCount": 2,
         "dataGapCount": 1
       },
-      "timestamp": "2026-05-19T19:05:31.551Z",
-      "traceId": "parkview-2026-001-1779217531466"
+      "timestamp": "2026-05-19T19:25:55.540Z",
+      "traceId": "parkview-2026-001-1779218755349"
     },
     {
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "financing",
-      "phaseId": "parkview-2026-001-financing-1779217531573",
+      "phaseId": "parkview-2026-001-financing-1779218755560",
       "status": "COMPLETE",
       "verdict": "CONDITIONAL",
-      "durationMs": 20,
+      "durationMs": 18,
       "dataGapCount": 1,
       "redFlagCount": 1,
       "criticalFlags": [],
@@ -1424,17 +1434,17 @@
         "redFlagCount": 1,
         "dataGapCount": 1
       },
-      "timestamp": "2026-05-19T19:05:31.573Z",
-      "traceId": "parkview-2026-001-1779217531466"
+      "timestamp": "2026-05-19T19:25:55.560Z",
+      "traceId": "parkview-2026-001-1779218755349"
     },
     {
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "legal",
-      "phaseId": "parkview-2026-001-legal-1779217531607",
+      "phaseId": "parkview-2026-001-legal-1779218755595",
       "status": "COMPLETE",
       "verdict": "PASS",
-      "durationMs": 32,
+      "durationMs": 33,
       "dataGapCount": 0,
       "redFlagCount": 0,
       "criticalFlags": [],
@@ -1443,17 +1453,17 @@
         "redFlagCount": 0,
         "dataGapCount": 0
       },
-      "timestamp": "2026-05-19T19:05:31.607Z",
-      "traceId": "parkview-2026-001-1779217531466"
+      "timestamp": "2026-05-19T19:25:55.595Z",
+      "traceId": "parkview-2026-001-1779218755349"
     },
     {
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "closing",
-      "phaseId": "parkview-2026-001-closing-1779217531621",
+      "phaseId": "parkview-2026-001-closing-1779218755609",
       "status": "COMPLETE",
-      "verdict": "GO",
-      "durationMs": 13,
+      "verdict": "PROCEED_WITH_MITIGATIONS",
+      "durationMs": 12,
       "dataGapCount": 0,
       "redFlagCount": 0,
       "criticalFlags": [],
@@ -1462,8 +1472,8 @@
         "redFlagCount": 0,
         "dataGapCount": 0
       },
-      "timestamp": "2026-05-19T19:05:31.621Z",
-      "traceId": "parkview-2026-001-1779217531466"
+      "timestamp": "2026-05-19T19:25:55.609Z",
+      "traceId": "parkview-2026-001-1779218755349"
     }
   ],
   "resumeInstructions": "Run: node scripts/orchestrate.js --deal config/deal.json --resume --workflow full-acquisition-review --scenario core-plus --seed 42",
@@ -1665,7 +1675,7 @@
     },
     "notes": "Value-add opportunity in South Austin. Units have not been renovated since 2010. Interior renovations estimated at $10,000/unit for upgraded finishes, appliances, and flooring. Expected rent premium of $200-300/unit post-renovation. Strong submarket fundamentals with proximity to major employers."
   },
-  "runId": "local-1779217531454",
+  "runId": "local-1779218755341",
   "workflowId": "full-acquisition-review",
   "workflowName": "Full Acquisition Review",
   "runtimeProvider": "simulation"

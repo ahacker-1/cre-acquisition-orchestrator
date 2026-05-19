@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "phases/closing-data.schema.json",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/phases/closing-data.schema.json",
   "title": "Closing Downstream Data",
   "type": "object",
   "required": [
@@ -14,58 +14,177 @@
     "conditions",
     "riskScore",
     "redFlagCount",
-    "dataGapCount"
+    "dataGapCount",
+    "agentFindings"
   ],
   "properties": {
+    "scenarioVerdict": {
+      "$ref": "../common/enums.schema.json#/$defs/verdict"
+    },
     "preClosingStatus": {
       "type": "object",
-      "required": ["complete", "total"],
+      "required": [
+        "completedCount",
+        "total"
+      ],
       "properties": {
-        "complete": { "type": "number" },
-        "total": { "type": "number" },
+        "completedCount": {
+          "type": "number"
+        },
+        "total": {
+          "type": "number"
+        },
         "pendingItems": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
+    },
+    "closingAgent": {
+      "type": "string"
+    },
+    "purchasePrice": {
+      "type": "number"
+    },
+    "loanAmount": {
+      "type": "number"
+    },
+    "equityRequired": {
+      "type": "number"
+    },
+    "closingCosts": {
+      "type": "number"
+    },
+    "prorations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "lineItem",
+          "amount"
+        ],
+        "properties": {
+          "lineItem": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amount": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
     },
     "fundsFlow": {
       "type": "object",
-      "required": ["sources", "uses", "totalSources", "totalUses", "balanced"],
+      "required": [
+        "sources",
+        "uses",
+        "totalSources",
+        "totalUses",
+        "balanced"
+      ],
       "properties": {
         "sources": {
           "type": "array",
-          "items": { "type": "object" }
+          "items": {
+            "type": "object",
+            "required": [
+              "item",
+              "amount"
+            ],
+            "properties": {
+              "item": {
+                "type": "string",
+                "minLength": 1
+              },
+              "amount": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
         },
         "uses": {
           "type": "array",
-          "items": { "type": "object" }
+          "items": {
+            "type": "object",
+            "required": [
+              "item",
+              "amount"
+            ],
+            "properties": {
+              "item": {
+                "type": "string",
+                "minLength": 1
+              },
+              "amount": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
         },
-        "totalSources": { "type": "number" },
-        "totalUses": { "type": "number" },
-        "balanced": { "type": "boolean" }
+        "totalSources": {
+          "type": "number"
+        },
+        "totalUses": {
+          "type": "number"
+        },
+        "balanced": {
+          "type": "boolean"
+        }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
-    "prorations": {
-      "type": ["array", "object"]
-    },
-    "purchasePrice": { "type": "number" },
-    "loanAmount": { "type": "number" },
-    "equityRequired": { "type": "number" },
-    "closingCosts": { "type": "number" },
     "keyMerits": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "keyRisks": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "conditions": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "severity",
+          "owner",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "$ref": "../common/enums.schema.json#/$defs/severity"
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "$ref": "../common/enums.schema.json#/$defs/flagStatus"
+          }
+        },
+        "additionalProperties": false
+      }
     },
     "riskScore": {
       "type": "number"
@@ -77,7 +196,31 @@
     "dataGapCount": {
       "type": "number",
       "minimum": 0
+    },
+    "redFlags": {
+      "type": "array",
+      "items": {
+        "$ref": "../common/flag.schema.json"
+      }
+    },
+    "dataGaps": {
+      "type": "array",
+      "items": {
+        "$ref": "../common/flag.schema.json"
+      }
+    },
+    "agentFindings": {
+      "type": "object",
+      "patternProperties": {
+        "^closing-coordinator$": {
+          "$ref": "../agents/closing/closing-coordinator.schema.json"
+        },
+        "^funds-flow-manager$": {
+          "$ref": "../agents/closing/funds-flow-manager.schema.json"
+        }
+      },
+      "additionalProperties": false
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

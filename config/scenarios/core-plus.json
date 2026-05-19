@@ -11,5 +11,5 @@
     "legalComplexity": "low",
     "environmentalRisk": "low"
   },
-  "expectedVerdict": "GO"
+  "expectedVerdict": "PROCEED_WITH_MITIGATIONS"
 }

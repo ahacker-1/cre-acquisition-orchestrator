@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "checkpoint/master-checkpoint.schema.json",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/checkpoint/master-checkpoint.schema.json",
   "title": "Master Deal Checkpoint",
   "type": "object",
   "required": [
@@ -22,11 +22,32 @@
       "minLength": 1
     },
     "property": {
-      "type": "object"
+      "type": "object",
+      "required": [],
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "zip": {
+          "type": "string"
+        },
+        "totalUnits": {
+          "type": "number"
+        },
+        "askingPrice": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
     },
     "status": {
-      "type": "string",
-      "enum": ["PENDING", "RUNNING", "COMPLETE", "FAILED", "PARTIAL"]
+      "$ref": "../common/enums.schema.json#/$defs/status"
     },
     "overallProgress": {
       "type": "number",
@@ -34,16 +55,25 @@
       "maximum": 100
     },
     "currentPhase": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "startedAt": {
-      "type": "string"
+      "type": "string",
+      "format": "date-time"
     },
     "lastUpdatedAt": {
-      "type": "string"
+      "type": "string",
+      "format": "date-time"
     },
     "completedAt": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
     },
     "resumeInstructions": {
       "type": "string"
@@ -62,10 +92,24 @@
     },
     "runtimeProvider": {
       "type": "string",
-      "enum": ["simulation"]
+      "enum": [
+        "simulation",
+        "codex"
+      ]
     },
     "seed": {
       "type": "number"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "inputSnapshot": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "dealConfig": {
+      "type": "object",
+      "additionalProperties": true
     },
     "phases": {
       "type": "object",
@@ -78,29 +122,622 @@
       ],
       "properties": {
         "dueDiligence": {
-          "type": "object"
+          "type": "object",
+          "required": [
+            "status",
+            "progress",
+            "startedAt",
+            "completedAt",
+            "verdict",
+            "outputs",
+            "agentStatuses",
+            "dataForDownstream"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "../common/enums.schema.json#/$defs/status"
+            },
+            "progress": {
+              "type": "number"
+            },
+            "startedAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "completedAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "verdict": {
+              "$ref": "../common/enums.schema.json#/$defs/nullableVerdict"
+            },
+            "confidence": {
+              "type": "number"
+            },
+            "riskScore": {
+              "type": "number"
+            },
+            "redFlagCount": {
+              "type": "number"
+            },
+            "dataGapCount": {
+              "type": "number"
+            },
+            "findings": {
+              "type": "number"
+            },
+            "outputs": {
+              "type": "object",
+              "required": [
+                "phaseSummary",
+                "keyFindings",
+                "redFlags",
+                "dataGaps",
+                "phaseVerdict"
+              ],
+              "properties": {
+                "phaseSummary": {
+                  "type": "string"
+                },
+                "keyFindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "redFlags": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../common/flag.schema.json"
+                  }
+                },
+                "dataGaps": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../common/flag.schema.json"
+                  }
+                },
+                "phaseVerdict": {
+                  "$ref": "../common/enums.schema.json#/$defs/nullableVerdict"
+                }
+              },
+              "additionalProperties": false
+            },
+            "agentStatuses": {
+              "type": "object",
+              "patternProperties": {
+                "^rent-roll-analyst$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^opex-analyst$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^physical-inspection$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^legal-title-review$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^market-study$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^tenant-credit$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^environmental-review$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                }
+              },
+              "additionalProperties": false
+            },
+            "dataForDownstream": {
+              "anyOf": [
+                {
+                  "$ref": "../phases/due-diligence-data.schema.json"
+                },
+                {
+                  "type": "object",
+                  "maxProperties": 0,
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
         },
         "underwriting": {
-          "type": "object"
+          "type": "object",
+          "required": [
+            "status",
+            "progress",
+            "startedAt",
+            "completedAt",
+            "verdict",
+            "outputs",
+            "agentStatuses",
+            "dataForDownstream"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "../common/enums.schema.json#/$defs/status"
+            },
+            "progress": {
+              "type": "number"
+            },
+            "startedAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "completedAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "verdict": {
+              "$ref": "../common/enums.schema.json#/$defs/nullableVerdict"
+            },
+            "confidence": {
+              "type": "number"
+            },
+            "riskScore": {
+              "type": "number"
+            },
+            "redFlagCount": {
+              "type": "number"
+            },
+            "dataGapCount": {
+              "type": "number"
+            },
+            "findings": {
+              "type": "number"
+            },
+            "outputs": {
+              "type": "object",
+              "required": [
+                "phaseSummary",
+                "keyFindings",
+                "redFlags",
+                "dataGaps",
+                "phaseVerdict"
+              ],
+              "properties": {
+                "phaseSummary": {
+                  "type": "string"
+                },
+                "keyFindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "redFlags": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../common/flag.schema.json"
+                  }
+                },
+                "dataGaps": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../common/flag.schema.json"
+                  }
+                },
+                "phaseVerdict": {
+                  "$ref": "../common/enums.schema.json#/$defs/nullableVerdict"
+                }
+              },
+              "additionalProperties": false
+            },
+            "agentStatuses": {
+              "type": "object",
+              "patternProperties": {
+                "^financial-model-builder$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^scenario-analyst$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^ic-memo-writer$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                }
+              },
+              "additionalProperties": false
+            },
+            "dataForDownstream": {
+              "anyOf": [
+                {
+                  "$ref": "../phases/underwriting-data.schema.json"
+                },
+                {
+                  "type": "object",
+                  "maxProperties": 0,
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
         },
         "financing": {
-          "type": "object"
+          "type": "object",
+          "required": [
+            "status",
+            "progress",
+            "startedAt",
+            "completedAt",
+            "verdict",
+            "outputs",
+            "agentStatuses",
+            "dataForDownstream"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "../common/enums.schema.json#/$defs/status"
+            },
+            "progress": {
+              "type": "number"
+            },
+            "startedAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "completedAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "verdict": {
+              "$ref": "../common/enums.schema.json#/$defs/nullableVerdict"
+            },
+            "confidence": {
+              "type": "number"
+            },
+            "riskScore": {
+              "type": "number"
+            },
+            "redFlagCount": {
+              "type": "number"
+            },
+            "dataGapCount": {
+              "type": "number"
+            },
+            "findings": {
+              "type": "number"
+            },
+            "outputs": {
+              "type": "object",
+              "required": [
+                "phaseSummary",
+                "keyFindings",
+                "redFlags",
+                "dataGaps",
+                "phaseVerdict"
+              ],
+              "properties": {
+                "phaseSummary": {
+                  "type": "string"
+                },
+                "keyFindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "redFlags": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../common/flag.schema.json"
+                  }
+                },
+                "dataGaps": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../common/flag.schema.json"
+                  }
+                },
+                "phaseVerdict": {
+                  "$ref": "../common/enums.schema.json#/$defs/nullableVerdict"
+                }
+              },
+              "additionalProperties": false
+            },
+            "agentStatuses": {
+              "type": "object",
+              "patternProperties": {
+                "^lender-outreach$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^quote-comparator$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^term-sheet-builder$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                }
+              },
+              "additionalProperties": false
+            },
+            "dataForDownstream": {
+              "anyOf": [
+                {
+                  "$ref": "../phases/financing-data.schema.json"
+                },
+                {
+                  "type": "object",
+                  "maxProperties": 0,
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
         },
         "legal": {
-          "type": "object"
+          "type": "object",
+          "required": [
+            "status",
+            "progress",
+            "startedAt",
+            "completedAt",
+            "verdict",
+            "outputs",
+            "agentStatuses",
+            "dataForDownstream"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "../common/enums.schema.json#/$defs/status"
+            },
+            "progress": {
+              "type": "number"
+            },
+            "startedAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "completedAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "verdict": {
+              "$ref": "../common/enums.schema.json#/$defs/nullableVerdict"
+            },
+            "confidence": {
+              "type": "number"
+            },
+            "riskScore": {
+              "type": "number"
+            },
+            "redFlagCount": {
+              "type": "number"
+            },
+            "dataGapCount": {
+              "type": "number"
+            },
+            "findings": {
+              "type": "number"
+            },
+            "outputs": {
+              "type": "object",
+              "required": [
+                "phaseSummary",
+                "keyFindings",
+                "redFlags",
+                "dataGaps",
+                "phaseVerdict"
+              ],
+              "properties": {
+                "phaseSummary": {
+                  "type": "string"
+                },
+                "keyFindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "redFlags": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../common/flag.schema.json"
+                  }
+                },
+                "dataGaps": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../common/flag.schema.json"
+                  }
+                },
+                "phaseVerdict": {
+                  "$ref": "../common/enums.schema.json#/$defs/nullableVerdict"
+                }
+              },
+              "additionalProperties": false
+            },
+            "agentStatuses": {
+              "type": "object",
+              "patternProperties": {
+                "^psa-reviewer$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^loan-doc-reviewer$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^title-survey-reviewer$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^estoppel-tracker$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^insurance-coordinator$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^transfer-doc-preparer$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                }
+              },
+              "additionalProperties": false
+            },
+            "dataForDownstream": {
+              "anyOf": [
+                {
+                  "$ref": "../phases/legal-data.schema.json"
+                },
+                {
+                  "type": "object",
+                  "maxProperties": 0,
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
         },
         "closing": {
-          "type": "object"
+          "type": "object",
+          "required": [
+            "status",
+            "progress",
+            "startedAt",
+            "completedAt",
+            "verdict",
+            "outputs",
+            "agentStatuses",
+            "dataForDownstream"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "../common/enums.schema.json#/$defs/status"
+            },
+            "progress": {
+              "type": "number"
+            },
+            "startedAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "completedAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "verdict": {
+              "$ref": "../common/enums.schema.json#/$defs/nullableVerdict"
+            },
+            "confidence": {
+              "type": "number"
+            },
+            "riskScore": {
+              "type": "number"
+            },
+            "redFlagCount": {
+              "type": "number"
+            },
+            "dataGapCount": {
+              "type": "number"
+            },
+            "findings": {
+              "type": "number"
+            },
+            "outputs": {
+              "type": "object",
+              "required": [
+                "phaseSummary",
+                "keyFindings",
+                "redFlags",
+                "dataGaps",
+                "phaseVerdict"
+              ],
+              "properties": {
+                "phaseSummary": {
+                  "type": "string"
+                },
+                "keyFindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "redFlags": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../common/flag.schema.json"
+                  }
+                },
+                "dataGaps": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../common/flag.schema.json"
+                  }
+                },
+                "phaseVerdict": {
+                  "$ref": "../common/enums.schema.json#/$defs/nullableVerdict"
+                }
+              },
+              "additionalProperties": false
+            },
+            "agentStatuses": {
+              "type": "object",
+              "patternProperties": {
+                "^closing-coordinator$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                },
+                "^funds-flow-manager$": {
+                  "$ref": "../common/enums.schema.json#/$defs/status"
+                }
+              },
+              "additionalProperties": false
+            },
+            "dataForDownstream": {
+              "anyOf": [
+                {
+                  "$ref": "../phases/closing-data.schema.json"
+                },
+                {
+                  "type": "object",
+                  "maxProperties": 0,
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "events": {
       "type": "array",
       "items": {
-        "type": "object"
+        "$ref": "../events/phase-completion.schema.json"
       }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

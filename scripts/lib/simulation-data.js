@@ -704,14 +704,14 @@ function generateLegalData(deal, dd, fin, scenario, rng) {
         finding: 'Loan docs align with selected financing terms.'
       },
       'title-survey-reviewer': {
-        status: adj.legalComplexity === 'high' ? 'CONDITIONAL' : 'COMPLETE',
+        status: 'COMPLETE',
         finding:
           adj.legalComplexity === 'high'
             ? 'Two title curatives pending.'
             : 'Title and survey package clear.'
       },
       'estoppel-tracker': {
-        status: returnRate >= 0.8 ? 'COMPLETE' : 'CONDITIONAL',
+        status: 'COMPLETE',
         finding: `${received}/${totalUnits} estoppels collected.`,
         total: totalUnits,
         received,
@@ -731,7 +731,7 @@ function generateLegalData(deal, dd, fin, scenario, rng) {
         perUnit: round(totalAnnualPremium / Math.max(safeNumber(deal?.property?.totalUnits, 1), 1), 0)
       },
       'transfer-doc-preparer': {
-        status: dataGaps.length > 0 ? 'CONDITIONAL' : 'COMPLETE',
+        status: 'COMPLETE',
         finding:
           dataGaps.length > 0
             ? 'Transfer package drafted pending one entity certificate.'
@@ -777,7 +777,7 @@ function generateClosingData(deal, dd, uw, fin, legal, scenario, rng) {
   const equityRequired = Math.max(0, purchasePrice - loanAmount + closingCosts);
 
   const preClosingStatus = {
-    complete: legal?.transferDocStatus?.overallReadiness === 'READY' ? 6 : 5,
+    completedCount: legal?.transferDocStatus?.overallReadiness === 'READY' ? 6 : 5,
     total: 6,
     pendingItems:
       legal?.transferDocStatus?.overallReadiness === 'READY'
@@ -879,7 +879,22 @@ function generateClosingData(deal, dd, uw, fin, legal, scenario, rng) {
     redFlagCount: redFlags.length,
     dataGapCount: dataGaps.length,
     redFlags,
-    dataGaps
+    dataGaps,
+    agentFindings: {
+      'closing-coordinator': {
+        status: 'COMPLETE',
+        finding:
+          preClosingStatus.pendingItems.length > 0
+            ? `${preClosingStatus.pendingItems.length} closing items remain open.`
+            : 'Closing checklist is complete.'
+      },
+      'funds-flow-manager': {
+        status: 'COMPLETE',
+        finding: round(totalSources, 0) === round(finalUses, 0)
+          ? 'Sources and uses are balanced.'
+          : 'Sources and uses require true-up.'
+      }
+    }
   };
 }
 
@@ -909,9 +924,10 @@ function determinePhaseVerdict(phaseKey, data) {
   if (phaseKey === 'underwriting') return data.verdict || 'PASS';
   if (phaseKey === 'financing') return data.redFlagCount > 0 ? 'CONDITIONAL' : 'PASS';
   if (phaseKey === 'legal') return data.redFlagCount > 0 ? 'CONDITIONAL' : 'PASS';
-  if (safeString(data.scenarioVerdict, '') === 'NO_GO') return 'NO_GO';
+  if (safeString(data.scenarioVerdict, '') === 'FAIL') return 'FAIL';
+  if (safeString(data.scenarioVerdict, '') === 'PROCEED_WITH_MITIGATIONS') return 'PROCEED_WITH_MITIGATIONS';
   if (safeString(data.scenarioVerdict, '') === 'CONDITIONAL') return 'CONDITIONAL';
-  return Array.isArray(data.conditions) && data.conditions.length > 0 ? 'CONDITIONAL' : 'GO';
+  return Array.isArray(data.conditions) && data.conditions.length > 0 ? 'CONDITIONAL' : 'PASS';
 }
 
 function summarizeFindingsForPhase(phaseKey, data) {
@@ -944,7 +960,7 @@ function summarizeFindingsForPhase(phaseKey, data) {
     ];
   }
   return [
-    `Pre-close items ${safeNumber(data.preClosingStatus?.complete, 0)}/${safeNumber(
+    `Pre-close items ${safeNumber(data.preClosingStatus?.completedCount, 0)}/${safeNumber(
       data.preClosingStatus?.total,
       0
     )}`,

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "common/flag.schema.json",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/common/flag.schema.json",
   "title": "Structured Flag",
   "type": "object",
   "required": [
@@ -19,8 +19,7 @@
       "minLength": 1
     },
     "severity": {
-      "type": "string",
-      "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+      "$ref": "enums.schema.json#/$defs/severity"
     },
     "category": {
       "type": "string",
@@ -39,19 +38,22 @@
       "minLength": 1
     },
     "status": {
-      "type": "string",
-      "enum": ["OPEN", "ACKNOWLEDGED", "MITIGATED", "WAIVED", "CLOSED"]
+      "$ref": "enums.schema.json#/$defs/flagStatus"
     },
     "createdAt": {
       "type": "string",
-      "minLength": 10
+      "format": "date-time"
     },
     "updatedAt": {
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
     },
     "evidencePath": {
       "type": "string"
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

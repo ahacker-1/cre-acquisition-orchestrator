@@ -5,8 +5,8 @@
 - Property: Parkview Apartments
 - Phase: Due Diligence
 - Agent: opex-analyst
-- Started: 2026-05-19T19:05:31.492Z
-- Completed: 2026-05-19T19:05:31.494Z
+- Started: 2026-05-19T19:25:55.478Z
+- Completed: 2026-05-19T19:25:55.480Z
 - Verdict: PASS
 - Summary: Expense ratio at 50.5%.
 

@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/agents/legal/estoppel-tracker.schema.json",
+  "title": "Estoppel Tracker Output",
+  "type": "object",
+  "required": [
+    "status",
+    "finding"
+  ],
+  "properties": {
+    "status": {
+      "$ref": "../../common/enums.schema.json#/$defs/status"
+    },
+    "finding": {
+      "type": "string",
+      "minLength": 1
+    },
+    "total": {
+      "type": "number"
+    },
+    "received": {
+      "type": "number"
+    },
+    "returnRate": {
+      "type": "number"
+    },
+    "minimumRequired": {
+      "type": "number"
+    },
+    "discrepancies": {
+      "type": "number"
+    },
+    "discrepancyNote": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
