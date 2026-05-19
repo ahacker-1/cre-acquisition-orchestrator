@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/documents/manifest.schema.json",
+  "title": "Generated Document Manifest",
+  "type": "object",
+  "required": [
+    "runId",
+    "dealId",
+    "updatedAt",
+    "documents"
+  ],
+  "properties": {
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dealId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "docId",
+          "runId",
+          "dealId",
+          "phase",
+          "agent",
+          "docType",
+          "title",
+          "path",
+          "mime",
+          "version",
+          "summary",
+          "dependsOn",
+          "tags",
+          "status",
+          "createdAt"
+        ],
+        "properties": {
+          "docId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "runId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "dealId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "due-diligence",
+              "underwriting",
+              "financing",
+              "legal",
+              "closing"
+            ]
+          },
+          "agent": {
+            "type": "string",
+            "minLength": 1
+          },
+          "docType": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mime": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "summary": {
+            "type": "string"
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "final"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

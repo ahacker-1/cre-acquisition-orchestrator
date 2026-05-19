@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const lockfile = require('proper-lockfile');
 const { assertValid, readJson } = require('./schema-validator');
 
 const PHASES = [
@@ -95,9 +96,50 @@ function readJsonIfExists(filePath) {
   return readJson(filePath);
 }
 
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function acquireFileLock(lockTarget) {
+  let delayMs = 25;
+  let lastError = null;
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    try {
+      return lockfile.lockSync(lockTarget, {
+        realpath: false,
+        stale: 10000,
+        update: 1000
+      });
+    } catch (error) {
+      lastError = error;
+      if (!['ELOCKED', 'ECOMPROMISED'].includes(error.code)) throw error;
+      sleepSync(delayMs);
+      delayMs = Math.min(Math.round(delayMs * 1.25), 250);
+    }
+  }
+  throw lastError || new Error(`Unable to acquire lock for ${lockTarget}`);
+}
+
 function writeJson(filePath, data) {
   ensureDir(path.dirname(filePath));
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  const fileName = path.basename(filePath);
+  const lockDir = path.join(path.dirname(filePath), '.locks');
+  ensureDir(lockDir);
+  const lockTarget = path.join(lockDir, `${fileName}.lock-target`);
+  fs.closeSync(fs.openSync(lockTarget, 'a'));
+
+  const release = acquireFileLock(lockTarget);
+
+  const tempPath = `${filePath}.${process.pid}.${Date.now()}.${crypto
+    .randomBytes(6)
+    .toString('hex')}.tmp`;
+  try {
+    fs.writeFileSync(tempPath, `${JSON.stringify(data, null, 2)}\n`);
+    fs.renameSync(tempPath, filePath);
+  } finally {
+    if (fs.existsSync(tempPath)) fs.rmSync(tempPath, { force: true });
+    release();
+  }
 }
 
 function appendLog(logFile, agent, category, message) {

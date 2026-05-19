@@ -44,9 +44,9 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 
 | AI Roles | Skills | Schemas | Workflows | Fixtures | Tests passing |
 |----------|--------|---------|-----------|----------|---------------|
-| 31 | 8 | 10 | 5 | 10 | 6 |
+| 31 | 8 | 25 | 5 | 10 | 8 |
 
-Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 10 JSON Schema contracts; 5 workflow definitions; 10 curated fixture files under `fixtures/`; and the latest recorded P0 verification set in [AUDIT-PROGRESS.md](AUDIT-PROGRESS.md).
+Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 25 JSON Schema contracts; 5 workflow definitions; 10 curated fixture files under `fixtures/`; and 8 root `test*` commands tracked by [package.json](package.json).
 
 ---
 

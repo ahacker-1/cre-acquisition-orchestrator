@@ -66,6 +66,12 @@ jobs:
       - name: Validate operator guide contract
         run: npm run validate:guides
 
+      - name: Validate checked-in example fixtures
+        run: npm run validate:fixtures
+
+      - name: Verify documentation counts
+        run: npm run validate:docs
+
       - name: Run system tests (3 scenarios + failure/resume)
         run: npm test
 
