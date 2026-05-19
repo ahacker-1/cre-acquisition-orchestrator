@@ -38,7 +38,7 @@ npm run dashboard
 npm run screenshots
 ```
 
-`npm run screenshots` updates the current public gallery under `docs/assets/` for Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
+`npm run screenshots` updates the current public gallery under `docs/assets/` for the front door, quick-create modal, Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
 
 ## Guided Demo Mode
 
@@ -158,7 +158,7 @@ Before the next public release:
 - [ ] Run `npm run dashboard` and click **Start Guided Demo**.
 - [ ] Confirm the guided tour advances through Acquisition Command, Swarm Goal Console, Deal Team, Workpapers & Evidence, and IC Package.
 - [ ] Run `npm run screenshots` while the dashboard is available at `http://localhost:5173`.
-- [x] Capture current workspace surfaces for Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
+- [x] Capture current public surfaces for the front door, quick-create modal, Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
 - [x] Add a current screenshot gallery in `docs/assets/`.
 - [x] Update README image alt text so each screenshot explains the operator value.
 - [ ] Run `git diff --check`.
