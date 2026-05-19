@@ -30,6 +30,7 @@ Let's bring this industry into the future.
 - **Understand the product in 2 minutes:** skim the [Visual Demo Tour](#visual-demo-tour) below, then run the dashboard and click **Start Guided Demo** to walk the deterministic Parkview sample through Command, Swarm Goal Console, Deal Team, Workpapers, and IC Package.
 - **Run the product in 5 minutes:** follow the [Quick Demo](docs/QUICK-DEMO.md) for the shortest offline path from clone to local dashboard. The dashboard Guided Demo Mode does not require uploads or API keys.
 - **Install from scratch:** follow [Quick Start](#quick-start). The default demo is deterministic and runs offline after dependencies are installed.
+- **Choose the right runtime:** read [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md) before sending any real deal context through the optional live-agent path.
 - **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially screenshot automation, source-backed extraction, review-grade workpapers, and live-runtime hardening.
 - **Open public follow-up issues:** use the approval-ready [Issue Seeds](docs/ISSUE-SEEDS.md) for screenshot refresh, deterministic capture, source-backed XLSX extraction, workpaper gates, and runtime docs.
 
@@ -360,7 +361,7 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 
 The first screen is designed as a document-first acquisition cockpit: drop source files, confirm a deal name, and land in the guided deal workspace before filling the detailed intake. The full New Deal Wizard remains available from the header and from workspace edit actions when the operator needs launch-ready setup.
 
-For the current v2.4 demo flow, use the [Demo Journey](docs/DEMO-JOURNEY.md). It maps the public story from document intake to Acquisition Command, mission intent, visible agent handoffs, workpapers/evidence, and IC package review.
+For the current v2.4 demo flow, use the [Demo Journey](docs/DEMO-JOURNEY.md). It maps the public story from document intake to Acquisition Command, mission intent, visible agent handoffs, workpapers/evidence, and IC package review. For runtime expectations and data-sharing boundaries, use [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md).
 
 Release operators can refresh the v2.4 workspace screenshots with `npm run demo`, `npm run dashboard`, then `npm run screenshots` while the dashboard is running locally.
 
@@ -391,6 +392,8 @@ Release operators can refresh the v2.4 workspace screenshots with `npm run demo`
 - [Node.js](https://nodejs.org/) 18+
 - npm
 - Optional for live AI runs: [OpenAI Codex CLI](https://github.com/openai/codex) signed in with ChatGPT
+
+The offline demo is the default public proof path and does not require API keys, a ChatGPT subscription, or Codex authentication. The optional live-agent path sends selected prompts and deal context through the user's local Codex CLI session; compare the paths in [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md) before using live runs with real deal data.
 
 ### One-Time Setup
 

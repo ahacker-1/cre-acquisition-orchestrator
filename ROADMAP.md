@@ -37,6 +37,7 @@ Already shipped after v2.4.0:
 - `docs/QUICK-DEMO.md` gives first-time visitors the shortest offline path from clone to local dashboard.
 - `npm run demo:verify` runs the offline demo, contract checks, guide validation, system tests, and dashboard build in one command.
 - Mission now includes a Swarm Goal Console that maps an operator goal to a recommended specialist swarm, blockers, handoffs, and next action.
+- `docs/RUNTIME-COMPARISON.md` explains offline simulation vs. live Codex execution, including artifact paths, credential boundaries, and when each path is appropriate.
 
 Approval-ready issue text for the first public follow-ups lives in [`docs/ISSUE-SEEDS.md`](docs/ISSUE-SEEDS.md).
 
@@ -68,7 +69,7 @@ Goal: keep the optional Codex/ChatGPT path useful while preserving the local det
 
 Candidate issues:
 
-- Add clearer runtime comparison docs: offline simulation vs. live Codex execution.
+- Add live-runtime hardening around partial failures now that the offline-vs-live runtime comparison doc exists.
 - Add per-agent Codex retry/backoff and operator-visible partial-failure recovery.
 - Add stricter sandbox documentation and no-secret logging checks.
 - Add sample live-run artifact manifests with sensitive fields redacted.

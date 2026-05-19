@@ -25,6 +25,6 @@ Codex authentication is intentionally local. The dashboard's **Login to ChatGPT*
 
 | Version | Supported |
 |---------|-----------|
-| 2.3.x   | Yes       |
-| 2.2.x   | Security fixes only |
-| 2.1.x and older | Security fixes only |
+| 2.4.x   | Yes       |
+| 2.3.x   | Security fixes only |
+| 2.2.x and older | Security fixes only |

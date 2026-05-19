@@ -32,6 +32,8 @@ http://localhost:5173
 
 The dashboard runs locally. The default demo does not call external AI APIs.
 
+If you are deciding between the offline demo and optional live Codex agents, read [`docs/RUNTIME-COMPARISON.md`](RUNTIME-COMPARISON.md). The short version: use the offline demo for first evaluation, screenshots, and release validation; use live Codex only after authentication and data-sharing boundaries are understood.
+
 ## Use Guided Demo Mode
 
 Once the dashboard is open, click **Start Guided Demo** on the front door. If a workspace is already open, click **Parkview Demo** in the header to reopen the deterministic sample.
@@ -190,6 +192,7 @@ npm --prefix dashboard run test:e2e
 ## Next Reading
 
 - [`docs/DEMO-JOURNEY.md`](DEMO-JOURNEY.md) — public operator storyboard and screenshot refresh path.
+- [`docs/RUNTIME-COMPARISON.md`](RUNTIME-COMPARISON.md) — offline demo vs live Codex expectations, artifacts, and safety boundaries.
 - [`README.md`](../README.md) — project overview, release journey, architecture summary, and setup.
 - [`ROADMAP.md`](../ROADMAP.md) — current priorities and contribution directions.
 - [`docs/ISSUE-SEEDS.md`](ISSUE-SEEDS.md) — approval-ready issue drafts for public follow-up work.
