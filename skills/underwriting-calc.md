@@ -558,17 +558,26 @@ All examples below use the **Parkview Apartments** test deal:
 
 | Parameter | Value |
 |-----------|-------|
-| Property | 200-unit Class B multifamily, Portland OR |
+| Property | 200-unit Class B multifamily, Austin TX, Travis County |
 | Purchase Price | $32,000,000 |
-| Gross Potential Rent (GPR) | $3,840,000/yr ($1,600/unit/mo avg) |
-| Vacancy & Credit Loss | 7% |
-| Other Income | $180,000/yr (laundry, parking, late fees) |
-| Total Operating Expenses | $1,687,500 ($8,438/unit) |
-| Loan Amount | $22,400,000 (70% LTV) |
-| Interest Rate | 5.75% fixed, 30-year amortization, 10-year term |
+| Gross Potential Rent (GPR) | $3,600,000/yr ($1,500/unit/mo avg scheduled rent) |
+| Vacancy Loss | $180,000 (5.0% of GPR) |
+| Loss to Lease | $84,000 |
+| Concessions | $30,000 |
+| Bad Debt | $12,000 |
+| Other Income | $120,000/yr |
+| Total Operating Expenses | $1,725,500 ($8,628/unit) |
+| Loan Amount | $24,000,000 (75% LTV) |
+| Interest Rate | 6.50% fixed, 30-year amortization, 10-year term, 2-year IO period |
 | Hold Period | 5 years |
 | Exit Cap Rate | 6.75% |
 | Annual NOI Growth | 2.5% |
+
+<!-- Sources for Austin tax assumptions, accessed 2026-05-19:
+Travis Central Appraisal District mission/market-value basis: https://traviscad.org/?id=6119&method=ical
+Travis County truth-in-taxation rate tables: https://www.traviscountytx.gov/tax-rates
+Texas Constitution Article VIII Section 24-a individual income tax prohibition: https://statutes.capitol.texas.gov/Docs/CN/pdf/CN.8.pdf
+The 1.90% effective property tax rate used below is an underwriting assumption for Parkview, not a statutory quote. -->
 
 ---
 
@@ -578,39 +587,39 @@ Walk through the full income waterfall from Gross Potential Rent to NOI.
 
 **Step 1 -- Gross Potential Rent (GPR)**
 
-GPR is what the property earns if every unit is occupied at current asking rents with zero loss.
+GPR is what the property earns if every unit is occupied at scheduled rents with zero loss.
 
 ```
 GPR = Unit Count x Average Monthly Rent x 12
-GPR = 200 units x $1,600/mo x 12
-GPR = $3,840,000
+GPR = 200 units x $1,500/mo x 12
+GPR = $3,600,000
 ```
 
-**Step 2 -- Vacancy & Credit Loss**
+**Step 2 -- Vacancy, Credit, Loss-to-Lease, and Concessions**
 
-Parkview runs a 7% combined vacancy and credit loss factor (5% physical vacancy + 2% credit/bad debt).
+Parkview separates vacancy, loss-to-lease, concessions, and bad debt so the income waterfall matches `config/deal.json`.
 
 ```
-Vacancy & Credit Loss = GPR x Vacancy Rate
-                      = $3,840,000 x 0.07
-                      = $268,800
+Vacancy Loss = $180,000
+Loss to Lease = $84,000
+Concessions = $30,000
+Bad Debt = $12,000
 ```
 
 **Step 3 -- Other Income**
 
-Other income includes laundry ($72,000), parking ($60,000), late fees ($24,000), and application fees ($24,000).
+Other income includes laundry, parking, late fees, application fees, and utility recoveries that are reported outside scheduled rent.
 
 ```
-Other Income = $72,000 + $60,000 + $24,000 + $24,000
-             = $180,000
+Other Income = $120,000
 ```
 
 **Step 4 -- Effective Gross Income (EGI)**
 
 ```
-EGI = GPR - Vacancy & Credit Loss + Other Income
-    = $3,840,000 - $268,800 + $180,000
-    = $3,751,200
+EGI = GPR - Vacancy Loss - Loss to Lease - Concessions - Bad Debt + Other Income
+    = $3,600,000 - $180,000 - $84,000 - $30,000 - $12,000 + $120,000
+    = $3,414,000
 ```
 
 **Step 5 -- Total Operating Expenses**
@@ -619,32 +628,31 @@ The expense breakdown at Parkview:
 
 | Expense Category | Amount | Per Unit |
 |-----------------|--------|----------|
-| Property Taxes | $384,000 | $1,920 |
-| Insurance | $112,000 | $560 |
-| Utilities (common area) | $168,000 | $840 |
-| Repairs & Maintenance | $200,000 | $1,000 |
-| Management Fee (5% EGI) | $187,560 | $938 |
+| Property Taxes | $608,000 | $3,040 |
+| Insurance | $80,000 | $400 |
+| Utilities (common area) | $175,500 | $878 |
+| Repairs & Maintenance | $202,000 | $1,010 |
+| Management Fee | $150,000 | $750 |
 | Payroll (on-site staff) | $280,000 | $1,400 |
-| Turnover Costs | $120,000 | $600 |
-| Administrative | $48,000 | $240 |
-| Marketing | $36,000 | $180 |
-| Landscaping & Grounds | $44,000 | $220 |
-| Pest Control | $12,000 | $60 |
-| Legal & Professional | $15,940 | $80 |
+| Administrative | $45,000 | $225 |
+| Marketing | $35,000 | $175 |
+| Contract Services | $90,000 | $450 |
 | Capital Reserves ($300/unit) | $60,000 | $300 |
-| **Total** | **$1,687,500** | **$8,438** |
+| **Total** | **$1,725,500** | **$8,628** |
 
-Check: OpEx Ratio = $1,687,500 / $3,751,200 = **45.0%** (within the 35-45% benchmark for 150-250 unit properties).
+Tax note: the $608,000 property tax line equals 1.90% of the $32,000,000 purchase price. Texas has no state individual income tax, but Austin/Travis County underwriting should still carry high annual property taxes and an annual reassessment/protest cadence.
+
+Check: OpEx Ratio = $1,725,500 / $3,414,000 = **50.5%**. The high ratio is driven by the Travis County reassessed tax basis and should be called out in the IC memo.
 
 **Step 6 -- NOI**
 
 ```
 NOI = EGI - Total Operating Expenses
-    = $3,751,200 - $1,687,500
-    = $2,063,700
+    = $3,414,000 - $1,725,500
+    = $1,688,500
 ```
 
-**Verification:** NOI per unit = $2,063,700 / 200 = $10,319/unit/year. Reasonable for a Class B Portland multifamily.
+**Verification:** NOI per unit = $1,688,500 / 200 = $8,443/unit/year. This is tight for a Class B Austin value-add deal at the current price and leverage, so the memo should treat the tax basis as a primary sensitivity.
 
 ---
 
@@ -654,9 +662,9 @@ NOI = EGI - Total Operating Expenses
 
 ```
 Cap Rate = NOI / Purchase Price
-         = $2,063,700 / $32,000,000
-         = 0.0645
-         = 6.45%
+         = $1,688,500 / $32,000,000
+         = 0.0528
+         = 5.28%
 ```
 
 **Reverse calculation -- value from NOI and a target cap rate:**
@@ -665,11 +673,11 @@ If a buyer requires a 7.00% cap rate on the same NOI:
 
 ```
 Implied Value = NOI / Target Cap Rate
-              = $2,063,700 / 0.07
-              = $29,481,429
+              = $1,688,500 / 0.07
+              = $24,121,429
 ```
 
-At a 7.00% cap requirement, the buyer would offer roughly $29.5M -- about $2.5M less than the $32M asking price.
+At a 7.00% cap requirement, the buyer would offer roughly $24.1M -- about $7.9M less than the $32M asking price.
 
 **Cap rate spread check:**
 
@@ -677,18 +685,18 @@ Assuming the 10-Year Treasury yields 4.25% at time of analysis:
 
 ```
 Cap Rate Spread = Cap Rate - 10-Year Treasury
-                = 6.45% - 4.25%
-                = 2.20% (220 bps)
+                = 5.28% - 4.25%
+                = 1.03% (103 bps)
 ```
 
-220 bps exceeds the 150-200 bps minimum threshold. The risk premium is adequate.
+103 bps falls below the 150-200 bps minimum threshold. The tax-adjusted basis is not adequately compensated unless the buyer has credible value-add upside or renegotiates price/proceeds.
 
 **Gross Rent Multiplier (GRM) cross-check:**
 
 ```
 GRM = Purchase Price / Annual Gross Rent
-    = $32,000,000 / $3,840,000
-    = 8.33x
+    = $32,000,000 / $3,600,000
+    = 8.89x
 ```
 
 **Price per unit:**
@@ -703,10 +711,10 @@ Price Per Unit = $32,000,000 / 200 = $160,000/unit
 
 **Step 1 -- Calculate monthly debt service**
 
-Loan terms: $22,400,000 at 5.75% interest, 30-year (360 month) amortization.
+Loan terms: $24,000,000 at 6.50% interest, 30-year (360 month) amortization.
 
 ```
-r = Annual Rate / 12 = 0.0575 / 12 = 0.00479167
+r = Annual Rate / 12 = 0.0650 / 12 = 0.00541667
 n = 360 months
 
 Monthly Payment = Loan Amount x [r(1+r)^n] / [(1+r)^n - 1]
@@ -715,64 +723,64 @@ Monthly Payment = Loan Amount x [r(1+r)^n] / [(1+r)^n - 1]
 Calculate the components:
 
 ```
-(1 + r)^n = (1.00479167)^360
+(1 + r)^n = (1.00541667)^360
 
 Using logarithms:
-ln(1.00479167) = 0.004780
-0.004780 x 360 = 1.720915
-e^1.720915 = 5.5901
+ln(1.00541667) = 0.005402
+0.005402 x 360 = 1.944720
+e^1.944720 = 6.9918
 
-So (1 + r)^n = 5.5901
+So (1 + r)^n = 6.9918
 
-Numerator:   r x (1+r)^n = 0.00479167 x 5.5901 = 0.026788
-Denominator: (1+r)^n - 1 = 5.5901 - 1 = 4.5901
+Numerator:   r x (1+r)^n = 0.00541667 x 6.9918 = 0.037872
+Denominator: (1+r)^n - 1 = 6.9918 - 1 = 5.9918
 
-Monthly Payment = $22,400,000 x (0.026788 / 4.5901)
-                = $22,400,000 x 0.005836
-                = $130,736
+Monthly Payment = $24,000,000 x (0.037872 / 5.9918)
+                = $24,000,000 x 0.006321
+                = $151,696
 ```
 
 **Step 2 -- Annual debt service**
 
 ```
 Annual Debt Service = Monthly Payment x 12
-                    = $130,736 x 12
-                    = $1,568,832
+                    = $151,696 x 12
+                    = $1,820,356
 ```
 
 **Step 3 -- DSCR**
 
 ```
 DSCR = NOI / Annual Debt Service
-     = $2,063,700 / $1,568,832
-     = 1.315x
+     = $1,688,500 / $1,820,356
+     = 0.928x
 ```
 
-**Interpretation:** 1.315x exceeds the Agency minimum of 1.20-1.25x and the CMBS minimum of 1.25-1.30x. This deal qualifies for conventional permanent financing.
+**Interpretation:** 0.928x fails conventional stabilized-debt sizing on an amortizing basis. The IC memo must either reduce proceeds, use an interest reserve/bridge structure, or condition the recommendation on verified value-add execution.
 
 **Step 4 -- Debt yield (cross-check)**
 
 ```
 Debt Yield = NOI / Loan Amount
-           = $2,063,700 / $22,400,000
-           = 9.21%
+           = $1,688,500 / $24,000,000
+           = 7.04%
 ```
 
-9.21% exceeds the Agency 8-9% threshold and is near the CMBS 9-10% range. Adequate.
+7.04% is below current Agency and CMBS comfort ranges. This confirms DSCR, not LTV, is the binding constraint.
 
 **Interest-only comparison:** If the first 2 years are interest-only:
 
 ```
-Monthly IO Payment = $22,400,000 x (0.0575 / 12)
-                   = $22,400,000 x 0.004792
-                   = $107,333
+Monthly IO Payment = $24,000,000 x (0.0650 / 12)
+                   = $24,000,000 x 0.005417
+                   = $130,000
 
-Annual IO Debt Service = $107,333 x 12 = $1,288,000
+Annual IO Debt Service = $130,000 x 12 = $1,560,000
 
-DSCR (IO period) = $2,063,700 / $1,288,000 = 1.602x
+DSCR (IO period) = $1,688,500 / $1,560,000 = 1.082x
 ```
 
-The IO period yields a significantly higher DSCR (1.60x vs 1.32x), which matters for value-add deals that need cash flow headroom during renovation.
+The IO period keeps the deal barely above break-even (1.08x), but it does not solve permanent debt sizing. The model should flag this as a value-add execution risk, not as a clean financing pass.
 
 ---
 
@@ -782,41 +790,46 @@ The IO period yields a significantly higher DSCR (1.60x vs 1.32x), which matters
 
 ```
 Down Payment  = Purchase Price - Loan Amount
-              = $32,000,000 - $22,400,000
-              = $9,600,000
+              = $32,000,000 - $24,000,000
+              = $8,000,000
+
+Closing Costs = $960,000
+Renovation Budget = $2,000,000
+Total Equity Required = $8,000,000 + $960,000 + $2,000,000
+                      = $10,960,000
 ```
 
-Note: In a full model, you would also add closing costs (1.5-2.5% of price) and any initial capital reserves. For this example we use the equity contribution of $9,600,000.
+Parkview is a value-add acquisition, so this example includes closing costs and the renovation budget in the initial equity requirement.
 
 **Step 2 -- Cash flow after debt service (CFADS)**
 
 ```
 CFADS = NOI - Annual Debt Service
-      = $2,063,700 - $1,568,832
-      = $494,868
+      = $1,688,500 - $1,820,356
+      = -$131,856
 ```
 
 **Step 3 -- Cash-on-cash return**
 
 ```
 Cash-on-Cash = CFADS / Total Equity Invested
-             = $494,868 / $9,600,000
-             = 0.05155
-             = 5.15%
+             = -$131,856 / $10,960,000
+             = -0.0120
+             = -1.20%
 ```
 
-**Interpretation:** 5.15% exceeds the 4.0% minimum acceptable Year 1 CoC threshold but falls short of the 6.0-8.0% target range. This is typical for a stabilized acquisition at today's interest rates. The deal makes up for modest Year 1 cash yield through appreciation and equity build (see IRR example below).
+**Interpretation:** Year 1 cash-on-cash is negative on an amortizing basis. During the 2-year IO period, CFADS is $128,500 and cash-on-cash is 1.17%, still below target.
 
 **Break-even occupancy check:**
 
 ```
 Break-Even Occupancy = (Operating Expenses + Debt Service) / GPR (including Other Income)
-                     = ($1,687,500 + $1,568,832) / ($3,840,000 + $180,000)
-                     = $3,256,332 / $4,020,000
-                     = 81.0%
+                     = ($1,725,500 + $1,820,356) / ($3,600,000 + $120,000)
+                     = $3,545,856 / $3,720,000
+                     = 95.3%
 ```
 
-The property must maintain at least 81% economic occupancy to cover all expenses and debt service. Current occupancy is 93% (7% vacancy), providing a 12-point cushion.
+The property must maintain at least 95.3% economic occupancy to cover all expenses and amortizing debt service. Current physical occupancy is 93%, so the acquisition needs lower leverage, better tax appeal results, or rent growth before amortization starts.
 
 ---
 
@@ -825,8 +838,11 @@ The property must maintain at least 81% economic occupancy to cover all expenses
 The IRR is the discount rate that sets the net present value of all cash flows to zero. We build year-by-year cash flows for a 5-year hold.
 
 **Assumptions:**
-- NOI grows 2.5% annually
-- Debt service is constant (fully amortizing)
+- Year 1 NOI uses the Austin/Travis reassessed tax basis
+- Year 2 reflects partial value-add lease-up
+- Year 3 reaches the $2,400,000 stabilized NOI in `config/deal.json`
+- NOI grows 2.5% annually after stabilization
+- Debt service is interest-only for Years 1-2, then amortizing
 - Exit at Year 5 end at a 6.75% cap rate
 - Disposition costs: 2.0% of sale price (broker commission + closing)
 
@@ -834,19 +850,19 @@ The IRR is the discount rate that sets the net present value of all cash flows t
 
 | Year | NOI | Debt Service | CFADS |
 |------|-----|-------------|-------|
-| 0 | -- | -- | -$9,600,000 (equity invested) |
-| 1 | $2,063,700 | $1,568,832 | $494,868 |
-| 2 | $2,115,293 | $1,568,832 | $546,461 |
-| 3 | $2,168,175 | $1,568,832 | $599,343 |
-| 4 | $2,222,379 | $1,568,832 | $653,547 |
-| 5 | $2,277,939 | $1,568,832 | $709,107 |
+| 0 | -- | -- | -$10,960,000 (equity invested) |
+| 1 | $1,688,500 | $1,560,000 | $128,500 |
+| 2 | $2,064,000 | $1,560,000 | $504,000 |
+| 3 | $2,400,000 | $1,820,356 | $579,644 |
+| 4 | $2,460,000 | $1,820,356 | $639,644 |
+| 5 | $2,521,500 | $1,820,356 | $701,144 |
 
 NOI growth calculation:
 ```
-Year 2 NOI = $2,063,700 x 1.025 = $2,115,293
-Year 3 NOI = $2,115,293 x 1.025 = $2,168,175
-Year 4 NOI = $2,168,175 x 1.025 = $2,222,379
-Year 5 NOI = $2,222,379 x 1.025 = $2,277,939
+Year 2 NOI = partial value-add ramp to $2,064,000
+Year 3 NOI = stabilized pro forma from deal.json = $2,400,000
+Year 4 NOI = $2,400,000 x 1.025 = $2,460,000
+Year 5 NOI = $2,460,000 x 1.025 = $2,521,500
 ```
 
 **Step 2 -- Calculate exit (terminal) value at end of Year 5**
@@ -854,65 +870,65 @@ Year 5 NOI = $2,222,379 x 1.025 = $2,277,939
 The exit cap rate uses Year 6 forward NOI (Year 5 NOI grown one more period):
 
 ```
-Year 6 Forward NOI = $2,277,939 x 1.025 = $2,334,887
+Year 6 Forward NOI = $2,521,500 x 1.025 = $2,584,538
 ```
 
-Rounding for the example: $2,334,000 (consistent with deal data).
+Rounding for the example: $2,584,538.
 
 ```
 Exit Price = Year 6 Forward NOI / Exit Cap Rate
-           = $2,334,000 / 0.0675
-           = $34,578,000 (rounded)
+           = $2,584,538 / 0.0675
+           = $38,289,444 (rounded)
 ```
 
 **Step 3 -- Calculate net sale proceeds**
 
-Estimate the remaining loan balance after 5 years of amortization. After 60 payments on a 30-year amortizing $22.4M loan at 5.75%:
+Estimate the remaining loan balance after the 2-year IO period plus 36 amortizing payments on a 30-year amortizing $24.0M loan at 6.50%:
 
 ```
-Remaining Loan Balance (approx.) = $20,830,000
+Remaining Loan Balance (approx.) = $23,140,138
 ```
 
-(Calculated by summing remaining principal after 60 monthly payments.)
+(Calculated by summing remaining principal after 36 amortizing monthly payments.)
 
 ```
-Gross Sale Proceeds          = $34,578,000
-Less: Disposition Costs (2%) = ($691,560)
-Less: Loan Payoff            = ($20,830,000)
-Net Equity Proceeds          = $13,056,440
+Gross Sale Proceeds          = $38,289,444
+Less: Disposition Costs (2%) = ($765,789)
+Less: Loan Payoff            = ($23,140,138)
+Net Equity Proceeds          = $14,383,517
 ```
 
 **Step 4 -- Build complete cash flow schedule**
 
 | Year | Operating CFADS | Disposition Proceeds | Total Cash Flow |
 |------|----------------|---------------------|----------------|
-| 0 | -- | -- | -$9,600,000 |
-| 1 | $494,868 | -- | $494,868 |
-| 2 | $546,461 | -- | $546,461 |
-| 3 | $599,343 | -- | $599,343 |
-| 4 | $653,547 | -- | $653,547 |
-| 5 | $709,107 | $13,056,440 | $13,765,547 |
+| 0 | -- | -- | -$10,960,000 |
+| 1 | $128,500 | -- | $128,500 |
+| 2 | $504,000 | -- | $504,000 |
+| 3 | $579,644 | -- | $579,644 |
+| 4 | $639,644 | -- | $639,644 |
+| 5 | $701,144 | $14,383,517 | $15,084,662 |
 
 **Step 5 -- Solve for IRR**
 
 The IRR is the rate (r) that satisfies:
 
 ```
-0 = -9,600,000
-    + 494,868 / (1+r)^1
-    + 546,461 / (1+r)^2
-    + 599,343 / (1+r)^3
-    + 653,547 / (1+r)^4
-    + 13,765,547 / (1+r)^5
+0 = -10,960,000
+    + 128,500 / (1+r)^1
+    + 504,000 / (1+r)^2
+    + 579,644 / (1+r)^3
+    + 639,644 / (1+r)^4
+    + 15,084,662 / (1+r)^5
 ```
 
 Solving iteratively (or via financial calculator / spreadsheet):
 
 ```
-Levered IRR = 12.8%
+Levered IRR = 9.6%
 ```
 
-**Interpretation:** 12.8% exceeds the 12% minimum but falls short of the 15-18% target range. This is a deal that meets minimum hurdles. Value-add upside (not modeled here) or a tighter exit cap could push returns into the target range.
+**Interpretation:** 9.6% falls short of the 15% target IRR. With Austin tax reassessment included, Parkview is not a clean go at the stated $32.0M price and 75% LTV. The IC memo should recommend proceed-with-mitigations only if the buyer can reduce price/proceeds or verify upside beyond the current pro forma.
 
 ---
 
@@ -924,38 +940,38 @@ The equity multiple measures total return as a multiple of invested equity.
 
 ```
 Total Distributions = Sum of all cash flows to equity
-                    = $494,868 + $546,461 + $599,343 + $653,547 + $13,765,547
-                    = $16,059,766
+                    = $128,500 + $504,000 + $579,644 + $639,644 + $15,084,662
+                    = $16,936,450
 ```
 
 **Step 2 -- Equity multiple**
 
 ```
 Equity Multiple = Total Distributions / Total Equity Invested
-                = $16,059,766 / $9,600,000
-                = 1.673x
+                = $16,936,450 / $10,960,000
+                = 1.545x
 ```
 
-Rounding with the deal data inputs: **1.72x** (the slight difference comes from rounding in intermediate steps; the deal data sheet carries more decimal precision through the loan balance calculation).
+Rounded with full precision: **1.55x**.
 
-**Interpretation:** 1.72x means an investor receives $1.72 for every $1.00 invested over the 5-year hold. This is above the 1.5x minimum but below the 1.8-2.2x target. Combined with the 12.8% IRR, this deal is investable but not compelling purely on stabilized returns -- value-add execution or favorable market movement would be needed to reach target thresholds.
+**Interpretation:** 1.55x means an investor receives $1.55 for every $1.00 invested over the 5-year hold. This clears a minimum 1.5x screen but misses the 1.8x target. Combined with the 9.6% IRR, the deal needs a pricing, financing, or operating mitigation before an unconditional proceed verdict.
 
 **Decomposing the equity multiple:**
 
 ```
-Cash Flow Component   = ($494,868 + $546,461 + $599,343 + $653,547 + $709,107) / $9,600,000
-                      = $3,003,326 / $9,600,000
-                      = 0.313x (31.3% of equity returned through operations)
+Cash Flow Component   = ($128,500 + $504,000 + $579,644 + $639,644 + $701,144) / $10,960,000
+                      = $2,552,932 / $10,960,000
+                      = 0.233x (23.3% of equity returned through operations)
 
-Principal Paydown     = $22,400,000 - $20,830,000 = $1,570,000
-Appreciation          = $34,578,000 - $32,000,000 = $2,578,000
-Disposition Costs     = -$691,560
+Principal Paydown     = $24,000,000 - $23,140,138 = $859,862
+Appreciation          = $38,289,444 - $32,000,000 = $6,289,444
+Disposition Costs     = -$765,789
 
-Reversion Component   = ($2,578,000 + $1,570,000 - $691,560) / $9,600,000
-                      = $3,456,440 / $9,600,000
-                      = 0.360x (36.0% of equity from appreciation + paydown)
+Reversion Component   = ($6,289,444 + $859,862 - $765,789) / $10,960,000
+                      = $6,383,517 / $10,960,000
+                      = 0.582x (58.2% of equity from appreciation + paydown)
 
-Total Check: 1.000x (return of capital) + 0.313x + 0.360x = 1.673x
+Total Check: $2,552,932 operating distributions + $14,383,517 net sale proceeds = $16,936,449 total distributions. $16,936,449 / $10,960,000 = 1.545x.
 ```
 
 ---
@@ -1025,21 +1041,21 @@ Scenario: Seller-financed at 100% LTV
 Purchase Price = $32,000,000
 Loan Amount    = $32,000,000
 Equity         = $0
-NOI            = $2,063,700
-Debt Service   = $2,241,189 (higher loan amount --> higher ADS)
+NOI            = $1,688,500
+Debt Service   = $2,427,141 (higher loan amount --> higher ADS)
 
-CFADS = $2,063,700 - $2,241,189 = -$177,489
+CFADS = $1,688,500 - $2,427,141 = -$738,641
 
-Cash-on-Cash = -$177,489 / $0 --> UNDEFINED
+Cash-on-Cash = -$738,641 / $0 --> UNDEFINED
 Equity Multiple = Total Distributions / $0 --> UNDEFINED
 
-DSCR = $2,063,700 / $2,241,189 = 0.921x --> FAIL (below 1.0x, negative cash flow)
+DSCR = $1,688,500 / $2,427,141 = 0.696x --> FAIL (below 1.0x, negative cash flow)
 ```
 
 **What to flag in output:**
 - `[WARNING] Zero equity structure. Cash-on-Cash and Equity Multiple are not calculable.`
-- `[CRITICAL] DSCR: 0.92x. Property cash flow does not cover debt service at 100% LTV.`
-- `[INFO] Recommend evaluating with reduced leverage. LTV required for 1.25x DSCR: ~65%.`
+- `[CRITICAL] DSCR: 0.70x. Property cash flow does not cover debt service at 100% LTV.`
+- `[INFO] Recommend evaluating with reduced leverage. LTV required for 1.25x DSCR: ~56%.`
 
 ---
 
@@ -1061,32 +1077,32 @@ DSCR = $2,063,700 / $2,241,189 = 0.921x --> FAIL (below 1.0x, negative cash flow
 ```
 Parkview with 7-year IO (exceeds 5-year hold):
 
-IO Annual Debt Service = $22,400,000 x 0.0575 = $1,288,000
-Amortizing ADS (for comparison) = $1,568,832
+IO Annual Debt Service = $24,000,000 x 0.0650 = $1,560,000
+Amortizing ADS (for comparison) = $1,820,356
 
-Year 1 CFADS (IO)        = $2,063,700 - $1,288,000 = $775,700
-Year 1 CFADS (Amortizing) = $2,063,700 - $1,568,832 = $494,868
+Year 1 CFADS (IO)         = $1,688,500 - $1,560,000 = $128,500
+Year 1 CFADS (Amortizing) = $1,688,500 - $1,820,356 = -$131,856
 
-CoC (IO)        = $775,700 / $9,600,000 = 8.08%
-CoC (Amortizing) = $494,868 / $9,600,000 = 5.15%
+CoC (IO)         = $128,500 / $10,960,000 = 1.17%
+CoC (Amortizing) = -$131,856 / $10,960,000 = -1.20%
 
-DSCR (IO)        = $2,063,700 / $1,288,000 = 1.602x
-DSCR (Amortizing) = $2,063,700 / $1,568,832 = 1.315x
+DSCR (IO)         = $1,688,500 / $1,560,000 = 1.082x
+DSCR (Amortizing) = $1,688,500 / $1,820,356 = 0.928x
 
 Exit after 5 years:
-  Loan balance (IO):        $22,400,000 (no paydown)
-  Loan balance (Amortizing): $20,830,000 ($1,570,000 paid down)
+  Loan balance (IO):         $24,000,000 (no paydown)
+  Loan balance (Amortizing): $22,466,635 ($1,533,365 paid down)
 
-  Net proceeds (IO):        $34,578,000 - $691,560 - $22,400,000 = $11,486,440
-  Net proceeds (Amortizing): $34,578,000 - $691,560 - $20,830,000 = $13,056,440
+  Net proceeds (IO):         $38,289,444 - $765,789 - $24,000,000 = $13,523,655
+  Net proceeds (Amortizing): $38,289,444 - $765,789 - $22,466,635 = $15,057,020
 
-  Difference: -$1,570,000 less equity at exit on IO structure
+  Difference: -$1,533,365 less equity at exit on IO structure
 ```
 
 **What to flag in output:**
 - `[INFO] IO period (7 years) exceeds hold period (5 years). No principal paydown during hold.`
-- `[INFO] IO structure boosts Year 1 CoC by 293 bps (8.08% vs 5.15%) but reduces exit equity by $1,570,000.`
-- `[INFO] DSCR calculated on IO basis: 1.60x. Lender may also require amortizing DSCR test (1.32x).`
+- `[INFO] IO structure improves Year 1 CoC by 237 bps (1.17% vs -1.20%) but reduces exit equity by $1,533,365.`
+- `[INFO] DSCR calculated on IO basis: 1.08x. Lender may also require amortizing DSCR test (0.93x).`
 
 ---
 
@@ -1094,7 +1110,7 @@ Exit after 5 years:
 
 **Description:** The loan carries a floating interest rate (e.g., SOFR + 275 bps) rather than a fixed rate. Future debt service is uncertain, making cash flow projections inherently speculative.
 
-**Why it matters:** A 100 bps rate increase on $22.4M of debt adds roughly $224,000/year to debt service, which can eliminate cash flow entirely. Variable rate debt injects significant uncertainty into IRR and CoC projections.
+**Why it matters:** A 100 bps rate increase on $24.0M of debt adds roughly $240,000/year to interest cost, which can eliminate cash flow entirely. Variable rate debt injects significant uncertainty into IRR and CoC projections.
 
 **How to handle it in the model:**
 1. Build three rate scenarios: Base, +100 bps, +200 bps (or use the forward SOFR curve for the base case).
@@ -1107,30 +1123,30 @@ Exit after 5 years:
 
 ```
 Parkview with floating rate debt: SOFR + 2.75%
-Current SOFR: 3.00% --> Current all-in rate: 5.75%
+Current SOFR: 3.75% --> Current all-in rate: 6.50%
 
-Scenario A (Base): SOFR stays at 3.00% --> Rate = 5.75%
-  ADS = $1,568,832 | CFADS = $494,868 | CoC = 5.15% | DSCR = 1.32x
+Scenario A (Base): SOFR stays at 3.75% --> Rate = 6.50%
+  ADS = $1,820,356 | CFADS = -$131,856 | CoC = -1.20% | DSCR = 0.93x
 
-Scenario B (+100 bps): SOFR rises to 4.00% --> Rate = 6.75%
-  IO-equivalent ADS increase = $22,400,000 x 0.01 = +$224,000
-  Adjusted ADS = $1,792,832 | CFADS = $270,868 | CoC = 2.82% | DSCR = 1.15x
+Scenario B (+100 bps): SOFR rises to 4.75% --> Rate = 7.50%
+  IO-equivalent ADS increase = $24,000,000 x 0.01 = +$240,000
+  Adjusted ADS = $2,060,356 | CFADS = -$371,856 | CoC = -3.39% | DSCR = 0.82x
 
-Scenario C (+200 bps): SOFR rises to 5.00% --> Rate = 7.75%
-  Adjusted ADS = $2,016,832 | CFADS = $46,868 | CoC = 0.49% | DSCR = 1.02x
+Scenario C (+200 bps): SOFR rises to 5.75% --> Rate = 8.50%
+  Adjusted ADS = $2,300,356 | CFADS = -$611,856 | CoC = -5.58% | DSCR = 0.73x
 
 Break-even rate (DSCR = 1.00x):
-  Required ADS = NOI = $2,063,700
-  Break-even rate approximately 7.96% (SOFR = 5.21%)
+  Required IO ADS = NOI = $1,688,500
+  Break-even IO all-in rate approximately 7.04% (SOFR = 4.29%)
 
 Rate cap cost estimate:
-  2-year cap at 5.50% strike on $22.4M notional = $250,000-400,000 upfront
+  2-year cap at 5.50% strike on $24.0M notional = $250,000-400,000 upfront
 ```
 
 **What to flag in output:**
 - `[WARNING] Variable rate debt. Return metrics are rate-dependent. Presenting 3-scenario range.`
-- `[CRITICAL] At SOFR +200 bps, DSCR drops to 1.02x (near break-even). Cash flow nearly eliminated.`
-- `[INFO] Break-even all-in rate: 7.96%. Current rate: 5.75%. Cushion: 221 bps.`
+- `[CRITICAL] At SOFR +200 bps, amortizing DSCR drops to 0.73x. Cash flow is deeply negative.`
+- `[INFO] Break-even IO all-in rate: 7.04%. Current rate: 6.50%. Cushion: 54 bps before IO cash flow is eliminated.`
 - `[RECOMMENDATION] Rate cap strongly recommended if floating rate is pursued.`
 
 ---
@@ -1152,46 +1168,47 @@ Rate cap cost estimate:
 
 ```
 Parkview Value-Add Plan:
-  Renovation scope: 150 of 200 units (75% of units)
-  Cost per unit: $15,000
-  Total renovation budget: $15,000 x 150 = $2,250,000
-  Renovation pace: 10 units/month --> 15 months to complete
+  Renovation scope: 200 of 200 units
+  Cost per unit: $10,000
+  Total renovation budget: $10,000 x 200 = $2,000,000
+  Renovation pace: 9-12 units/month --> 18-24 months to complete
   Unit downtime: 3 weeks per unit
-  Rent increase: $200/unit/month post-renovation ($1,600 --> $1,800)
+  Rent increase: $250/unit/month post-renovation
 
 Revised equity requirement:
-  Down payment:        $9,600,000
-  Renovation budget:   $2,250,000
-  Total equity:        $11,850,000
+  Down payment:        $8,000,000
+  Closing costs:       $960,000
+  Renovation budget:   $2,000,000
+  Total equity:        $10,960,000
 
 In-Place Metrics (Day 1):
-  NOI:      $2,063,700
-  Cap Rate: 6.45%
-  CoC:      $494,868 / $11,850,000 = 4.18%
+  NOI:      $1,688,500
+  Cap Rate: 5.28%
+  CoC:      $128,500 / $10,960,000 = 1.17% during IO period
 
-Stabilized Metrics (Month 18+, all 150 units renovated):
-  New GPR = (150 x $1,800 x 12) + (50 x $1,600 x 12) = $3,240,000 + $960,000 = $4,200,000
-  Vacancy (5%): $210,000
-  Other Income: $210,000 (additional from RUBS/amenity fees)
-  Stabilized EGI: $4,200,000 - $210,000 + $210,000 = $4,200,000
-  Stabilized OpEx: $1,850,000 (higher taxes, insurance on higher value)
-  Stabilized NOI: $4,200,000 - $1,850,000 = $2,350,000
+Stabilized Metrics (Month 24+, all 200 units renovated):
+  New GPR = unit mix market rent roll = $3,864,000
+  Vacancy (5%): $193,200
+  Other Income: $180,000 (additional RUBS/amenity recovery)
+  Stabilized EGI: $3,864,000 - $193,200 + $180,000 = $3,850,800
+  Stabilized OpEx: $1,450,800 (post-tax-appeal stabilized run-rate)
+  Stabilized NOI: $3,850,800 - $1,450,800 = $2,400,000
 
-  Stabilized Cap Rate (on purchase): $2,350,000 / $32,000,000 = 7.34%
-  Return on Cost: $2,350,000 / ($32,000,000 + $2,250,000) = 6.87%
+  Stabilized Cap Rate (on purchase): $2,400,000 / $32,000,000 = 7.50%
+  Return on Cost: $2,400,000 / ($32,000,000 + $2,000,000 + $960,000) = 6.86%
 
 Renovation ROI:
-  Annual rent increase per unit: $200 x 12 = $2,400
-  Per-unit ROI: $2,400 / $15,000 = 16.0% --> Meets the 15% minimum target
+  Annual rent increase per unit: $250 x 12 = $3,000
+  Per-unit ROI: $3,000 / $10,000 = 30.0% --> Meets the 15% minimum target
 
-NOI Uplift: ($2,350,000 - $2,063,700) / $2,063,700 = 13.9%
+NOI Uplift: ($2,400,000 - $1,688,500) / $1,688,500 = 42.1%
 ```
 
 **What to flag in output:**
-- `[INFO] Value-add deal. Dual metrics: In-place NOI $2,063,700 (6.45% cap) vs. Stabilized NOI $2,350,000 (7.34% cap).`
-- `[INFO] Renovation ROI: 16.0% (exceeds 15% threshold). Return on Cost: 6.87%.`
-- `[INFO] Stabilization timeline: 15 months renovation + 3 months lease-up = ~18 months.`
-- `[WARNING] Total equity required increases from $9.6M to $11.85M (+23%) to fund renovation.`
+- `[INFO] Value-add deal. Dual metrics: In-place NOI $1,688,500 (5.28% cap) vs. Stabilized NOI $2,400,000 (7.50% cap).`
+- `[INFO] Renovation ROI: 30.0% (exceeds 15% threshold). Return on Cost: 6.86%.`
+- `[INFO] Stabilization timeline: 18-24 months renovation plus lease-up.`
+- `[WARNING] Day 1 tax-adjusted NOI does not support permanent debt at requested leverage. Value-add execution must be verified before proceed.`
 
 ---
 
@@ -1211,26 +1228,26 @@ NOI Uplift: ($2,350,000 - $2,063,700) / $2,063,700 = 13.9%
 **Example calculation snippet:**
 
 ```
-Parkview Apartments, Portland OR (annual reassessment state):
+Parkview Apartments, Austin TX / Travis County (annual reassessment and protest cadence):
 
 Seller's current assessed value: $24,000,000 (purchased 8 years ago)
-Seller's current tax bill:       $288,000 ($24M x 1.20% mill rate)
+Seller's current tax bill:       $456,000 ($24M x 1.90% effective tax rate)
 
 Post-acquisition:
   New assessed value:    $32,000,000 (purchase price)
-  New annual tax bill:   $32,000,000 x 0.012 = $384,000
+  New annual tax bill:   $32,000,000 x 0.019 = $608,000
 
-Tax increase:            $384,000 - $288,000 = $96,000/year
+Tax increase:            $608,000 - $456,000 = $152,000/year
 
 Impact on NOI:
-  NOI using seller's taxes:  $2,063,700 + $96,000 = $2,159,700 (overstated)
-  NOI using buyer's taxes:   $2,063,700 (correctly uses $384,000)
-  NOI overstatement if not adjusted: 4.7%
+  NOI using seller's taxes:  $1,688,500 + $152,000 = $1,840,500 (overstated)
+  NOI using buyer's taxes:   $1,688,500 (correctly uses $608,000)
+  NOI overstatement if not adjusted: 9.0%
 
 Impact on cap rate:
-  Overstated cap rate: $2,159,700 / $32,000,000 = 6.75%
-  Correct cap rate:    $2,063,700 / $32,000,000 = 6.45%
-  Error: 30 bps (significant for pricing and go/no-go decisions)
+  Overstated cap rate: $1,840,500 / $32,000,000 = 5.75%
+  Correct cap rate:    $1,688,500 / $32,000,000 = 5.28%
+  Error: 47 bps (material for pricing and go/no-go decisions)
 
 Comparison -- California Prop 13 state:
   If property were in CA with same basis:
@@ -1241,7 +1258,7 @@ Comparison -- California Prop 13 state:
 ```
 
 **What to flag in output:**
-- `[WARNING] Jurisdiction reassesses on sale. Current tax bill ($288,000) will reset to approximately $384,000 (+$96,000/yr).`
+- `[WARNING] Travis County reassessment/protest cadence. Current seller tax basis would understate Year 1 taxes by approximately $152,000/yr.`
 - `[INFO] Model already uses reassessed tax amount. NOI reflects post-acquisition expense basis.`
 - `[INFO] If using broker's pro forma, verify they are NOT using seller's tax basis. Common error worth 30+ bps on cap rate.`
 
@@ -1273,38 +1290,38 @@ Monthly income ramp:
 
 | Month | Occupied | Monthly Rent Revenue | Monthly OpEx | Monthly NOI |
 |-------|----------|---------------------|-------------|-------------|
-| 1     | 130      | $208,000            | $140,625    | $67,375     |
-| 2     | 140      | $224,000            | $140,625    | $83,375     |
-| 3     | 150      | $240,000            | $140,625    | $99,375     |
-| 4     | 160      | $256,000            | $140,625    | $115,375    |
-| 5     | 170      | $272,000            | $140,625    | $131,375    |
-| 6     | 180      | $288,000            | $140,625    | $147,375    |
-| 7+    | 186      | $297,600            | $140,625    | $156,975    |
+| 1     | 130      | $195,000            | $143,792    | $51,208     |
+| 2     | 140      | $210,000            | $143,792    | $66,208     |
+| 3     | 150      | $225,000            | $143,792    | $81,208     |
+| 4     | 160      | $240,000            | $143,792    | $96,208     |
+| 5     | 170      | $255,000            | $143,792    | $111,208    |
+| 6     | 180      | $270,000            | $143,792    | $126,208    |
+| 7+    | 186      | $279,000            | $143,792    | $135,208    |
 
-(Monthly OpEx simplified as Total OpEx / 12 = $1,687,500 / 12 = $140,625)
+(Monthly OpEx simplified as Total OpEx / 12 = $1,725,500 / 12 = $143,792)
 
 Year 1 blended NOI (6 months ramp + 6 months stabilized):
-  Ramp NOI (months 1-6): $67,375 + $83,375 + $99,375 + $115,375 + $131,375 + $147,375 = $644,250
-  Stabilized NOI (months 7-12): $156,975 x 6 = $941,850
-  Year 1 Total NOI: $644,250 + $941,850 = $1,586,100
+  Ramp NOI (months 1-6): $51,208 + $66,208 + $81,208 + $96,208 + $111,208 + $126,208 = $532,248
+  Stabilized NOI (months 7-12): $135,208 x 6 = $811,248
+  Year 1 Total NOI: $532,248 + $811,248 = $1,343,496
 
-Compare to stabilized annual NOI: $156,975 x 12 = $1,883,700
-Year 1 NOI shortfall: $1,883,700 - $1,586,100 = $297,600
+Compare to stabilized annual NOI: $135,208 x 12 = $1,622,496
+Year 1 NOI shortfall: $1,622,496 - $1,343,496 = $279,000
 
 Worst-case DSCR (Month 1, annualized):
-  Annualized NOI at 65% occupancy: $67,375 x 12 = $808,500
-  DSCR: $808,500 / $1,568,832 = 0.52x --> FAIL
+  Annualized NOI at 65% occupancy: $51,208 x 12 = $614,496
+  DSCR: $614,496 / $1,820,356 = 0.34x --> FAIL
 
 DSCR at stabilization (Month 7+):
-  Annualized NOI: $156,975 x 12 = $1,883,700
-  DSCR: $1,883,700 / $1,568,832 = 1.20x --> Meets Agency minimum
+  Annualized NOI: $135,208 x 12 = $1,622,496
+  DSCR: $1,622,496 / $1,820,356 = 0.89x --> FAIL at requested leverage
 ```
 
 **What to flag in output:**
 - `[WARNING] Property is in lease-up. Current occupancy (65%) is 28 points below stabilized (93%).`
-- `[CRITICAL] Day 1 annualized DSCR: 0.52x. Property cannot service debt at current occupancy. Interest reserve or earnout structure required.`
+- `[CRITICAL] Day 1 annualized DSCR: 0.34x. Property cannot service debt at current occupancy. Interest reserve or earnout structure required.`
 - `[INFO] Estimated time to stabilization: 6 months at 10 units/month absorption.`
-- `[INFO] Year 1 NOI shortfall vs. stabilized: $297,600. Budget this as carry cost in equity.`
+- `[INFO] Year 1 NOI shortfall vs. stabilized: $279,000. Budget this as carry cost in equity.`
 
 ---
 

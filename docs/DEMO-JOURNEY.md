@@ -1,6 +1,10 @@
 # Demo Journey
 
-Use this as the public demo path for v2.5.0. It is optimized for a first-time visitor who wants to understand the product before reading the architecture docs.
+Use this as the public demo path for current `main`. It is optimized for a first-time visitor who wants to understand the product before reading the architecture docs.
+
+## Current Reality
+
+The demo reflects the post-v2.5.1 codebase: document-first intake, source-backed extraction previews, deterministic offline orchestration, generated workpapers, and an optional local Codex/ChatGPT live-agent path. v2.5.1 is the most recent packaged release line in the repo, while current `main` may include unreleased hardening and documentation updates.
 
 ## Promise
 
@@ -71,8 +75,8 @@ What to show:
 
 Why it matters:
 
-- This is the v2.5 product center: it makes the agentic workspace legible before the user studies the underlying orchestration engine.
-- It is the best first screenshot to update after v2.5.0.
+- This is the current product center: it makes the agentic workspace legible before the user studies the underlying orchestration engine.
+- It is the best first screenshot to refresh before the next public release.
 
 Current screenshot asset:
 

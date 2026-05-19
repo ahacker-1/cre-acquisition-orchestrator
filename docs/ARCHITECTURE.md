@@ -10,7 +10,20 @@ The system uses a three-level hierarchy: Master Orchestrator, Phase Orchestrator
 
 ```mermaid
 graph TD
+    SRC[Source Documents]
+    DOC[document-orchestrator]
+    RRPARSE[rent-roll-parser]
+    FINPARSE[financials-parser]
+    OMPARSE[offering-memo-parser]
     MO[Master Orchestrator]
+
+    SRC --> DOC
+    DOC --> RRPARSE
+    DOC --> FINPARSE
+    DOC --> OMPARSE
+    RRPARSE --> MO
+    FINPARSE --> MO
+    OMPARSE --> MO
 
     MO --> DDO[Due Diligence Orchestrator]
     MO --> UWO[Underwriting Orchestrator]
@@ -44,6 +57,11 @@ graph TD
     CLO --> CC[closing-coordinator]
     CLO --> FFM[funds-flow-manager]
 
+    style SRC fill:#334155,color:#fff
+    style DOC fill:#0f766e,color:#fff
+    style RRPARSE fill:#0f766e,color:#fff
+    style FINPARSE fill:#0f766e,color:#fff
+    style OMPARSE fill:#0f766e,color:#fff
     style MO fill:#1a1a2e,color:#fff
     style DDO fill:#16213e,color:#fff
     style UWO fill:#16213e,color:#fff
@@ -59,7 +77,7 @@ graph TD
 | Master Orchestrator | 1 | master-orchestrator |
 | Phase Orchestrators | 5 | due-diligence-orchestrator, underwriting-orchestrator, financing-orchestrator, legal-orchestrator, closing-orchestrator |
 | Specialist Agents | 21 | rent-roll-analyst, scenario-analyst, psa-reviewer, etc. |
-| Document Ingestion Roles | 4 | source-document-classifier, rent-roll-extractor, financial-statement-extractor, deal-metadata-extractor |
+| Document Ingestion Roles | 4 | document-orchestrator, financials-parser, offering-memo-parser, rent-roll-parser |
 | **Total Named AI Roles** | **31** | 27 core acquisition roles + 4 document ingestion roles |
 
 Additionally, some specialists spawn child agents at runtime:

@@ -134,7 +134,7 @@ npm run dashboard
 # Drop files on the homepage, confirm the deal name, extract CSV/TXT/MD, approve fields
 ```
 
-Uploaded files and extraction previews stay under `data/deals/{deal-id}/` and are ignored by git. PDFs are stored for review, and Excel files are stored/classified while source-backed field mapping remains out of scope.
+Uploaded files and extraction previews stay under `data/deals/{deal-id}/` and are ignored by git. PDFs and Excel files are stored for review, classified, and mapped into source-backed extraction previews where supported.
 
 ---
 
