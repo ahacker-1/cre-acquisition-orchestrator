@@ -5,8 +5,8 @@
 - Property: Parkview Apartments
 - Phase: Legal
 - Agent: title-survey-reviewer
-- Started: 2026-05-19T19:25:55.574Z
-- Completed: 2026-05-19T19:25:55.575Z
+- Started: 2026-05-19T20:08:14.259Z
+- Completed: 2026-05-19T20:08:14.261Z
 - Verdict: PASS
 - Summary: Title and survey package clear.
 
@@ -75,30 +75,30 @@ Debt service uses the stated 2-year interest-only period, then 30-year amortizat
 | 10 | $4,454,496 | $2,136,066 | $2,852,846 | $1,820,356 | 1.57x | $1,032,490 |
 
 ## 27-Scenario Sensitivity Matrix
-Matrix dimensions: 3 rent cases x 3 vacancy cases x 3 exit-cap cases. Rent and exit-cap shocks are symmetric around base.
+Matrix dimensions: 3 rent cases x 3 vacancy cases x 3 exit-cap cases. Rent, vacancy, and exit-cap shocks are symmetric around base.
 | Scenario | Rent | Vacancy | Exit Cap | IRR | Equity Multiple | DSCR | Verdict |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| RENT_DOWN_VACANCY_HIGH_EXIT_TIGHT | Downside | High | 6.25% | 10.0% | 1.58x | 1.03x | FAIL |
-| RENT_DOWN_VACANCY_HIGH_EXIT_BASE | Downside | High | 6.75% | 6.0% | 1.32x | 1.03x | FAIL |
-| RENT_DOWN_VACANCY_HIGH_EXIT_WIDE | Downside | High | 7.25% | 2.0% | 1.10x | 1.03x | FAIL |
+| RENT_DOWN_VACANCY_HIGH_EXIT_TIGHT | Downside | High | 6.25% | 10.7% | 1.63x | 1.04x | FAIL |
+| RENT_DOWN_VACANCY_HIGH_EXIT_BASE | Downside | High | 6.75% | 6.8% | 1.37x | 1.04x | FAIL |
+| RENT_DOWN_VACANCY_HIGH_EXIT_WIDE | Downside | High | 7.25% | 2.8% | 1.14x | 1.04x | FAIL |
 | RENT_DOWN_VACANCY_BASE_EXIT_TIGHT | Downside | Base | 6.25% | 12.1% | 1.73x | 1.06x | FAIL |
 | RENT_DOWN_VACANCY_BASE_EXIT_BASE | Downside | Base | 6.75% | 8.2% | 1.46x | 1.06x | FAIL |
 | RENT_DOWN_VACANCY_BASE_EXIT_WIDE | Downside | Base | 7.25% | 4.4% | 1.23x | 1.06x | FAIL |
 | RENT_DOWN_VACANCY_LOW_EXIT_TIGHT | Downside | Low | 6.25% | 13.4% | 1.82x | 1.08x | FAIL |
 | RENT_DOWN_VACANCY_LOW_EXIT_BASE | Downside | Low | 6.75% | 9.6% | 1.55x | 1.08x | FAIL |
 | RENT_DOWN_VACANCY_LOW_EXIT_WIDE | Downside | Low | 7.25% | 5.9% | 1.31x | 1.08x | FAIL |
-| RENT_BASE_VACANCY_HIGH_EXIT_TIGHT | Base | High | 6.25% | 11.4% | 1.68x | 1.05x | FAIL |
-| RENT_BASE_VACANCY_HIGH_EXIT_BASE | Base | High | 6.75% | 7.5% | 1.41x | 1.05x | FAIL |
-| RENT_BASE_VACANCY_HIGH_EXIT_WIDE | Base | High | 7.25% | 3.6% | 1.18x | 1.05x | FAIL |
+| RENT_BASE_VACANCY_HIGH_EXIT_TIGHT | Base | High | 6.25% | 12.1% | 1.73x | 1.06x | FAIL |
+| RENT_BASE_VACANCY_HIGH_EXIT_BASE | Base | High | 6.75% | 8.2% | 1.46x | 1.06x | FAIL |
+| RENT_BASE_VACANCY_HIGH_EXIT_WIDE | Base | High | 7.25% | 4.4% | 1.23x | 1.06x | FAIL |
 | RENT_BASE_VACANCY_BASE_EXIT_TIGHT | Base | Base | 6.25% | 13.4% | 1.82x | 1.08x | FAIL |
 | RENT_BASE_VACANCY_BASE_EXIT_BASE | Base | Base | 6.75% | 9.6% | 1.55x | 1.08x | FAIL |
 | RENT_BASE_VACANCY_BASE_EXIT_WIDE | Base | Base | 7.25% | 5.9% | 1.31x | 1.08x | FAIL |
 | RENT_BASE_VACANCY_LOW_EXIT_TIGHT | Base | Low | 6.25% | 14.6% | 1.92x | 1.10x | FAIL |
 | RENT_BASE_VACANCY_LOW_EXIT_BASE | Base | Low | 6.75% | 11.0% | 1.64x | 1.10x | FAIL |
 | RENT_BASE_VACANCY_LOW_EXIT_WIDE | Base | Low | 7.25% | 7.3% | 1.40x | 1.10x | FAIL |
-| RENT_UP_VACANCY_HIGH_EXIT_TIGHT | Upside | High | 6.25% | 12.7% | 1.77x | 1.07x | FAIL |
-| RENT_UP_VACANCY_HIGH_EXIT_BASE | Upside | High | 6.75% | 8.9% | 1.50x | 1.07x | FAIL |
-| RENT_UP_VACANCY_HIGH_EXIT_WIDE | Upside | High | 7.25% | 5.2% | 1.27x | 1.07x | FAIL |
+| RENT_UP_VACANCY_HIGH_EXIT_TIGHT | Upside | High | 6.25% | 13.4% | 1.82x | 1.08x | FAIL |
+| RENT_UP_VACANCY_HIGH_EXIT_BASE | Upside | High | 6.75% | 9.6% | 1.55x | 1.08x | FAIL |
+| RENT_UP_VACANCY_HIGH_EXIT_WIDE | Upside | High | 7.25% | 5.9% | 1.31x | 1.08x | FAIL |
 | RENT_UP_VACANCY_BASE_EXIT_TIGHT | Upside | Base | 6.25% | 14.6% | 1.92x | 1.10x | FAIL |
 | RENT_UP_VACANCY_BASE_EXIT_BASE | Upside | Base | 6.75% | 11.0% | 1.64x | 1.10x | FAIL |
 | RENT_UP_VACANCY_BASE_EXIT_WIDE | Upside | Base | 7.25% | 7.3% | 1.40x | 1.10x | FAIL |

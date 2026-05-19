@@ -24,9 +24,9 @@ Agency lending is the backbone of multifamily permanent financing in the United 
 
 | Parameter | Details |
 |---|---|
-| **Loan-to-Value (LTV)** | Up to 80% (75% most common for standard execution). 80% available for affordable, green, or mission-driven properties. |
+| **Loan-to-Value (LTV)** | Stated program maximum can reach 80%, but 2026 debt-service and debt-yield sizing usually binds stabilized market-rate acquisitions closer to 65-70% effective LTV. |
 | **DSCR Minimum** | 1.25x (standard). 1.20x available for select programs (affordable, green). |
-| **Debt Yield Minimum** | Typically 7-8% depending on market tier and property class. |
+| **Debt Yield Minimum** | Typically 8-9% in 2026 for stabilized market-rate agency sizing; treat this as binding before assuming the stated LTV cap is available. |
 | **Amortization** | 30 years standard. Interest-only periods available (typically 1-5 years) for strong sponsors/properties. |
 | **Loan Term** | 5, 7, 10, 12, and 15 years available. 10-year is most common. |
 | **Rate** | Fixed rate. Typically 10-year Treasury + 170-220 basis points. Pricing varies by LTV, DSCR, property quality, and sponsor strength. |
@@ -49,7 +49,7 @@ Both agencies offer significant incentives for energy-efficient or green-certifi
 
 | Reserve Type | Typical Amount | Notes |
 |---|---|---|
-| Replacement reserves | $250 - $350/unit/year | Escrowed monthly. Higher for older properties. |
+| Replacement reserves | $300 - $350/unit/year underwriting target | Escrowed monthly. Fannie Mae's current published floor remains the greater of PCA-calculated need or $250/unit/year; use $300-$350/unit/year as this framework's conservative 2026 sizing policy, not as an official DUS minimum until a primary source confirms a program floor change. |
 | Tax and insurance escrows | Monthly 1/12 of annual amount | Standard requirement |
 | Completion/repair reserves | Varies by PCA findings | Holdback for identified deferred maintenance |
 | Operating deficit reserves | 3-6 months of debt service | Required if occupancy or collections are borderline |
@@ -93,7 +93,7 @@ Commercial Mortgage-Backed Securities (CMBS) lending pools individual commercial
 |---|---|
 | **LTV** | 65% - 75% (lower than agency). LTV constrained by debt yield requirements. |
 | **DSCR Minimum** | 1.25x - 1.35x (stricter than agency for most executions). |
-| **Debt Yield Minimum** | 8% - 10% (this is often the binding constraint, not LTV or DSCR). |
+| **Debt Yield Minimum** | 9.5% - 11% current-market target range for most 2026 conduit sizing; multifamily can print lower, but underwrite committee screens to this wider range unless a live quote supports tighter proceeds. |
 | **Rate** | Fixed rate. Typically 10-year Treasury + 200-280 basis points. Pricing depends on property type, location, and leverage. |
 | **Term** | 5, 7, or 10 years. 10-year is most common. |
 | **Amortization** | 30 years. Interest-only periods available (typically 2-5 years) for lower-leverage loans. |
@@ -796,4 +796,12 @@ Use this quick-reference matrix to map deal characteristics to recommended lende
 
 ---
 
-*Last updated: January 2026. Lending terms, rates, and availability change frequently. Always obtain current market quotes from multiple lenders before finalizing a capital structure.*
+## Current Source Notes
+
+- Fannie Mae 1Q 2026 multifamily results reported a 63% weighted-average original LTV and 1.9 weighted-average DSCR as of March 31, 2026: https://multifamily.fanniemae.com/doing-business-us/1q-2026-multifamily-earnings-highlights (accessed 2026-05-19).
+- Fannie Mae DUS term-sheet guidance states maximum LTV and minimum DSCR vary by asset class/product, and that replacement reserve, tax, and insurance escrows are typically required: https://multifamily.fanniemae.com/financing-options/dus-mortgage-loans-term-sheet (accessed 2026-05-19).
+- Fannie Mae Multifamily Guide Section 105.01 currently states Replacement Reserve funding must equal the greater of the calculated amount or $250/unit/year: https://mfguide.fanniemae.com/node/3406 (accessed 2026-05-19).
+- Freddie Mac Conventional Small public term-sheet examples show stated maximum LTV up to 80% for amortizing/partial-IO executions and lower limits for full-term IO: https://www.greystone.com/wp-content/uploads/2026/04/Freddie-Mac-Conventional-Small-Term-Sheet.pdf (accessed 2026-05-19).
+- Commercial Observer's April 2026 CRED iQ summary reported recently originated CMBS debt yields averaging 10.3% across property types and multifamily at 8.87%, supporting the framework's 9.5%-11.0% general CMBS screen with tighter multifamily exceptions only when quoted: https://commercialobserver.com/2026/04/debt-yields-cmbs-cred-iq/ (accessed 2026-05-19).
+
+*Rates and benchmarks as of 2026-05. Lending terms, rates, and availability change frequently. Always obtain current market quotes from multiple lenders before finalizing a capital structure.*

@@ -135,7 +135,14 @@ function writeJson(filePath, data) {
     .toString('hex')}.tmp`;
   try {
     fs.writeFileSync(tempPath, `${JSON.stringify(data, null, 2)}\n`);
-    fs.renameSync(tempPath, filePath);
+    try {
+      fs.renameSync(tempPath, filePath);
+    } catch (error) {
+      if (process.platform !== 'win32' || !['EPERM', 'EEXIST'].includes(error.code)) throw error;
+      // OneDrive-backed Windows workspaces can reject rename-over-existing; the file lock still serializes writers.
+      fs.copyFileSync(tempPath, filePath);
+      fs.rmSync(tempPath, { force: true });
+    }
   } finally {
     if (fs.existsSync(tempPath)) fs.rmSync(tempPath, { force: true });
     release();

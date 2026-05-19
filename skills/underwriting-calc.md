@@ -548,6 +548,16 @@ Run three complete scenarios through the full underwriting model:
 
 For each scenario, calculate: NOI, Cash-on-Cash, IRR, Equity Multiple, DSCR, and Debt Yield.
 
+### 27-Scenario Matrix Policy
+
+When building the standard 27-cell sensitivity matrix, use three rent cases, three vacancy/occupancy cases, and three exit-cap cases with 25% / 50% / 25% marginal probability weights. To keep those weights defensible, shocks must be symmetric around the base case:
+
+- Rent: -2.0% / 0.0% / +2.0%.
+- Vacancy or occupancy impact to NOI: -2.0% / 0.0% / +2.0%.
+- Exit cap: -50 bps / base / +50 bps.
+
+Document any departure from this symmetry and change the marginal probabilities if the downside and upside shocks are not balanced.
+
 **Decision framework:**
 - If the **Downside Case** still meets minimum investment thresholds: Strong deal
 - If only the **Base Case** meets thresholds: Marginal deal, proceed with caution

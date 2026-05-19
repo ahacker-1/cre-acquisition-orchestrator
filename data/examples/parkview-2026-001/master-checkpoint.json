@@ -12,18 +12,18 @@
   "status": "COMPLETE",
   "currentPhase": null,
   "overallProgress": 100,
-  "startedAt": "2026-05-19T19:25:55.348Z",
-  "lastUpdatedAt": "2026-05-19T19:25:55.614Z",
-  "completedAt": "2026-05-19T19:25:55.611Z",
-  "traceId": "parkview-2026-001-1779218755349",
+  "startedAt": "2026-05-19T20:08:13.969Z",
+  "lastUpdatedAt": "2026-05-19T20:08:14.324Z",
+  "completedAt": "2026-05-19T20:08:14.321Z",
+  "traceId": "parkview-2026-001-1779221293970",
   "scenario": "core-plus",
   "seed": 42,
   "phases": {
     "dueDiligence": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-05-19T19:25:55.351Z",
-      "completedAt": "2026-05-19T19:25:55.514Z",
+      "startedAt": "2026-05-19T20:08:13.972Z",
+      "completedAt": "2026-05-19T20:08:14.161Z",
       "verdict": "PASS",
       "confidence": 1,
       "riskScore": 82,
@@ -257,8 +257,8 @@
     "underwriting": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-05-19T19:25:55.519Z",
-      "completedAt": "2026-05-19T19:25:55.539Z",
+      "startedAt": "2026-05-19T20:08:14.168Z",
+      "completedAt": "2026-05-19T20:08:14.198Z",
       "verdict": "FAIL",
       "confidence": 0.97,
       "riskScore": 76,
@@ -281,7 +281,7 @@
             "impact": "Can reduce lender proceeds and increase risk",
             "owner": "financial-model-builder",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:25:55.520Z"
+            "createdAt": "2026-05-19T20:08:14.170Z"
           },
           {
             "id": "uw-pass-rate",
@@ -291,7 +291,7 @@
             "impact": "Increases downside loss probability",
             "owner": "scenario-analyst",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:25:55.520Z"
+            "createdAt": "2026-05-19T20:08:14.170Z"
           }
         ],
         "dataGaps": [
@@ -303,7 +303,7 @@
             "impact": "Could reduce confidence in recommendation",
             "owner": "financial-model-builder",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:25:55.520Z"
+            "createdAt": "2026-05-19T20:08:14.170Z"
           }
         ],
         "phaseVerdict": "FAIL"
@@ -331,12 +331,12 @@
         },
         "scenarioSummary": {
           "baseIRR": 0.0963,
-          "worstIRR": 0.0203,
+          "worstIRR": 0.0284,
           "bestIRR": 0.1584,
           "medianIRR": 0.0963,
           "passRate": 0.037,
           "dscrRange": {
-            "min": 1.028,
+            "min": 1.039,
             "max": 1.126
           }
         },
@@ -484,13 +484,13 @@
             "vacancyCase": "High vacancy",
             "exitCapCase": "Exit cap tightens 50 bps",
             "rentShock": -0.02,
-            "vacancyShock": -0.03,
+            "vacancyShock": -0.02,
             "exitCapRate": 0.0625,
             "probability": 0.015625,
-            "irr": 0.1003,
-            "equityMultiple": 1.585,
-            "dscr": 1.028,
-            "exitValue": 39284970,
+            "irr": 0.1073,
+            "equityMultiple": 1.632,
+            "dscr": 1.039,
+            "exitValue": 39698496,
             "pass": false
           },
           {
@@ -499,13 +499,13 @@
             "vacancyCase": "High vacancy",
             "exitCapCase": "Base exit cap",
             "rentShock": -0.02,
-            "vacancyShock": -0.03,
+            "vacancyShock": -0.02,
             "exitCapRate": 0.0675,
             "probability": 0.03125,
-            "irr": 0.0605,
-            "equityMultiple": 1.325,
-            "dscr": 1.028,
-            "exitValue": 36374972,
+            "irr": 0.0679,
+            "equityMultiple": 1.369,
+            "dscr": 1.039,
+            "exitValue": 36757867,
             "pass": false
           },
           {
@@ -514,13 +514,13 @@
             "vacancyCase": "High vacancy",
             "exitCapCase": "Exit cap widens 50 bps",
             "rentShock": -0.02,
-            "vacancyShock": -0.03,
+            "vacancyShock": -0.02,
             "exitCapRate": 0.07250000000000001,
             "probability": 0.015625,
-            "irr": 0.0203,
-            "equityMultiple": 1.1,
-            "dscr": 1.028,
-            "exitValue": 33866353,
+            "irr": 0.0284,
+            "equityMultiple": 1.142,
+            "dscr": 1.039,
+            "exitValue": 34222841,
             "pass": false
           },
           {
@@ -619,13 +619,13 @@
             "vacancyCase": "High vacancy",
             "exitCapCase": "Exit cap tightens 50 bps",
             "rentShock": 0,
-            "vacancyShock": -0.03,
+            "vacancyShock": -0.02,
             "exitCapRate": 0.0625,
             "probability": 0.03125,
-            "irr": 0.1141,
-            "equityMultiple": 1.679,
-            "dscr": 1.05,
-            "exitValue": 40112022,
+            "irr": 0.1207,
+            "equityMultiple": 1.726,
+            "dscr": 1.061,
+            "exitValue": 40525548,
             "pass": false
           },
           {
@@ -634,13 +634,13 @@
             "vacancyCase": "High vacancy",
             "exitCapCase": "Base exit cap",
             "rentShock": 0,
-            "vacancyShock": -0.03,
+            "vacancyShock": -0.02,
             "exitCapRate": 0.0675,
             "probability": 0.0625,
-            "irr": 0.0752,
-            "equityMultiple": 1.414,
-            "dscr": 1.05,
-            "exitValue": 37140761,
+            "irr": 0.0824,
+            "equityMultiple": 1.458,
+            "dscr": 1.061,
+            "exitValue": 37523656,
             "pass": false
           },
           {
@@ -649,13 +649,13 @@
             "vacancyCase": "High vacancy",
             "exitCapCase": "Exit cap widens 50 bps",
             "rentShock": 0,
-            "vacancyShock": -0.03,
+            "vacancyShock": -0.02,
             "exitCapRate": 0.07250000000000001,
             "probability": 0.03125,
-            "irr": 0.0364,
-            "equityMultiple": 1.184,
-            "dscr": 1.05,
-            "exitValue": 34579329,
+            "irr": 0.0441,
+            "equityMultiple": 1.227,
+            "dscr": 1.061,
+            "exitValue": 34935817,
             "pass": false
           },
           {
@@ -754,13 +754,13 @@
             "vacancyCase": "High vacancy",
             "exitCapCase": "Exit cap tightens 50 bps",
             "rentShock": 0.02,
-            "vacancyShock": -0.03,
+            "vacancyShock": -0.02,
             "exitCapRate": 0.0625,
             "probability": 0.015625,
-            "irr": 0.1273,
-            "equityMultiple": 1.773,
-            "dscr": 1.072,
-            "exitValue": 40939074,
+            "irr": 0.1337,
+            "equityMultiple": 1.821,
+            "dscr": 1.082,
+            "exitValue": 41352600,
             "pass": false
           },
           {
@@ -769,13 +769,13 @@
             "vacancyCase": "High vacancy",
             "exitCapCase": "Base exit cap",
             "rentShock": 0.02,
-            "vacancyShock": -0.03,
+            "vacancyShock": -0.02,
             "exitCapRate": 0.0675,
             "probability": 0.03125,
-            "irr": 0.0894,
-            "equityMultiple": 1.502,
-            "dscr": 1.072,
-            "exitValue": 37906550,
+            "irr": 0.0963,
+            "equityMultiple": 1.547,
+            "dscr": 1.082,
+            "exitValue": 38289444,
             "pass": false
           },
           {
@@ -784,13 +784,13 @@
             "vacancyCase": "High vacancy",
             "exitCapCase": "Exit cap widens 50 bps",
             "rentShock": 0.02,
-            "vacancyShock": -0.03,
+            "vacancyShock": -0.02,
             "exitCapRate": 0.07250000000000001,
             "probability": 0.015625,
-            "irr": 0.0517,
-            "equityMultiple": 1.269,
-            "dscr": 1.072,
-            "exitValue": 35292305,
+            "irr": 0.0591,
+            "equityMultiple": 1.311,
+            "dscr": 1.082,
+            "exitValue": 35648793,
             "pass": false
           },
           {
@@ -903,7 +903,7 @@
             "impact": "Can reduce lender proceeds and increase risk",
             "owner": "financial-model-builder",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:25:55.520Z"
+            "createdAt": "2026-05-19T20:08:14.170Z"
           },
           {
             "id": "uw-pass-rate",
@@ -913,7 +913,7 @@
             "impact": "Increases downside loss probability",
             "owner": "scenario-analyst",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:25:55.520Z"
+            "createdAt": "2026-05-19T20:08:14.170Z"
           }
         ],
         "dataGaps": [
@@ -925,7 +925,7 @@
             "impact": "Could reduce confidence in recommendation",
             "owner": "financial-model-builder",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:25:55.520Z"
+            "createdAt": "2026-05-19T20:08:14.170Z"
           }
         ],
         "agentFindings": {
@@ -947,8 +947,8 @@
     "financing": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-05-19T19:25:55.542Z",
-      "completedAt": "2026-05-19T19:25:55.559Z",
+      "startedAt": "2026-05-19T20:08:14.204Z",
+      "completedAt": "2026-05-19T20:08:14.232Z",
       "verdict": "CONDITIONAL",
       "confidence": 0.982,
       "riskScore": 81,
@@ -971,7 +971,7 @@
             "impact": "Could reduce certainty of execution",
             "owner": "quote-comparator",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:25:55.544Z"
+            "createdAt": "2026-05-19T20:08:14.205Z"
           }
         ],
         "dataGaps": [
@@ -983,7 +983,7 @@
             "impact": "Could reduce confidence in recommendation",
             "owner": "lender-outreach",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:25:55.544Z"
+            "createdAt": "2026-05-19T20:08:14.205Z"
           }
         ],
         "phaseVerdict": "CONDITIONAL"
@@ -1109,7 +1109,7 @@
             "impact": "Could reduce certainty of execution",
             "owner": "quote-comparator",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:25:55.544Z"
+            "createdAt": "2026-05-19T20:08:14.205Z"
           }
         ],
         "dataGaps": [
@@ -1121,7 +1121,7 @@
             "impact": "Could reduce confidence in recommendation",
             "owner": "lender-outreach",
             "status": "OPEN",
-            "createdAt": "2026-05-19T19:25:55.544Z"
+            "createdAt": "2026-05-19T20:08:14.205Z"
           }
         ],
         "agentFindings": {
@@ -1143,8 +1143,8 @@
     "legal": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-05-19T19:25:55.562Z",
-      "completedAt": "2026-05-19T19:25:55.593Z",
+      "startedAt": "2026-05-19T20:08:14.238Z",
+      "completedAt": "2026-05-19T20:08:14.291Z",
       "verdict": "PASS",
       "confidence": 1,
       "riskScore": 82,
@@ -1268,8 +1268,8 @@
     "closing": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-05-19T19:25:55.597Z",
-      "completedAt": "2026-05-19T19:25:55.608Z",
+      "startedAt": "2026-05-19T20:08:14.296Z",
+      "completedAt": "2026-05-19T20:08:14.315Z",
       "verdict": "PROCEED_WITH_MITIGATIONS",
       "confidence": 1,
       "riskScore": 93,
@@ -1384,10 +1384,10 @@
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "dueDiligence",
-      "phaseId": "parkview-2026-001-dueDiligence-1779218755516",
+      "phaseId": "parkview-2026-001-dueDiligence-1779221294164",
       "status": "COMPLETE",
       "verdict": "PASS",
-      "durationMs": 165,
+      "durationMs": 192,
       "dataGapCount": 0,
       "redFlagCount": 0,
       "criticalFlags": [],
@@ -1396,17 +1396,17 @@
         "redFlagCount": 0,
         "dataGapCount": 0
       },
-      "timestamp": "2026-05-19T19:25:55.516Z",
-      "traceId": "parkview-2026-001-1779218755349"
+      "timestamp": "2026-05-19T20:08:14.164Z",
+      "traceId": "parkview-2026-001-1779221293970"
     },
     {
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
-      "phaseId": "parkview-2026-001-underwriting-1779218755540",
+      "phaseId": "parkview-2026-001-underwriting-1779221294201",
       "status": "COMPLETE",
       "verdict": "FAIL",
-      "durationMs": 21,
+      "durationMs": 33,
       "dataGapCount": 1,
       "redFlagCount": 2,
       "criticalFlags": [],
@@ -1415,17 +1415,17 @@
         "redFlagCount": 2,
         "dataGapCount": 1
       },
-      "timestamp": "2026-05-19T19:25:55.540Z",
-      "traceId": "parkview-2026-001-1779218755349"
+      "timestamp": "2026-05-19T20:08:14.201Z",
+      "traceId": "parkview-2026-001-1779221293970"
     },
     {
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "financing",
-      "phaseId": "parkview-2026-001-financing-1779218755560",
+      "phaseId": "parkview-2026-001-financing-1779221294234",
       "status": "COMPLETE",
       "verdict": "CONDITIONAL",
-      "durationMs": 18,
+      "durationMs": 30,
       "dataGapCount": 1,
       "redFlagCount": 1,
       "criticalFlags": [],
@@ -1434,17 +1434,17 @@
         "redFlagCount": 1,
         "dataGapCount": 1
       },
-      "timestamp": "2026-05-19T19:25:55.560Z",
-      "traceId": "parkview-2026-001-1779218755349"
+      "timestamp": "2026-05-19T20:08:14.234Z",
+      "traceId": "parkview-2026-001-1779221293970"
     },
     {
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "legal",
-      "phaseId": "parkview-2026-001-legal-1779218755595",
+      "phaseId": "parkview-2026-001-legal-1779221294293",
       "status": "COMPLETE",
       "verdict": "PASS",
-      "durationMs": 33,
+      "durationMs": 55,
       "dataGapCount": 0,
       "redFlagCount": 0,
       "criticalFlags": [],
@@ -1453,17 +1453,17 @@
         "redFlagCount": 0,
         "dataGapCount": 0
       },
-      "timestamp": "2026-05-19T19:25:55.595Z",
-      "traceId": "parkview-2026-001-1779218755349"
+      "timestamp": "2026-05-19T20:08:14.293Z",
+      "traceId": "parkview-2026-001-1779221293970"
     },
     {
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "closing",
-      "phaseId": "parkview-2026-001-closing-1779218755609",
+      "phaseId": "parkview-2026-001-closing-1779221294317",
       "status": "COMPLETE",
       "verdict": "PROCEED_WITH_MITIGATIONS",
-      "durationMs": 12,
+      "durationMs": 21,
       "dataGapCount": 0,
       "redFlagCount": 0,
       "criticalFlags": [],
@@ -1472,8 +1472,8 @@
         "redFlagCount": 0,
         "dataGapCount": 0
       },
-      "timestamp": "2026-05-19T19:25:55.609Z",
-      "traceId": "parkview-2026-001-1779218755349"
+      "timestamp": "2026-05-19T20:08:14.317Z",
+      "traceId": "parkview-2026-001-1779221293970"
     }
   ],
   "resumeInstructions": "Run: node scripts/orchestrate.js --deal config/deal.json --resume --workflow full-acquisition-review --scenario core-plus --seed 42",
@@ -1675,7 +1675,7 @@
     },
     "notes": "Value-add opportunity in South Austin. Units have not been renovated since 2010. Interior renovations estimated at $10,000/unit for upgraded finishes, appliances, and flooring. Expected rent premium of $200-300/unit post-renovation. Strong submarket fundamentals with proximity to major employers."
   },
-  "runId": "local-1779218755341",
+  "runId": "local-1779221293955",
   "workflowId": "full-acquisition-review",
   "workflowName": "Full Acquisition Review",
   "runtimeProvider": "simulation"

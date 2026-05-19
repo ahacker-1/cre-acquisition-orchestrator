@@ -206,7 +206,7 @@ cre-acquisition-orchestrator/
 |-- agents/             # 25 specialist prompt files
 |-- orchestrators/      # 6 orchestrator prompts
 |-- skills/             # 8 domain knowledge files
-|-- schemas/            # 10 JSON Schema contracts
+|-- schemas/            # 25 JSON Schema contracts
 |-- config/             # Deal config, workflows, thresholds, agent registry
 |-- dashboard/          # React + TypeScript Operator Deal Hub
 |-- fixtures/           # First-real-deal and parser fixtures
@@ -229,6 +229,8 @@ Runtime deal data stays local and is ignored by git.
 | [Agent Catalog](docs/AGENT-CATALOG.md) | Full 31-role catalog, skills, and schema contracts |
 | [Architecture](docs/ARCHITECTURE.md) | System design, hierarchy, dependencies, data flow |
 | [Runtime Comparison](docs/RUNTIME-COMPARISON.md) | Offline demo vs live Codex data-sharing boundaries |
+| [API Reference](docs/API-REFERENCE.md) | Local REST endpoints, request bodies, responses, and errors |
+| [WebSocket Events](docs/WEBSOCKET-EVENTS.md) | Dashboard socket messages and run/story event payloads |
 | [Launch Procedures](docs/LAUNCH-PROCEDURES.md) | Pipeline launch options and validation commands |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and recovery procedures |
 | [Roadmap](ROADMAP.md) | Public product and contributor roadmap |

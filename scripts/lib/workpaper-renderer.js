@@ -117,7 +117,8 @@ function buildScenarioMatrix(deal = {}) {
     { label: 'Upside rent', key: 'RENT_UP', shock: 0.02, probability: 0.25 }
   ];
   const vacancyCases = [
-    { label: 'High vacancy', key: 'VACANCY_HIGH', shock: -0.03, probability: 0.25 },
+    // P1.19: keep the 25/50/25 probability weights by making operating shocks symmetric around base.
+    { label: 'High vacancy', key: 'VACANCY_HIGH', shock: -0.02, probability: 0.25 },
     { label: 'Base vacancy', key: 'VACANCY_BASE', shock: 0, probability: 0.5 },
     { label: 'Low vacancy', key: 'VACANCY_LOW', shock: 0.02, probability: 0.25 }
   ];
@@ -324,7 +325,7 @@ function appendTenYearProForma(lines, deal) {
 
 function appendScenarioMatrix(lines, deal) {
   lines.push('## 27-Scenario Sensitivity Matrix');
-  lines.push('Matrix dimensions: 3 rent cases x 3 vacancy cases x 3 exit-cap cases. Rent and exit-cap shocks are symmetric around base.');
+  lines.push('Matrix dimensions: 3 rent cases x 3 vacancy cases x 3 exit-cap cases. Rent, vacancy, and exit-cap shocks are symmetric around base.');
   table(
     lines,
     ['Scenario', 'Rent', 'Vacancy', 'Exit Cap', 'IRR', 'Equity Multiple', 'DSCR', 'Verdict'],

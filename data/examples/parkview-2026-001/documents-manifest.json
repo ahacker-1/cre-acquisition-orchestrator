@@ -1,17 +1,17 @@
 {
-  "runId": "local-1779218755341",
+  "runId": "local-1779221293955",
   "dealId": "parkview-2026-001",
-  "updatedAt": "2026-05-19T19:25:55.613Z",
+  "updatedAt": "2026-05-19T20:08:14.323Z",
   "documents": [
     {
       "docId": "due-diligence:rent-roll-analyst:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "rent-roll-analyst",
       "docType": "workpaper",
       "title": "rent-roll-analyst Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/due-diligence/rent-roll-analyst-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/due-diligence/rent-roll-analyst-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Validated 200 units and rent strata.",
@@ -24,17 +24,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.421Z"
+      "createdAt": "2026-05-19T20:08:14.046Z"
     },
     {
       "docId": "due-diligence:opex-analyst:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "opex-analyst",
       "docType": "workpaper",
       "title": "opex-analyst Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/due-diligence/opex-analyst-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/due-diligence/opex-analyst-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Expense ratio at 50.5%.",
@@ -47,17 +47,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.482Z"
+      "createdAt": "2026-05-19T20:08:14.111Z"
     },
     {
       "docId": "due-diligence:physical-inspection:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "physical-inspection",
       "docType": "workpaper",
       "title": "physical-inspection Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/due-diligence/physical-inspection-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/due-diligence/physical-inspection-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Capex schedule drafted across five-year horizon.",
@@ -70,17 +70,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.490Z"
+      "createdAt": "2026-05-19T20:08:14.124Z"
     },
     {
       "docId": "due-diligence:legal-title-review:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "legal-title-review",
       "docType": "workpaper",
       "title": "legal-title-review Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/due-diligence/legal-title-review-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/due-diligence/legal-title-review-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Title clear with standard exceptions.",
@@ -93,17 +93,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.495Z"
+      "createdAt": "2026-05-19T20:08:14.134Z"
     },
     {
       "docId": "due-diligence:market-study:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "market-study",
       "docType": "workpaper",
       "title": "market-study Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/due-diligence/market-study-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/due-diligence/market-study-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Market cap range 0.05-0.065.",
@@ -116,17 +116,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.502Z"
+      "createdAt": "2026-05-19T20:08:14.142Z"
     },
     {
       "docId": "due-diligence:tenant-credit:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "tenant-credit",
       "docType": "workpaper",
       "title": "tenant-credit Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/due-diligence/tenant-credit-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/due-diligence/tenant-credit-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Tenant delinquency and retention benchmarks evaluated.",
@@ -139,17 +139,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.508Z"
+      "createdAt": "2026-05-19T20:08:14.151Z"
     },
     {
       "docId": "due-diligence:environmental-review:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "environmental-review",
       "docType": "workpaper",
       "title": "environmental-review Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/due-diligence/environmental-review-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/due-diligence/environmental-review-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "No material environmental constraints.",
@@ -162,17 +162,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.513Z"
+      "createdAt": "2026-05-19T20:08:14.159Z"
     },
     {
       "docId": "due-diligence:phase-orchestrator:due-diligence-output-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "phase-orchestrator",
       "docType": "due-diligence-output",
       "title": "Due Diligence Structured Output",
-      "path": "data/examples/parkview-2026-001/phase-outputs/due-diligence-output.json",
+      "path": "data/phase-outputs/parkview-2026-001/due-diligence-output.json",
       "mime": "application/json",
       "version": 1,
       "summary": "Structured due diligence data for downstream phases",
@@ -184,17 +184,17 @@
         "phase-output"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.515Z"
+      "createdAt": "2026-05-19T20:08:14.163Z"
     },
     {
       "docId": "due-diligence:phase-orchestrator:due-diligence-report-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "due-diligence",
       "agent": "phase-orchestrator",
       "docType": "due-diligence-report",
       "title": "Due Diligence Phase Report",
-      "path": "data/examples/parkview-2026-001/reports/due-diligence-report.md",
+      "path": "data/reports/parkview-2026-001/due-diligence-report.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Due Diligence narrative report with findings, risks, and gaps",
@@ -206,17 +206,17 @@
         "phase-report"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.516Z"
+      "createdAt": "2026-05-19T20:08:14.164Z"
     },
     {
       "docId": "underwriting:financial-model-builder:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
       "agent": "financial-model-builder",
       "docType": "workpaper",
       "title": "financial-model-builder Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/underwriting/financial-model-builder-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/underwriting/financial-model-builder-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Base-case model calibrated and validated.",
@@ -229,17 +229,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.526Z"
+      "createdAt": "2026-05-19T20:08:14.178Z"
     },
     {
       "docId": "underwriting:scenario-analyst:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
       "agent": "scenario-analyst",
       "docType": "workpaper",
       "title": "scenario-analyst Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/underwriting/scenario-analyst-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/underwriting/scenario-analyst-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "1/27 sensitivity scenarios pass constraints.",
@@ -252,17 +252,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.531Z"
+      "createdAt": "2026-05-19T20:08:14.186Z"
     },
     {
       "docId": "underwriting:ic-memo-writer:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
       "agent": "ic-memo-writer",
       "docType": "workpaper",
       "title": "ic-memo-writer Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/underwriting/ic-memo-writer-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/underwriting/ic-memo-writer-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Investment memo with conditions and downside protections drafted.",
@@ -275,17 +275,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.537Z"
+      "createdAt": "2026-05-19T20:08:14.195Z"
     },
     {
       "docId": "underwriting:phase-orchestrator:underwriting-output-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
       "agent": "phase-orchestrator",
       "docType": "underwriting-output",
       "title": "Underwriting Structured Output",
-      "path": "data/examples/parkview-2026-001/phase-outputs/underwriting-output.json",
+      "path": "data/phase-outputs/parkview-2026-001/underwriting-output.json",
       "mime": "application/json",
       "version": 1,
       "summary": "Structured underwriting data for downstream phases",
@@ -297,17 +297,17 @@
         "phase-output"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.539Z"
+      "createdAt": "2026-05-19T20:08:14.200Z"
     },
     {
       "docId": "underwriting:phase-orchestrator:underwriting-report-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
       "agent": "phase-orchestrator",
       "docType": "underwriting-report",
       "title": "Underwriting Phase Report",
-      "path": "data/examples/parkview-2026-001/reports/underwriting-report.md",
+      "path": "data/reports/parkview-2026-001/underwriting-report.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Underwriting narrative report with findings, risks, and gaps",
@@ -319,17 +319,17 @@
         "phase-report"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.540Z"
+      "createdAt": "2026-05-19T20:08:14.200Z"
     },
     {
       "docId": "financing:lender-outreach:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "financing",
       "agent": "lender-outreach",
       "docType": "workpaper",
       "title": "lender-outreach Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/financing/lender-outreach-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/financing/lender-outreach-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Collected 5 lender indications.",
@@ -342,17 +342,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.548Z"
+      "createdAt": "2026-05-19T20:08:14.212Z"
     },
     {
       "docId": "financing:quote-comparator:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "financing",
       "agent": "quote-comparator",
       "docType": "workpaper",
       "title": "quote-comparator Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/financing/quote-comparator-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/financing/quote-comparator-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Selected Freddie Mac based on weighted ranking.",
@@ -365,17 +365,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.552Z"
+      "createdAt": "2026-05-19T20:08:14.220Z"
     },
     {
       "docId": "financing:term-sheet-builder:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "financing",
       "agent": "term-sheet-builder",
       "docType": "workpaper",
       "title": "term-sheet-builder Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/financing/term-sheet-builder-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/financing/term-sheet-builder-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Term sheet generated with covenant and timeline package.",
@@ -388,17 +388,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.557Z"
+      "createdAt": "2026-05-19T20:08:14.229Z"
     },
     {
       "docId": "financing:phase-orchestrator:financing-output-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "financing",
       "agent": "phase-orchestrator",
       "docType": "financing-output",
       "title": "Financing Structured Output",
-      "path": "data/examples/parkview-2026-001/phase-outputs/financing-output.json",
+      "path": "data/phase-outputs/parkview-2026-001/financing-output.json",
       "mime": "application/json",
       "version": 1,
       "summary": "Structured financing data for downstream phases",
@@ -410,17 +410,17 @@
         "phase-output"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.559Z"
+      "createdAt": "2026-05-19T20:08:14.234Z"
     },
     {
       "docId": "financing:phase-orchestrator:financing-report-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "financing",
       "agent": "phase-orchestrator",
       "docType": "financing-report",
       "title": "Financing Phase Report",
-      "path": "data/examples/parkview-2026-001/reports/financing-report.md",
+      "path": "data/reports/parkview-2026-001/financing-report.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Financing narrative report with findings, risks, and gaps",
@@ -432,17 +432,17 @@
         "phase-report"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.560Z"
+      "createdAt": "2026-05-19T20:08:14.234Z"
     },
     {
       "docId": "legal:psa-reviewer:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "psa-reviewer",
       "docType": "workpaper",
       "title": "psa-reviewer Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/legal/psa-reviewer-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/legal/psa-reviewer-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "PSA reviewed and deadlines calendared.",
@@ -455,17 +455,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.568Z"
+      "createdAt": "2026-05-19T20:08:14.246Z"
     },
     {
       "docId": "legal:loan-doc-reviewer:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "loan-doc-reviewer",
       "docType": "workpaper",
       "title": "loan-doc-reviewer Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/legal/loan-doc-reviewer-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/legal/loan-doc-reviewer-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Loan docs align with selected financing terms.",
@@ -478,17 +478,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.572Z"
+      "createdAt": "2026-05-19T20:08:14.255Z"
     },
     {
       "docId": "legal:title-survey-reviewer:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "title-survey-reviewer",
       "docType": "workpaper",
       "title": "title-survey-reviewer Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/legal/title-survey-reviewer-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/legal/title-survey-reviewer-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Title and survey package clear.",
@@ -501,17 +501,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.577Z"
+      "createdAt": "2026-05-19T20:08:14.264Z"
     },
     {
       "docId": "legal:estoppel-tracker:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "estoppel-tracker",
       "docType": "workpaper",
       "title": "estoppel-tracker Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/legal/estoppel-tracker-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/legal/estoppel-tracker-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "153/180 estoppels collected.",
@@ -524,17 +524,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.582Z"
+      "createdAt": "2026-05-19T20:08:14.273Z"
     },
     {
       "docId": "legal:insurance-coordinator:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "insurance-coordinator",
       "docType": "workpaper",
       "title": "insurance-coordinator Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/legal/insurance-coordinator-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/legal/insurance-coordinator-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Primary insurance coverages bound.",
@@ -547,17 +547,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.587Z"
+      "createdAt": "2026-05-19T20:08:14.281Z"
     },
     {
       "docId": "legal:transfer-doc-preparer:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "transfer-doc-preparer",
       "docType": "workpaper",
       "title": "transfer-doc-preparer Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/legal/transfer-doc-preparer-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/legal/transfer-doc-preparer-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Transfer package complete for signature routing.",
@@ -570,17 +570,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.592Z"
+      "createdAt": "2026-05-19T20:08:14.288Z"
     },
     {
       "docId": "legal:phase-orchestrator:legal-output-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "phase-orchestrator",
       "docType": "legal-output",
       "title": "Legal Structured Output",
-      "path": "data/examples/parkview-2026-001/phase-outputs/legal-output.json",
+      "path": "data/phase-outputs/parkview-2026-001/legal-output.json",
       "mime": "application/json",
       "version": 1,
       "summary": "Structured legal data for downstream phases",
@@ -592,17 +592,17 @@
         "phase-output"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.594Z"
+      "createdAt": "2026-05-19T20:08:14.293Z"
     },
     {
       "docId": "legal:phase-orchestrator:legal-report-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "legal",
       "agent": "phase-orchestrator",
       "docType": "legal-report",
       "title": "Legal Phase Report",
-      "path": "data/examples/parkview-2026-001/reports/legal-report.md",
+      "path": "data/reports/parkview-2026-001/legal-report.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Legal narrative report with findings, risks, and gaps",
@@ -614,17 +614,17 @@
         "phase-report"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.594Z"
+      "createdAt": "2026-05-19T20:08:14.293Z"
     },
     {
       "docId": "closing:closing-coordinator:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "closing",
       "agent": "closing-coordinator",
       "docType": "workpaper",
       "title": "closing-coordinator Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/closing/closing-coordinator-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/closing/closing-coordinator-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Closing checklist is complete.",
@@ -637,17 +637,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.601Z"
+      "createdAt": "2026-05-19T20:08:14.303Z"
     },
     {
       "docId": "closing:funds-flow-manager:workpaper-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "closing",
       "agent": "funds-flow-manager",
       "docType": "workpaper",
       "title": "funds-flow-manager Workpaper",
-      "path": "data/examples/parkview-2026-001/reports/closing/funds-flow-manager-workpaper-v1.md",
+      "path": "data/reports/parkview-2026-001/closing/funds-flow-manager-workpaper-v1.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Sources and uses are balanced.",
@@ -660,17 +660,17 @@
         "workpaper"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.606Z"
+      "createdAt": "2026-05-19T20:08:14.312Z"
     },
     {
       "docId": "closing:phase-orchestrator:closing-output-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "closing",
       "agent": "phase-orchestrator",
       "docType": "closing-output",
       "title": "Closing Structured Output",
-      "path": "data/examples/parkview-2026-001/phase-outputs/closing-output.json",
+      "path": "data/phase-outputs/parkview-2026-001/closing-output.json",
       "mime": "application/json",
       "version": 1,
       "summary": "Structured closing data for downstream phases",
@@ -682,17 +682,17 @@
         "phase-output"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.608Z"
+      "createdAt": "2026-05-19T20:08:14.316Z"
     },
     {
       "docId": "closing:phase-orchestrator:closing-report-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "closing",
       "agent": "phase-orchestrator",
       "docType": "closing-report",
       "title": "Closing Phase Report",
-      "path": "data/examples/parkview-2026-001/reports/closing-report.md",
+      "path": "data/reports/parkview-2026-001/closing-report.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "Closing narrative report with findings, risks, and gaps",
@@ -704,17 +704,17 @@
         "phase-report"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.609Z"
+      "createdAt": "2026-05-19T20:08:14.317Z"
     },
     {
       "docId": "closing:master-orchestrator:final-report-v1",
-      "runId": "local-1779218755341",
+      "runId": "local-1779221293955",
       "dealId": "parkview-2026-001",
       "phase": "closing",
       "agent": "master-orchestrator",
       "docType": "final-report",
       "title": "Final Acquisition Report",
-      "path": "data/examples/parkview-2026-001/reports/final-report.md",
+      "path": "data/reports/parkview-2026-001/final-report.md",
       "mime": "text/markdown",
       "version": 1,
       "summary": "End-to-end recommendation with phase outcomes and go/no-go guidance",
@@ -726,7 +726,7 @@
         "final-report"
       ],
       "status": "final",
-      "createdAt": "2026-05-19T19:25:55.613Z"
+      "createdAt": "2026-05-19T20:08:14.323Z"
     }
   ]
 }

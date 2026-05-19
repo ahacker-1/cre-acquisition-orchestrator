@@ -312,9 +312,9 @@ Replacement cost provides a floor for property valuation in strong markets.
 
 | Parameter | Agency (Fannie/Freddie) | CMBS | Bank | Bridge | Life Co |
 |---|---|---|---|---|---|
-| LTV | 75% - 80% | 65% - 75% | 65% - 70% | 70% - 80% | 55% - 65% |
+| LTV | 65% - 70% effective sizing; stated max can reach 80% | 65% - 75% | 65% - 70% | 70% - 80% | 55% - 65% |
 | DSCR Minimum | 1.25x | 1.25x - 1.35x | 1.20x - 1.30x | 1.0x (I/O) | 1.40x+ |
-| Debt Yield Min | 7% - 8% | 8% - 10% | N/A (DSCR focused) | N/A | 9% - 10% |
+| Debt Yield Min | 8% - 9% | 9.5% - 11% | N/A (DSCR focused) | N/A | 9% - 10% |
 | Rate Type | Fixed | Fixed | Fixed or Floating | Floating | Fixed |
 | Term | 5, 7, 10, 12 years | 5, 7, 10 years | 3 - 7 years | 1 - 3 years | 10 - 30 years |
 | Amortization | 30 years | 30 years | 25 years | Interest Only | 25 - 30 years |
@@ -343,9 +343,9 @@ Replacement cost provides a floor for property valuation in strong markets.
 | Debt Yield | Interpretation |
 |---|---|
 | 10%+ | Strong. Conservative leverage. |
-| 8% - 10% | Adequate. Meets most CMBS requirements. |
-| 7% - 8% | Moderate. Agency lending range. |
-| Below 7% | Aggressive leverage. Limited lender options. |
+| 9.5% - 11% | Current general CMBS screen in 2026; multifamily can price tighter with live quote support. |
+| 8% - 9% | Agency range where debt yield is often the binding constraint. |
+| Below 8% | Aggressive leverage. Limited lender options without mission-driven or unusually strong DSCR support. |
 
 ### Rate Benchmarks (Typical Spreads)
 
@@ -360,6 +360,13 @@ Replacement cost provides a floor for property valuation in strong markets.
 | Mezzanine/Pref Equity | N/A | N/A | 10% - 15%+ |
 
 **Note**: Rates are highly market-dependent and change frequently. These represent general ranges and should be verified with current market quotes.
+
+### 2026 Benchmark Source Notes
+
+- Agency leverage: Fannie Mae reported a 63% weighted-average original LTV and 1.9 weighted-average DSCR for its multifamily guaranty book as of March 31, 2026: https://multifamily.fanniemae.com/doing-business-us/1q-2026-multifamily-earnings-highlights (accessed 2026-05-19).
+- Stated agency maximums: Freddie Mac Conventional Small term-sheet examples show up to 80% LTV for amortizing/partial-IO executions and lower full-term-IO limits: https://www.greystone.com/wp-content/uploads/2026/04/Freddie-Mac-Conventional-Small-Term-Sheet.pdf (accessed 2026-05-19).
+- Agency escrows/reserves: Fannie Mae DUS term-sheet guidance says replacement reserve, tax, and insurance escrows are typically required, while the live Multifamily Guide still states a $250/unit/year published floor. This framework uses $300-$350/unit/year as a conservative 2026 underwriting target, not an official DUS minimum unless a primary source later confirms a changed floor: https://multifamily.fanniemae.com/financing-options/dus-mortgage-loans-term-sheet and https://mfguide.fanniemae.com/node/3406 (accessed 2026-05-19).
+- CMBS debt yield: Commercial Observer's April 2026 CRED iQ summary reported recently originated CMBS debt yields averaging 10.3% across property types and 8.87% for multifamily, so use 9.5%-11.0% as the general screen and allow tighter multifamily only with live quote evidence: https://commercialobserver.com/2026/04/debt-yields-cmbs-cred-iq/ (accessed 2026-05-19).
 
 ---
 
@@ -675,4 +682,4 @@ Use this table to estimate when major system replacements will be needed based o
 
 ---
 
-*Last updated: January 2026. Benchmarks should be validated against current local market data for each specific acquisition. Market conditions, interest rates, and regional dynamics can shift these ranges materially.*
+*Rates and benchmarks as of 2026-05. Benchmarks should be validated against current local market data for each specific acquisition. Market conditions, interest rates, and regional dynamics can shift these ranges materially.*
