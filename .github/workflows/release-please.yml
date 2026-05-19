@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Run release-please
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           release-type: node
           package-name: cre-acquisition-orchestrator
