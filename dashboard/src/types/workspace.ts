@@ -131,6 +131,7 @@ export interface ApprovedField {
   path: string
   label: string
   value: unknown
+  previousValue?: unknown
   valueType: ExtractionValueType
   unit?: string
   approvedAt: string

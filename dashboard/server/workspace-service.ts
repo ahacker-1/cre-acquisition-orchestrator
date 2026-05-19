@@ -149,6 +149,7 @@ export interface ApprovedField {
   path: string
   label: string
   value: unknown
+  previousValue?: unknown
   valueType: ExtractionValueType
   unit?: string
   approvedAt: string
@@ -1762,6 +1763,7 @@ export function applySourceExtraction(
     path: field.path,
     label: field.label,
     value: field.value,
+    previousValue: field.currentValue,
     valueType: field.valueType,
     unit: field.unit,
     approvedAt: now,

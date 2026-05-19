@@ -974,7 +974,7 @@ function WorkflowLauncher({
                     {selectedReadiness.status}
                   </span>
                 </div>
-                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div className="mt-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
                   <div className="bg-black/20 px-2 py-2">
                     <div className="text-sm font-semibold text-white">
                       {Math.max(
@@ -998,6 +998,18 @@ function WorkflowLauncher({
                     </div>
                     <div className="mt-1 text-[11px] uppercase text-gray-500">Warnings</div>
                   </div>
+                  <div className="bg-black/20 px-2 py-2">
+                    <div className={`text-sm font-semibold ${selectedReadiness.sourceCoverage.staleDocumentCount > 0 ? 'text-amber-200' : 'text-white'}`}>
+                      {selectedReadiness.sourceCoverage.staleDocumentCount}
+                    </div>
+                    <div className="mt-1 text-[11px] uppercase text-gray-500">Stale</div>
+                  </div>
+                  <div className="bg-black/20 px-2 py-2">
+                    <div className={`text-sm font-semibold ${selectedReadiness.sourceCoverage.invalidApprovedFieldCount > 0 ? 'text-amber-200' : 'text-white'}`}>
+                      {selectedReadiness.sourceCoverage.invalidApprovedFieldCount}
+                    </div>
+                    <div className="mt-1 text-[11px] uppercase text-gray-500">Invalid</div>
+                  </div>
                 </div>
                 {(sourceGateBlocked || selectedReadiness.blockers[0] || selectedReadiness.warnings[0]) && (
                   <p className="mt-3 text-xs leading-5 text-gray-500">
@@ -1006,6 +1018,13 @@ function WorkflowLauncher({
                       : selectedReadiness.blockers[0] || selectedReadiness.warnings[0]}
                   </p>
                 )}
+                {!draft.requireSourceBackedInputs &&
+                  (selectedReadiness.sourceCoverage.staleDocumentCount > 0 ||
+                    selectedReadiness.sourceCoverage.invalidApprovedFieldCount > 0) && (
+                    <p className="mt-3 border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs leading-5 text-amber-100">
+                      Source gate is off, so launch is allowed as an operator override. Turn on source-backed launch inputs to block stale or invalid evidence.
+                    </p>
+                  )}
               </div>
             )}
             <div className="card min-w-0 bg-cre-surface/60">
