@@ -19,6 +19,7 @@ Do not create these issues automatically from automation. Review the text, adjus
 - `npm run demo:verify` runs the deterministic demo, contract validation, guide validation, system tests, and dashboard production build in one command.
 - `docs/RUNTIME-COMPARISON.md` documents the offline demo vs live Codex split, artifact paths, and no-secret/data-sharing boundaries.
 - XLSX rent rolls and T12s now produce source-backed candidate fields with review/apply persistence and provenance.
+- Parser fixtures now cover alternate rent-roll headers, blank rows, total rows, common occupancy conventions, and multi-sheet T12 workbook selection.
 
 ## 1. Extend deterministic screenshot capture to front door and quick-create surfaces
 
@@ -53,13 +54,13 @@ Extend the existing `npm run screenshots` / the existing screenshot capture scri
 - [ ] Run relevant Playwright tests.
 ```
 
-## 2. Expand source-backed parser fixtures for messy real-world rent rolls and T12s
+## 2. Continue expanding source-backed parser fixtures for messy real-world rent rolls and T12s
 
 Suggested labels: `enhancement`, `dashboard`, `validation`
 
 ```bash
 gh issue create \
-  --title "Add source-backed XLSX rent-roll extraction" \
+  --title "Continue expanding source-backed XLSX rent-roll and T12 extraction" \
   --label enhancement --label dashboard --label validation \
   --body-file /tmp/cre-xlsx-rent-roll-extraction.md
 ```
@@ -69,11 +70,11 @@ Issue body:
 ```markdown
 ## Goal
 
-Broaden the v2.5 XLSX parser beyond the basic fixture shapes so it handles more messy real-world rent rolls and T12 workbooks.
+Broaden the v2.5 XLSX parser beyond the current fixture set so it handles more messy real-world rent rolls and T12 workbooks.
 
 ## Scope
 
-Add fixture variants for alternate headers, totals rows, occupancy conventions, blank rows, and multi-sheet T12 workbooks while preserving the v2.5 safe default: extracted fields must be reviewed and approved/applied before changing deal inputs.
+Add fixture variants beyond the current alternate-header, totals-row, blank-row, occupancy-convention, and multi-sheet T12 coverage while preserving the v2.5 safe default: extracted fields must be reviewed and approved/applied before changing deal inputs.
 
 ## Acceptance Criteria
 

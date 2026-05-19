@@ -261,12 +261,12 @@ POST /api/codex/login
 2. Select **Documents**.
 3. Upload rent rolls, T12s, offering memoranda, LOIs, PDFs, or XLSX files.
 4. Quick-create uploads show per-file status and can retry failed files. If at least one file succeeds, you can open the workspace and keep working.
-5. For CSV/TXT/MD files, click **Extract** and review the preview.
+5. For CSV/TXT/MD files and supported XLSX rent-roll/T12 workbooks, click **Extract** and review the preview.
 6. Use **Select Safe Fields** for apply-ready fields, confirm conflicts if needed, review the before/after change summary, then apply them to deal inputs.
 
 Runtime uploads live under `data/deals/{dealId}/documents/`. Extraction previews live under `data/deals/{dealId}/extractions/`. These local deal files are ignored by git.
 
-PDF and XLSX files are stored and classified, but deep extraction is intentionally marked pending.
+PDFs are stored and classified with extraction pending. XLSX extraction is intentionally narrow and review-first: supported rent rolls can use alternate unit/layout/rent/status headers, blank rows, total rows, and common occupancy conventions; supported T12 workbooks can use one or more sheets as long as one sheet has recognizable line-item/account labels and a total, annual, trailing-12, or rightmost numeric column. Unsupported shapes remain stored source files with extraction pending or parser warnings rather than silently changing deal inputs. Known unsupported shapes include password-protected workbooks, image-only/scanned files, heavily merged summary layouts, rent rolls without unit identifiers, T12s without line-item labels, and formulas that do not expose cached numeric values.
 
 ---
 

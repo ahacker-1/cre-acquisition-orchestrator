@@ -418,8 +418,33 @@ function runExcelPythonParser(input: ParserInput, documentType: string): { parse
   return { error: errors.join(' | ') }
 }
 
-function excelSourceLocation(row: number, description: string): ParserSourceReference['location'] {
-  return { sheet: 'Source Data', row, description }
+function parsedWarnings(parsed: Record<string, unknown>): string[] {
+  return Array.isArray(parsed.warnings)
+    ? parsed.warnings.filter((warning): warning is string => typeof warning === 'string' && warning.trim().length > 0)
+    : []
+}
+
+function parsedExcelLocation(
+  parsed: Record<string, unknown>,
+  key: string,
+  fallbackRow: number,
+  fallbackDescription: string,
+): ParserSourceReference['location'] {
+  const provenance = asRecord(parsed.provenance)
+  const summary = asRecord(provenance.summary)
+  const candidate = asRecord(summary[key])
+  const source = Object.keys(candidate).length > 0 ? candidate : {}
+  const row = typeof source.row === 'number' && Number.isFinite(source.row) ? source.row : fallbackRow
+  const column = typeof source.column === 'string' && source.column.trim().length > 0 ? source.column : undefined
+  const sheet = typeof source.sheet === 'string' && source.sheet.trim().length > 0
+    ? source.sheet
+    : typeof provenance.sheetName === 'string' && provenance.sheetName.trim().length > 0
+      ? provenance.sheetName
+      : 'Source Data'
+  const description = typeof source.description === 'string' && source.description.trim().length > 0
+    ? source.description
+    : fallbackDescription
+  return { sheet, row, column, description }
 }
 
 function mapExcelRentRoll(input: ParserInput, hash: string, parsed: Record<string, unknown>): ParserExtractionPreview {
@@ -427,18 +452,20 @@ function mapExcelRentRoll(input: ParserInput, hash: string, parsed: Record<strin
   const summary = asRecord(parsed.summary)
   const unitMix = Array.isArray(parsed.unitMix) ? parsed.unitMix : []
   const fields: ParserExtractionField[] = []
+  const warnings = parsedWarnings(parsed)
+  const confidencePenalty = warnings.length > 0 ? 0.06 : 0
   const totalUnits = numberFieldValue(summary.totalUnits)
   const occupancy = numberFieldValue(summary.occupancyRate)
   const grossPotentialRentAnnual = numberFieldValue(summary.grossPotentialRentAnnual)
   const inPlaceRentAnnual = numberFieldValue(summary.inPlaceRentAnnual)
   const lossToLeaseAnnual = numberFieldValue(summary.lossToLeaseAnnual)
 
-  if (totalUnits !== null) fields.push(field(input, hash, parserId, 'property.totalUnits', 'Total Units', totalUnits, 0.9, 'count', excelSourceLocation(1, 'Excel rent roll unit count'), String(totalUnits)))
-  if (unitMix.length > 0) fields.push(field(input, hash, parserId, 'property.unitMix.types', 'Unit Mix', unitMix, 0.84, undefined, excelSourceLocation(1, 'Excel rent roll unit mix aggregation'), JSON.stringify(unitMix)))
-  if (occupancy !== null) fields.push(field(input, hash, parserId, 'financials.inPlaceOccupancy', 'In-Place Occupancy', occupancy, 0.78, 'decimal', excelSourceLocation(1, 'Occupied units divided by total units'), String(occupancy)))
-  if (grossPotentialRentAnnual !== null) fields.push(field(input, hash, parserId, 'financials.grossPotentialRentAnnual', 'Gross Potential Rent Annual', grossPotentialRentAnnual, 0.78, 'usd', excelSourceLocation(1, 'Annualized market rent from rent roll'), String(grossPotentialRentAnnual)))
-  if (inPlaceRentAnnual !== null) fields.push(field(input, hash, parserId, 'financials.inPlaceRentAnnual', 'In-Place Rent Annual', inPlaceRentAnnual, 0.78, 'usd', excelSourceLocation(1, 'Annualized current rent from rent roll'), String(inPlaceRentAnnual)))
-  if (lossToLeaseAnnual !== null) fields.push(field(input, hash, parserId, 'financials.lossToLeaseAnnual', 'Loss to Lease Annual', lossToLeaseAnnual, 0.72, 'usd', excelSourceLocation(1, 'Annual market rent less annual in-place rent'), String(lossToLeaseAnnual)))
+  if (totalUnits !== null) fields.push(field(input, hash, parserId, 'property.totalUnits', 'Total Units', totalUnits, 0.9 - confidencePenalty, 'count', parsedExcelLocation(parsed, 'totalUnits', 1, 'Excel rent roll unit count'), String(totalUnits)))
+  if (unitMix.length > 0) fields.push(field(input, hash, parserId, 'property.unitMix.types', 'Unit Mix', unitMix, 0.84 - confidencePenalty, undefined, parsedExcelLocation(parsed, 'unitMix', 1, 'Excel rent roll unit mix aggregation'), JSON.stringify(unitMix)))
+  if (occupancy !== null) fields.push(field(input, hash, parserId, 'financials.inPlaceOccupancy', 'In-Place Occupancy', occupancy, 0.78 - confidencePenalty, 'decimal', parsedExcelLocation(parsed, 'occupancyRate', 1, 'Occupied units divided by total units'), String(occupancy)))
+  if (grossPotentialRentAnnual !== null) fields.push(field(input, hash, parserId, 'financials.grossPotentialRentAnnual', 'Gross Potential Rent Annual', grossPotentialRentAnnual, 0.78 - confidencePenalty, 'usd', parsedExcelLocation(parsed, 'grossPotentialRentAnnual', 1, 'Annualized market rent from rent roll'), String(grossPotentialRentAnnual)))
+  if (inPlaceRentAnnual !== null) fields.push(field(input, hash, parserId, 'financials.inPlaceRentAnnual', 'In-Place Rent Annual', inPlaceRentAnnual, 0.78 - confidencePenalty, 'usd', parsedExcelLocation(parsed, 'inPlaceRentAnnual', 1, 'Annualized current rent from rent roll'), String(inPlaceRentAnnual)))
+  if (lossToLeaseAnnual !== null) fields.push(field(input, hash, parserId, 'financials.lossToLeaseAnnual', 'Loss to Lease Annual', lossToLeaseAnnual, 0.72 - confidencePenalty, 'usd', parsedExcelLocation(parsed, 'lossToLeaseAnnual', 1, 'Annual market rent less annual in-place rent'), String(lossToLeaseAnnual)))
 
   return {
     documentId: input.documentId,
@@ -446,7 +473,9 @@ function mapExcelRentRoll(input: ParserInput, hash: string, parsed: Record<strin
     extractedAt: new Date().toISOString(),
     fields,
     metrics: { excelSummary: parsed },
-    notes: fields.length > 0 ? [`Mapped ${fields.length} source-backed fields from Excel rent roll.`] : ['Excel rent roll parsed, but no supported fields were found.'],
+    notes: fields.length > 0
+      ? [`Mapped ${fields.length} source-backed fields from Excel rent roll.`, ...warnings.map((warning) => `Parser warning: ${warning}`)]
+      : ['Excel rent roll parsed, but no supported fields were found.', ...warnings.map((warning) => `Parser warning: ${warning}`)],
     parserId,
     parserVersion: PARSER_VERSION,
     sourceHash: hash,
@@ -458,13 +487,15 @@ function mapExcelT12(input: ParserInput, hash: string, parsed: Record<string, un
   const parserId = 'excel-t12-parser'
   const summary = asRecord(parsed.summary)
   const fields: ParserExtractionField[] = []
+  const warnings = parsedWarnings(parsed)
+  const confidencePenalty = warnings.length > 0 ? 0.04 : 0
   const revenue = numberFieldValue(summary.effectiveGrossIncome)
   const expenses = numberFieldValue(summary.totalExpenses)
   const noi = numberFieldValue(summary.netOperatingIncome)
 
-  if (revenue !== null) fields.push(field(input, hash, parserId, 'financials.trailingT12Revenue', 'Trailing T12 Revenue', revenue, 0.82, 'usd', excelSourceLocation(2, 'Effective gross income / total revenue row'), String(revenue)))
-  if (expenses !== null) fields.push(field(input, hash, parserId, 'financials.trailingT12Expenses', 'Trailing T12 Expenses', expenses, 0.88, 'usd', excelSourceLocation(3, 'Total operating expenses row'), String(expenses)))
-  if (noi !== null) fields.push(field(input, hash, parserId, 'financials.currentNOI', 'Current NOI', noi, 0.92, 'usd', excelSourceLocation(4, 'Net operating income row'), String(noi)))
+  if (revenue !== null) fields.push(field(input, hash, parserId, 'financials.trailingT12Revenue', 'Trailing T12 Revenue', revenue, 0.82 - confidencePenalty, 'usd', parsedExcelLocation(parsed, 'effectiveGrossIncome', 2, 'Effective gross income / total revenue row'), String(revenue)))
+  if (expenses !== null) fields.push(field(input, hash, parserId, 'financials.trailingT12Expenses', 'Trailing T12 Expenses', expenses, 0.88 - confidencePenalty, 'usd', parsedExcelLocation(parsed, 'totalExpenses', 3, 'Total operating expenses row'), String(expenses)))
+  if (noi !== null) fields.push(field(input, hash, parserId, 'financials.currentNOI', 'Current NOI', noi, 0.92 - confidencePenalty, 'usd', parsedExcelLocation(parsed, 'netOperatingIncome', 4, 'Net operating income row'), String(noi)))
 
   return {
     documentId: input.documentId,
@@ -472,7 +503,9 @@ function mapExcelT12(input: ParserInput, hash: string, parsed: Record<string, un
     extractedAt: new Date().toISOString(),
     fields,
     metrics: { excelSummary: parsed },
-    notes: fields.length > 0 ? [`Mapped ${fields.length} source-backed fields from Excel T12.`] : ['Excel T12 parsed, but no supported fields were found.'],
+    notes: fields.length > 0
+      ? [`Mapped ${fields.length} source-backed fields from Excel T12.`, ...warnings.map((warning) => `Parser warning: ${warning}`)]
+      : ['Excel T12 parsed, but no supported fields were found.', ...warnings.map((warning) => `Parser warning: ${warning}`)],
     parserId,
     parserVersion: PARSER_VERSION,
     sourceHash: hash,

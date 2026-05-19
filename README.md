@@ -481,8 +481,8 @@ From the dashboard you can now:
 - save drafts to the deal library
 - open the Operator Deal Hub for each deal
 - upload source documents into the deal workspace
-- extract and approve source-backed inputs from CSV, TXT, and MD files
-- classify PDF/XLSX files for the right phase with extraction marked pending
+- extract and approve source-backed inputs from CSV, TXT, MD, and supported XLSX rent-roll/T12 files
+- classify PDFs and unsupported workbook shapes for the right phase with extraction marked pending
 - choose **Codex / ChatGPT** in the Workflow Launcher and click **Login to ChatGPT** if Codex is not already authenticated
 - launch a focused workflow or full acquisition review
 - review the completion package after the run finishes
@@ -495,11 +495,13 @@ The preferred v2.x path is inside the dashboard:
 2. Drop rent rolls, T12s, offering memoranda, LOIs, legal files, PDFs, or XLSX files on the homepage
 3. Confirm the draft deal name
 4. Land in the **Documents** view
-5. Run extraction on CSV/TXT/MD documents
+5. Run extraction on CSV/TXT/MD documents or supported XLSX rent rolls/T12s
 6. Approve selected fields before they update the deal inputs
 7. Use the cockpit sidebar to see missing documents and the next phase action
 
-Uploaded files are stored under `data/deals/{dealId}/documents/`, extraction previews under `data/deals/{dealId}/extractions/`, and approved source-backed fields under `data/deals/{dealId}/approved-fields.json`. Runtime deal data stays local and is ignored by git. PDFs are stored with extraction pending. XLSX files are stored and classified, but source-backed field mapping is not enabled yet.
+Uploaded files are stored under `data/deals/{dealId}/documents/`, extraction previews under `data/deals/{dealId}/extractions/`, and approved source-backed fields under `data/deals/{dealId}/approved-fields.json`. Runtime deal data stays local and is ignored by git.
+
+Supported XLSX extraction currently covers rent rolls with recognizable unit, layout, square-footage, market-rent, in-place-rent, tenant, and occupancy/status columns, including alternate header labels, blank rows, total rows, and common occupancy conventions. T12 extraction supports single- or multi-sheet workbooks with recognizable line-item/account labels and a total, annual, trailing-12, or rightmost numeric column. Unsupported shapes stay stored as source documents for review instead of silently changing deal inputs: password-protected files, image-only/scanned workbooks, workbooks without unit identifiers, T12s without line-item labels, heavily merged-cell summaries, and formulas that do not expose cached numeric values.
 
 Legacy drop-folder ingestion prompts remain available for advanced users with their own prompt runner, but the dashboard upload path is now the main operator workflow.
 

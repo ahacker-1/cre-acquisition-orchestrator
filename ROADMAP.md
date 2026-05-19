@@ -29,7 +29,7 @@ Goal: move from classified/stored files toward auditable extraction across the d
 Candidate issues:
 
 - Add PDF text extraction for offering memoranda and legal checklists with explicit confidence and pending-review states.
-- Expand parser fixtures for messy real-world rent rolls, trailing-12s, and unit mixes.
+- Continue expanding parser fixtures for messy real-world rent rolls, trailing-12s, and unit mixes.
 - Add a separate approve-only queue with reject/waive decisions before applying values to deal state.
 - Add field-level provenance deep links from approved inputs to source document snippets.
 
@@ -40,6 +40,7 @@ Shipped in v2.5.0:
 - The Documents tab exposes `Preview Extraction`, `Review Fields`, and `View Applied Evidence` actions.
 - `npm run test:parsers` validates XLSX parser fixtures for rent roll and T12 field mapping.
 - `npm run test:workspace` validates persisted extraction retrieval, conflict-aware approve/apply, approved-field provenance, and launch-readiness source coverage.
+- Parser fixtures now cover alternate rent-roll headers, blank rows, total rows, common occupancy conventions, and multi-sheet T12 workbook selection while preserving candidate review warnings and field-level provenance.
 
 ### 2. Demo Journey and Public Proof
 
