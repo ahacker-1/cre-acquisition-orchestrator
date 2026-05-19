@@ -307,20 +307,13 @@ def parse_t12(df: pd.DataFrame, filename: str) -> Dict[str, Any]:
 
         if not label or label == 'nan':
             continue
-
-        # Detect sections
-        if any(kw in label for kw in ['revenue', 'income']):
-            current_section = 'revenue'
-            continue
-        if any(kw in label for kw in ['expense', 'operating']):
-            current_section = 'expenses'
-            continue
-
         if value is None:
             continue
 
-        # Revenue items
-        if 'gross' in label and 'rent' in label:
+        # Revenue totals and line items
+        if ('effective' in label and 'gross' in label) or ('total' in label and 'revenue' in label):
+            revenue['effectiveGrossIncome'] = value
+        elif 'gross' in label and 'rent' in label:
             revenue['grossPotentialRent'] = value
         elif 'vacancy' in label:
             revenue['vacancy'] = value
@@ -330,12 +323,10 @@ def parse_t12(df: pd.DataFrame, filename: str) -> Dict[str, Any]:
             revenue['badDebt'] = value
         elif 'other' in label and 'income' in label:
             revenue['otherIncome'] = value
-        elif 'effective' in label and 'gross' in label:
-            revenue['effectiveGrossIncome'] = value
-        elif 'total' in label and 'revenue' in label:
-            revenue['totalRevenue'] = value
 
-        # Expense items
+        # Expense totals and line items
+        elif 'total' in label and 'expense' in label:
+            expenses['totalExpenses'] = value
         elif 'tax' in label and 'payroll' not in label:
             expenses['taxes'] = value
         elif 'insurance' in label:
@@ -354,12 +345,18 @@ def parse_t12(df: pd.DataFrame, filename: str) -> Dict[str, Any]:
             expenses['marketing'] = value
         elif 'contract' in label:
             expenses['contractServices'] = value
-        elif 'total' in label and 'expense' in label:
-            expenses['totalExpenses'] = value
 
         # NOI
         elif 'noi' in label or ('net' in label and 'operating' in label):
             result['summary']['noi'] = value
+
+        # Detect section headers only after extracting valued total rows.
+        elif any(kw in label for kw in ['revenue', 'income']):
+            current_section = 'revenue'
+            continue
+        elif any(kw in label for kw in ['expense', 'operating']):
+            current_section = 'expenses'
+            continue
 
     result['revenue'] = revenue
     result['expenses'] = expenses

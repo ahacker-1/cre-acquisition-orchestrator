@@ -28,8 +28,14 @@ jobs:
         working-directory: dashboard
         run: npm ci
 
+      - name: Install Python parser dependencies
+        run: python3 -m pip install -r scripts/requirements.txt
+
       - name: Validate project structure and agent prompts
         run: node scripts/run-validation.js
+
+      - name: Validate source-backed parser fixtures
+        run: npm run test:parsers
 
       - name: Validate operator guide contract
         run: npm run validate:guides

@@ -68,10 +68,7 @@ export function isParserRunnable(fileName: string, mime: string): boolean {
 
 export function isParserPendingOnly(fileName: string, mime: string): boolean {
   const extension = extname(fileName).toLowerCase()
-  return extension === '.pdf' ||
-    extension === '.xlsx' ||
-    mime === 'application/pdf' ||
-    mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  return extension === '.pdf' || mime === 'application/pdf'
 }
 
 export function fileHash(filePath: string): string {
@@ -373,6 +370,116 @@ function parseOfferingMemo(input: ParserInput, raw: string, hash: string): Parse
   }
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+}
+
+function numberFieldValue(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+function pythonCandidates(): Array<{ command: string; args: string[] }> {
+  const candidates: Array<{ command: string | null; args: string[] }> = []
+  if (process.platform === 'win32') {
+    const localPython = process.env.LOCALAPPDATA
+      ? join(process.env.LOCALAPPDATA, 'Programs', 'Python', 'Python313', 'python.exe')
+      : null
+    candidates.push(
+      { command: localPython, args: [] },
+      { command: 'py', args: ['-3'] },
+      { command: 'python', args: [] },
+      { command: 'python3', args: [] },
+    )
+  } else {
+    candidates.push({ command: 'python3', args: [] }, { command: 'python', args: [] })
+  }
+  return candidates.filter((candidate): candidate is { command: string; args: string[] } => Boolean(candidate.command))
+}
+
+function runExcelPythonParser(input: ParserInput, documentType: string): { parsed?: Record<string, unknown>; error?: string } {
+  const scriptPath = join(input.projectRoot, 'scripts', 'parse_excel.py')
+  const errors: string[] = []
+  for (const candidate of pythonCandidates()) {
+    const result = spawnSync(candidate.command, [...candidate.args, scriptPath, input.filePath, '--type', documentType], {
+      cwd: input.projectRoot,
+      encoding: 'utf8',
+      timeout: 15000,
+    })
+    const output = `${result.stdout || ''}${result.stderr || ''}`.trim()
+    if (!result.error && result.status === 0) {
+      try {
+        return { parsed: JSON.parse(result.stdout || '{}') as Record<string, unknown> }
+      } catch {
+        return { error: output || 'Excel parser returned invalid JSON.' }
+      }
+    }
+    errors.push(`${candidate.command}: ${result.error?.message || output || `exit ${result.status ?? 'unknown'}`}`)
+  }
+  return { error: errors.join(' | ') }
+}
+
+function excelSourceLocation(row: number, description: string): ParserSourceReference['location'] {
+  return { sheet: 'Source Data', row, description }
+}
+
+function mapExcelRentRoll(input: ParserInput, hash: string, parsed: Record<string, unknown>): ParserExtractionPreview {
+  const parserId = 'excel-rent-roll-parser'
+  const summary = asRecord(parsed.summary)
+  const unitMix = Array.isArray(parsed.unitMix) ? parsed.unitMix : []
+  const fields: ParserExtractionField[] = []
+  const totalUnits = numberFieldValue(summary.totalUnits)
+  const occupancy = numberFieldValue(summary.occupancyRate)
+  const grossPotentialRentAnnual = numberFieldValue(summary.grossPotentialRentAnnual)
+  const inPlaceRentAnnual = numberFieldValue(summary.inPlaceRentAnnual)
+  const lossToLeaseAnnual = numberFieldValue(summary.lossToLeaseAnnual)
+
+  if (totalUnits !== null) fields.push(field(input, hash, parserId, 'property.totalUnits', 'Total Units', totalUnits, 0.9, 'count', excelSourceLocation(1, 'Excel rent roll unit count'), String(totalUnits)))
+  if (unitMix.length > 0) fields.push(field(input, hash, parserId, 'property.unitMix.types', 'Unit Mix', unitMix, 0.84, undefined, excelSourceLocation(1, 'Excel rent roll unit mix aggregation'), JSON.stringify(unitMix)))
+  if (occupancy !== null) fields.push(field(input, hash, parserId, 'financials.inPlaceOccupancy', 'In-Place Occupancy', occupancy, 0.78, 'decimal', excelSourceLocation(1, 'Occupied units divided by total units'), String(occupancy)))
+  if (grossPotentialRentAnnual !== null) fields.push(field(input, hash, parserId, 'financials.grossPotentialRentAnnual', 'Gross Potential Rent Annual', grossPotentialRentAnnual, 0.78, 'usd', excelSourceLocation(1, 'Annualized market rent from rent roll'), String(grossPotentialRentAnnual)))
+  if (inPlaceRentAnnual !== null) fields.push(field(input, hash, parserId, 'financials.inPlaceRentAnnual', 'In-Place Rent Annual', inPlaceRentAnnual, 0.78, 'usd', excelSourceLocation(1, 'Annualized current rent from rent roll'), String(inPlaceRentAnnual)))
+  if (lossToLeaseAnnual !== null) fields.push(field(input, hash, parserId, 'financials.lossToLeaseAnnual', 'Loss to Lease Annual', lossToLeaseAnnual, 0.72, 'usd', excelSourceLocation(1, 'Annual market rent less annual in-place rent'), String(lossToLeaseAnnual)))
+
+  return {
+    documentId: input.documentId,
+    status: fields.length > 0 ? 'extracted' : 'unsupported',
+    extractedAt: new Date().toISOString(),
+    fields,
+    metrics: { excelSummary: parsed },
+    notes: fields.length > 0 ? [`Mapped ${fields.length} source-backed fields from Excel rent roll.`] : ['Excel rent roll parsed, but no supported fields were found.'],
+    parserId,
+    parserVersion: PARSER_VERSION,
+    sourceHash: hash,
+    reviewStatus: 'candidate',
+  }
+}
+
+function mapExcelT12(input: ParserInput, hash: string, parsed: Record<string, unknown>): ParserExtractionPreview {
+  const parserId = 'excel-t12-parser'
+  const summary = asRecord(parsed.summary)
+  const fields: ParserExtractionField[] = []
+  const revenue = numberFieldValue(summary.effectiveGrossIncome)
+  const expenses = numberFieldValue(summary.totalExpenses)
+  const noi = numberFieldValue(summary.netOperatingIncome)
+
+  if (revenue !== null) fields.push(field(input, hash, parserId, 'financials.trailingT12Revenue', 'Trailing T12 Revenue', revenue, 0.82, 'usd', excelSourceLocation(2, 'Effective gross income / total revenue row'), String(revenue)))
+  if (expenses !== null) fields.push(field(input, hash, parserId, 'financials.trailingT12Expenses', 'Trailing T12 Expenses', expenses, 0.88, 'usd', excelSourceLocation(3, 'Total operating expenses row'), String(expenses)))
+  if (noi !== null) fields.push(field(input, hash, parserId, 'financials.currentNOI', 'Current NOI', noi, 0.92, 'usd', excelSourceLocation(4, 'Net operating income row'), String(noi)))
+
+  return {
+    documentId: input.documentId,
+    status: fields.length > 0 ? 'extracted' : 'unsupported',
+    extractedAt: new Date().toISOString(),
+    fields,
+    metrics: { excelSummary: parsed },
+    notes: fields.length > 0 ? [`Mapped ${fields.length} source-backed fields from Excel T12.`] : ['Excel T12 parsed, but no supported fields were found.'],
+    parserId,
+    parserVersion: PARSER_VERSION,
+    sourceHash: hash,
+    reviewStatus: 'candidate',
+  }
+}
+
 function parseExcelIfAvailable(input: ParserInput, hash: string): ParserExtractionPreview {
   const scriptPath = join(input.projectRoot, 'scripts', 'parse_excel.py')
   const parserId = 'excel-python-parser'
@@ -380,34 +487,24 @@ function parseExcelIfAvailable(input: ParserInput, hash: string): ParserExtracti
     return unavailable(input, hash, parserId, 'Excel parser script is not available.')
   }
   const documentType = input.type === 'rent_roll' ? 'rent_roll' : input.type === 't12' ? 't12' : 'auto'
-  const result = spawnSync('py', ['-3', scriptPath, input.filePath, '--type', documentType], {
-    cwd: input.projectRoot,
-    encoding: 'utf8',
-    timeout: 15000,
-  })
-  const output = `${result.stdout || ''}${result.stderr || ''}`.trim()
-  if (result.error || result.status !== 0) {
-    return unavailable(input, hash, parserId, output || result.error?.message || 'Excel parser failed.')
+  const { parsed, error } = runExcelPythonParser(input, documentType)
+  if (!parsed) return unavailable(input, hash, parserId, error || 'Excel parser failed.')
+  if (parsed.success === false) {
+    return unavailable(input, hash, parserId, typeof parsed.error === 'string' ? parsed.error : 'Excel parser unavailable.')
   }
-  try {
-    const parsed = JSON.parse(result.stdout || '{}') as Record<string, unknown>
-    if (parsed.success === false) {
-      return unavailable(input, hash, parserId, typeof parsed.error === 'string' ? parsed.error : 'Excel parser unavailable.')
-    }
-    return {
-      documentId: input.documentId,
-      status: 'unsupported',
-      extractedAt: new Date().toISOString(),
-      fields: [],
-      metrics: { excelSummary: parsed },
-      notes: ['Excel parsed successfully, but source-backed field mapping for XLSX is not enabled in this milestone.'],
-      parserId,
-      parserVersion: PARSER_VERSION,
-      sourceHash: hash,
-      reviewStatus: 'candidate',
-    }
-  } catch {
-    return parseFailed(input, hash, parserId, output || 'Excel parser returned invalid JSON.')
+  if (documentType === 'rent_roll') return mapExcelRentRoll(input, hash, parsed)
+  if (documentType === 't12') return mapExcelT12(input, hash, parsed)
+  return {
+    documentId: input.documentId,
+    status: 'unsupported',
+    extractedAt: new Date().toISOString(),
+    fields: [],
+    metrics: { excelSummary: parsed },
+    notes: ['Excel parsed successfully, but no source-backed field mapping exists for this document type yet.'],
+    parserId,
+    parserVersion: PARSER_VERSION,
+    sourceHash: hash,
+    reviewStatus: 'candidate',
   }
 }
 
@@ -448,20 +545,14 @@ export function runDocumentParser(input: ParserInput): ParserExtractionPreview {
   const hash = fileHash(input.filePath)
 
   if (isParserPendingOnly(input.fileName, input.mime)) {
-    const extension = extname(input.fileName).toLowerCase()
-    const isExcel = extension === '.xlsx' || input.mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     return {
       documentId: input.documentId,
       status: 'extraction-pending',
       extractedAt: new Date().toISOString(),
       fields: [],
       metrics: {},
-      notes: [
-        isExcel
-          ? 'Excel was stored and classified. Source-backed field mapping for XLSX is not enabled in this local milestone.'
-          : 'PDF was stored and classified. PDF text extraction is not included in this local milestone.',
-      ],
-      parserId: isExcel ? 'excel-pending-parser' : 'pdf-pending-parser',
+      notes: ['PDF was stored and classified. PDF text extraction is not included in this local milestone.'],
+      parserId: 'pdf-pending-parser',
       parserVersion: PARSER_VERSION,
       sourceHash: hash,
       reviewStatus: 'candidate',

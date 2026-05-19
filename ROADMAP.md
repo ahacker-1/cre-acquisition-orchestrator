@@ -52,6 +52,11 @@ Candidate issues:
 - Add field-level provenance links from approved inputs to source document snippets.
 - Expand parser fixtures for messy real-world rent rolls, trailing-12s, and unit mixes.
 
+Already shipped after v2.4.0:
+
+- XLSX rent-roll and T12 uploads now route through the local Excel parser into source-backed candidate fields with document hash, parser metadata, sheet/row provenance, confidence, and operator-review status.
+- `npm run test:parsers` validates XLSX parser fixtures for rent roll and T12 field mapping.
+
 ### 3. Review-Grade Workpapers
 
 Goal: make agent outputs feel like diligence workpapers, not generic AI summaries.

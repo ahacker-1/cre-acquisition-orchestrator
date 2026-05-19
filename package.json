@@ -23,6 +23,7 @@
     "demo": "node scripts/demo-run.js --deal config/deal.json --scenario core-plus --seed 42",
     "demo:verify": "node scripts/demo-verify.js",
     "test:goal-helper": "node scripts/goal-helper.test.js",
+    "test:parsers": "cd dashboard && npm exec tsx ../scripts/parser-service.test.mjs",
     "simulate": "node scripts/orchestrate.js --deal config/deal.json --scenario core-plus --seed 42",
     "dashboard": "npm --prefix dashboard install && npm --prefix dashboard run dev",
     "dev": "npm run dashboard",

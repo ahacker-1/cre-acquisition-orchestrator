@@ -31,8 +31,8 @@ Let's bring this industry into the future.
 - **Run the product in 5 minutes:** follow the [Quick Demo](docs/QUICK-DEMO.md) for the shortest offline path from clone to local dashboard. The dashboard Guided Demo Mode does not require uploads or API keys.
 - **Install from scratch:** follow [Quick Start](#quick-start). The default demo is deterministic and runs offline after dependencies are installed.
 - **Choose the right runtime:** read [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md) before sending any real deal context through the optional live-agent path.
-- **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially screenshot automation, source-backed extraction, review-grade workpapers, and live-runtime hardening.
-- **Open public follow-up issues:** use the approval-ready [Issue Seeds](docs/ISSUE-SEEDS.md) for screenshot refresh, deterministic capture, source-backed XLSX extraction, workpaper gates, and runtime docs.
+- **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially source-backed extraction, review-grade workpapers, live-runtime hardening, and screenshot automation.
+- **Open public follow-up issues:** use the approval-ready [Issue Seeds](docs/ISSUE-SEEDS.md) for deterministic capture, parser fixtures, PDF/legal extraction, workpaper gates, and runtime docs.
 
 ---
 
@@ -350,7 +350,7 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 | **Operator Briefing** | Overview briefing with best next move, source-backed input coverage, review queue, phase readiness, and per-workflow readiness |
 | **Cockpit Sidebar** | Persistent workspace sidebar with required document coverage, one computed next action, launch readiness, and phase readiness |
 | **Workflow Launcher** | Guided `Choose Deal -> Choose Outcome -> Review Inputs -> Runtime -> Run Now` launcher with saved local presets and selected-workflow readiness |
-| **Documents** | Local upload queue, classification, extraction preview, bulk field selection, before/after change review, operator approval, and source-backed input tracking |
+| **Documents** | Local upload queue, classification, extraction preview, XLSX/CSV rent-roll and T12 field mapping, bulk field selection, before/after change review, operator approval, and source-backed input tracking |
 | **Run Status** | Phase-by-phase progress, active runtime provider, completion state, findings, and story events |
 | **Story Narrative** | Human-readable event stream narrating the deal analysis as it progresses, powered by NDJSON story events |
 | **Document Wall** | Visual grid of all documents processed and generated: ingestion status, extraction results, report outputs |
@@ -359,7 +359,7 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 
 ## Dashboard Preview
 
-The first screen is designed as a document-first acquisition cockpit: drop source files, confirm a deal name, and land in the guided deal workspace before filling the detailed intake. The full New Deal Wizard remains available from the header and from workspace edit actions when the operator needs launch-ready setup.
+The first screen is designed as a document-first acquisition cockpit: drop source files, confirm a deal name, and land in the guided deal workspace before filling the detailed intake. XLSX and CSV rent-roll/T12 files can produce source-backed candidate fields for operator review before they change deal inputs. The full New Deal Wizard remains available from the header and from workspace edit actions when the operator needs launch-ready setup.
 
 For the current v2.4 demo flow, use the [Demo Journey](docs/DEMO-JOURNEY.md). It maps the public story from document intake to Acquisition Command, mission intent, visible agent handoffs, workpapers/evidence, and IC package review. For runtime expectations and data-sharing boundaries, use [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md).
 
