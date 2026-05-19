@@ -4,6 +4,27 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [2.6.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.5.1...v2.6.0) (2026-05-19)
+
+
+### Features
+
+* generate practitioner-grade parkview workpapers ([6943392](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/69433925577afc0f34df8dd0baff2e770424194c))
+* polish dashboard runtime boundaries ([36a3cc5](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/36a3cc50a8438fd7610a43f01c6d10dbbf342b9a))
+
+
+### Bug Fixes
+
+* align parkview demo with austin underwriting ([b813c74](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/b813c74279578440d44100fb198c7a333a7e4896))
+* align underwriting taxonomy and thresholds ([c1deebe](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/c1deebea0dcf85ae91739e4871cb9e6a5b8729de))
+* enforce parkview workpaper completeness ([5e22b9d](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/5e22b9db19f41e9ba3991f1ca19dd1b60aac2a6d))
+* enforce strict schema contracts and canonical enums ([c48d230](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/c48d230d4ef95272b88ba1f7f1fce2f8f67a8eaf))
+* harden local dashboard security ([419f7ea](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/419f7ea68b4c966c7e2d048535bec4b666b98142))
+* reveal completed checkpoint workspaces ([7c1b9b9](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/7c1b9b938dd7072b7c1959d5390dca52f0dc6768))
+* stabilize CI lock handling ([8052130](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/805213084fdf939338fd522ffe8a78176ecc91be))
+* stabilize dashboard launch lifecycle ([4edd907](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/4edd90783525dba1a103b3fdbd20bf1285bf5cb0))
+* stabilize fast checkpoint workspace reveal ([09496f4](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/09496f4aa83b702821010429b527ebc6ae1e1c28))
+
 ## [Unreleased]
 
 ### Added
