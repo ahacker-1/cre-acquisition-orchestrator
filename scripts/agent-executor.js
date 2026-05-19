@@ -6,6 +6,7 @@ const {
   appendLog,
   validateAgentCheckpoint
 } = require('./lib/runtime-core');
+const { renderAgentWorkpaper } = require('./lib/workpaper-renderer');
 
 function makeAgentCheckpoint({
   agentName,
@@ -66,6 +67,7 @@ async function executeAgent({
   logFile,
   agentFinding,
   phaseData,
+  deal,
   storyEngine,
   failAgent,
   agentDelayMs = 0
@@ -233,35 +235,27 @@ async function executeAgent({
       summary: completeCheckpoint.outputs.summary
     });
 
-    const gapLines = extractedGaps.map((gap) => `- ${gap.message || 'Data gap noted'}`);
-    const redFlagLines = extractedRedFlags.map(
-      (flag) => `- [${flag.severity || 'MEDIUM'}] ${flag.message || 'Flag'}`
-    );
     const workpaper = storyEngine.createDocument({
       phase: phaseKey,
       agent: agentName,
       title: `${agentName} Workpaper`,
       docType: 'workpaper',
       summary: completeCheckpoint.outputs.summary,
-      content: [
-        `# ${agentName} Workpaper`,
-        '',
-        `- Deal: ${dealId}`,
-        `- Phase: ${phaseLabel || phaseKey}`,
-        `- Started: ${startedAt}`,
-        `- Completed: ${completeCheckpoint.completedAt}`,
-        `- Verdict: ${completeCheckpoint.outputs.verdict || 'PASS'}`,
-        '',
-        '## Findings',
-        ...completeCheckpoint.outputs.findings.map((finding) => `- ${finding}`),
-        '',
-        '## Red Flags',
-        ...(redFlagLines.length > 0 ? redFlagLines : ['- None']),
-        '',
-        '## Data Gaps',
-        ...(gapLines.length > 0 ? gapLines : ['- None']),
-        ''
-      ].join('\n'),
+      content: renderAgentWorkpaper({
+        deal,
+        dealId,
+        agentName,
+        phaseKey,
+        phaseLabel,
+        startedAt,
+        completedAt: completeCheckpoint.completedAt,
+        verdict: completeCheckpoint.outputs.verdict || 'PASS',
+        summary: completeCheckpoint.outputs.summary,
+        findings: completeCheckpoint.outputs.findings,
+        redFlags: extractedRedFlags,
+        dataGaps: extractedGaps,
+        phaseData
+      }),
       mime: 'text/markdown',
       extension: 'md',
       tags: ['agent', 'workpaper']

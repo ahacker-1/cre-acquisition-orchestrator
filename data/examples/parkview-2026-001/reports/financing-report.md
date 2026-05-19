@@ -2,9 +2,9 @@
 
 - Status: COMPLETE
 - Verdict: CONDITIONAL
-- Risk Score: 75
+- Risk Score: 81
 - Red Flags: 1
-- Data Gaps: 0
+- Data Gaps: 1
 
 ## Key Findings
 - Selected lender Freddie Mac
@@ -12,8 +12,8 @@
 - 5 quotes
 
 ## Red Flags
-- [HIGH] Amortizing DSCR 1.13x is tight
+- [HIGH] Amortizing DSCR 0.97x is tight
 
 ## Data Gaps
-- None
+- Final third-party report requested by lead lender
 

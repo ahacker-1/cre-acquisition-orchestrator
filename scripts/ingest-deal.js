@@ -26,6 +26,17 @@ function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
 }
 
+function repoRelative(filePath) {
+  return path.relative(BASE_DIR, filePath).replace(/\\/g, '/');
+}
+
+function printVerifiedPath(label, filePath) {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`${label} was not created: ${filePath}`);
+  }
+  console.log(`${label}: ${repoRelative(filePath)}`);
+}
+
 function classifyDocument(fileName) {
   const lower = fileName.toLowerCase();
   if (lower.includes('rent') && lower.includes('roll')) return 'rent_roll';
@@ -206,8 +217,8 @@ function main() {
   lines.push('');
   fs.writeFileSync(reportPath, `${lines.join('\n')}\n`);
 
-  console.log(`Normalized deal written: ${normalizedPath}`);
-  console.log(`Ingestion report written: ${reportPath}`);
+  printVerifiedPath('Normalized deal written', normalizedPath);
+  printVerifiedPath('Ingestion report written', reportPath);
 }
 
 try {

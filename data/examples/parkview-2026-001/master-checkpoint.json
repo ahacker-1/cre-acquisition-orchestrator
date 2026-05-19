@@ -12,21 +12,21 @@
   "status": "COMPLETE",
   "currentPhase": null,
   "overallProgress": 100,
-  "startedAt": "2026-02-24T01:21:21.405Z",
-  "lastUpdatedAt": "2026-02-24T01:22:03.777Z",
-  "completedAt": "2026-02-24T01:22:03.775Z",
-  "traceId": "parkview-2026-001-1771896081406",
+  "startedAt": "2026-05-19T19:05:31.465Z",
+  "lastUpdatedAt": "2026-05-19T19:05:31.625Z",
+  "completedAt": "2026-05-19T19:05:31.623Z",
+  "traceId": "parkview-2026-001-1779217531466",
   "scenario": "core-plus",
-  "seed": 560879,
+  "seed": 42,
   "phases": {
     "dueDiligence": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-02-24T01:21:21.408Z",
-      "completedAt": "2026-02-24T01:21:35.514Z",
+      "startedAt": "2026-05-19T19:05:31.469Z",
+      "completedAt": "2026-05-19T19:05:31.525Z",
       "verdict": "PASS",
       "confidence": 1,
-      "riskScore": 77,
+      "riskScore": 82,
       "redFlagCount": 0,
       "dataGapCount": 0,
       "findings": 3,
@@ -34,7 +34,7 @@
         "phaseSummary": "Due Diligence completed with verdict PASS",
         "keyFindings": [
           "Occupancy 94%",
-          "Loss-to-lease 10.7%",
+          "Loss-to-lease 9.1%",
           "0 red flags"
         ],
         "redFlags": [],
@@ -89,56 +89,56 @@
           }
         ],
         "avgInPlaceRent": 1513,
-        "avgMarketRent": 1694,
-        "lossToLease": 407184,
-        "lossToLeasePct": 0.1066,
+        "avgMarketRent": 1665,
+        "lossToLease": 341777,
+        "lossToLeasePct": 0.091,
         "pricePerUnit": 160000,
-        "marketPPU": 192948,
-        "populationGrowth": 0.0271,
+        "marketPPU": 191365,
+        "populationGrowth": 0.023,
         "supplyPipeline": "Moderate supply pipeline",
         "jurisdiction": "Favorable jurisdiction",
         "rentControl": false,
         "renovationBudget": 2000000,
         "renovationPerUnit": 10000,
-        "marketVacancy": 0.0738,
-        "supplyDelivered2025": 1067,
-        "supplyForecast2026": "2210 units",
+        "marketVacancy": 0.0665,
+        "supplyDelivered2025": 2103,
+        "supplyForecast2026": "1458 units",
         "absorptionNote": "Absorption remains healthy across comparable assets.",
         "marketCycle": "Stable expansion",
         "rentGrowthTrailing": 0.031,
         "rentGrowthForecast": 0.033,
         "environmentalRisk": "Manageable",
         "floodZone": "X",
-        "opexBenchmark": "42.1% expense ratio",
+        "opexBenchmark": "50.5% expense ratio",
         "opexBreakdown": [
           {
             "category": "Taxes",
-            "amount": 445625,
+            "amount": 534905,
             "pct": 0.31
           },
           {
             "category": "Insurance",
-            "amount": 115000,
+            "amount": 138040,
             "pct": 0.08
           },
           {
             "category": "Utilities",
-            "amount": 186875,
+            "amount": 224315,
             "pct": 0.13
           },
           {
             "category": "Repairs",
-            "amount": 230000,
+            "amount": 276080,
             "pct": 0.16
           },
           {
             "category": "Payroll",
-            "amount": 244375,
+            "amount": 293335,
             "pct": 0.17
           },
           {
             "category": "Other",
-            "amount": 215625,
+            "amount": 258825,
             "pct": 0.15
           }
         ],
@@ -146,25 +146,25 @@
           "totalUnits": 200,
           "occupancy": 0.94,
           "avgRent": 1513,
-          "avgMarketRent": 1694,
-          "lossToLease": 407184,
-          "lossToLeasePercent": 0.1066
+          "avgMarketRent": 1665,
+          "lossToLease": 341777,
+          "lossToLeasePercent": 0.091
         },
         "expenses": {
-          "totalOpEx": 1437500,
-          "opExPerUnit": 7188,
-          "opExRatio": 0.4211,
+          "totalOpEx": 1725500,
+          "opExPerUnit": 8628,
+          "opExRatio": 0.5054,
           "adjustedExpenses": {
-            "taxes": 445625,
-            "insurance": 115000,
-            "utilities": 186875,
-            "repairs": 230000,
-            "management": 129375,
-            "payroll": 244375,
-            "admin": 43125,
-            "marketing": 28750,
-            "contractServices": 14375,
-            "other": 14375
+            "taxes": 534905,
+            "insurance": 138040,
+            "utilities": 224315,
+            "repairs": 276080,
+            "management": 155295,
+            "payroll": 293335,
+            "admin": 51765,
+            "marketing": 34510,
+            "contractServices": 17255,
+            "other": 17255
           }
         },
         "physical": {
@@ -183,14 +183,14 @@
             "mid": 0.056,
             "high": 0.065
           },
-          "populationGrowth": 0.0271,
+          "populationGrowth": 0.023,
           "rentGrowthTrailing12": 0.031,
           "rentGrowthProjected": 0.035
         },
         "tenants": {
           "creditSummary": "Stable tenant profile",
           "concentrationRisk": "LOW",
-          "delinquencyRate": 0.0311
+          "delinquencyRate": 0.053
         },
         "environmental": {
           "phase1Status": "CLEAN",
@@ -198,26 +198,26 @@
           "regulatoryCompliance": "COMPLIANT"
         },
         "marketDetail": {
-          "msaPopulation": 5287042,
-          "populationGrowth": 0.0271,
+          "msaPopulation": 2156023,
+          "populationGrowth": 0.023,
           "populationGrowthRank": "Top quartile growth market",
-          "jobGrowth": 0.0266,
-          "unemployment": 0.0394,
-          "marketVacancy": 0.0738,
-          "marketPPU": 192948,
+          "jobGrowth": 0.0171,
+          "unemployment": 0.0364,
+          "marketVacancy": 0.0665,
+          "marketPPU": 191365,
           "marketCapRateRange": "5% - 6.4%",
-          "supplyDelivered2025": 1067,
-          "supplyForecast2026": "2210 units",
+          "supplyDelivered2025": 2103,
+          "supplyForecast2026": "1458 units",
           "absorptionNote": "Absorption remains healthy across comparable assets.",
           "marketCycle": "Stable expansion",
-          "concessionRate": 0.035,
+          "concessionRate": 0.054,
           "concessionNote": "Concessions concentrated in newest competitive product.",
           "rentGrowthTrailing": 0.031,
           "rentGrowthForecast2026": "2.5% to 4.1%",
           "rentGrowthLongTerm": 0.03,
           "sb38Note": "No material permitting bottleneck."
         },
-        "riskScore": 77,
+        "riskScore": 82,
         "redFlagCount": 0,
         "dataGapCount": 0,
         "redFlags": [],
@@ -229,7 +229,7 @@
           },
           "opex-analyst": {
             "status": "COMPLETE",
-            "finding": "Expense ratio at 42.1%."
+            "finding": "Expense ratio at 50.5%."
           },
           "physical-inspection": {
             "status": "COMPLETE",
@@ -257,45 +257,56 @@
     "underwriting": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-02-24T01:21:35.519Z",
-      "completedAt": "2026-02-24T01:21:41.585Z",
-      "verdict": "CONDITIONAL",
-      "confidence": 0.976,
-      "riskScore": 74,
+      "startedAt": "2026-05-19T19:05:31.530Z",
+      "completedAt": "2026-05-19T19:05:31.549Z",
+      "verdict": "FAIL",
+      "confidence": 0.97,
+      "riskScore": 76,
       "redFlagCount": 2,
-      "dataGapCount": 0,
+      "dataGapCount": 1,
       "findings": 3,
       "outputs": {
-        "phaseSummary": "Underwriting completed with verdict CONDITIONAL",
+        "phaseSummary": "Underwriting completed with verdict FAIL",
         "keyFindings": [
-          "Leveraged IRR 18.2%",
-          "Scenario pass-rate 33.3%",
-          "DSCR 1.11x"
+          "Leveraged IRR 9.6%",
+          "Scenario pass-rate 3.7%",
+          "DSCR 0.95x"
         ],
         "redFlags": [
           {
             "id": "uw-dscr",
             "severity": "HIGH",
             "category": "UNDERWRITING",
-            "message": "Base DSCR 1.11x is below preferred cushion",
+            "message": "Base DSCR 0.95x is below preferred cushion",
             "impact": "Can reduce lender proceeds and increase risk",
             "owner": "financial-model-builder",
             "status": "OPEN",
-            "createdAt": "2026-02-24T01:21:35.520Z"
+            "createdAt": "2026-05-19T19:05:31.531Z"
           },
           {
             "id": "uw-pass-rate",
             "severity": "HIGH",
             "category": "SENSITIVITY",
-            "message": "Scenario pass-rate 33.3% below target",
+            "message": "Scenario pass-rate 3.7% below target",
             "impact": "Increases downside loss probability",
             "owner": "scenario-analyst",
             "status": "OPEN",
-            "createdAt": "2026-02-24T01:21:35.520Z"
+            "createdAt": "2026-05-19T19:05:31.531Z"
           }
         ],
-        "dataGaps": [],
-        "phaseVerdict": "CONDITIONAL"
+        "dataGaps": [
+          {
+            "id": "uw-rent-history",
+            "severity": "MEDIUM",
+            "category": "DATA_GAP",
+            "message": "Historical monthly rent trend missing for two periods",
+            "impact": "Could reduce confidence in recommendation",
+            "owner": "financial-model-builder",
+            "status": "OPEN",
+            "createdAt": "2026-05-19T19:05:31.531Z"
+          }
+        ],
+        "phaseVerdict": "FAIL"
       },
       "agentStatuses": {
         "financial-model-builder": "COMPLETED",
@@ -306,27 +317,27 @@
         "baseCase": {
           "purchasePrice": 32000000,
           "totalBasis": 34960000,
-          "goingInCapRate": 0.0617,
-          "stabilizedCapRate": 0.0583,
-          "year1NOI": 1975828,
-          "stabilizedNOI": 2039054,
-          "leveragedIRR": 0.1816,
-          "equityMultiple": 2.303,
-          "cashOnCash": 0.0176,
+          "goingInCapRate": 0.0528,
+          "stabilizedCapRate": 0.0686,
+          "year1NOI": 1688500,
+          "stabilizedNOI": 2400000,
+          "leveragedIRR": 0.0963,
+          "equityMultiple": 1.547,
+          "cashOnCash": -0.0086,
           "equityRequired": 10960000,
           "debtRequest": 24000000,
           "targetLTV": 0.75,
-          "targetDSCR": 1.108
+          "targetDSCR": 0.947
         },
         "scenarioSummary": {
-          "baseIRR": 0.1816,
-          "worstIRR": 0.1196,
-          "bestIRR": 0.2292,
-          "medianIRR": 0.1622,
-          "passRate": 0.3333,
+          "baseIRR": 0.0963,
+          "worstIRR": 0.0203,
+          "bestIRR": 0.1584,
+          "medianIRR": 0.0963,
+          "passRate": 0.037,
           "dscrRange": {
-            "min": 1.022,
-            "max": 1.171
+            "min": 1.028,
+            "max": 1.126
           }
         },
         "debtSizing": {
@@ -352,353 +363,571 @@
         "proForma": [
           {
             "year": 1,
-            "revenue": 3413328,
-            "expenses": 1437500,
-            "noi": 1975828,
-            "debtService": 1782642,
-            "dscr": 1.108,
-            "cashFlow": 193186
+            "revenue": 3414000,
+            "expenses": 1725500,
+            "noi": 1688500,
+            "debtService": 1560000,
+            "dscr": 1.082,
+            "cashFlow": 128500
           },
           {
             "year": 2,
-            "revenue": 3522554,
-            "expenses": 1472000,
-            "noi": 2050554,
-            "debtService": 1782642,
-            "dscr": 1.15,
-            "cashFlow": 267913
+            "revenue": 3516420,
+            "expenses": 1766912,
+            "noi": 2079825,
+            "debtService": 1560000,
+            "dscr": 1.333,
+            "cashFlow": 519825
           },
           {
             "year": 3,
-            "revenue": 3635276,
-            "expenses": 1507328,
-            "noi": 2127948,
-            "debtService": 1782642,
-            "dscr": 1.194,
-            "cashFlow": 345307
+            "revenue": 3621913,
+            "expenses": 1809318,
+            "noi": 2400000,
+            "debtService": 1820356,
+            "dscr": 1.318,
+            "cashFlow": 579644
           },
           {
             "year": 4,
-            "revenue": 3751605,
-            "expenses": 1543504,
-            "noi": 2208101,
-            "debtService": 1782642,
-            "dscr": 1.239,
-            "cashFlow": 425460
+            "revenue": 3730570,
+            "expenses": 1852742,
+            "noi": 2460000,
+            "debtService": 1820356,
+            "dscr": 1.351,
+            "cashFlow": 639644
           },
           {
             "year": 5,
-            "revenue": 3871656,
-            "expenses": 1580548,
-            "noi": 2291108,
-            "debtService": 1782642,
-            "dscr": 1.285,
-            "cashFlow": 508467
+            "revenue": 3842487,
+            "expenses": 1897207,
+            "noi": 2521500,
+            "debtService": 1820356,
+            "dscr": 1.385,
+            "cashFlow": 701144
+          },
+          {
+            "year": 6,
+            "revenue": 3957762,
+            "expenses": 1942740,
+            "noi": 2584537,
+            "debtService": 1820356,
+            "dscr": 1.42,
+            "cashFlow": 764182
+          },
+          {
+            "year": 7,
+            "revenue": 4076495,
+            "expenses": 1989366,
+            "noi": 2649151,
+            "debtService": 1820356,
+            "dscr": 1.455,
+            "cashFlow": 828795
+          },
+          {
+            "year": 8,
+            "revenue": 4198789,
+            "expenses": 2037111,
+            "noi": 2715380,
+            "debtService": 1820356,
+            "dscr": 1.492,
+            "cashFlow": 895024
+          },
+          {
+            "year": 9,
+            "revenue": 4324753,
+            "expenses": 2086002,
+            "noi": 2783264,
+            "debtService": 1820356,
+            "dscr": 1.529,
+            "cashFlow": 962908
+          },
+          {
+            "year": 10,
+            "revenue": 4454496,
+            "expenses": 2136066,
+            "noi": 2852846,
+            "debtService": 1820356,
+            "dscr": 1.567,
+            "cashFlow": 1032490
           }
         ],
         "proFormaAssumptions": "Revenue growth 3.2%, expense growth 2.4%, exit cap 6.50%.",
         "returnMetrics": [
           {
             "metric": "Leveraged IRR",
-            "value": "18.2%",
+            "value": "9.6%",
             "target": "15%"
           },
           {
             "metric": "Equity Multiple",
-            "value": "2.3x",
+            "value": "1.55x",
             "target": "1.8x"
           },
           {
             "metric": "Cash-on-Cash",
-            "value": "1.8%",
+            "value": "-0.9%",
             "target": "8%"
           }
         ],
         "exitAnalysis": {
           "holdYears": 5,
           "exitCapRate": 0.065,
-          "exitNOI": 2295771,
-          "grossExitValue": 35319558,
-          "netSaleProceeds": 13316569
+          "exitNOI": 2584537,
+          "grossExitValue": 39762115,
+          "netSaleProceeds": 17648062
         },
         "scenarioMatrix": [
           {
-            "scenario": "S1",
-            "rentShock": 0.0396,
-            "expenseShock": -0.0008,
-            "capShock": 0.0008,
-            "irr": 0.2041,
-            "dscr": 1.144,
-            "pass": true
-          },
-          {
-            "scenario": "S2",
-            "rentShock": -0.0032,
-            "expenseShock": 0.0517,
-            "capShock": -0.0038,
-            "irr": 0.1665,
-            "dscr": 1.08,
+            "scenario": "RENT_DOWN_VACANCY_HIGH_EXIT_TIGHT",
+            "rentCase": "Downside rent",
+            "vacancyCase": "High vacancy",
+            "exitCapCase": "Exit cap tightens 50 bps",
+            "rentShock": -0.02,
+            "vacancyShock": -0.03,
+            "exitCapRate": 0.0625,
+            "probability": 0.015625,
+            "irr": 0.1003,
+            "equityMultiple": 1.585,
+            "dscr": 1.028,
+            "exitValue": 39284970,
             "pass": false
           },
           {
-            "scenario": "S3",
-            "rentShock": -0.0308,
-            "expenseShock": 0.0005,
-            "capShock": 0.0069,
-            "irr": 0.1492,
-            "dscr": 1.08,
+            "scenario": "RENT_DOWN_VACANCY_HIGH_EXIT_BASE",
+            "rentCase": "Downside rent",
+            "vacancyCase": "High vacancy",
+            "exitCapCase": "Base exit cap",
+            "rentShock": -0.02,
+            "vacancyShock": -0.03,
+            "exitCapRate": 0.0675,
+            "probability": 0.03125,
+            "irr": 0.0605,
+            "equityMultiple": 1.325,
+            "dscr": 1.028,
+            "exitValue": 36374972,
             "pass": false
           },
           {
-            "scenario": "S4",
-            "rentShock": -0.0237,
-            "expenseShock": 0.0506,
-            "capShock": 0.0034,
-            "irr": 0.1404,
-            "dscr": 1.062,
+            "scenario": "RENT_DOWN_VACANCY_HIGH_EXIT_WIDE",
+            "rentCase": "Downside rent",
+            "vacancyCase": "High vacancy",
+            "exitCapCase": "Exit cap widens 50 bps",
+            "rentShock": -0.02,
+            "vacancyShock": -0.03,
+            "exitCapRate": 0.07250000000000001,
+            "probability": 0.015625,
+            "irr": 0.0203,
+            "equityMultiple": 1.1,
+            "dscr": 1.028,
+            "exitValue": 33866353,
             "pass": false
           },
           {
-            "scenario": "S5",
-            "rentShock": -0.0537,
-            "expenseShock": 0.0037,
-            "capShock": 0.0068,
-            "irr": 0.1343,
-            "dscr": 1.058,
+            "scenario": "RENT_DOWN_VACANCY_BASE_EXIT_TIGHT",
+            "rentCase": "Downside rent",
+            "vacancyCase": "Base vacancy",
+            "exitCapCase": "Exit cap tightens 50 bps",
+            "rentShock": -0.02,
+            "vacancyShock": 0,
+            "exitCapRate": 0.0625,
+            "probability": 0.03125,
+            "irr": 0.1207,
+            "equityMultiple": 1.726,
+            "dscr": 1.061,
+            "exitValue": 40525548,
             "pass": false
           },
           {
-            "scenario": "S6",
-            "rentShock": -0.0792,
-            "expenseShock": 0.0297,
-            "capShock": 0.0013,
-            "irr": 0.1196,
-            "dscr": 1.022,
+            "scenario": "RENT_DOWN_VACANCY_BASE_EXIT_BASE",
+            "rentCase": "Downside rent",
+            "vacancyCase": "Base vacancy",
+            "exitCapCase": "Base exit cap",
+            "rentShock": -0.02,
+            "vacancyShock": 0,
+            "exitCapRate": 0.0675,
+            "probability": 0.0625,
+            "irr": 0.0824,
+            "equityMultiple": 1.458,
+            "dscr": 1.061,
+            "exitValue": 37523656,
             "pass": false
           },
           {
-            "scenario": "S7",
-            "rentShock": 0.0507,
-            "expenseShock": 0.0392,
-            "capShock": 0.0078,
-            "irr": 0.1807,
-            "dscr": 1.134,
-            "pass": true
-          },
-          {
-            "scenario": "S8",
-            "rentShock": 0.0127,
-            "expenseShock": 0.0525,
-            "capShock": 0.0029,
-            "irr": 0.1623,
-            "dscr": 1.094,
+            "scenario": "RENT_DOWN_VACANCY_BASE_EXIT_WIDE",
+            "rentCase": "Downside rent",
+            "vacancyCase": "Base vacancy",
+            "exitCapCase": "Exit cap widens 50 bps",
+            "rentShock": -0.02,
+            "vacancyShock": 0,
+            "exitCapRate": 0.07250000000000001,
+            "probability": 0.03125,
+            "irr": 0.0441,
+            "equityMultiple": 1.227,
+            "dscr": 1.061,
+            "exitValue": 34935817,
             "pass": false
           },
           {
-            "scenario": "S9",
-            "rentShock": -0.0031,
-            "expenseShock": 0.017,
-            "capShock": -0.0017,
-            "irr": 0.1764,
-            "dscr": 1.097,
+            "scenario": "RENT_DOWN_VACANCY_LOW_EXIT_TIGHT",
+            "rentCase": "Downside rent",
+            "vacancyCase": "Low vacancy",
+            "exitCapCase": "Exit cap tightens 50 bps",
+            "rentShock": -0.02,
+            "vacancyShock": 0.02,
+            "exitCapRate": 0.0625,
+            "probability": 0.015625,
+            "irr": 0.1337,
+            "equityMultiple": 1.821,
+            "dscr": 1.082,
+            "exitValue": 41352600,
             "pass": false
           },
           {
-            "scenario": "S10",
-            "rentShock": -0.033,
-            "expenseShock": -0.0261,
-            "capShock": 0.0051,
-            "irr": 0.1621,
-            "dscr": 1.092,
+            "scenario": "RENT_DOWN_VACANCY_LOW_EXIT_BASE",
+            "rentCase": "Downside rent",
+            "vacancyCase": "Low vacancy",
+            "exitCapCase": "Base exit cap",
+            "rentShock": -0.02,
+            "vacancyShock": 0.02,
+            "exitCapRate": 0.0675,
+            "probability": 0.03125,
+            "irr": 0.0963,
+            "equityMultiple": 1.547,
+            "dscr": 1.082,
+            "exitValue": 38289444,
             "pass": false
           },
           {
-            "scenario": "S11",
-            "rentShock": -0.0181,
-            "expenseShock": 0.0147,
-            "capShock": 0.0082,
-            "irr": 0.1484,
-            "dscr": 1.085,
+            "scenario": "RENT_DOWN_VACANCY_LOW_EXIT_WIDE",
+            "rentCase": "Downside rent",
+            "vacancyCase": "Low vacancy",
+            "exitCapCase": "Exit cap widens 50 bps",
+            "rentShock": -0.02,
+            "vacancyShock": 0.02,
+            "exitCapRate": 0.07250000000000001,
+            "probability": 0.015625,
+            "irr": 0.0591,
+            "equityMultiple": 1.311,
+            "dscr": 1.082,
+            "exitValue": 35648793,
             "pass": false
           },
           {
-            "scenario": "S12",
-            "rentShock": 0.0693,
-            "expenseShock": 0.0178,
-            "capShock": 0.0086,
-            "irr": 0.1988,
-            "dscr": 1.162,
-            "pass": true
-          },
-          {
-            "scenario": "S13",
-            "rentShock": 0.044,
-            "expenseShock": 0.0437,
-            "capShock": -0.0039,
-            "irr": 0.1983,
-            "dscr": 1.126,
-            "pass": true
-          },
-          {
-            "scenario": "S14",
-            "rentShock": -0.036,
-            "expenseShock": -0.024,
-            "capShock": -0.0028,
-            "irr": 0.1752,
-            "dscr": 1.088,
+            "scenario": "RENT_BASE_VACANCY_HIGH_EXIT_TIGHT",
+            "rentCase": "Base rent",
+            "vacancyCase": "High vacancy",
+            "exitCapCase": "Exit cap tightens 50 bps",
+            "rentShock": 0,
+            "vacancyShock": -0.03,
+            "exitCapRate": 0.0625,
+            "probability": 0.03125,
+            "irr": 0.1141,
+            "equityMultiple": 1.679,
+            "dscr": 1.05,
+            "exitValue": 40112022,
             "pass": false
           },
           {
-            "scenario": "S15",
-            "rentShock": -0.0056,
-            "expenseShock": 0.0594,
-            "capShock": -0.0039,
-            "irr": 0.1622,
-            "dscr": 1.074,
+            "scenario": "RENT_BASE_VACANCY_HIGH_EXIT_BASE",
+            "rentCase": "Base rent",
+            "vacancyCase": "High vacancy",
+            "exitCapCase": "Base exit cap",
+            "rentShock": 0,
+            "vacancyShock": -0.03,
+            "exitCapRate": 0.0675,
+            "probability": 0.0625,
+            "irr": 0.0752,
+            "equityMultiple": 1.414,
+            "dscr": 1.05,
+            "exitValue": 37140761,
             "pass": false
           },
           {
-            "scenario": "S16",
-            "rentShock": -0.0228,
-            "expenseShock": -0.009,
-            "capShock": 0.005,
-            "irr": 0.1614,
-            "dscr": 1.092,
+            "scenario": "RENT_BASE_VACANCY_HIGH_EXIT_WIDE",
+            "rentCase": "Base rent",
+            "vacancyCase": "High vacancy",
+            "exitCapCase": "Exit cap widens 50 bps",
+            "rentShock": 0,
+            "vacancyShock": -0.03,
+            "exitCapRate": 0.07250000000000001,
+            "probability": 0.03125,
+            "irr": 0.0364,
+            "equityMultiple": 1.184,
+            "dscr": 1.05,
+            "exitValue": 34579329,
             "pass": false
           },
           {
-            "scenario": "S17",
-            "rentShock": -0.0424,
-            "expenseShock": -0.0114,
-            "capShock": 0.0072,
-            "irr": 0.1464,
-            "dscr": 1.076,
+            "scenario": "RENT_BASE_VACANCY_BASE_EXIT_TIGHT",
+            "rentCase": "Base rent",
+            "vacancyCase": "Base vacancy",
+            "exitCapCase": "Exit cap tightens 50 bps",
+            "rentShock": 0,
+            "vacancyShock": 0,
+            "exitCapRate": 0.0625,
+            "probability": 0.0625,
+            "irr": 0.1337,
+            "equityMultiple": 1.821,
+            "dscr": 1.082,
+            "exitValue": 41352600,
             "pass": false
           },
           {
-            "scenario": "S18",
-            "rentShock": -0.0226,
-            "expenseShock": -0.0048,
-            "capShock": 0.0061,
-            "irr": 0.1577,
-            "dscr": 1.09,
+            "scenario": "RENT_BASE_VACANCY_BASE_EXIT_BASE",
+            "rentCase": "Base rent",
+            "vacancyCase": "Base vacancy",
+            "exitCapCase": "Base exit cap",
+            "rentShock": 0,
+            "vacancyShock": 0,
+            "exitCapRate": 0.0675,
+            "probability": 0.125,
+            "irr": 0.0963,
+            "equityMultiple": 1.547,
+            "dscr": 1.082,
+            "exitValue": 38289444,
             "pass": false
           },
           {
-            "scenario": "S19",
-            "rentShock": -0.0055,
-            "expenseShock": 0.0621,
-            "capShock": 0.0076,
-            "irr": 0.1382,
+            "scenario": "RENT_BASE_VACANCY_BASE_EXIT_WIDE",
+            "rentCase": "Base rent",
+            "vacancyCase": "Base vacancy",
+            "exitCapCase": "Exit cap widens 50 bps",
+            "rentShock": 0,
+            "vacancyShock": 0,
+            "exitCapRate": 0.07250000000000001,
+            "probability": 0.0625,
+            "irr": 0.0591,
+            "equityMultiple": 1.311,
+            "dscr": 1.082,
+            "exitValue": 35648793,
+            "pass": false
+          },
+          {
+            "scenario": "RENT_BASE_VACANCY_LOW_EXIT_TIGHT",
+            "rentCase": "Base rent",
+            "vacancyCase": "Low vacancy",
+            "exitCapCase": "Exit cap tightens 50 bps",
+            "rentShock": 0,
+            "vacancyShock": 0.02,
+            "exitCapRate": 0.0625,
+            "probability": 0.03125,
+            "irr": 0.1463,
+            "equityMultiple": 1.915,
+            "dscr": 1.104,
+            "exitValue": 42179652,
+            "pass": false
+          },
+          {
+            "scenario": "RENT_BASE_VACANCY_LOW_EXIT_BASE",
+            "rentCase": "Base rent",
+            "vacancyCase": "Low vacancy",
+            "exitCapCase": "Base exit cap",
+            "rentShock": 0,
+            "vacancyShock": 0.02,
+            "exitCapRate": 0.0675,
+            "probability": 0.0625,
+            "irr": 0.1096,
+            "equityMultiple": 1.636,
+            "dscr": 1.104,
+            "exitValue": 39055233,
+            "pass": false
+          },
+          {
+            "scenario": "RENT_BASE_VACANCY_LOW_EXIT_WIDE",
+            "rentCase": "Base rent",
+            "vacancyCase": "Low vacancy",
+            "exitCapCase": "Exit cap widens 50 bps",
+            "rentShock": 0,
+            "vacancyShock": 0.02,
+            "exitCapRate": 0.07250000000000001,
+            "probability": 0.03125,
+            "irr": 0.0734,
+            "equityMultiple": 1.395,
+            "dscr": 1.104,
+            "exitValue": 36361769,
+            "pass": false
+          },
+          {
+            "scenario": "RENT_UP_VACANCY_HIGH_EXIT_TIGHT",
+            "rentCase": "Upside rent",
+            "vacancyCase": "High vacancy",
+            "exitCapCase": "Exit cap tightens 50 bps",
+            "rentShock": 0.02,
+            "vacancyShock": -0.03,
+            "exitCapRate": 0.0625,
+            "probability": 0.015625,
+            "irr": 0.1273,
+            "equityMultiple": 1.773,
             "dscr": 1.072,
+            "exitValue": 40939074,
             "pass": false
           },
           {
-            "scenario": "S20",
-            "rentShock": 0.0303,
-            "expenseShock": 0.0464,
-            "capShock": -0.0001,
-            "irr": 0.1814,
-            "dscr": 1.112,
-            "pass": true
-          },
-          {
-            "scenario": "S21",
-            "rentShock": 0.0024,
-            "expenseShock": -0.0027,
-            "capShock": 0.0061,
-            "irr": 0.1719,
-            "dscr": 1.112,
-            "pass": true
-          },
-          {
-            "scenario": "S22",
-            "rentShock": 0.0073,
-            "expenseShock": -0.0253,
-            "capShock": 0.002,
-            "irr": 0.192,
-            "dscr": 1.128,
-            "pass": true
-          },
-          {
-            "scenario": "S23",
-            "rentShock": 0.0439,
-            "expenseShock": -0.0296,
-            "capShock": -0.003,
-            "irr": 0.2257,
-            "dscr": 1.163,
-            "pass": true
-          },
-          {
-            "scenario": "S24",
-            "rentShock": -0.021,
-            "expenseShock": 0.0614,
-            "capShock": 0.0061,
-            "irr": 0.1322,
-            "dscr": 1.059,
+            "scenario": "RENT_UP_VACANCY_HIGH_EXIT_BASE",
+            "rentCase": "Upside rent",
+            "vacancyCase": "High vacancy",
+            "exitCapCase": "Base exit cap",
+            "rentShock": 0.02,
+            "vacancyShock": -0.03,
+            "exitCapRate": 0.0675,
+            "probability": 0.03125,
+            "irr": 0.0894,
+            "equityMultiple": 1.502,
+            "dscr": 1.072,
+            "exitValue": 37906550,
             "pass": false
           },
           {
-            "scenario": "S25",
-            "rentShock": -0.0303,
-            "expenseShock": 0.0051,
-            "capShock": 0.0023,
-            "irr": 0.1567,
-            "dscr": 1.079,
+            "scenario": "RENT_UP_VACANCY_HIGH_EXIT_WIDE",
+            "rentCase": "Upside rent",
+            "vacancyCase": "High vacancy",
+            "exitCapCase": "Exit cap widens 50 bps",
+            "rentShock": 0.02,
+            "vacancyShock": -0.03,
+            "exitCapRate": 0.07250000000000001,
+            "probability": 0.015625,
+            "irr": 0.0517,
+            "equityMultiple": 1.269,
+            "dscr": 1.072,
+            "exitValue": 35292305,
             "pass": false
           },
           {
-            "scenario": "S26",
-            "rentShock": 0.0685,
-            "expenseShock": -0.0013,
-            "capShock": -0.003,
-            "irr": 0.2292,
-            "dscr": 1.171,
+            "scenario": "RENT_UP_VACANCY_BASE_EXIT_TIGHT",
+            "rentCase": "Upside rent",
+            "vacancyCase": "Base vacancy",
+            "exitCapCase": "Exit cap tightens 50 bps",
+            "rentShock": 0.02,
+            "vacancyShock": 0,
+            "exitCapRate": 0.0625,
+            "probability": 0.03125,
+            "irr": 0.1463,
+            "equityMultiple": 1.915,
+            "dscr": 1.104,
+            "exitValue": 42179652,
+            "pass": false
+          },
+          {
+            "scenario": "RENT_UP_VACANCY_BASE_EXIT_BASE",
+            "rentCase": "Upside rent",
+            "vacancyCase": "Base vacancy",
+            "exitCapCase": "Base exit cap",
+            "rentShock": 0.02,
+            "vacancyShock": 0,
+            "exitCapRate": 0.0675,
+            "probability": 0.0625,
+            "irr": 0.1096,
+            "equityMultiple": 1.636,
+            "dscr": 1.104,
+            "exitValue": 39055233,
+            "pass": false
+          },
+          {
+            "scenario": "RENT_UP_VACANCY_BASE_EXIT_WIDE",
+            "rentCase": "Upside rent",
+            "vacancyCase": "Base vacancy",
+            "exitCapCase": "Exit cap widens 50 bps",
+            "rentShock": 0.02,
+            "vacancyShock": 0,
+            "exitCapRate": 0.07250000000000001,
+            "probability": 0.03125,
+            "irr": 0.0734,
+            "equityMultiple": 1.395,
+            "dscr": 1.104,
+            "exitValue": 36361769,
+            "pass": false
+          },
+          {
+            "scenario": "RENT_UP_VACANCY_LOW_EXIT_TIGHT",
+            "rentCase": "Upside rent",
+            "vacancyCase": "Low vacancy",
+            "exitCapCase": "Exit cap tightens 50 bps",
+            "rentShock": 0.02,
+            "vacancyShock": 0.02,
+            "exitCapRate": 0.0625,
+            "probability": 0.015625,
+            "irr": 0.1584,
+            "equityMultiple": 2.009,
+            "dscr": 1.126,
+            "exitValue": 43006704,
             "pass": true
           },
           {
-            "scenario": "S27",
-            "rentShock": -0.0718,
-            "expenseShock": -0.004,
-            "capShock": 0.0079,
-            "irr": 0.1243,
-            "dscr": 1.046,
+            "scenario": "RENT_UP_VACANCY_LOW_EXIT_BASE",
+            "rentCase": "Upside rent",
+            "vacancyCase": "Low vacancy",
+            "exitCapCase": "Base exit cap",
+            "rentShock": 0.02,
+            "vacancyShock": 0.02,
+            "exitCapRate": 0.0675,
+            "probability": 0.03125,
+            "irr": 0.1225,
+            "equityMultiple": 1.724,
+            "dscr": 1.126,
+            "exitValue": 39821022,
+            "pass": false
+          },
+          {
+            "scenario": "RENT_UP_VACANCY_LOW_EXIT_WIDE",
+            "rentCase": "Upside rent",
+            "vacancyCase": "Low vacancy",
+            "exitCapCase": "Exit cap widens 50 bps",
+            "rentShock": 0.02,
+            "vacancyShock": 0.02,
+            "exitCapRate": 0.07250000000000001,
+            "probability": 0.015625,
+            "irr": 0.0872,
+            "equityMultiple": 1.479,
+            "dscr": 1.126,
+            "exitValue": 37074745,
             "pass": false
           }
         ],
         "icMemoPath": "data/reports/parkview-2026-001/ic-memo.md",
         "modelPath": "data/phase-outputs/parkview-2026-001/underwriting-output.json",
         "scenarioMatrixPath": "data/phase-outputs/parkview-2026-001/underwriting-scenarios.json",
-        "verdict": "CONDITIONAL",
+        "verdict": "FAIL",
         "conditions": [
           "Consider lower proceeds or add reserve cushion"
         ],
-        "riskScore": 74,
+        "riskScore": 76,
         "redFlagCount": 2,
-        "dataGapCount": 0,
+        "dataGapCount": 1,
         "redFlags": [
           {
             "id": "uw-dscr",
             "severity": "HIGH",
             "category": "UNDERWRITING",
-            "message": "Base DSCR 1.11x is below preferred cushion",
+            "message": "Base DSCR 0.95x is below preferred cushion",
             "impact": "Can reduce lender proceeds and increase risk",
             "owner": "financial-model-builder",
             "status": "OPEN",
-            "createdAt": "2026-02-24T01:21:35.520Z"
+            "createdAt": "2026-05-19T19:05:31.531Z"
           },
           {
             "id": "uw-pass-rate",
             "severity": "HIGH",
             "category": "SENSITIVITY",
-            "message": "Scenario pass-rate 33.3% below target",
+            "message": "Scenario pass-rate 3.7% below target",
             "impact": "Increases downside loss probability",
             "owner": "scenario-analyst",
             "status": "OPEN",
-            "createdAt": "2026-02-24T01:21:35.520Z"
+            "createdAt": "2026-05-19T19:05:31.531Z"
           }
         ],
-        "dataGaps": [],
+        "dataGaps": [
+          {
+            "id": "uw-rent-history",
+            "severity": "MEDIUM",
+            "category": "DATA_GAP",
+            "message": "Historical monthly rent trend missing for two periods",
+            "impact": "Could reduce confidence in recommendation",
+            "owner": "financial-model-builder",
+            "status": "OPEN",
+            "createdAt": "2026-05-19T19:05:31.531Z"
+          }
+        ],
         "agentFindings": {
           "financial-model-builder": {
             "status": "COMPLETE",
@@ -706,7 +935,7 @@
           },
           "scenario-analyst": {
             "status": "COMPLETE",
-            "finding": "9/27 sensitivity scenarios pass constraints."
+            "finding": "1/27 sensitivity scenarios pass constraints."
           },
           "ic-memo-writer": {
             "status": "COMPLETE",
@@ -718,13 +947,13 @@
     "financing": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-02-24T01:21:41.592Z",
-      "completedAt": "2026-02-24T01:21:47.636Z",
+      "startedAt": "2026-05-19T19:05:31.553Z",
+      "completedAt": "2026-05-19T19:05:31.571Z",
       "verdict": "CONDITIONAL",
-      "confidence": 0.988,
-      "riskScore": 75,
+      "confidence": 0.982,
+      "riskScore": 81,
       "redFlagCount": 1,
-      "dataGapCount": 0,
+      "dataGapCount": 1,
       "findings": 3,
       "outputs": {
         "phaseSummary": "Financing completed with verdict CONDITIONAL",
@@ -738,14 +967,25 @@
             "id": "fin-dscr",
             "severity": "HIGH",
             "category": "FINANCING",
-            "message": "Amortizing DSCR 1.13x is tight",
+            "message": "Amortizing DSCR 0.97x is tight",
             "impact": "Could reduce certainty of execution",
             "owner": "quote-comparator",
             "status": "OPEN",
-            "createdAt": "2026-02-24T01:21:41.593Z"
+            "createdAt": "2026-05-19T19:05:31.554Z"
           }
         ],
-        "dataGaps": [],
+        "dataGaps": [
+          {
+            "id": "fin-docs",
+            "severity": "MEDIUM",
+            "category": "DATA_GAP",
+            "message": "Final third-party report requested by lead lender",
+            "impact": "Could reduce confidence in recommendation",
+            "owner": "lender-outreach",
+            "status": "OPEN",
+            "createdAt": "2026-05-19T19:05:31.554Z"
+          }
+        ],
         "phaseVerdict": "CONDITIONAL"
       },
       "agentStatuses": {
@@ -765,14 +1005,14 @@
         "interestOnlyMonths": 24,
         "annualDebtServiceIO": 1464000,
         "annualDebtServiceAmort": 1745265,
-        "dscrIO": 1.35,
-        "dscrAmort": 1.132,
+        "dscrIO": 1.153,
+        "dscrAmort": 0.967,
         "dscrCovenant": 1.2,
         "prepayment": "Yield maintenance",
         "recourse": "Non-recourse",
         "reserves": {
-          "taxMonthly": 37135,
-          "insuranceMonthly": 9583,
+          "taxMonthly": 44575,
+          "insuranceMonthly": 11503,
           "capexMonthly": 40000,
           "renovationEscrow": 700000
         },
@@ -781,98 +1021,109 @@
             "rank": 1,
             "lender": "Freddie Mac",
             "category": "agency",
-            "ltv": "74.7%",
-            "ltvValue": 0.7639,
-            "rate": "5.89%",
-            "rateValue": 0.05986,
+            "ltv": "73.8%",
+            "ltvValue": 0.7346,
+            "rate": "5.93%",
+            "rateValue": 0.06082,
             "term": "10y",
             "io": "24m",
-            "dscrIO": "1.34x",
-            "dscrIOValue": 1.427,
+            "dscrIO": "1.23x",
+            "dscrIOValue": 1.193,
             "status": "SELECTED"
           },
           {
             "rank": 2,
             "lender": "Fannie Mae",
             "category": "agency",
-            "ltv": "72.2%",
-            "ltvValue": 0.7369,
-            "rate": "5.993%",
-            "rateValue": 0.06149,
+            "ltv": "72.4%",
+            "ltvValue": 0.7523,
+            "rate": "6.105%",
+            "rateValue": 0.06094,
             "term": "10y",
             "io": "18m",
-            "dscrIO": "1.33x",
-            "dscrIOValue": 1.379,
+            "dscrIO": "1.22x",
+            "dscrIOValue": 1.128,
             "status": "REVIEWED"
           },
           {
             "rank": 3,
-            "lender": "Harbor CMBS",
-            "category": "cmbs",
-            "ltv": "76.9%",
-            "ltvValue": 0.7607,
-            "rate": "6.251%",
-            "rateValue": 0.06277,
+            "lender": "Regional Bank Group",
+            "category": "bank",
+            "ltv": "73.7%",
+            "ltvValue": 0.7332,
+            "rate": "6.27%",
+            "rateValue": 0.06291,
             "term": "10y",
-            "io": "0m",
-            "dscrIO": "1.38x",
-            "dscrIOValue": 1.276,
+            "io": "12m",
+            "dscrIO": "1.2x",
+            "dscrIOValue": 1.206,
             "status": "REVIEWED"
           },
           {
             "rank": 4,
-            "lender": "Regional Bank Group",
-            "category": "bank",
-            "ltv": "74.5%",
-            "ltvValue": 0.739,
-            "rate": "6.325%",
-            "rateValue": 0.06277,
+            "lender": "Harbor CMBS",
+            "category": "cmbs",
+            "ltv": "74.1%",
+            "ltvValue": 0.7287,
+            "rate": "6.326%",
+            "rateValue": 0.06345,
             "term": "10y",
-            "io": "12m",
-            "dscrIO": "1.3x",
-            "dscrIOValue": 1.273,
+            "io": "0m",
+            "dscrIO": "1.2x",
+            "dscrIOValue": 1.142,
             "status": "REVIEWED"
           },
           {
             "rank": 5,
             "lender": "Bridgeline Capital",
             "category": "bridge",
-            "ltv": "76.6%",
-            "ltvValue": 0.7566,
-            "rate": "6.943%",
-            "rateValue": 0.0678,
+            "ltv": "76.7%",
+            "ltvValue": 0.7226,
+            "rate": "6.86%",
+            "rateValue": 0.07012,
             "term": "10y",
             "io": "36m",
-            "dscrIO": "1.33x",
-            "dscrIOValue": 1.37,
-            "status": "REVIEWED"
+            "dscrIO": "1.15x",
+            "dscrIOValue": 1.086,
+            "status": "DISQUALIFIED"
           }
         ],
         "quotesReceived": 5,
         "bestQuote": {
           "lenderName": "Freddie Mac",
           "category": "agency",
-          "interestRate": 0.05986,
-          "ltv": 0.7639,
-          "loanAmount": 24444800,
-          "dscr": 1.427
+          "interestRate": 0.06082,
+          "ltv": 0.7346,
+          "loanAmount": 23507200,
+          "dscr": 1.193
         },
-        "riskScore": 75,
+        "riskScore": 81,
         "redFlagCount": 1,
-        "dataGapCount": 0,
+        "dataGapCount": 1,
         "redFlags": [
           {
             "id": "fin-dscr",
             "severity": "HIGH",
             "category": "FINANCING",
-            "message": "Amortizing DSCR 1.13x is tight",
+            "message": "Amortizing DSCR 0.97x is tight",
             "impact": "Could reduce certainty of execution",
             "owner": "quote-comparator",
             "status": "OPEN",
-            "createdAt": "2026-02-24T01:21:41.593Z"
+            "createdAt": "2026-05-19T19:05:31.554Z"
           }
         ],
-        "dataGaps": [],
+        "dataGaps": [
+          {
+            "id": "fin-docs",
+            "severity": "MEDIUM",
+            "category": "DATA_GAP",
+            "message": "Final third-party report requested by lead lender",
+            "impact": "Could reduce confidence in recommendation",
+            "owner": "lender-outreach",
+            "status": "OPEN",
+            "createdAt": "2026-05-19T19:05:31.554Z"
+          }
+        ],
         "agentFindings": {
           "lender-outreach": {
             "status": "COMPLETE",
@@ -892,34 +1143,23 @@
     "legal": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-02-24T01:21:47.640Z",
-      "completedAt": "2026-02-24T01:21:59.726Z",
+      "startedAt": "2026-05-19T19:05:31.575Z",
+      "completedAt": "2026-05-19T19:05:31.605Z",
       "verdict": "PASS",
-      "confidence": 0.994,
-      "riskScore": 86,
+      "confidence": 1,
+      "riskScore": 82,
       "redFlagCount": 0,
-      "dataGapCount": 1,
+      "dataGapCount": 0,
       "findings": 3,
       "outputs": {
         "phaseSummary": "Legal completed with verdict PASS",
         "keyFindings": [
-          "Estoppel return 87.2%",
+          "Estoppel return 85%",
           "Title status CLEAR",
           "0 red flags"
         ],
         "redFlags": [],
-        "dataGaps": [
-          {
-            "id": "legal-entity-docs",
-            "severity": "MEDIUM",
-            "category": "DATA_GAP",
-            "message": "One seller entity certificate still pending notarization",
-            "impact": "Could reduce confidence in recommendation",
-            "owner": "transfer-doc-preparer",
-            "status": "OPEN",
-            "createdAt": "2026-02-24T01:21:47.641Z"
-          }
-        ],
+        "dataGaps": [],
         "phaseVerdict": "PASS"
       },
       "agentStatuses": {
@@ -946,12 +1186,12 @@
           },
           "estoppel-tracker": {
             "status": "COMPLETE",
-            "finding": "157/180 estoppels collected.",
+            "finding": "153/180 estoppels collected.",
             "total": 180,
-            "received": 157,
-            "returnRate": 0.8722,
+            "received": 153,
+            "returnRate": 0.85,
             "minimumRequired": 0.8,
-            "discrepancies": 8,
+            "discrepancies": 9,
             "discrepancyNote": "Discrepancies concentrated in concessions and lease dates."
           },
           "insurance-coordinator": {
@@ -960,23 +1200,23 @@
             "policies": [
               {
                 "type": "General Liability",
-                "annual": 241643
+                "annual": 164136
               },
               {
                 "type": "Property",
-                "annual": 234874
+                "annual": 306651
               },
               {
                 "type": "Umbrella",
-                "annual": 99990
+                "annual": 86736
               }
             ],
-            "totalAnnualPremium": 576507,
-            "perUnit": 2883
+            "totalAnnualPremium": 557523,
+            "perUnit": 2788
           },
           "transfer-doc-preparer": {
-            "status": "CONDITIONAL",
-            "finding": "Transfer package drafted pending one entity certificate.",
+            "status": "COMPLETE",
+            "finding": "Transfer package complete for signature routing.",
             "documents": [
               "Deed",
               "Bill of Sale",
@@ -993,17 +1233,17 @@
           "status": "CLEAR"
         },
         "estoppelStatus": {
-          "returnRate": 0.8722
+          "returnRate": 0.85
         },
         "insuranceStatus": {
           "overallStatus": "ALL_BOUND"
         },
         "transferDocStatus": {
-          "overallReadiness": "DRAFT"
+          "overallReadiness": "READY"
         },
         "closingChecklistStatus": {
           "preClosingItems": {
-            "completed": 16,
+            "completed": 18,
             "total": 18
           },
           "closingDayItems": {
@@ -1015,70 +1255,37 @@
             "total": 6
           },
           "criticalPathItems": [
-            "Entity authorization package"
+            "Rate lock confirmation"
           ]
         },
-        "riskScore": 86,
+        "riskScore": 82,
         "redFlagCount": 0,
-        "dataGapCount": 1,
+        "dataGapCount": 0,
         "redFlags": [],
-        "dataGaps": [
-          {
-            "id": "legal-entity-docs",
-            "severity": "MEDIUM",
-            "category": "DATA_GAP",
-            "message": "One seller entity certificate still pending notarization",
-            "impact": "Could reduce confidence in recommendation",
-            "owner": "transfer-doc-preparer",
-            "status": "OPEN",
-            "createdAt": "2026-02-24T01:21:47.641Z"
-          }
-        ]
+        "dataGaps": []
       }
     },
     "closing": {
       "status": "COMPLETE",
       "progress": 1,
-      "startedAt": "2026-02-24T01:21:59.734Z",
-      "completedAt": "2026-02-24T01:22:03.771Z",
-      "verdict": "CONDITIONAL",
-      "confidence": 0.982,
-      "riskScore": 78,
-      "redFlagCount": 1,
-      "dataGapCount": 1,
+      "startedAt": "2026-05-19T19:05:31.608Z",
+      "completedAt": "2026-05-19T19:05:31.619Z",
+      "verdict": "GO",
+      "confidence": 1,
+      "riskScore": 93,
+      "redFlagCount": 0,
+      "dataGapCount": 0,
       "findings": 3,
       "outputs": {
-        "phaseSummary": "Closing completed with verdict CONDITIONAL",
+        "phaseSummary": "Closing completed with verdict GO",
         "keyFindings": [
-          "Pre-close items 5/6",
+          "Pre-close items 6/6",
           "Funds flow balanced: yes",
-          "1 red flags"
+          "0 red flags"
         ],
-        "redFlags": [
-          {
-            "id": "closing-pending",
-            "severity": "HIGH",
-            "category": "CLOSING",
-            "message": "1 pre-closing items remain",
-            "impact": "Could delay close date",
-            "owner": "closing-coordinator",
-            "status": "OPEN",
-            "createdAt": "2026-02-24T01:21:59.735Z"
-          }
-        ],
-        "dataGaps": [
-          {
-            "id": "closing-notices",
-            "severity": "MEDIUM",
-            "category": "DATA_GAP",
-            "message": "Tenant notice packet final approval pending",
-            "impact": "Could reduce confidence in recommendation",
-            "owner": "transfer-doc-preparer",
-            "status": "OPEN",
-            "createdAt": "2026-02-24T01:21:59.735Z"
-          }
-        ],
-        "phaseVerdict": "CONDITIONAL"
+        "redFlags": [],
+        "dataGaps": [],
+        "phaseVerdict": "GO"
       },
       "agentStatuses": {
         "closing-coordinator": "COMPLETED",
@@ -1087,11 +1294,9 @@
       "dataForDownstream": {
         "scenarioVerdict": "GO",
         "preClosingStatus": {
-          "complete": 5,
+          "complete": 6,
           "total": 6,
-          "pendingItems": [
-            "Entity authorization package completion"
-          ]
+          "pendingItems": []
         },
         "closingAgent": "Acquisition Closing Desk",
         "purchasePrice": 32000000,
@@ -1101,11 +1306,11 @@
         "prorations": [
           {
             "lineItem": "Tax Proration",
-            "amount": 27457
+            "amount": 38227
           },
           {
             "lineItem": "Insurance Proration",
-            "amount": 11252
+            "amount": 9902
           }
         ],
         "fundsFlow": {
@@ -1120,7 +1325,7 @@
             },
             {
               "item": "Security Deposit Credit",
-              "amount": 150169
+              "amount": 98685
             }
           ],
           "uses": [
@@ -1134,19 +1339,19 @@
             },
             {
               "item": "Tax Proration",
-              "amount": 27457
+              "amount": 38227
             },
             {
               "item": "Insurance Proration",
-              "amount": 11252
+              "amount": 9902
             },
             {
               "item": "Buyer Return at Close",
-              "amount": 111460
+              "amount": 50556
             }
           ],
-          "totalSources": 33110169,
-          "totalUses": 33110169,
+          "totalSources": 33058685,
+          "totalUses": 33058685,
           "balanced": true
         },
         "keyMerits": [
@@ -1154,45 +1359,13 @@
           "Legal and financing requirements aligned",
           "Execution timeline ready for close"
         ],
-        "keyRisks": [
-          "1 pre-closing items remain"
-        ],
-        "conditions": [
-          {
-            "id": "closing-condition-1",
-            "description": "Entity authorization package completion",
-            "severity": "HIGH",
-            "owner": "closing-coordinator",
-            "status": "OPEN"
-          }
-        ],
-        "riskScore": 78,
-        "redFlagCount": 1,
-        "dataGapCount": 1,
-        "redFlags": [
-          {
-            "id": "closing-pending",
-            "severity": "HIGH",
-            "category": "CLOSING",
-            "message": "1 pre-closing items remain",
-            "impact": "Could delay close date",
-            "owner": "closing-coordinator",
-            "status": "OPEN",
-            "createdAt": "2026-02-24T01:21:59.735Z"
-          }
-        ],
-        "dataGaps": [
-          {
-            "id": "closing-notices",
-            "severity": "MEDIUM",
-            "category": "DATA_GAP",
-            "message": "Tenant notice packet final approval pending",
-            "impact": "Could reduce confidence in recommendation",
-            "owner": "transfer-doc-preparer",
-            "status": "OPEN",
-            "createdAt": "2026-02-24T01:21:59.735Z"
-          }
-        ]
+        "keyRisks": [],
+        "conditions": [],
+        "riskScore": 93,
+        "redFlagCount": 0,
+        "dataGapCount": 0,
+        "redFlags": [],
+        "dataGaps": []
       }
     }
   },
@@ -1201,98 +1374,299 @@
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "dueDiligence",
-      "phaseId": "parkview-2026-001-dueDiligence-1771896095516",
+      "phaseId": "parkview-2026-001-dueDiligence-1779217531527",
       "status": "COMPLETE",
       "verdict": "PASS",
-      "durationMs": 14108,
+      "durationMs": 58,
       "dataGapCount": 0,
       "redFlagCount": 0,
       "criticalFlags": [],
       "metrics": {
-        "riskScore": 77,
+        "riskScore": 82,
         "redFlagCount": 0,
         "dataGapCount": 0
       },
-      "timestamp": "2026-02-24T01:21:35.516Z",
-      "traceId": "parkview-2026-001-1771896081406"
+      "timestamp": "2026-05-19T19:05:31.527Z",
+      "traceId": "parkview-2026-001-1779217531466"
     },
     {
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "underwriting",
-      "phaseId": "parkview-2026-001-underwriting-1771896101589",
+      "phaseId": "parkview-2026-001-underwriting-1779217531551",
       "status": "COMPLETE",
-      "verdict": "CONDITIONAL",
-      "durationMs": 6070,
-      "dataGapCount": 0,
+      "verdict": "FAIL",
+      "durationMs": 21,
+      "dataGapCount": 1,
       "redFlagCount": 2,
       "criticalFlags": [],
       "metrics": {
-        "riskScore": 74,
+        "riskScore": 76,
         "redFlagCount": 2,
-        "dataGapCount": 0
+        "dataGapCount": 1
       },
-      "timestamp": "2026-02-24T01:21:41.589Z",
-      "traceId": "parkview-2026-001-1771896081406"
+      "timestamp": "2026-05-19T19:05:31.551Z",
+      "traceId": "parkview-2026-001-1779217531466"
     },
     {
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "financing",
-      "phaseId": "parkview-2026-001-financing-1771896107638",
+      "phaseId": "parkview-2026-001-financing-1779217531573",
       "status": "COMPLETE",
       "verdict": "CONDITIONAL",
-      "durationMs": 6046,
-      "dataGapCount": 0,
+      "durationMs": 20,
+      "dataGapCount": 1,
       "redFlagCount": 1,
       "criticalFlags": [],
       "metrics": {
-        "riskScore": 75,
+        "riskScore": 81,
         "redFlagCount": 1,
-        "dataGapCount": 0
+        "dataGapCount": 1
       },
-      "timestamp": "2026-02-24T01:21:47.638Z",
-      "traceId": "parkview-2026-001-1771896081406"
+      "timestamp": "2026-05-19T19:05:31.573Z",
+      "traceId": "parkview-2026-001-1779217531466"
     },
     {
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "legal",
-      "phaseId": "parkview-2026-001-legal-1771896119730",
+      "phaseId": "parkview-2026-001-legal-1779217531607",
       "status": "COMPLETE",
       "verdict": "PASS",
-      "durationMs": 12090,
-      "dataGapCount": 1,
+      "durationMs": 32,
+      "dataGapCount": 0,
       "redFlagCount": 0,
       "criticalFlags": [],
       "metrics": {
-        "riskScore": 86,
+        "riskScore": 82,
         "redFlagCount": 0,
-        "dataGapCount": 1
+        "dataGapCount": 0
       },
-      "timestamp": "2026-02-24T01:21:59.730Z",
-      "traceId": "parkview-2026-001-1771896081406"
+      "timestamp": "2026-05-19T19:05:31.607Z",
+      "traceId": "parkview-2026-001-1779217531466"
     },
     {
       "type": "PHASE_COMPLETION",
       "dealId": "parkview-2026-001",
       "phase": "closing",
-      "phaseId": "parkview-2026-001-closing-1771896123773",
+      "phaseId": "parkview-2026-001-closing-1779217531621",
       "status": "COMPLETE",
-      "verdict": "CONDITIONAL",
-      "durationMs": 4039,
-      "dataGapCount": 1,
-      "redFlagCount": 1,
+      "verdict": "GO",
+      "durationMs": 13,
+      "dataGapCount": 0,
+      "redFlagCount": 0,
       "criticalFlags": [],
       "metrics": {
-        "riskScore": 78,
-        "redFlagCount": 1,
-        "dataGapCount": 1
+        "riskScore": 93,
+        "redFlagCount": 0,
+        "dataGapCount": 0
       },
-      "timestamp": "2026-02-24T01:22:03.773Z",
-      "traceId": "parkview-2026-001-1771896081406"
+      "timestamp": "2026-05-19T19:05:31.621Z",
+      "traceId": "parkview-2026-001-1779217531466"
     }
   ],
-  "resumeInstructions": "Run: node scripts/orchestrate.js --deal config/deal.json --resume --scenario core-plus --seed 560879",
-  "runId": "run_2026-02-24T01-21-21-327Z"
+  "resumeInstructions": "Run: node scripts/orchestrate.js --deal config/deal.json --resume --workflow full-acquisition-review --scenario core-plus --seed 42",
+  "dealConfig": {
+    "dealId": "parkview-2026-001",
+    "dealName": "Parkview Apartments",
+    "property": {
+      "address": "4200 Parkview Drive",
+      "city": "Austin",
+      "state": "TX",
+      "zip": "78745",
+      "county": "Travis",
+      "submarket": "South Austin",
+      "msa": "Austin-Round Rock-San Marcos",
+      "propertyType": "multifamily",
+      "propertyClass": "B",
+      "yearBuilt": 1998,
+      "yearRenovated": null,
+      "totalUnits": 200,
+      "totalSqFt": 180000,
+      "avgUnitSqFt": 900,
+      "stories": 3,
+      "buildings": 8,
+      "construction": "wood-frame",
+      "parking": {
+        "type": "surface",
+        "spaces": 320,
+        "covered": 80,
+        "ratio": 1.6
+      },
+      "amenities": [
+        "pool",
+        "fitness center",
+        "clubhouse",
+        "business center",
+        "dog park",
+        "playground",
+        "laundry facility",
+        "package lockers",
+        "controlled access"
+      ],
+      "unitMix": {
+        "types": [
+          {
+            "type": "1BR/1BA",
+            "count": 80,
+            "avgSqFt": 725,
+            "marketRent": 1350,
+            "inPlaceRent": 1225
+          },
+          {
+            "type": "2BR/1BA",
+            "count": 40,
+            "avgSqFt": 900,
+            "marketRent": 1600,
+            "inPlaceRent": 1450
+          },
+          {
+            "type": "2BR/2BA",
+            "count": 60,
+            "avgSqFt": 1050,
+            "marketRent": 1800,
+            "inPlaceRent": 1650
+          },
+          {
+            "type": "3BR/2BA",
+            "count": 20,
+            "avgSqFt": 1200,
+            "marketRent": 2100,
+            "inPlaceRent": 1900
+          }
+        ]
+      }
+    },
+    "financials": {
+      "askingPrice": 32000000,
+      "pricePerUnit": 160000,
+      "pricePerSqFt": 178,
+      "currentNOI": 1688500,
+      "proFormaNOI": 2400000,
+      "goingInCapRate": 0.0528,
+      "inPlaceOccupancy": 0.93,
+      "marketOccupancy": 0.95,
+      "trailingT12Revenue": 3414000,
+      "trailingT12Expenses": 1725500,
+      "grossPotentialRent": 3600000,
+      "vacancyLoss": 180000,
+      "lossToLease": 84000,
+      "concessions": 30000,
+      "badDebt": 12000,
+      "otherIncome": 120000,
+      "expenseBreakdown": {
+        "taxes": 608000,
+        "insurance": 80000,
+        "utilities": 175500,
+        "repairs": 202000,
+        "management": 150000,
+        "payroll": 280000,
+        "admin": 45000,
+        "marketing": 35000,
+        "contractServices": 90000,
+        "reserves": 60000
+      },
+      "expenseRatio": 0.5055,
+      "expensePerUnit": 8628,
+      "capExBudget": 500000,
+      "renovationBudget": 2000000,
+      "renovationPerUnit": 10000,
+      "estimatedClosingCosts": 960000
+    },
+    "financing": {
+      "targetLTV": 0.75,
+      "estimatedRate": 0.065,
+      "loanTerm": 10,
+      "amortization": 30,
+      "loanType": "Agency",
+      "interestOnly": true,
+      "ioPeriod": 2
+    },
+    "investmentStrategy": "value-add",
+    "targetHoldPeriod": 5,
+    "targetIRR": 0.15,
+    "targetEquityMultiple": 1.8,
+    "targetCashOnCash": 0.08,
+    "seller": {
+      "name": "Parkview Holdings LLC",
+      "entity": "Texas LLC",
+      "ownershipDuration": "8 years",
+      "broker": "Jane Smith",
+      "brokerFirm": "Apex Capital Markets",
+      "brokerEmail": "jane.smith@example.com",
+      "brokerPhone": "512-555-1234",
+      "motivations": [
+        "portfolio rebalancing",
+        "capital recycling"
+      ]
+    },
+    "timeline": {
+      "callForOffers": "2026-01-10",
+      "bestAndFinal": "2026-01-20",
+      "sellerSelection": "2026-01-25",
+      "psaExecutionDate": "2026-01-30",
+      "ddStartDate": "2026-01-31",
+      "ddExpirationDate": "2026-03-01",
+      "financingCommitmentDeadline": "2026-03-15",
+      "closingDate": "2026-03-31",
+      "extensionOptions": [
+        {
+          "type": "dd",
+          "days": 15,
+          "cost": 50000,
+          "description": "Due diligence extension - 15 days for additional $50K hard deposit"
+        }
+      ]
+    },
+    "valueAddPlan": {
+      "interiorRenovation": {
+        "totalBudget": 2000000,
+        "perUnit": 10000,
+        "components": [
+          "flooring",
+          "countertops",
+          "cabinets",
+          "fixtures",
+          "appliances",
+          "lighting",
+          "paint"
+        ],
+        "expectedRentPremium": 250,
+        "timeline": "18-24 months"
+      },
+      "exteriorImprovements": {
+        "totalBudget": 500000,
+        "components": [
+          "clubhouse refresh",
+          "pool upgrade",
+          "fitness equipment",
+          "signage",
+          "landscaping",
+          "exterior paint"
+        ]
+      }
+    },
+    "dataSourceFiles": [
+      "rent-roll-sample.csv",
+      "t12-financials-sample.csv",
+      "offering-memo-sample.md"
+    ],
+    "extractionMetadata": {
+      "extractedAt": "2026-02-01T12:00:00Z",
+      "confidence": 0.92,
+      "conflicts": [],
+      "dataGaps": [
+        "No Phase I ESA document",
+        "No PCA/inspection report",
+        "No title commitment",
+        "Rent roll is sample (36 of 200 units)"
+      ]
+    },
+    "notes": "Value-add opportunity in South Austin. Units have not been renovated since 2010. Interior renovations estimated at $10,000/unit for upgraded finishes, appliances, and flooring. Expected rent premium of $200-300/unit post-renovation. Strong submarket fundamentals with proximity to major employers."
+  },
+  "runId": "local-1779217531454",
+  "workflowId": "full-acquisition-review",
+  "workflowName": "Full Acquisition Review",
+  "runtimeProvider": "simulation"
 }

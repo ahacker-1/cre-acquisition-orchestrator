@@ -8,6 +8,7 @@ const {
   buildFlag,
   buildDataGap
 } = require('./runtime-core');
+const { buildScenarioMatrix, buildTenYearProForma } = require('./workpaper-renderer');
 
 function generateDueDiligenceData(deal, scenario, rng) {
   const adj = scenarioAdjustments(scenario);
@@ -252,10 +253,10 @@ function generateUnderwritingData(deal, dd, scenario, rng) {
   const closingCosts = safeNumber(deal?.financials?.estimatedClosingCosts, purchasePrice * 0.02);
   const totalBasis = purchasePrice + renovationBudget + closingCosts;
   const units = safeNumber(deal?.property?.totalUnits, safeNumber(dd?.rentRoll?.totalUnits, 180));
-  const year1Revenue = safeNumber(dd?.avgInPlaceRent, 1400) * units * safeNumber(dd?.occupancy, 0.92) * 12;
-  const year1Expenses = safeNumber(dd?.expenses?.totalOpEx, year1Revenue * 0.42);
-  const year1NOI = year1Revenue - year1Expenses;
-  const stabilizedNOI = year1NOI * (1.03 + adj.rentGrowthShift);
+  const year1Revenue = safeNumber(deal?.financials?.trailingT12Revenue, safeNumber(dd?.avgInPlaceRent, 1400) * units * safeNumber(dd?.occupancy, 0.92) * 12);
+  const year1Expenses = safeNumber(deal?.financials?.trailingT12Expenses, safeNumber(dd?.expenses?.totalOpEx, year1Revenue * 0.42));
+  const year1NOI = safeNumber(deal?.financials?.currentNOI, year1Revenue - year1Expenses);
+  const stabilizedNOI = safeNumber(deal?.financials?.proFormaNOI, year1NOI * (1.03 + adj.rentGrowthShift));
   const baseLTV = safeNumber(deal?.financing?.targetLTV, 0.7);
   const debtRequest = purchasePrice * baseLTV;
   const rate = safeNumber(deal?.financing?.estimatedRate, 0.0625) + adj.lenderSpreadShiftBps / 10000;
@@ -272,30 +273,16 @@ function generateUnderwritingData(deal, dd, scenario, rng) {
   const cashOnCash = (year1NOI - annualDebtService) / Math.max(equityRequired, 1);
   const holdYears = Math.max(3, safeNumber(deal?.targetHoldPeriod, 5));
   const exitCap = Math.max(0.045, safeNumber(dd?.goingInCapRate, 0.06) + 0.005 + adj.capRateShiftBps / 10000);
-  const exitNOI = stabilizedNOI * (1 + 0.024) ** holdYears;
+  const generatedProForma = buildTenYearProForma(deal);
+  const scenarios = buildScenarioMatrix(deal);
+  const baseScenario =
+    scenarios.find((s) => s.scenario === 'RENT_BASE_VACANCY_BASE_EXIT_BASE') || scenarios[0];
+  const exitNOI = safeNumber(generatedProForma[5]?.noi, stabilizedNOI * (1 + 0.024) ** holdYears);
   const exitValue = exitNOI / exitCap;
   const netSale = exitValue * 0.975 - debtRequest * 0.88;
   const totalCash = (year1NOI - annualDebtService) * holdYears + netSale;
-  const equityMultiple = (totalCash + equityRequired) / Math.max(equityRequired, 1);
-  const leveragedIRR = Math.pow(Math.max(0.01, equityMultiple), 1 / holdYears) - 1;
-
-  const scenarios = Array.from({ length: 27 }, (_, i) => {
-    const rentShock = randBetween(rng, -0.08, 0.07);
-    const expenseShock = randBetween(rng, -0.03, 0.07) + adj.expenseInflationShift;
-    const capShock = randBetween(rng, -0.004, 0.009) + adj.capRateShiftBps / 10000;
-    const irr = leveragedIRR + rentShock * 0.6 - expenseShock * 0.4 - capShock * 2;
-    const ds = dscr + rentShock * 0.9 - expenseShock * 0.5;
-    const pass = irr > safeNumber(deal?.targetIRR, 0.14) * 0.75 && ds > 1.1;
-    return {
-      scenario: `S${i + 1}`,
-      rentShock: round(rentShock, 4),
-      expenseShock: round(expenseShock, 4),
-      capShock: round(capShock, 4),
-      irr: round(irr, 4),
-      dscr: round(ds, 3),
-      pass
-    };
-  });
+  const equityMultiple = safeNumber(baseScenario?.equityMultiple, (totalCash + equityRequired) / Math.max(equityRequired, 1));
+  const leveragedIRR = safeNumber(baseScenario?.irr, Math.pow(Math.max(0.01, equityMultiple), 1 / holdYears) - 1);
   const sortedIrr = scenarios.map((s) => s.irr).sort((a, b) => a - b);
   const passCount = scenarios.filter((s) => s.pass).length;
   const passRate = passCount / scenarios.length;
@@ -387,21 +374,15 @@ function generateUnderwritingData(deal, dd, scenario, rng) {
       ],
       immediateNeeds: round(renovationBudget * 0.34, 0)
     },
-    proForma: Array.from({ length: holdYears }, (_, idx) => {
-      const year = idx + 1;
-      const revenue = year1Revenue * (1 + (0.03 + adj.rentGrowthShift)) ** idx;
-      const expenses = year1Expenses * (1 + (0.024 + adj.expenseInflationShift)) ** idx;
-      const noi = revenue - expenses;
-      return {
-        year,
-        revenue: round(revenue, 0),
-        expenses: round(expenses, 0),
-        noi: round(noi, 0),
-        debtService: round(annualDebtService, 0),
-        dscr: round(noi / Math.max(annualDebtService, 1), 3),
-        cashFlow: round(noi - annualDebtService, 0)
-      };
-    }),
+    proForma: generatedProForma.map((row) => ({
+      year: row.year,
+      revenue: round(row.revenue, 0),
+      expenses: round(row.expenses, 0),
+      noi: round(row.noi, 0),
+      debtService: round(row.debtService, 0),
+      dscr: round(row.dscr, 3),
+      cashFlow: round(row.cashFlow, 0)
+    })),
     proFormaAssumptions: `Revenue growth ${(3 + adj.rentGrowthShift * 100).toFixed(
       1
     )}%, expense growth ${(2.4 + adj.expenseInflationShift * 100).toFixed(

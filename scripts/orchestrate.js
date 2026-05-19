@@ -28,6 +28,7 @@ const {
   summarizeFindingsForPhase,
   buildPhaseCompletionEvent
 } = require('./lib/simulation-data');
+const { renderFinalAcquisitionReport } = require('./lib/workpaper-renderer');
 const { executeAgent } = require('./agent-executor');
 const { StoryEngine } = require('./lib/story-engine');
 
@@ -65,6 +66,17 @@ function formatCurrency(value) {
 function formatPercent(value) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return 'N/A';
   return `${(value * 100).toFixed(1)}%`;
+}
+
+function repoRelative(filePath) {
+  return path.relative(BASE_DIR, filePath).replace(/\\/g, '/');
+}
+
+function printVerifiedPath(label, filePath) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    throw new Error(`${label} was not created: ${filePath}`);
+  }
+  console.log(`${label}: ${repoRelative(filePath)}`);
 }
 
 function issueText(issue) {
@@ -552,6 +564,7 @@ async function main() {
           logFile: masterLog,
           agentFinding: phaseData.agentFindings?.[agentName],
           phaseData,
+          deal,
           storyEngine,
           failAgent: args.failAgent,
           agentDelayMs: args.agentDelayMs
@@ -763,7 +776,7 @@ async function main() {
   }
 
   const finalReportPath = path.join(paths.reportsDir, 'final-report.md');
-  fs.writeFileSync(finalReportPath, renderFinalReport(checkpoint));
+  fs.writeFileSync(finalReportPath, renderFinalAcquisitionReport(checkpoint, PHASES));
   storyEngine.registerExternalDocument({
     phase: 'closing',
     agent: 'master-orchestrator',
@@ -794,8 +807,13 @@ async function main() {
   console.log(`Run ID: ${runId}`);
   console.log(`Seed: ${seed}`);
   console.log(`Status: ${checkpoint.status}`);
-  console.log(`Checkpoint: ${checkpointPath}`);
-  console.log(`Final report: ${finalReportPath}`);
+  printVerifiedPath('Checkpoint', checkpointPath);
+  printVerifiedPath('Reports directory', paths.reportsDir);
+  printVerifiedPath('Final report', finalReportPath);
+  printVerifiedPath('Phase outputs directory', paths.phaseOutputDir);
+  printVerifiedPath('Story events', storyEngine.eventsPath);
+  printVerifiedPath('Story documents', storyEngine.documentsPath);
+  printVerifiedPath('Story manifest', storyEngine.manifestPath);
   if (checkpoint.status === 'FAILED') {
     process.exitCode = 1;
   }

@@ -2,12 +2,12 @@
 
 - Status: COMPLETE
 - Verdict: PASS
-- Risk Score: 86
+- Risk Score: 82
 - Red Flags: 0
-- Data Gaps: 1
+- Data Gaps: 0
 
 ## Key Findings
-- Estoppel return 87.2%
+- Estoppel return 85%
 - Title status CLEAR
 - 0 red flags
 
@@ -15,5 +15,5 @@
 - None
 
 ## Data Gaps
-- One seller entity certificate still pending notarization
+- None
 

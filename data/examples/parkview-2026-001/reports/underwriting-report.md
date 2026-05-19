@@ -1,20 +1,20 @@
 # Underwriting Report
 
 - Status: COMPLETE
-- Verdict: CONDITIONAL
-- Risk Score: 74
+- Verdict: FAIL
+- Risk Score: 76
 - Red Flags: 2
-- Data Gaps: 0
+- Data Gaps: 1
 
 ## Key Findings
-- Leveraged IRR 18.2%
-- Scenario pass-rate 33.3%
-- DSCR 1.11x
+- Leveraged IRR 9.6%
+- Scenario pass-rate 3.7%
+- DSCR 0.95x
 
 ## Red Flags
-- [HIGH] Base DSCR 1.11x is below preferred cushion
-- [HIGH] Scenario pass-rate 33.3% below target
+- [HIGH] Base DSCR 0.95x is below preferred cushion
+- [HIGH] Scenario pass-rate 3.7% below target
 
 ## Data Gaps
-- None
+- Historical monthly rent trend missing for two periods
 

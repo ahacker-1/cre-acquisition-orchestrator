@@ -14,12 +14,12 @@
     },
     "estoppel-tracker": {
       "status": "COMPLETE",
-      "finding": "157/180 estoppels collected.",
+      "finding": "153/180 estoppels collected.",
       "total": 180,
-      "received": 157,
-      "returnRate": 0.8722,
+      "received": 153,
+      "returnRate": 0.85,
       "minimumRequired": 0.8,
-      "discrepancies": 8,
+      "discrepancies": 9,
       "discrepancyNote": "Discrepancies concentrated in concessions and lease dates."
     },
     "insurance-coordinator": {
@@ -28,23 +28,23 @@
       "policies": [
         {
           "type": "General Liability",
-          "annual": 241643
+          "annual": 164136
         },
         {
           "type": "Property",
-          "annual": 234874
+          "annual": 306651
         },
         {
           "type": "Umbrella",
-          "annual": 99990
+          "annual": 86736
         }
       ],
-      "totalAnnualPremium": 576507,
-      "perUnit": 2883
+      "totalAnnualPremium": 557523,
+      "perUnit": 2788
     },
     "transfer-doc-preparer": {
-      "status": "CONDITIONAL",
-      "finding": "Transfer package drafted pending one entity certificate.",
+      "status": "COMPLETE",
+      "finding": "Transfer package complete for signature routing.",
       "documents": [
         "Deed",
         "Bill of Sale",
@@ -61,17 +61,17 @@
     "status": "CLEAR"
   },
   "estoppelStatus": {
-    "returnRate": 0.8722
+    "returnRate": 0.85
   },
   "insuranceStatus": {
     "overallStatus": "ALL_BOUND"
   },
   "transferDocStatus": {
-    "overallReadiness": "DRAFT"
+    "overallReadiness": "READY"
   },
   "closingChecklistStatus": {
     "preClosingItems": {
-      "completed": 16,
+      "completed": 18,
       "total": 18
     },
     "closingDayItems": {
@@ -83,23 +83,12 @@
       "total": 6
     },
     "criticalPathItems": [
-      "Entity authorization package"
+      "Rate lock confirmation"
     ]
   },
-  "riskScore": 86,
+  "riskScore": 82,
   "redFlagCount": 0,
-  "dataGapCount": 1,
+  "dataGapCount": 0,
   "redFlags": [],
-  "dataGaps": [
-    {
-      "id": "legal-entity-docs",
-      "severity": "MEDIUM",
-      "category": "DATA_GAP",
-      "message": "One seller entity certificate still pending notarization",
-      "impact": "Could reduce confidence in recommendation",
-      "owner": "transfer-doc-preparer",
-      "status": "OPEN",
-      "createdAt": "2026-02-24T01:21:47.641Z"
-    }
-  ]
+  "dataGaps": []
 }

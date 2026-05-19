@@ -1,11 +1,9 @@
 {
   "scenarioVerdict": "GO",
   "preClosingStatus": {
-    "complete": 5,
+    "complete": 6,
     "total": 6,
-    "pendingItems": [
-      "Entity authorization package completion"
-    ]
+    "pendingItems": []
   },
   "closingAgent": "Acquisition Closing Desk",
   "purchasePrice": 32000000,
@@ -15,11 +13,11 @@
   "prorations": [
     {
       "lineItem": "Tax Proration",
-      "amount": 27457
+      "amount": 38227
     },
     {
       "lineItem": "Insurance Proration",
-      "amount": 11252
+      "amount": 9902
     }
   ],
   "fundsFlow": {
@@ -34,7 +32,7 @@
       },
       {
         "item": "Security Deposit Credit",
-        "amount": 150169
+        "amount": 98685
       }
     ],
     "uses": [
@@ -48,19 +46,19 @@
       },
       {
         "item": "Tax Proration",
-        "amount": 27457
+        "amount": 38227
       },
       {
         "item": "Insurance Proration",
-        "amount": 11252
+        "amount": 9902
       },
       {
         "item": "Buyer Return at Close",
-        "amount": 111460
+        "amount": 50556
       }
     ],
-    "totalSources": 33110169,
-    "totalUses": 33110169,
+    "totalSources": 33058685,
+    "totalUses": 33058685,
     "balanced": true
   },
   "keyMerits": [
@@ -68,43 +66,11 @@
     "Legal and financing requirements aligned",
     "Execution timeline ready for close"
   ],
-  "keyRisks": [
-    "1 pre-closing items remain"
-  ],
-  "conditions": [
-    {
-      "id": "closing-condition-1",
-      "description": "Entity authorization package completion",
-      "severity": "HIGH",
-      "owner": "closing-coordinator",
-      "status": "OPEN"
-    }
-  ],
-  "riskScore": 78,
-  "redFlagCount": 1,
-  "dataGapCount": 1,
-  "redFlags": [
-    {
-      "id": "closing-pending",
-      "severity": "HIGH",
-      "category": "CLOSING",
-      "message": "1 pre-closing items remain",
-      "impact": "Could delay close date",
-      "owner": "closing-coordinator",
-      "status": "OPEN",
-      "createdAt": "2026-02-24T01:21:59.735Z"
-    }
-  ],
-  "dataGaps": [
-    {
-      "id": "closing-notices",
-      "severity": "MEDIUM",
-      "category": "DATA_GAP",
-      "message": "Tenant notice packet final approval pending",
-      "impact": "Could reduce confidence in recommendation",
-      "owner": "transfer-doc-preparer",
-      "status": "OPEN",
-      "createdAt": "2026-02-24T01:21:59.735Z"
-    }
-  ]
+  "keyRisks": [],
+  "conditions": [],
+  "riskScore": 93,
+  "redFlagCount": 0,
+  "dataGapCount": 0,
+  "redFlags": [],
+  "dataGaps": []
 }

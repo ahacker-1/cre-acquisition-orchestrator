@@ -37,56 +37,56 @@
     }
   ],
   "avgInPlaceRent": 1513,
-  "avgMarketRent": 1694,
-  "lossToLease": 407184,
-  "lossToLeasePct": 0.1066,
+  "avgMarketRent": 1665,
+  "lossToLease": 341777,
+  "lossToLeasePct": 0.091,
   "pricePerUnit": 160000,
-  "marketPPU": 192948,
-  "populationGrowth": 0.0271,
+  "marketPPU": 191365,
+  "populationGrowth": 0.023,
   "supplyPipeline": "Moderate supply pipeline",
   "jurisdiction": "Favorable jurisdiction",
   "rentControl": false,
   "renovationBudget": 2000000,
   "renovationPerUnit": 10000,
-  "marketVacancy": 0.0738,
-  "supplyDelivered2025": 1067,
-  "supplyForecast2026": "2210 units",
+  "marketVacancy": 0.0665,
+  "supplyDelivered2025": 2103,
+  "supplyForecast2026": "1458 units",
   "absorptionNote": "Absorption remains healthy across comparable assets.",
   "marketCycle": "Stable expansion",
   "rentGrowthTrailing": 0.031,
   "rentGrowthForecast": 0.033,
   "environmentalRisk": "Manageable",
   "floodZone": "X",
-  "opexBenchmark": "42.1% expense ratio",
+  "opexBenchmark": "50.5% expense ratio",
   "opexBreakdown": [
     {
       "category": "Taxes",
-      "amount": 445625,
+      "amount": 534905,
       "pct": 0.31
     },
     {
       "category": "Insurance",
-      "amount": 115000,
+      "amount": 138040,
       "pct": 0.08
     },
     {
       "category": "Utilities",
-      "amount": 186875,
+      "amount": 224315,
       "pct": 0.13
     },
     {
       "category": "Repairs",
-      "amount": 230000,
+      "amount": 276080,
       "pct": 0.16
     },
     {
       "category": "Payroll",
-      "amount": 244375,
+      "amount": 293335,
       "pct": 0.17
     },
     {
       "category": "Other",
-      "amount": 215625,
+      "amount": 258825,
       "pct": 0.15
     }
   ],
@@ -94,25 +94,25 @@
     "totalUnits": 200,
     "occupancy": 0.94,
     "avgRent": 1513,
-    "avgMarketRent": 1694,
-    "lossToLease": 407184,
-    "lossToLeasePercent": 0.1066
+    "avgMarketRent": 1665,
+    "lossToLease": 341777,
+    "lossToLeasePercent": 0.091
   },
   "expenses": {
-    "totalOpEx": 1437500,
-    "opExPerUnit": 7188,
-    "opExRatio": 0.4211,
+    "totalOpEx": 1725500,
+    "opExPerUnit": 8628,
+    "opExRatio": 0.5054,
     "adjustedExpenses": {
-      "taxes": 445625,
-      "insurance": 115000,
-      "utilities": 186875,
-      "repairs": 230000,
-      "management": 129375,
-      "payroll": 244375,
-      "admin": 43125,
-      "marketing": 28750,
-      "contractServices": 14375,
-      "other": 14375
+      "taxes": 534905,
+      "insurance": 138040,
+      "utilities": 224315,
+      "repairs": 276080,
+      "management": 155295,
+      "payroll": 293335,
+      "admin": 51765,
+      "marketing": 34510,
+      "contractServices": 17255,
+      "other": 17255
     }
   },
   "physical": {
@@ -131,14 +131,14 @@
       "mid": 0.056,
       "high": 0.065
     },
-    "populationGrowth": 0.0271,
+    "populationGrowth": 0.023,
     "rentGrowthTrailing12": 0.031,
     "rentGrowthProjected": 0.035
   },
   "tenants": {
     "creditSummary": "Stable tenant profile",
     "concentrationRisk": "LOW",
-    "delinquencyRate": 0.0311
+    "delinquencyRate": 0.053
   },
   "environmental": {
     "phase1Status": "CLEAN",
@@ -146,26 +146,26 @@
     "regulatoryCompliance": "COMPLIANT"
   },
   "marketDetail": {
-    "msaPopulation": 5287042,
-    "populationGrowth": 0.0271,
+    "msaPopulation": 2156023,
+    "populationGrowth": 0.023,
     "populationGrowthRank": "Top quartile growth market",
-    "jobGrowth": 0.0266,
-    "unemployment": 0.0394,
-    "marketVacancy": 0.0738,
-    "marketPPU": 192948,
+    "jobGrowth": 0.0171,
+    "unemployment": 0.0364,
+    "marketVacancy": 0.0665,
+    "marketPPU": 191365,
     "marketCapRateRange": "5% - 6.4%",
-    "supplyDelivered2025": 1067,
-    "supplyForecast2026": "2210 units",
+    "supplyDelivered2025": 2103,
+    "supplyForecast2026": "1458 units",
     "absorptionNote": "Absorption remains healthy across comparable assets.",
     "marketCycle": "Stable expansion",
-    "concessionRate": 0.035,
+    "concessionRate": 0.054,
     "concessionNote": "Concessions concentrated in newest competitive product.",
     "rentGrowthTrailing": 0.031,
     "rentGrowthForecast2026": "2.5% to 4.1%",
     "rentGrowthLongTerm": 0.03,
     "sb38Note": "No material permitting bottleneck."
   },
-  "riskScore": 77,
+  "riskScore": 82,
   "redFlagCount": 0,
   "dataGapCount": 0,
   "redFlags": [],
@@ -177,7 +177,7 @@
     },
     "opex-analyst": {
       "status": "COMPLETE",
-      "finding": "Expense ratio at 42.1%."
+      "finding": "Expense ratio at 50.5%."
     },
     "physical-inspection": {
       "status": "COMPLETE",
