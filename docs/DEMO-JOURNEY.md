@@ -8,6 +8,8 @@ Use this as the public demo path for v2.4.0. It is optimized for a first-time vi
 
 The safe default demo runs locally with deterministic data and does not require API keys. The optional live-agent path uses the user's local Codex CLI / ChatGPT login and should be introduced only after the offline journey is clear.
 
+For the exact runtime split, artifacts, and data-sharing boundaries, see [`docs/RUNTIME-COMPARISON.md`](RUNTIME-COMPARISON.md).
+
 ## Ten-Minute Local Demo
 
 ```powershell

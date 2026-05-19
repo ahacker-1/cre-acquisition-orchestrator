@@ -17,6 +17,7 @@ Do not create these issues automatically from automation. Review the text, adjus
 
 - `docs/QUICK-DEMO.md` gives first-time visitors a five-minute offline path from clone to dashboard.
 - `npm run demo:verify` runs the deterministic demo, contract validation, guide validation, system tests, and dashboard production build in one command.
+- `docs/RUNTIME-COMPARISON.md` documents the offline demo vs live Codex split, artifact paths, and no-secret/data-sharing boundaries.
 
 ## 1. Extend deterministic screenshot capture to front door and quick-create surfaces
 
