@@ -324,7 +324,6 @@ export default function App() {
   useEffect(() => {
     const shouldRevealRunWorkspace =
       dealCheckpoint &&
-      runStatus.runId &&
       !frontDoorPinned &&
       (runActive || runStatus.state === 'COMPLETED')
 
