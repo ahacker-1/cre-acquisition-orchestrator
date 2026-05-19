@@ -1,6 +1,6 @@
 # Demo Journey
 
-Use this as the public demo path for v2.4.0. It is optimized for a first-time visitor who wants to understand the product before reading the architecture docs.
+Use this as the public demo path for v2.5.0. It is optimized for a first-time visitor who wants to understand the product before reading the architecture docs.
 
 ## Promise
 
@@ -34,7 +34,7 @@ npm run dashboard
 npm run screenshots
 ```
 
-`npm run screenshots` updates the v2.4 public gallery under `docs/assets/` for Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
+`npm run screenshots` updates the current public gallery under `docs/assets/` for Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
 
 ## Guided Demo Mode
 
@@ -71,8 +71,8 @@ What to show:
 
 Why it matters:
 
-- This is the v2.4 product center: it makes the agentic workspace legible before the user studies the underlying orchestration engine.
-- It is the best first screenshot to update after v2.4.0.
+- This is the v2.5 product center: it makes the agentic workspace legible before the user studies the underlying orchestration engine.
+- It is the best first screenshot to update after v2.5.0.
 
 Current screenshot asset:
 
@@ -154,8 +154,8 @@ Before the next public release:
 - [ ] Run `npm run dashboard` and click **Start Guided Demo**.
 - [ ] Confirm the guided tour advances through Acquisition Command, Swarm Goal Console, Deal Team, Workpapers & Evidence, and IC Package.
 - [ ] Run `npm run screenshots` while the dashboard is available at `http://localhost:5173`.
-- [x] Capture current v2.4 surfaces for Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
-- [x] Add a current v2.4 screenshot gallery in `docs/assets/`.
+- [x] Capture current workspace surfaces for Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
+- [x] Add a current screenshot gallery in `docs/assets/`.
 - [x] Update README image alt text so each screenshot explains the operator value.
 - [ ] Run `git diff --check`.
 - [ ] Run `npm --prefix dashboard run build`.

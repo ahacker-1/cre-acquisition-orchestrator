@@ -1650,6 +1650,21 @@ export function extractSourceDocument(
   return { document: updated, extraction }
 }
 
+export function getSourceExtraction(
+  context: ServiceContext,
+  dealId: string,
+  documentId: string,
+): ExtractionPreview {
+  const record = getDealRecord(context, dealId)
+  if (!record) throw new Error(`Deal not found: ${dealId}`)
+  const manifest = readManifest(context, dealId)
+  const document = manifest.documents.find((doc) => doc.documentId === documentId)
+  if (!document) throw new Error(`Document not found: ${documentId}`)
+  const extraction = readJson<ExtractionPreview | null>(extractionPath(context, dealId, documentId), null)
+  if (!extraction) throw new Error(`Extraction not found for document: ${documentId}`)
+  return enrichExtractionFields(extraction, record.deal)
+}
+
 export function applySourceExtraction(
   context: ServiceContext,
   dealId: string,

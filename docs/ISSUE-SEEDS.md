@@ -1,6 +1,6 @@
 # Public Issue Seeds
 
-Use these as approval-ready GitHub issues after v2.4.0. They are intentionally scoped to make the project more legible, impressive, and contributor-friendly for first-time visitors.
+Use these as approval-ready GitHub issues after v2.5.0. They are intentionally scoped to make the project more legible, impressive, and contributor-friendly for first-time visitors.
 
 Do not create these issues automatically from automation. Review the text, adjust labels/milestones, then publish from the GitHub UI or `gh issue create` when ready. If using the CLI snippets below, save each issue body to the referenced `/tmp/*.md` file first.
 
@@ -13,11 +13,12 @@ Do not create these issues automatically from automation. Review the text, adjus
 - `demo`
 - `validation`
 
-## Shipped after v2.4.0
+## Shipped after v2.5.0
 
 - `docs/QUICK-DEMO.md` gives first-time visitors a five-minute offline path from clone to dashboard.
 - `npm run demo:verify` runs the deterministic demo, contract validation, guide validation, system tests, and dashboard production build in one command.
 - `docs/RUNTIME-COMPARISON.md` documents the offline demo vs live Codex split, artifact paths, and no-secret/data-sharing boundaries.
+- XLSX rent rolls and T12s now produce source-backed candidate fields with review/apply persistence and provenance.
 
 ## 1. Extend deterministic screenshot capture to front door and quick-create surfaces
 
@@ -39,7 +40,7 @@ Make the entire first-time visitor path reproducible, including the front door b
 
 ## Scope
 
-Extend the existing `npm run screenshots` / `dashboard/scripts/capture-v24-screenshots.mjs` flow so it captures the first-run front door and quick-create modal in addition to the completed workspace surfaces.
+Extend the existing `npm run screenshots` / the existing screenshot capture script flow so it captures the first-run front door and quick-create modal in addition to the completed workspace surfaces.
 
 ## Acceptance Criteria
 
@@ -52,7 +53,7 @@ Extend the existing `npm run screenshots` / `dashboard/scripts/capture-v24-scree
 - [ ] Run relevant Playwright tests.
 ```
 
-## 2. Add source-backed XLSX rent-roll extraction
+## 2. Expand source-backed parser fixtures for messy real-world rent rolls and T12s
 
 Suggested labels: `enhancement`, `dashboard`, `validation`
 
@@ -68,22 +69,21 @@ Issue body:
 ```markdown
 ## Goal
 
-Move XLSX rent rolls from "stored and routed" to source-backed extraction with operator review.
+Broaden the v2.5 XLSX parser beyond the basic fixture shapes so it handles more messy real-world rent rolls and T12 workbooks.
 
 ## Scope
 
-Support common multifamily rent-roll workbook structures while preserving the current safe default: extracted fields must be previewed and approved before changing deal inputs.
+Add fixture variants for alternate headers, totals rows, occupancy conventions, blank rows, and multi-sheet T12 workbooks while preserving the v2.5 safe default: extracted fields must be reviewed and approved/applied before changing deal inputs.
 
 ## Acceptance Criteria
 
-- [ ] Add parser support for XLSX rent-roll fixtures.
+- [ ] Add at least four additional XLSX fixtures across rent roll and T12 variants.
 - [ ] Preserve field-level provenance: file name, sheet name, row/column or cell reference, extracted value, confidence/status.
-- [ ] Route ambiguous fields to pending review instead of silently applying them.
-- [ ] Add fixtures for at least two workbook shapes.
-- [ ] Show extracted fields in the existing dashboard extraction review flow.
-- [ ] Update docs to clarify CSV/TXT/MD and XLSX extraction support boundaries.
-- [ ] Run `npm run validate`.
-- [ ] Run `npm test`.
+- [ ] Route ambiguous fields to candidate review with warnings instead of silently applying them.
+- [ ] Keep existing basic parser fixtures green.
+- [ ] Update docs to clarify XLSX support boundaries and known unsupported workbook shapes.
+- [ ] Run `npm run test:parsers`.
+- [ ] Run `npm run test:workspace`.
 - [ ] Run `npm --prefix dashboard run build`.
 ```
 

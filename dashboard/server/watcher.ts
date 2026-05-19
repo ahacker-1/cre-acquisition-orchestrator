@@ -26,6 +26,7 @@ import {
   evaluateLaunchReadiness,
   extractSourceDocument,
   getDealWorkspace,
+  getSourceExtraction,
   listDealDocuments,
   saveDealCriteria,
   savePhaseState,
@@ -790,7 +791,7 @@ function parseDealWorkspaceId(url: string, suffix: string): string | null {
   return match ? decodeUrlPart(match[1]) : null;
 }
 
-function parseDealDocumentRoute(url: string, suffix: 'extract' | 'apply-extraction'): {
+function parseDealDocumentRoute(url: string, suffix: 'extract' | 'extraction' | 'apply-extraction'): {
   dealId: string;
   documentId: string;
 } | null {
@@ -1305,6 +1306,21 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         sendJson(res, 200, extractSourceDocument({ ...dealServiceContext, projectRoot }, route.dealId, route.documentId));
       } catch (err) {
         sendJson(res, 400, { error: err instanceof Error ? err.message : 'Failed to extract document' });
+      }
+      return;
+    }
+
+    // GET /api/deals/:dealId/documents/:documentId/extraction - read persisted extraction preview
+    if (method === 'GET' && /^\/api\/deals\/[^/]+\/documents\/[^/]+\/extraction$/.test(url)) {
+      const route = parseDealDocumentRoute(url, 'extraction');
+      if (!route) {
+        sendJson(res, 400, { error: 'Invalid document route' });
+        return;
+      }
+      try {
+        sendJson(res, 200, { extraction: getSourceExtraction({ ...dealServiceContext, projectRoot }, route.dealId, route.documentId) });
+      } catch (err) {
+        sendJson(res, 404, { error: err instanceof Error ? err.message : 'Extraction not found' });
       }
       return;
     }

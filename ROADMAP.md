@@ -6,12 +6,14 @@ The north star is to make `cre-acquisition-orchestrator` the leading open-source
 
 ## Current Release Baseline
 
-**v2.4.0 — Agentic Deal Team Workspace** is the current public release. It made the first-time product journey legible: drop documents, state the goal, watch the specialist deal team coordinate, review workpapers, and assemble the IC package.
+**v2.5.0 — Source-Backed Deal Intake** is the current public release. It keeps the v2.4 agentic deal-team workspace, then adds the practical intake loop: upload XLSX/CSV rent rolls and T12s, review source-backed candidate fields with provenance, and approve/apply them before workflows use those inputs.
 
 Release-grade validation for the baseline includes:
 
 - `npm run demo`
 - `npm run validate`
+- `npm run test:parsers`
+- `npm run test:workspace`
 - `npm run validate:guides`
 - `npm test`
 - `npm --prefix dashboard run build`
@@ -20,42 +22,45 @@ Release-grade validation for the baseline includes:
 
 ## Near-Term Priorities
 
-### 1. Demo Journey and Public Proof
+### 1. Source-Backed Document Intelligence
+
+Goal: move from classified/stored files toward auditable extraction across the documents operators actually use.
+
+Candidate issues:
+
+- Add PDF text extraction for offering memoranda and legal checklists with explicit confidence and pending-review states.
+- Expand parser fixtures for messy real-world rent rolls, trailing-12s, and unit mixes.
+- Add a separate approve-only queue with reject/waive decisions before applying values to deal state.
+- Add field-level provenance deep links from approved inputs to source document snippets.
+
+Shipped in v2.5.0:
+
+- XLSX rent-roll and T12 uploads now route through the local Excel parser into source-backed candidate fields with document hash, parser metadata, sheet/row provenance, confidence, and operator-review status.
+- Review-ready and applied documents can reopen persisted extraction previews without re-running the parser.
+- The Documents tab exposes `Preview Extraction`, `Review Fields`, and `View Applied Evidence` actions.
+- `npm run test:parsers` validates XLSX parser fixtures for rent roll and T12 field mapping.
+- `npm run test:workspace` validates persisted extraction retrieval, conflict-aware approve/apply, approved-field provenance, and launch-readiness source coverage.
+
+### 2. Demo Journey and Public Proof
 
 Goal: make a first-time GitHub visitor understand the product in under two minutes and run it locally in under five.
 
 Candidate issues:
 
 - Keep the Quick Demo path short, repeatable, and credential-free as the default public proof point.
-- Add a short guided demo script that maps each screenshot to the operator action it proves.
-- Extend the deterministic screenshot capture script to include the front door and quick-create modal, not just the completed workspace surfaces.
+- Extend the deterministic screenshot capture script to include the front door, quick-create modal, and source-backed extraction review panel.
+- Rename the screenshot capture script to a version-neutral path.
 
-Already shipped after v2.4.0:
+Shipped through v2.5.0:
 
-- Current v2.4 screenshots for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package live under `docs/assets/`.
-- `npm run screenshots` captures the core v2.4 workspace gallery against a locally running dashboard.
+- Current workspace screenshots for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package live under `docs/assets/`.
+- `npm run screenshots` captures the core workspace gallery against a locally running dashboard.
 - `docs/QUICK-DEMO.md` gives first-time visitors the shortest offline path from clone to local dashboard.
-- `npm run demo:verify` runs the offline demo, contract checks, guide validation, system tests, and dashboard build in one command.
-- Mission now includes a Swarm Goal Console that maps an operator goal to a recommended specialist swarm, blockers, handoffs, and next action.
+- `npm run demo:verify` runs the offline demo, contract checks, parser/workspace tests, guide validation, system tests, and dashboard build in one command.
+- Mission includes a Swarm Goal Console that maps an operator goal to a recommended specialist swarm, blockers, handoffs, and next action.
 - `docs/RUNTIME-COMPARISON.md` explains offline simulation vs. live Codex execution, including artifact paths, credential boundaries, and when each path is appropriate.
 
-Approval-ready issue text for the first public follow-ups lives in [`docs/ISSUE-SEEDS.md`](docs/ISSUE-SEEDS.md).
-
-### 2. Source-Backed Document Intelligence
-
-Goal: move from classified/stored files toward auditable extraction across the documents operators actually use.
-
-Candidate issues:
-
-- Add source-backed XLSX rent-roll and T12 extraction.
-- Add PDF text extraction for offering memoranda and legal checklists with explicit confidence and pending-review states.
-- Add field-level provenance links from approved inputs to source document snippets.
-- Expand parser fixtures for messy real-world rent rolls, trailing-12s, and unit mixes.
-
-Already shipped after v2.4.0:
-
-- XLSX rent-roll and T12 uploads now route through the local Excel parser into source-backed candidate fields with document hash, parser metadata, sheet/row provenance, confidence, and operator-review status.
-- `npm run test:parsers` validates XLSX parser fixtures for rent roll and T12 field mapping.
+Approval-ready issue text for public follow-ups lives in [`docs/ISSUE-SEEDS.md`](docs/ISSUE-SEEDS.md).
 
 ### 3. Review-Grade Workpapers
 

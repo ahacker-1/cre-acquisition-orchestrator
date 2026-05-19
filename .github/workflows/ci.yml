@@ -37,6 +37,9 @@ jobs:
       - name: Validate source-backed parser fixtures
         run: npm run test:parsers
 
+      - name: Validate source-backed workspace review/apply flow
+        run: npm run test:workspace
+
       - name: Validate operator guide contract
         run: npm run validate:guides
 

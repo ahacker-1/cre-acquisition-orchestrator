@@ -148,8 +148,10 @@ export interface ApprovedFieldManifest {
 }
 
 export interface ApplyExtractionResult {
-  applied: ApprovedField[]
-  rejected: ExtractionField[]
+  document: SourceDocument
+  extraction: ExtractionPreview
+  deal: DealRecordResponse
+  approvedFields: ApprovedFieldManifest
   validation: {
     valid: boolean
     launchReady: boolean

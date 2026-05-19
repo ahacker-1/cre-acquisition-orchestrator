@@ -233,6 +233,22 @@ function sourceLabel(field: ExtractionField): string {
   return field.source
 }
 
+function sourceEvidence(field: ExtractionField): string[] {
+  const sourceRef = field.sourceRef
+  const location = sourceRef?.location
+  const parts: string[] = []
+  if (sourceRef?.parserId) {
+    parts.push(`Parser ${sourceRef.parserId}${sourceRef.parserVersion ? ` v${sourceRef.parserVersion}` : ''}`)
+  }
+  if (sourceRef?.fileHash) parts.push(`Hash ${sourceRef.fileHash.slice(0, 10)}`)
+  if (location?.sheet) parts.push(`Sheet ${location.sheet}`)
+  if (location?.row) parts.push(`Row ${location.row}`)
+  if (location?.column) parts.push(`Column ${location.column}`)
+  if (location?.line) parts.push(`Line ${location.line}`)
+  if (location?.page) parts.push(`Page ${location.page}`)
+  return parts
+}
+
 function phaseFromCheckpoint(
   dealCheckpoint: DealCheckpoint,
   phase: PhaseWorkspaceStatus,
@@ -422,7 +438,7 @@ function ExtractionPreviewPanel({
       <div className="portal-panel">
         <p className="portal-kicker">Extraction Preview</p>
         <p className="text-sm text-gray-500 mt-3">
-          Upload a CSV, TXT, or markdown source document and run extraction to preview approved deal inputs here.
+          Upload a CSV, TXT, markdown, or XLSX source document and run extraction to review source-backed candidate fields here. PDF evidence is stored for pending review until OCR is added.
         </p>
       </div>
     )
@@ -526,6 +542,16 @@ function ExtractionPreviewPanel({
                   Source {sourceLabel(field)} / confidence {Math.round(field.confidence * 100)}%
                   {field.currentValue !== undefined ? ` / current ${fieldValue(field.currentValue)}` : ''}
                 </span>
+                {sourceEvidence(field).length > 0 && (
+                  <span className="mt-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-gray-600" data-testid={`source-evidence-${field.fieldId}`}>
+                    {sourceEvidence(field).join(' / ')}
+                  </span>
+                )}
+                {field.sourceRef?.raw && (
+                  <span className="mt-1 block truncate text-xs text-gray-600" title={field.sourceRef.raw}>
+                    Raw: {field.sourceRef.raw}
+                  </span>
+                )}
                 {field.validationIssues?.map((issue) => (
                   <span key={issue} className="mt-1 block text-xs text-red-200">{issue}</span>
                 ))}
@@ -560,12 +586,12 @@ function ExtractionPreviewPanel({
         className="portal-button portal-button-primary mt-4 w-full"
       >
         {selectedFieldIds.length === 0
-          ? 'Select Fields To Apply'
+          ? 'Select Fields To Approve & Apply'
           : selectedConflictCount > 0
             ? confirmConflicts
-              ? `Apply ${selectedConflictCount} Reviewed Conflict${selectedConflictCount === 1 ? '' : 's'}`
+              ? `Approve & Apply ${selectedConflictCount} Reviewed Conflict${selectedConflictCount === 1 ? '' : 's'}`
               : 'Confirm Conflict Review'
-            : 'Apply Selected Fields'}
+            : 'Approve & Apply Selected Fields'}
       </button>
     </div>
   )
@@ -577,6 +603,7 @@ function DocumentIntakePanel({
   working,
   onUpload,
   onExtract,
+  onLoadExtraction,
   onApply,
 }: {
   documents: SourceDocument[]
@@ -584,8 +611,73 @@ function DocumentIntakePanel({
   working: boolean
   onUpload: (file: File) => Promise<SourceDocument>
   onExtract: (documentId: string) => Promise<ExtractionPreview>
+  onLoadExtraction: (documentId: string) => Promise<ExtractionPreview>
   onApply: (documentId: string, fieldIds: string[], allowConflicts?: boolean) => Promise<void>
 }) {
+  const [autoLoadedDocumentId, setAutoLoadedDocumentId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (extraction || working) return
+    const reviewReadyDocument = documents.find((doc) => doc.status === 'review_ready' || doc.status === 'applied')
+    if (!reviewReadyDocument || reviewReadyDocument.documentId === autoLoadedDocumentId) return
+    setAutoLoadedDocumentId(reviewReadyDocument.documentId)
+    void onLoadExtraction(reviewReadyDocument.documentId)
+  }, [autoLoadedDocumentId, documents, extraction, onLoadExtraction, working])
+
+  function documentAction(doc: SourceDocument): {
+    label: string
+    disabled: boolean
+    onClick: () => void
+  } {
+    if (doc.status === 'review_ready') {
+      return {
+        label: 'Review Fields',
+        disabled: working,
+        onClick: () => void onLoadExtraction(doc.documentId),
+      }
+    }
+    if (doc.status === 'applied') {
+      return {
+        label: 'View Applied Evidence',
+        disabled: working,
+        onClick: () => void onLoadExtraction(doc.documentId),
+      }
+    }
+    if (doc.extractionStatus === 'extraction-pending') {
+      return {
+        label: 'Extraction Pending',
+        disabled: true,
+        onClick: () => undefined,
+      }
+    }
+    if (doc.extractionStatus === 'parser-unavailable') {
+      return {
+        label: 'Parser Unavailable',
+        disabled: true,
+        onClick: () => undefined,
+      }
+    }
+    if (doc.extractionStatus === 'parse_failed') {
+      return {
+        label: 'Re-run Extraction',
+        disabled: working,
+        onClick: () => void onExtract(doc.documentId),
+      }
+    }
+    if (doc.extractionStatus === 'unsupported') {
+      return {
+        label: 'Unsupported File',
+        disabled: true,
+        onClick: () => undefined,
+      }
+    }
+    return {
+      label: 'Preview Extraction',
+      disabled: working,
+      onClick: () => void onExtract(doc.documentId),
+    }
+  }
+
   async function handleFiles(files: FileList | null): Promise<void> {
     if (!files || files.length === 0) return
     for (const file of Array.from(files)) {
@@ -618,7 +710,9 @@ function DocumentIntakePanel({
               Upload rent rolls, T12s, offering memoranda, LOIs, PSA files, title, survey, loan documents, and closing materials.
             </div>
           ) : (
-            documents.map((doc) => (
+            documents.map((doc) => {
+              const action = documentAction(doc)
+              return (
               <article key={doc.documentId} className="border border-white/10 bg-black p-4" data-testid={`source-document-${doc.type}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -630,17 +724,21 @@ function DocumentIntakePanel({
                   <span className={`status-badge ${statusClass(doc.status)}`}>{doc.status}</span>
                 </div>
                 <p className="mt-3 text-xs text-gray-500">{formatFileSize(doc.size)} / {doc.mime}</p>
+                {doc.lifecycleReason && (
+                  <p className="mt-2 text-xs text-gray-500">{doc.lifecycleReason}</p>
+                )}
                 <button
                   type="button"
                   data-testid={`extract-document-${doc.type}`}
-                  disabled={working || doc.extractionStatus === 'extraction-pending'}
-                  onClick={() => void onExtract(doc.documentId)}
+                  disabled={action.disabled}
+                  onClick={action.onClick}
                   className="portal-button portal-button-secondary mt-4 w-full"
                 >
-                  {doc.extractionStatus === 'extraction-pending' ? 'Extraction Pending' : 'Preview Extraction'}
+                  {action.label}
                 </button>
               </article>
-            ))
+              )
+            })
           )}
         </div>
       </div>
@@ -1470,6 +1568,7 @@ export default function DealWorkspace({
     saveCriteria,
     uploadDocument,
     extractDocument,
+    loadExtraction,
     applyExtraction,
     savePhaseChecklist,
     refreshWorkspace,
@@ -1714,6 +1813,7 @@ export default function DealWorkspace({
                   working={working}
                   onUpload={uploadDocument}
                   onExtract={extractDocument}
+                  onLoadExtraction={loadExtraction}
                   onApply={applyExtraction}
                 />
               </div>

@@ -63,7 +63,7 @@ const PARSER_VERSION = 'source-backed-v1'
 
 export function isParserRunnable(fileName: string, mime: string): boolean {
   const extension = extname(fileName).toLowerCase()
-  return ['.csv', '.txt', '.md'].includes(extension) || mime.startsWith('text/')
+  return ['.csv', '.txt', '.md', '.xlsx'].includes(extension) || mime.startsWith('text/')
 }
 
 export function isParserPendingOnly(fileName: string, mime: string): boolean {
