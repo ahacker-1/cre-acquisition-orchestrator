@@ -68,6 +68,34 @@ See [`docs/DEMO-JOURNEY.md`](docs/DEMO-JOURNEY.md) for the full storyboard and [
 
 ---
 
+## Current Project Status
+
+Current `main` is ahead of the latest version tag (`v2.5.1`) and represents the first real-deal workflow pass: a local operator can start on the upload front door, drop a realistic rent roll/T12/offering memo package, review extracted source-backed fields with provenance, reject or waive ambiguous fields, apply trusted inputs, and export a Markdown/JSON IC starter package.
+
+The stable public baseline is still local-first and review-first:
+
+- **Local by default** - offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
+- **Versioned release baseline** - `v2.5.1` adds stale-source launch protection on top of the `v2.5.0` source-backed deal intake release.
+- **Current main** - expands messy real-world parser fixtures, adds a curated first-real-deal fixture package, improves mobile/workspace navigation, and hardens local file-race handling during dashboard polling.
+- **Human approval gate** - extracted underwriting fields remain candidates until the operator reviews and approves/applies them.
+- **Known limits** - PDF/OCR extraction, heavily merged or image-only workbooks, production hosted deployments, and autonomous investment decisions remain out of scope.
+
+---
+
+## What's New on Current Main
+
+- **First Real Deal Upload Workflow** - The first screen now centers the upload package path, with a persistent way back to upload from an open workspace.
+- **Messy Fixture Package** - `fixtures/first-real-deal` and additional XLSX fixtures model alternate headers, totals rows, blank rows, occupancy conventions, messy rent rolls, and multi-sheet T12s.
+- **IC Starter Export** - Operators can export a source-aware Markdown/JSON package from the workspace after review.
+- **Workspace QA Hardening** - Navigation scroll position, mobile workspace tabs, document polling, and transient local file reads were tightened after real-user UI walkthroughs.
+- **Verification Coverage** - Parser, workspace, dashboard build, and browser E2E checks now cover the first-real-deal path and source-backed review/apply loop.
+
+## What's New in v2.5.1
+
+- **Stale Source Evidence Gate** - Workflow launches now surface stale source-evidence risk instead of allowing operators to proceed on outdated extracted values.
+- **Source Readiness Signal** - The workspace carries source freshness into launch readiness so missing, stale, or unapproved evidence stays visible at the decision point.
+- **Patch Release Baseline** - `package.json` is at `2.5.1`; current `main` builds on that tag with additional fixture and first-real-deal workflow work.
+
 ## What's New in v2.5.0
 
 - **Source-Backed Deal Intake** - XLSX/CSV rent rolls and T12s can become reviewable candidate deal fields with parser metadata, file hashes, confidence, and source-location provenance.
@@ -75,6 +103,15 @@ See [`docs/DEMO-JOURNEY.md`](docs/DEMO-JOURNEY.md) for the full storyboard and [
 - **Approve & Apply Flow** - Underwriting-critical fields are selected, conflict-reviewed, and approved/applied explicitly before changing deal inputs.
 - **Release-Grade Parser Coverage** - Offline verification now covers XLSX parser fixtures plus workspace review/apply persistence and source-backed launch-readiness coverage.
 - **Agentic Deal Team Workspace** - v2.4's Acquisition Command, Swarm Goal Console, visible handoffs, workpapers, and IC package surfaces remain the public demo shell around the new source-backed intake path.
+
+## What's New in v2.4.0
+
+- **Acquisition Command** - The deal workspace gained an executive command surface for package readiness, orchestration stage, team pulse, evidence state, and decision-package status.
+- **Mission Intent** - Deal creation and persistence now preserve the acquisition goal, outcome intent, and recommended workflow through the workspace lifecycle.
+- **Visible Agent Handoffs** - Runs publish `agent_message`, `agent_handoff`, `agent_review`, `agent_dependency`, and `phase_handoff` events so operators can see what moved between specialists.
+- **Deal Team View** - Specialist agents now appear as human-readable team roles with active, filed, and queued status language instead of raw checkpoint slugs.
+- **Workpapers & Evidence** - Filed specialist outputs and source-backed materials became a first-class review surface tied to the IC package.
+- **Coherent Demo States** - Completed sample runs show the bundled evidence behind the package instead of implying live documents are missing.
 
 ## What's New in v2.3.0
 
@@ -93,7 +130,7 @@ See [`docs/DEMO-JOURNEY.md`](docs/DEMO-JOURNEY.md) for the full storyboard and [
 
 ## Release Journey
 
-This project has grown in eight public steps: first the agent architecture, then a usable dashboard, then a real operator workspace, then live Codex-backed agent execution, then a document-first cockpit, then a dependable operator workbench, then an agentic deal-team workspace, and now source-backed deal intake where uploaded rent rolls and T12s become reviewable, provenance-backed deal inputs.
+This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, and now a first-real-deal workflow that makes uploaded rent rolls and T12s reviewable before they affect underwriting inputs.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -105,6 +142,8 @@ This project has grown in eight public steps: first the agent architecture, then
 | **v2.3.0 - Operator Workbench** | Added guided deal progression, workflow readiness, upload queue recovery, source-backed change review, safer embedded launch scoping, IC review handoff, and verified public feature paths. | [RELEASE_NOTES_v2.3.0.md](RELEASE_NOTES_v2.3.0.md) |
 | **v2.4.0 - Agentic Deal Team Workspace** | Reframed the dashboard around Acquisition Command, mission intent, visible agent handoffs, specialist team activity, workpapers/evidence, and IC package assembly. | [RELEASE_NOTES_v2.4.0.md](RELEASE_NOTES_v2.4.0.md) |
 | **v2.5.0 - Source-Backed Deal Intake** | Turned XLSX/CSV rent rolls and T12s into persisted, reviewable, provenance-backed candidate fields operators can approve/apply before workflows use them. | [RELEASE_NOTES_v2.5.0.md](RELEASE_NOTES_v2.5.0.md) |
+| **v2.5.1 - Stale Source Evidence Gate** | Added source-freshness protection to workflow launch readiness and bumped the package baseline to `2.5.1`. | [GitHub Tag](https://github.com/ahacker-1/cre-acquisition-orchestrator/tree/v2.5.1) |
+| **Current main - First Real Deal Workflow** | Adds the curated first-real-deal fixture package, broader messy XLSX parser coverage, IC starter export, UI walkthrough hardening, and source-backed browser E2E coverage. | [Latest main](https://github.com/ahacker-1/cre-acquisition-orchestrator) |
 
 ---
 
@@ -113,7 +152,7 @@ This project has grown in eight public steps: first the agent architecture, then
 | | | | |
 |---|---|---|---|
 | **31** AI Roles | **8** Domain Knowledge Skills | **10** JSON Schema Contracts | **6** Mission Workspace Views |
-| **5** Deal Phases | **5** Outcome Workflows | **65,000+** Lines of Code + Prompts | **250+** Files |
+| **5** Deal Phases | **5** Outcome Workflows | **88,000+** Lines of Code + Prompts | **290+** Tracked Files |
 
 ---
 
