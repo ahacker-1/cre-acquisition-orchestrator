@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { appendFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -87,6 +87,10 @@ try {
   assert.equal(applied.extraction.reviewStatus, 'applied')
   assert.equal(applied.approvedFields.fields.length, fieldIds.length)
   assert.ok(applied.approvedFields.fields.every((field) => field.sourceRef.fileHash === extraction.sourceHash))
+  const approvedTotalUnits = applied.approvedFields.fields.find((field) => field.path === 'property.totalUnits')
+  assert.ok(approvedTotalUnits, 'expected approved total units audit entry')
+  assert.equal(approvedTotalUnits.previousValue, 1)
+  assert.equal(approvedTotalUnits.value, 3)
   assert.equal(applied.deal.deal.property.totalUnits, 3)
 
   const appliedPreview = getSourceExtraction(context, dealId, document.documentId)
@@ -101,6 +105,19 @@ try {
     readiness.missingApprovedFields.includes('financials.currentNOI'),
     'NOI should remain missing until T12 evidence is approved',
   )
+
+  appendFileSync(document.path, '\noperator accidentally replaced source after approval')
+  const staleReadiness = evaluateLaunchReadiness(context, dealId, 'quick-deal-screen')
+  assert.equal(staleReadiness.sourceCoverage.staleDocumentCount, 1)
+  assert.equal(staleReadiness.sourceCoverage.approvedFieldCount, 0)
+  assert.equal(staleReadiness.sourceCoverage.invalidApprovedFieldCount, fieldIds.length)
+  assert.ok(staleReadiness.warnings.some((warning) => warning.includes('changed after extraction')))
+
+  const enforcedStaleReadiness = evaluateLaunchReadiness(context, dealId, 'quick-deal-screen', {
+    enforceSourceBackedInputs: true,
+  })
+  assert.equal(enforcedStaleReadiness.status, 'blocked')
+  assert.ok(enforcedStaleReadiness.blockers.some((blocker) => blocker.includes('Re-run extraction')))
 
   console.log('[workspace-service-test] PASS')
 } finally {
