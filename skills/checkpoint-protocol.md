@@ -74,7 +74,7 @@ The checkpoint system uses three tiers, each serving a different audience and pu
 # Session State
 Last Updated: 2025-01-15T14:45:00Z
 
-## Active Deal: deal-2025-001 (123 Main St, Portland OR)
+## Active Deal: deal-2025-001 (123 Main St, Austin TX)
 Status: Phase 1 - Due Diligence (In Progress)
 
 ## Agent Status
@@ -115,7 +115,7 @@ Status: Phase 1 - Due Diligence (In Progress)
 ```json
 {
   "dealId": "deal-2025-001",
-  "address": "123 Main St, Portland OR",
+  "address": "123 Main St, Austin TX",
   "propertyType": "multifamily",
   "currentPhase": "phase-1-due-diligence",
   "phaseStatus": "in-progress",
@@ -192,8 +192,8 @@ Status: Phase 1 - Due Diligence (In Progress)
   "partialOutputs": {
     "transfers": [
       {"date": "2024-03-15", "from": "Smith LLC", "to": "Jones Holdings"},
-      {"date": "2022-08-01", "from": "Portland Realty", "to": "Smith LLC"},
-      {"date": "2020-11-20", "from": "Original Owner", "to": "Portland Realty"}
+      {"date": "2022-08-01", "from": "Austin Realty", "to": "Smith LLC"},
+      {"date": "2020-11-20", "from": "Original Owner", "to": "Austin Realty"}
     ]
   },
   "errors": [],

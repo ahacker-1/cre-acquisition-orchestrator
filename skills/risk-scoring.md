@@ -278,7 +278,7 @@ Classify the jurisdiction's overall regulatory environment:
 - San Francisco (rent control, just-cause, relocation assistance)
 - Los Angeles (RSO, SCEP, relocation assistance)
 - Washington DC (rent control, TOPA)
-- Portland OR (statewide rent control, relocation assistance)
+- Seattle WA (just-cause requirements, inspection rules, relocation exposure)
 - Seattle (just-cause, inspection requirements)
 - Boston (ended rent control but new regulations emerging)
 - Minneapolis/St. Paul (rent caps in St. Paul)
@@ -757,9 +757,9 @@ The standard scoring framework handles the majority of deals. The following edge
 
 3. **Lender impact**: Flag that first-time market entry may affect agency lending (Fannie/Freddie prefer experienced local sponsors) and may require a Key Principal with local experience or a management company with Fannie/Freddie approval in the market.
 4. **Increase data requirements**: For first-time market entries, require a third-party market study (not just CoStar or internal analysis) as a minimum data requirement for the Market Risk category.
-5. **Regulatory risk amplification**: In highly regulated markets (NYC, SF, LA, Portland), first-time entry without local counsel is particularly dangerous. If the Regulatory (Multifamily) category scores MEDIUM or above AND the buyer is a first-time entrant, escalate the Regulatory score by +10 points.
+5. **Regulatory risk amplification**: In highly regulated markets (NYC, SF, LA, Seattle), first-time entry without local counsel is particularly dangerous. If the Regulatory (Multifamily) category scores MEDIUM or above AND the buyer is a first-time entrant, escalate the Regulatory score by +10 points.
 
-**Example**: Texas-based operator acquiring their first property in Portland, OR. Base overall risk score: 38 (MEDIUM). First-time market premium: +10 (no Oregon experience). Portland is a highly regulated market (statewide rent control, relocation assistance requirements). Regulatory category base score: 45 (MEDIUM). First-time regulatory amplification: +10, adjusted to 55 (HIGH). Mitigations applied: hired local PM with 8 years Portland experience (-3), retained Portland multifamily attorney (-1). Net premium after mitigations: +6. Adjusted overall score: 44 (MEDIUM, near the upper bound). Recommendation: `PROCEED_WITH_MITIGATIONS` -- specifically, complete market immersion trip and consider partnering with a local co-GP to further reduce execution risk.
+**Example**: Texas-based operator acquiring their first property in Seattle, WA. Base overall risk score: 38 (MEDIUM). First-time market premium: +10 (no Washington operating experience). Seattle is a highly regulated market (just-cause requirements, inspection rules, relocation exposure). Regulatory category base score: 45 (MEDIUM). First-time regulatory amplification: +10, adjusted to 55 (HIGH). Mitigations applied: hired local PM with 8 years Seattle experience (-3), retained Seattle multifamily attorney (-1). Net premium after mitigations: +6. Adjusted overall score: 44 (MEDIUM, near the upper bound). Recommendation: `PROCEED_WITH_MITIGATIONS` -- specifically, complete market immersion trip and consider partnering with a local co-GP to further reduce execution risk.
 
 **What to Flag**: `FIRST_TIME_MARKET_ENTRY` with experience level, premium applied, mitigations identified, net premium after mitigations, and specific lender/regulatory implications.
 

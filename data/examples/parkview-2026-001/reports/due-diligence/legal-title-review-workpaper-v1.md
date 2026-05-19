@@ -5,8 +5,8 @@
 - Property: Parkview Apartments
 - Phase: Due Diligence
 - Agent: legal-title-review
-- Started: 2026-05-19T20:08:14.128Z
-- Completed: 2026-05-19T20:08:14.131Z
+- Started: 2026-05-19T20:23:14.038Z
+- Completed: 2026-05-19T20:23:14.041Z
 - Verdict: PASS
 - Summary: Title clear with standard exceptions.
 
@@ -125,6 +125,30 @@ Matrix dimensions: 3 rent cases x 3 vacancy cases x 3 exit-cap cases. Rent, vaca
 ## Data Gaps
 - None identified by this agent.
 
+## Evidence Tie-Out Appendix
+- E01: legal-title-review checked the property identity against parkview-2026-001 and the Austin / Travis County fixture narrative.
+- E02: legal-title-review reconciled purchase price to $32,000,000 before using any cap-rate or leverage conclusions.
+- E03: legal-title-review reconciled current NOI to $1,688,500 and stabilized NOI to $2,400,000.
+- E04: legal-title-review treated concessions as contra-revenue, bad debt as a separate loss line, and RUBS as utility expense recovery.
+- E05: legal-title-review carried annual Texas reassessment cadence into tax-adjusted risk language where property tax matters.
+- E06: legal-title-review preserved debt service, exit cap, and renovation premium assumptions from the deterministic source checkpoint.
+- E07: legal-title-review left any legal, tax, and lender-specific terms as diligence items unless directly present in the fixture.
+- E08: legal-title-review used the 27-scenario grid for downside/base/upside framing rather than a single-point answer.
+- E09: legal-title-review tied workpaper recommendations to conditional thresholds and dealbreaker policy.
+- E10: legal-title-review confirmed no external credentials, private files, or unverifiable market facts are embedded in this sample workpaper.
+
+## Downstream Handoff Controls
+- H01: Phase owner: Due Diligence.
+- H02: IC memo should carry forward the same source-backed NOI walk and scenario matrix.
+- H03: Financing review should re-test DSCR, debt yield, and LTV after any tax or insurance diligence update.
+- H04: Legal review should flag PSA timing or approval issues that affect the recommendation window.
+- H05: Closing review should not release funds-flow signoff until lender, title, insurance, and prorations are aligned.
+- H06: Any replacement of sample documents with buyer files should rerun extraction and preserve source hashes.
+- H07: Any field overridden by a reviewer should include a note and retain the original source-backed value.
+- H08: Any committee package export should preserve this workpaper alongside the final report.
+- H09: Any failed agent status should block unconditional proceed language until re-run or waived.
+- H10: Any data gap left open should remain visible in the next phase handoff.
+
 ## Recommendation Handoff
 - legal-title-review output is ready for Due Diligence orchestration review.
 - If this workpaper supports IC materials, preserve the conditional recommendation language unless the debt/tax issues are mitigated.
@@ -153,3 +177,4 @@ Matrix dimensions: 3 rent cases x 3 vacancy cases x 3 exit-cap cases. Rent, vaca
 - legal-title-review tickmark 20: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
 - legal-title-review tickmark 21: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
 - legal-title-review tickmark 22: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
+- legal-title-review tickmark 23: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.

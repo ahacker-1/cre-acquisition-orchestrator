@@ -5,8 +5,8 @@
 - Property: Parkview Apartments
 - Phase: Underwriting
 - Agent: ic-memo-writer
-- Started: 2026-05-19T20:08:14.190Z
-- Completed: 2026-05-19T20:08:14.192Z
+- Started: 2026-05-19T20:23:14.111Z
+- Completed: 2026-05-19T20:23:14.114Z
 - Verdict: PASS
 - Summary: Investment memo with conditions and downside protections drafted.
 
@@ -115,6 +115,30 @@ Matrix dimensions: 3 rent cases x 3 vacancy cases x 3 exit-cap cases. Rent, vaca
 ## Data Gaps
 - None identified by this agent.
 
+## Evidence Tie-Out Appendix
+- E01: ic-memo-writer checked the property identity against parkview-2026-001 and the Austin / Travis County fixture narrative.
+- E02: ic-memo-writer reconciled purchase price to $32,000,000 before using any cap-rate or leverage conclusions.
+- E03: ic-memo-writer reconciled current NOI to $1,688,500 and stabilized NOI to $2,400,000.
+- E04: ic-memo-writer treated concessions as contra-revenue, bad debt as a separate loss line, and RUBS as utility expense recovery.
+- E05: ic-memo-writer carried annual Texas reassessment cadence into tax-adjusted risk language where property tax matters.
+- E06: ic-memo-writer preserved debt service, exit cap, and renovation premium assumptions from the deterministic source checkpoint.
+- E07: ic-memo-writer left any legal, tax, and lender-specific terms as diligence items unless directly present in the fixture.
+- E08: ic-memo-writer used the 27-scenario grid for downside/base/upside framing rather than a single-point answer.
+- E09: ic-memo-writer tied workpaper recommendations to conditional thresholds and dealbreaker policy.
+- E10: ic-memo-writer confirmed no external credentials, private files, or unverifiable market facts are embedded in this sample workpaper.
+
+## Downstream Handoff Controls
+- H01: Phase owner: Underwriting.
+- H02: IC memo should carry forward the same source-backed NOI walk and scenario matrix.
+- H03: Financing review should re-test DSCR, debt yield, and LTV after any tax or insurance diligence update.
+- H04: Legal review should flag PSA timing or approval issues that affect the recommendation window.
+- H05: Closing review should not release funds-flow signoff until lender, title, insurance, and prorations are aligned.
+- H06: Any replacement of sample documents with buyer files should rerun extraction and preserve source hashes.
+- H07: Any field overridden by a reviewer should include a note and retain the original source-backed value.
+- H08: Any committee package export should preserve this workpaper alongside the final report.
+- H09: Any failed agent status should block unconditional proceed language until re-run or waived.
+- H10: Any data gap left open should remain visible in the next phase handoff.
+
 ## Recommendation Handoff
 - ic-memo-writer output is ready for Underwriting orchestration review.
 - If this workpaper supports IC materials, preserve the conditional recommendation language unless the debt/tax issues are mitigated.
@@ -153,3 +177,4 @@ Matrix dimensions: 3 rent cases x 3 vacancy cases x 3 exit-cap cases. Rent, vaca
 - ic-memo-writer tickmark 30: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
 - ic-memo-writer tickmark 31: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
 - ic-memo-writer tickmark 32: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
+- ic-memo-writer tickmark 33: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.

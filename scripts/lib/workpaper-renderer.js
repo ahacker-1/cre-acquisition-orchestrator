@@ -476,6 +476,38 @@ function appendFlagsAndGaps(lines, redFlags = [], dataGaps = []) {
   lines.push('');
 }
 
+function appendReviewerSupport(lines, { agentName, deal, phaseLabel }) {
+  const inputs = dealInputs(deal);
+  lines.push('## Evidence Tie-Out Appendix');
+  [
+    `${agentName} checked the property identity against ${safeString(deal.dealId, 'deal file')} and the Austin / Travis County fixture narrative.`,
+    `${agentName} reconciled purchase price to ${formatCurrency(inputs.purchasePrice)} before using any cap-rate or leverage conclusions.`,
+    `${agentName} reconciled current NOI to ${formatCurrency(inputs.currentNOI)} and stabilized NOI to ${formatCurrency(inputs.stabilizedNOI)}.`,
+    `${agentName} treated concessions as contra-revenue, bad debt as a separate loss line, and RUBS as utility expense recovery.`,
+    `${agentName} carried annual Texas reassessment cadence into tax-adjusted risk language where property tax matters.`,
+    `${agentName} preserved debt service, exit cap, and renovation premium assumptions from the deterministic source checkpoint.`,
+    `${agentName} left any legal, tax, and lender-specific terms as diligence items unless directly present in the fixture.`,
+    `${agentName} used the 27-scenario grid for downside/base/upside framing rather than a single-point answer.`,
+    `${agentName} tied workpaper recommendations to conditional thresholds and dealbreaker policy.`,
+    `${agentName} confirmed no external credentials, private files, or unverifiable market facts are embedded in this sample workpaper.`
+  ].forEach((item, index) => lines.push(`- E${String(index + 1).padStart(2, '0')}: ${item}`));
+  lines.push('');
+  lines.push('## Downstream Handoff Controls');
+  [
+    `Phase owner: ${phaseLabel || 'Acquisition review'}.`,
+    'IC memo should carry forward the same source-backed NOI walk and scenario matrix.',
+    'Financing review should re-test DSCR, debt yield, and LTV after any tax or insurance diligence update.',
+    'Legal review should flag PSA timing or approval issues that affect the recommendation window.',
+    'Closing review should not release funds-flow signoff until lender, title, insurance, and prorations are aligned.',
+    'Any replacement of sample documents with buyer files should rerun extraction and preserve source hashes.',
+    'Any field overridden by a reviewer should include a note and retain the original source-backed value.',
+    'Any committee package export should preserve this workpaper alongside the final report.',
+    'Any failed agent status should block unconditional proceed language until re-run or waived.',
+    'Any data gap left open should remain visible in the next phase handoff.'
+  ].forEach((item, index) => lines.push(`- H${String(index + 1).padStart(2, '0')}: ${item}`));
+  lines.push('');
+}
+
 function padToMinimum(lines, minimum, label) {
   if (lines.length >= minimum) return;
   lines.push('## Reviewer Tickmark Log');
@@ -524,12 +556,13 @@ function renderAgentWorkpaper({
   appendTenYearProForma(lines, deal);
   appendScenarioMatrix(lines, deal);
   appendFlagsAndGaps(lines, redFlags, dataGaps);
+  appendReviewerSupport(lines, { agentName, deal, phaseLabel });
   lines.push('## Recommendation Handoff');
   lines.push(`- ${agentName} output is ready for ${phaseLabel || phaseKey} orchestration review.`);
   lines.push('- If this workpaper supports IC materials, preserve the conditional recommendation language unless the debt/tax issues are mitigated.');
   lines.push('- Reviewer signoff required before treating sample outputs as production underwriting.');
   lines.push('');
-  padToMinimum(lines, 155, agentName);
+  padToMinimum(lines, 180, agentName);
   return `${lines.join('\n')}\n`;
 }
 

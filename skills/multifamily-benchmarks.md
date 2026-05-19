@@ -450,7 +450,7 @@ Metro areas are classified into tiers based on their cost of living index relati
 | Tier | Description | Example Markets | Overall COL Index |
 |------|-------------|----------------|-------------------|
 | **Tier 1** (Gateway) | Highest-cost metros, global gateway cities | NYC, San Francisco, Los Angeles, Boston, Washington DC, Seattle | 140-180+ (40-80% above national average) |
-| **Tier 2** (High-Growth Primary) | Above-average cost, strong growth metros | Portland, Denver, Austin, Nashville, San Diego, Miami, Minneapolis, Raleigh | 110-135 (10-35% above national average) |
+| **Tier 2** (High-Growth Primary) | Above-average cost, strong growth metros | Denver, Austin, Nashville, San Diego, Miami, Minneapolis, Raleigh, Charlotte | 110-135 (10-35% above national average) |
 | **Tier 3** (Average) | Near national average cost | Atlanta, Dallas, Phoenix, Charlotte, Tampa, Salt Lake City, Columbus | 95-110 (within 10% of national average) |
 | **Tier 4** (Below-Average) | Below national average cost, often Midwest and Southeast | Memphis, Oklahoma City, Toledo, Cleveland, Indianapolis, Birmingham, Little Rock | 80-95 (5-20% below national average) |
 
@@ -530,7 +530,7 @@ Properties located in FEMA-designated flood zones, hurricane-prone coastal areas
 
 | Seismic Zone | Geography | Insurance Impact | Seismic Retrofit | Underwriting Adjustment |
 |-------------|-----------|-----------------|------------------|------------------------|
-| **Very High** | Coastal CA (SF, LA, San Diego), Pacific NW coast (Portland, Seattle) | +15-25% on property insurance (earthquake policy is separate and expensive) | Pre-1970 buildings: $5,000-$15,000/unit retrofit cost | Earthquake insurance: $300-$800/unit/year. Budget retrofit if pre-1970 soft-story. |
+| **Very High** | Coastal CA (SF, LA, San Diego), Pacific NW coast (Seattle) | +15-25% on property insurance (earthquake policy is separate and expensive) | Pre-1970 buildings: $5,000-$15,000/unit retrofit cost | Earthquake insurance: $300-$800/unit/year. Budget retrofit if pre-1970 soft-story. |
 | **High** | Inland CA, Salt Lake City, Memphis (New Madrid zone), Charleston SC | +10-15% on property insurance | Pre-1970 buildings: $3,000-$10,000/unit | Earthquake insurance: $150-$400/unit/year. |
 | **Moderate** | Pacific NW inland, parts of Mountain West, parts of Southeast | +5-10% on property insurance | Generally not required | Earthquake insurance: $100-$200/unit/year (optional but recommended). |
 | **Low** | Most of the central and eastern US | No adjustment | Not applicable | Standard insurance benchmark applies. Earthquake insurance not typically purchased. |

@@ -588,7 +588,7 @@
       "impact": "Can reduce lender proceeds and increase risk",
       "owner": "financial-model-builder",
       "status": "OPEN",
-      "createdAt": "2026-05-19T20:08:14.170Z"
+      "createdAt": "2026-05-19T20:23:14.089Z"
     },
     {
       "id": "uw-pass-rate",
@@ -598,7 +598,7 @@
       "impact": "Increases downside loss probability",
       "owner": "scenario-analyst",
       "status": "OPEN",
-      "createdAt": "2026-05-19T20:08:14.170Z"
+      "createdAt": "2026-05-19T20:23:14.089Z"
     }
   ],
   "dataGaps": [
@@ -610,7 +610,7 @@
       "impact": "Could reduce confidence in recommendation",
       "owner": "financial-model-builder",
       "status": "OPEN",
-      "createdAt": "2026-05-19T20:08:14.170Z"
+      "createdAt": "2026-05-19T20:23:14.089Z"
     }
   ],
   "agentFindings": {
