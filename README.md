@@ -78,7 +78,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history and current-main changes.
 - **Strict schema layer** - runtime validation now uses AJV strict mode, shared enum refs, per-agent output schemas, and fixture validation so phase outputs fail fast when contracts drift.
 - **Canonical underwriting taxonomy** - EGI/NOI treatment, concessions, bad debt, RUBS recovery, tax reassessment assumptions, DSCR thresholds, and scenario probability policy are aligned across skills, agents, fixtures, and reports.
 - **Source-backed local security** - local path handling, upload size caps, document-route throttling, loopback-only auth checks, CSV formula sanitization, and dependency audit fixes are in place.
-- **Public repo polish** - Dependabot, CODEOWNERS, release-please, CI hardening, fixture/docs drift checks, API docs, WebSocket docs, and generated workpaper completeness checks make the repo easier to trust.
+- **Public repo polish** - release-please, fixture/docs drift checks, API docs, WebSocket docs, and generated workpaper completeness checks make the repo easier to trust without dependency-bot or ownership-routing noise.
 - **Dashboard runtime polish** - centralized API/WS config, Vite proxy support, route error boundaries, code splitting, and Playwright coverage keep the operator workspace stable.
 
 ## Release Journey
@@ -458,10 +458,8 @@ npm run codex:smoke
 ```text
 cre-acquisition-orchestrator/
 |-- .github/
-|   |-- workflows/                 # CI and release-please automation
+|   |-- workflows/                 # release-please automation
 |   |-- ISSUE_TEMPLATE/            # Bug, feature, asset-type, and question templates
-|   |-- dependabot.yml             # Weekly dependency maintenance
-|   |-- CODEOWNERS                 # Repo ownership routing
 |   `-- FUNDING.yml                # Sponsorship placeholders
 |
 |-- agents/

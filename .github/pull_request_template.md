@@ -16,7 +16,7 @@
 - [ ] Documentation
 - [ ] Configuration / threshold change
 - [ ] Dashboard UI change
-- [ ] DevOps / CI
+- [ ] DevOps / release automation
 
 ## Checklist
 
