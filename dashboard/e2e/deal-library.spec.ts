@@ -319,10 +319,11 @@ test('creates a launch-ready deal and starts a run from the wizard', async ({ pa
   expect(consoleErrors).toEqual([])
 })
 
-test('launches a shipped sample deal from the library', async ({ page }) => {
+test('launches a shipped sample deal from the library', async ({ page, request }) => {
   const consoleErrors = collectConsoleErrors(page)
 
   await waitForDashboardReady(page)
+  await stopActiveRun(request)
   const modal = await openDealLibraryModal(page)
   await modal.getByTestId('launch-deal-demo-pass-001').click()
 
