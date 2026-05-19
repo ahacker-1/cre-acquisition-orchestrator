@@ -192,6 +192,10 @@ function normalizedRelPath(basePath: string, filePath: string): string {
   return safePaths.toRelativePath(basePath, filePath, 'API artifact path');
 }
 
+function isLockArtifactPath(relPath: string): boolean {
+  return relPath.split('/').includes('.locks') || relPath.endsWith('.lock-target');
+}
+
 function repoRelativePath(filePath: string): string {
   return normalizedRelPath(projectRoot, filePath);
 }
@@ -651,6 +655,7 @@ console.log(`[watcher] WebSocket server listening on ws://${LOCAL_API_HOST}:${WS
 
 const statusWatcher = watch(statusDir, {
   ignoreInitial: true,
+  ignored: /(^|[/\\])\.locks([/\\]|$)/,
   persistent: true,
   depth: 3,  // Watch nested agent/batch checkpoint subdirectories
   awaitWriteFinish: { stabilityThreshold: 300, pollInterval: 100 },
@@ -658,6 +663,7 @@ const statusWatcher = watch(statusDir, {
 
 statusWatcher.on('change', (filePath: string) => {
   const relPath: string = normalizedRelPath(statusDir, filePath);
+  if (isLockArtifactPath(relPath)) return;
   console.log(`[watcher] File changed: status/${relPath}`);
 
   if (filePath.endsWith('.ndjson')) {
@@ -681,6 +687,7 @@ statusWatcher.on('change', (filePath: string) => {
 
 statusWatcher.on('add', (filePath: string) => {
   const relPath: string = normalizedRelPath(statusDir, filePath);
+  if (isLockArtifactPath(relPath)) return;
   console.log(`[watcher] File added: status/${relPath}`);
 
   if (filePath.endsWith('.ndjson')) {
@@ -747,8 +754,8 @@ console.log('[watcher] Watcher started');
 const API_PORT = 8081;
 const MAX_REQUEST_BODY_BYTES = 25 * 1024 * 1024;
 const DOCUMENT_ROUTE_RATE_LIMIT = {
-  capacity: 8,
-  refillPerMinute: 8,
+  capacity: 60,
+  refillPerMinute: 120,
 };
 
 interface TokenBucket {

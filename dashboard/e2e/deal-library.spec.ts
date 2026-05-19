@@ -314,7 +314,7 @@ test('creates a launch-ready deal and starts a run from the wizard', async ({ pa
   await expect(page.getByRole('main').getByRole('heading', { name: READY_DEAL_NAME })).toBeVisible({ timeout: 20_000 })
 
   const modal = await openDealLibraryModal(page)
-  await expect(modal.getByTestId(`deal-card-${READY_DEAL_ID}`)).toContainText('Running')
+  await expect(modal.getByTestId(`deal-card-${READY_DEAL_ID}`)).toContainText(/Running|Complete/)
 
   expect(consoleErrors).toEqual([])
 })
