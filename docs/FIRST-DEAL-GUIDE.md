@@ -1,6 +1,6 @@
 # First Deal Guide
 
-A clean path from fresh clone to your first CRE acquisition run.
+A source-backed path from fresh clone to a local IC starter package.
 
 ---
 
@@ -13,7 +13,7 @@ npm install
 npm run setup
 ```
 
-This verifies Node/npm, installs dashboard dependencies, and tries to prepare the optional Codex live-agent runtime. If Codex install or login is skipped, the offline demo and dashboard still work.
+This verifies Node/npm, installs dashboard dependencies, and tries to prepare the optional Codex live-agent runtime. If Codex install or login is skipped, the local dashboard and deterministic sample still work.
 
 If you want live AI agents, choose **Sign in with ChatGPT** during the Codex login flow. For a strict live-agent setup check, run:
 
@@ -31,155 +31,121 @@ Expected login output includes `Logged in using ChatGPT`.
 
 ---
 
-## Step 2: Start with the Sample Deal
-
-The repo ships with `config/deal.json` populated for Parkview Apartments, a 200-unit Austin multifamily sample. For the fastest first run, keep that file as-is.
-
-To create your own deal later, either:
-
-- Use the dashboard front door: drop files, state the goal, and create an agent-team workspace.
-- Use the dashboard New Deal flow for manual field entry.
-- Copy `config/deal-example.json` into `config/deal.json` and edit the fields.
-
-```powershell
-Copy-Item config/deal-example.json config/deal.json
-code config/deal.json
-```
-
-At minimum, keep these fields populated:
-
-- `dealId`
-- `dealName`
-- `property`
-- `financials`
-- `financing`
-- `investmentStrategy`
-- `timeline`
-
-For the complete field reference, see [Deal Configuration](DEAL-CONFIGURATION.md).
-
----
-
-## Step 3: Run the Offline Demo
-
-```powershell
-npm run demo
-```
-
-This does not call any LLM. It runs the deterministic simulation engine, generates checkpoints, writes phase outputs, validates contracts, and produces reports under `data/reports/{dealId}/`.
-
-Useful output locations:
-
-| Output | Path |
-|--------|------|
-| Master checkpoint | `data/status/{dealId}.json` |
-| Final report | `data/reports/{dealId}/final-report.md` |
-| Phase outputs | `data/phase-outputs/{dealId}/` |
-| Logs | `data/logs/{dealId}/master.log` |
-
----
-
-## Step 4: Start the Dashboard
-
-In a second terminal:
+## Step 2: Start the Dashboard
 
 ```powershell
 npm run dashboard
 ```
 
-Open `http://localhost:5173`.
-
-The dashboard lets you:
-
-- Drop source documents and state the outcome you want: quick screen, IC package, legal blocker review, financing package, or underwriting refresh
-- Create or open an agentic deal team workspace
-- Use the Mission tab to see readiness, blockers, agent activity, handoffs, and package progress
-- Upload local source documents
-- Extract CSV/TXT/MD inputs
-- Mark operator checklist items complete or waived with a short reason while keeping source-backed evidence separate
-- Launch focused workflows from Advanced when you want manual runtime control
-- Watch phase progress, agent status, and communication events
-- Review the completion package
-
----
-
-## Step 5: Run Live Codex Agents
-
-Live Codex runs use the same markdown agent instructions through `codex exec`. CLI runs write raw prompts, logs, manifests, summaries, and agent memos to `data/codex-runs/{runId}/`. Dashboard-launched Codex runs also publish story events and package documents under `data/status/{dealId}/run-{runId}-*.{ndjson,json}` so the Package view can show the real Codex workpapers.
-
-After `npm run codex:status` confirms ChatGPT login, run one live agent:
-
-```powershell
-npm run codex:smoke
-```
-
-Then run a multi-agent quick screen:
-
-```powershell
-npm run codex:run
-```
-
-For the complete live catalog:
-
-```powershell
-npm run codex:run:full
-```
-
-The live runner reads the existing markdown prompts in `agents/`, `orchestrators/`, and `skills/`, then writes Codex outputs to:
+Open:
 
 ```text
-data/codex-runs/{runId}/
+http://localhost:5173
 ```
 
-The default sandbox is read-only so the agents can analyze the repo without editing it. Use `--search` when your installed Codex CLI exposes web search; older versions will print a warning and continue without search:
-
-```powershell
-node scripts/codex-agent-runner.js --workflow quick-deal-screen --concurrency 2 --search
-```
+The dashboard is the default first-deal path. You do not need to edit `config/deal.json` to create a workspace from source documents.
 
 ---
 
-## Step 6: Read Results
+## Step 3: Drop a Local Source Package
 
-Start in the dashboard Package tab if you want the product experience. It collects the final recommendation, IC review brief, red flags, data gaps, decision log, and workpapers.
+Use the front door to upload the files you actually have:
 
-If you want to inspect files directly, use these paths:
+- rent roll
+- T12 or trailing operating statement
+- offering memo
+- LOI, PSA, title, survey, lender, environmental, or diligence support files
 
-Offline demo report:
+Supported CSV/TXT/MD files and supported XLSX rent-roll/T12 workbooks can produce extracted candidate fields. PDFs and unsupported workbook shapes are stored and classified for review.
 
-```powershell
-Get-Content data/reports/parkview-2026-001/final-report.md
+The repo includes a realistic local fixture package:
+
+```text
+fixtures/first-real-deal/
 ```
 
-Latest live Codex run summary:
-
-```powershell
-Get-ChildItem data/codex-runs
-Get-Content data/codex-runs/<run-id>/summary.md
-```
-
-Replace `<run-id>` with the directory created by the runner, for example `codex-smoke`.
+It points to messy XLSX rent roll and T12 workbooks plus an offering memo excerpt. Use it as a safe practice package before using confidential deal files.
 
 ---
 
-## Step 7: Common Fixes
+## Step 4: Review Source-Backed Fields
 
-| Issue | Fix |
-|-------|-----|
-| `Codex CLI is not installed` | Run `npm install -g @openai/codex`, then `npm run setup` |
-| `Codex is not logged in` | Run `codex login` and choose ChatGPT |
-| Dashboard shows no data | Run `npm run demo` once, then refresh |
-| Port 5173 is busy | Stop the other process or edit `dashboard/vite.config.ts` |
-| Contract validation fails | Run `npm run demo` first so fresh checkpoint files exist |
-| Live Codex agent has missing facts | Re-run with `--search` or add the missing source documents |
+Open **Evidence** in the deal workspace.
+
+For each supported source document:
+
+1. Click **Preview Extraction**.
+2. Review the field value, confidence, source file, sheet/row/cell or line reference, raw snippet, warnings, and current deal value.
+3. Select trusted fields and click **Approve & Apply**.
+4. Use **Reject Selected** when the field should not be used.
+5. Use **Waive Selected** when the field is acceptable to defer, with a short note.
+
+Critical deal inputs are not silently applied. They must be reviewed before they become source-backed deal inputs.
+
+---
+
+## Step 5: Resolve Missing Evidence
+
+Use these surfaces before launching work:
+
+- **Cockpit sidebar:** missing documents, source-backed launch coverage, and phase readiness.
+- **Operator Briefing:** one best next action, review queue, and workflow readiness.
+- **Deal Progression Guide:** checklist items that can be completed or waived with a reason.
+
+The launch gate can enforce approved source-backed inputs for critical fields. Ambiguous fields should stay in review, be rejected, or be waived. Do not treat a waiver as proof that the value is true.
+
+---
+
+## Step 6: Launch the Right Review Path
+
+When the source-backed inputs are ready, launch a focused workflow from the workspace:
+
+- **Quick Deal Screen:** fastest go/no-go style path.
+- **Underwriting Refresh:** source-backed underwriting pass.
+- **Full Acquisition Review:** broader diligence, underwriting, financing, legal, and closing package path.
+
+The offline simulation runtime is local and credential-free. The live Codex / ChatGPT runtime is optional and should be used only after you understand data-sharing boundaries in [Runtime Comparison](RUNTIME-COMPARISON.md).
+
+---
+
+## Step 7: Export the IC Starter Package
+
+Open **IC Package** and export:
+
+- Markdown for human review
+- JSON for downstream tools or audit checks
+
+The export includes approved inputs, source references, assumptions, open questions, red flags, and launch-readiness status. It is a reviewable starting package, not financial, legal, or investment advice.
+
+Generated package files are written under:
+
+```text
+data/deals/{dealId}/packages/
+```
+
+Runtime files remain local and are ignored by git.
+
+---
+
+## Parkview Sample Fallback
+
+If you want a deterministic no-upload walkthrough, click **Start Guided Demo** or run:
+
+```powershell
+npm run demo
+npm run dashboard
+```
+
+Parkview is best for screenshots, public demos, and validating the end-to-end sample. The first real-deal path is the dashboard document intake and review loop above.
 
 ---
 
 ## What You Have Now
 
-After the first run, you have:
+After the first deal run, you have:
 
-1. A no-key local simulation path for instant evaluation.
-2. A dashboard for deal setup, document intake, workflow launch, and package review.
-3. A ChatGPT-login Codex harness for running real markdown agents through `codex exec`.
-4. Generated checkpoints and reports you can inspect, validate, and adapt for future deals.
+1. A local deal workspace created from source documents.
+2. A source-backed approved-field manifest with provenance and review status.
+3. A plain-English missing-evidence checklist and one best next action.
+4. A gated workflow launch path for critical approved inputs.
+5. A Markdown/JSON IC starter package you can audit and adapt.

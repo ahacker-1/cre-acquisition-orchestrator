@@ -24,10 +24,12 @@ import {
   applySourceExtraction,
   buildRunInputSnapshot,
   evaluateLaunchReadiness,
+  exportIcStarterPackage,
   extractSourceDocument,
   getDealWorkspace,
   getSourceExtraction,
   listDealDocuments,
+  reviewSourceExtraction,
   saveDealCriteria,
   savePhaseState,
   saveSourceDocument,
@@ -121,6 +123,11 @@ type WatcherMessage = CheckpointMessage | LogMessage | InitialMessage | StoryEve
 const logLineOffsets: Map<string, number> = new Map();
 const eventLineOffsets: Map<string, number> = new Map();
 
+function isTransientFsError(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code;
+  return code === 'ENOENT' || code === 'EPERM' || code === 'EBUSY';
+}
+
 function readJsonSafe(filePath: string): unknown | null {
   try {
     const raw: string = readFileSync(filePath, 'utf-8');
@@ -138,7 +145,9 @@ function readLastLines(filePath: string, count: number): string[] {
     const lines: string[] = raw.split(/\r?\n/);
     return lines.slice(-count).filter((l) => l.length > 0);
   } catch (err) {
-    console.error(`[watcher] Failed to read log file: ${filePath}`, err);
+    if (!isTransientFsError(err)) {
+      console.error(`[watcher] Failed to read log file: ${filePath}`, err);
+    }
     return [];
   }
 }
@@ -148,7 +157,9 @@ function readAllLines(filePath: string): string[] {
     const raw: string = readFileSync(filePath, 'utf-8');
     return raw.split(/\r?\n/).filter((l) => l.length > 0);
   } catch (err) {
-    console.error(`[watcher] Failed to read log file: ${filePath}`, err);
+    if (!isTransientFsError(err)) {
+      console.error(`[watcher] Failed to read log file: ${filePath}`, err);
+    }
     return [];
   }
 }
@@ -261,7 +272,9 @@ function readNdjsonRawLines(filePath: string): string[] {
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
   } catch (err) {
-    console.error(`[watcher] Failed to read events file: ${filePath}`, err);
+    if (!isTransientFsError(err)) {
+      console.error(`[watcher] Failed to read events file: ${filePath}`, err);
+    }
     return [];
   }
 }
@@ -791,7 +804,7 @@ function parseDealWorkspaceId(url: string, suffix: string): string | null {
   return match ? decodeUrlPart(match[1]) : null;
 }
 
-function parseDealDocumentRoute(url: string, suffix: 'extract' | 'extraction' | 'apply-extraction'): {
+function parseDealDocumentRoute(url: string, suffix: 'extract' | 'extraction' | 'apply-extraction' | 'review-extraction'): {
   dealId: string;
   documentId: string;
 } | null {
@@ -1021,7 +1034,13 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
       }
       const payload = readJsonSafe(documentsPath);
       if (!payload || typeof payload !== 'object') {
-        sendJson(res, 500, { error: `Failed to read documents for run: ${runId}` });
+        sendJson(res, 200, {
+          runId,
+          path: normalizedRelPath(statusDir, documentsPath),
+          documents: [],
+          pending: true,
+          warning: 'Run documents are still being written. Try again shortly.',
+        });
         return;
       }
       sendJson(res, 200, {
@@ -1346,6 +1365,56 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         sendJson(res, 200, applySourceExtraction({ ...dealServiceContext, projectRoot }, route.dealId, route.documentId, body));
       } catch (err) {
         sendJson(res, 400, { error: err instanceof Error ? err.message : 'Failed to apply extraction' });
+      }
+      return;
+    }
+
+    // POST /api/deals/:dealId/documents/:documentId/review-extraction - reject or waive selected extracted fields
+    if (method === 'POST' && /^\/api\/deals\/[^/]+\/documents\/[^/]+\/review-extraction$/.test(url)) {
+      const route = parseDealDocumentRoute(url, 'review-extraction');
+      if (!route) {
+        sendJson(res, 400, { error: 'Invalid document route' });
+        return;
+      }
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown> = {};
+      if (rawBody.trim().length > 0) {
+        try {
+          body = JSON.parse(rawBody);
+        } catch {
+          sendJson(res, 400, { error: 'Invalid JSON body' });
+          return;
+        }
+      }
+      try {
+        sendJson(res, 200, reviewSourceExtraction({ ...dealServiceContext, projectRoot }, route.dealId, route.documentId, body));
+      } catch (err) {
+        sendJson(res, 400, { error: err instanceof Error ? err.message : 'Failed to review extraction' });
+      }
+      return;
+    }
+
+    // POST /api/deals/:dealId/ic-starter-package - export a source-backed Markdown and JSON IC starter package
+    if (method === 'POST' && /^\/api\/deals\/[^/]+\/ic-starter-package$/.test(url)) {
+      const dealId = parseDealWorkspaceId(url, 'ic-starter-package');
+      if (!dealId) {
+        sendJson(res, 400, { error: 'Invalid deal ID' });
+        return;
+      }
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown> = {};
+      if (rawBody.trim().length > 0) {
+        try {
+          body = JSON.parse(rawBody);
+        } catch {
+          sendJson(res, 400, { error: 'Invalid JSON body' });
+          return;
+        }
+      }
+      try {
+        sendJson(res, 200, exportIcStarterPackage({ ...dealServiceContext, projectRoot }, dealId, body));
+      } catch (err) {
+        sendJson(res, 400, { error: err instanceof Error ? err.message : 'Failed to export package' });
       }
       return;
     }

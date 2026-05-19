@@ -3,8 +3,11 @@ import type {
   DealCriteria,
   DealWorkspace,
   ExtractionPreview,
+  ExtractionReviewStatus,
   GuideChecklistStatus,
+  IcStarterPackageExport,
   PhaseWorkspaceStatus,
+  ReviewExtractionResult,
   SourceDocument,
 } from '../types/workspace'
 import { uploadDealDocument } from '../lib/documentUpload'
@@ -155,6 +158,58 @@ export function useDealWorkspace(dealId: string | null | undefined) {
     }
   }
 
+  async function reviewExtraction(
+    documentId: string,
+    fieldIds: string[],
+    reviewStatus: Extract<ExtractionReviewStatus, 'candidate' | 'rejected' | 'waived'>,
+    note?: string,
+  ): Promise<ReviewExtractionResult> {
+    if (!dealId) throw new Error('Choose a deal before reviewing extracted fields.')
+    setWorking(true)
+    try {
+      const response = await fetch(
+        `${API_URL}/api/deals/${encodeURIComponent(dealId)}/documents/${encodeURIComponent(documentId)}/review-extraction`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fieldIds, reviewStatus, note }),
+        },
+      )
+      const payload = await parseJson<ReviewExtractionResult & { error?: string }>(response)
+      if (!response.ok || !payload.extraction) throw new Error(payload.error || 'Failed to review extraction')
+      setLastExtraction(payload.extraction)
+      await refreshWorkspace()
+      setError(null)
+      return payload
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      throw err
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  async function exportPackage(workflowId = 'full-acquisition-review'): Promise<IcStarterPackageExport> {
+    if (!dealId) throw new Error('Choose a deal before exporting the IC package.')
+    setWorking(true)
+    try {
+      const response = await fetch(`${API_URL}/api/deals/${encodeURIComponent(dealId)}/ic-starter-package`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workflowId }),
+      })
+      const payload = await parseJson<IcStarterPackageExport & { error?: string }>(response)
+      if (!response.ok || !payload.packageJson) throw new Error(payload.error || 'Failed to export IC starter package')
+      setError(null)
+      return payload
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      throw err
+    } finally {
+      setWorking(false)
+    }
+  }
+
   async function savePhaseChecklist(
     phaseSlug: string,
     checklist: Record<string, GuideChecklistStatus>,
@@ -195,6 +250,8 @@ export function useDealWorkspace(dealId: string | null | undefined) {
     extractDocument,
     loadExtraction,
     applyExtraction,
+    reviewExtraction,
+    exportPackage,
     savePhaseChecklist,
   }
 }

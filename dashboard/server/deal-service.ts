@@ -401,7 +401,13 @@ function listUserDeals(context: ServiceContext): DealLibraryItem[] {
 
   return readdirSync(root)
     .map((entry) => join(root, entry))
-    .filter((entryPath) => existsSync(entryPath) && statSync(entryPath).isDirectory())
+    .filter((entryPath) => {
+      try {
+        return existsSync(entryPath) && statSync(entryPath).isDirectory()
+      } catch {
+        return false
+      }
+    })
     .map((entryPath) => {
       const dealFilePath = join(entryPath, 'deal.json')
       const metaFilePath = join(entryPath, 'meta.json')

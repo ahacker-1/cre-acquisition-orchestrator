@@ -86,6 +86,12 @@ function checkpointFromDealRecord(record: DealRecordResponse): DealCheckpoint {
   }
 }
 
+function scrollToPageTop(): void {
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  })
+}
+
 export default function App() {
   const {
     dealCheckpoint,
@@ -121,6 +127,7 @@ export default function App() {
   const [libraryError, setLibraryError] = useState<string | null>(null)
   const [workspaceCheckpoint, setWorkspaceCheckpoint] = useState<DealCheckpoint | null>(null)
   const [workspaceInitialTab, setWorkspaceInitialTab] = useState<WorkspaceInitialTab>('documents')
+  const [frontDoorOpen, setFrontDoorOpen] = useState(true)
   const [guidedDemoAutoStart, setGuidedDemoAutoStart] = useState(false)
   const [guidedDemoLoading, setGuidedDemoLoading] = useState(false)
   const [quickCreateFiles, setQuickCreateFiles] = useState<File[]>([])
@@ -168,7 +175,20 @@ export default function App() {
     setWizardOpen(true)
   }
 
+  function openUploadFrontDoor(): void {
+    setLibraryError(null)
+    setWorkspaceCheckpoint(null)
+    setWorkspaceInitialTab('documents')
+    setGuidedDemoAutoStart(false)
+    setFrontDoorOpen(true)
+    setLibraryOpen(false)
+    setWorkflowOpen(false)
+    setWizardOpen(false)
+    scrollToPageTop()
+  }
+
   function openEditDealWizard(dealId: string): void {
+    setFrontDoorOpen(false)
     setEditingDealId(dealId)
     setWizardOpen(true)
     setLibraryOpen(false)
@@ -179,11 +199,13 @@ export default function App() {
     setLibraryError(null)
     try {
       const record = await loadDeal(dealId)
+      setFrontDoorOpen(false)
       setWorkspaceCheckpoint(checkpointFromDealRecord(record))
       setWorkspaceInitialTab(section)
       setLibraryOpen(false)
       setWorkflowOpen(false)
       setWizardOpen(false)
+      scrollToPageTop()
       return true
     } catch (err) {
       setLibraryError(err instanceof Error ? err.message : String(err))
@@ -203,6 +225,7 @@ export default function App() {
 
   function handleQuickFiles(files: File[], intent: OutcomeIntent, goalText: string): void {
     setLibraryError(null)
+    setFrontDoorOpen(true)
     setQuickCreateIntent(intent)
     setQuickCreateGoal(goalText)
     setQuickCreateFiles(files)
@@ -210,16 +233,19 @@ export default function App() {
 
   async function handleQuickDealCreated(dealId: string): Promise<void> {
     setQuickCreateFiles([])
+    setFrontDoorOpen(false)
     await refreshDeals()
     await openDealWorkspace(dealId, 'documents')
   }
 
   function handleWorkflowLaunchStarted(): void {
     setLibraryError(null)
+    setFrontDoorOpen(false)
     setWorkflowOpen(false)
     setWorkspaceCheckpoint(null)
     void refreshDeals()
     void refreshRunStatus()
+    scrollToPageTop()
   }
 
   async function handleLaunchDeal(dealId: string): Promise<void> {
@@ -234,8 +260,10 @@ export default function App() {
         speed: 'normal',
         reset: match.kind === 'sample',
       })
+      setFrontDoorOpen(false)
       setWorkspaceCheckpoint(null)
       setLibraryOpen(false)
+      scrollToPageTop()
     } catch (err) {
       setLibraryError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -247,7 +275,13 @@ export default function App() {
     void refreshDeals()
   }, [refreshDeals, runStatus.runId, runStatus.state])
 
-  const visibleDealCheckpoint = workspaceCheckpoint ?? dealCheckpoint
+  useEffect(() => {
+    if (runActive && dealCheckpoint) {
+      setFrontDoorOpen(false)
+    }
+  }, [dealCheckpoint, runActive])
+
+  const visibleDealCheckpoint = frontDoorOpen ? null : workspaceCheckpoint ?? dealCheckpoint
   const showingManualWorkspace = Boolean(workspaceCheckpoint)
   const visibleStoryEvents = useMemo(() => {
     if (!visibleDealCheckpoint) return []
@@ -310,6 +344,14 @@ export default function App() {
           </button>
 
           <button
+            onClick={openUploadFrontDoor}
+            data-testid="header-upload-package-button"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 transition-colors"
+          >
+            Upload Package
+          </button>
+
+          <button
             onClick={openNewDealWizard}
             data-testid="header-new-deal-button"
             className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 transition-colors"
@@ -337,7 +379,10 @@ export default function App() {
           )}
 
           <button
-            onClick={() => void startLiveRun()}
+            onClick={() => {
+              setFrontDoorOpen(false)
+              void startLiveRun()
+            }}
             disabled={!canStart}
             className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
@@ -512,16 +557,18 @@ export default function App() {
         onValidateDeal={validateDeal}
         onSaveDeal={saveDeal}
         onLaunchDeal={launchDeal}
-        onSaved={(dealId, intent) => {
+        onSaved={async (dealId, intent) => {
           setLibraryError(null)
-          void refreshDeals()
+          await refreshDeals()
           if (dealId && intent === 'documents') {
-            void openDealWorkspace(dealId, 'documents')
+            await openDealWorkspace(dealId, 'documents')
           }
         }}
         onLaunched={() => {
           setLibraryError(null)
+          setFrontDoorOpen(false)
           void refreshDeals()
+          scrollToPageTop()
         }}
       />
 

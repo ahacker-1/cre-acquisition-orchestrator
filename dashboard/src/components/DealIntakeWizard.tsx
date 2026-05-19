@@ -35,7 +35,7 @@ interface DealIntakeWizardProps {
     dealId: string,
     options: { scenario: LaunchScenario; speed: 'fast' | 'normal' | 'slow'; reset?: boolean },
   ) => Promise<unknown>
-  onSaved: (dealId?: string, intent?: 'draft' | 'launch' | 'documents') => void
+  onSaved: (dealId?: string, intent?: 'draft' | 'launch' | 'documents') => void | Promise<void>
   onLaunched: () => void
 }
 
@@ -223,7 +223,7 @@ export default function DealIntakeWizard({
     setSaveError(null)
     try {
       const saved = await onSaveDeal(form, 'draft', currentDealId)
-      onSaved(saved.item.dealId, 'documents')
+      await onSaved(saved.item.dealId, 'documents')
       onClose()
     } catch (err) {
       const error = err as Error & { validation?: DealValidationResult }
@@ -247,7 +247,7 @@ export default function DealIntakeWizard({
         speed: form.launch.speed,
         reset: false,
       })
-      onSaved()
+      await onSaved()
       onLaunched()
       onClose()
     } catch (err) {

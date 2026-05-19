@@ -30,7 +30,7 @@ Candidate issues:
 
 - Add PDF text extraction for offering memoranda and legal checklists with explicit confidence and pending-review states.
 - Continue expanding parser fixtures for messy real-world rent rolls, trailing-12s, and unit mixes.
-- Add a separate approve-only queue with reject/waive decisions before applying values to deal state.
+- Continue hardening reject/waive review history and source-field decision audit trails before applying values to deal state.
 - Add field-level provenance deep links from approved inputs to source document snippets.
 
 Shipped in v2.5.0:
@@ -44,11 +44,11 @@ Shipped in v2.5.0:
 
 ### 2. Demo Journey and Public Proof
 
-Goal: make a first-time GitHub visitor understand the product in under two minutes and run it locally in under five.
+Goal: make a first-time GitHub visitor understand the workspace quickly and run a first real local source package in 10 minutes.
 
 Candidate issues:
 
-- Keep the Quick Demo path short, repeatable, and credential-free as the default public proof point.
+- Keep the Quick Demo path short, repeatable, credential-free, and centered on local source-backed deal intake.
 - Extend the deterministic screenshot capture script to include the front door, quick-create modal, and source-backed extraction review panel.
 - Rename the screenshot capture script to a version-neutral path.
 
@@ -57,6 +57,7 @@ Shipped through v2.5.0:
 - Current workspace screenshots for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package live under `docs/assets/`.
 - `npm run screenshots` captures the core workspace gallery against a locally running dashboard.
 - `docs/QUICK-DEMO.md` gives first-time visitors the shortest offline path from clone to local dashboard.
+- `docs/FIRST-DEAL-GUIDE.md` now leads with local source package intake, extraction review, launch readiness, and Markdown/JSON IC starter export.
 - `npm run demo:verify` runs the offline demo, contract checks, parser/workspace tests, guide validation, system tests, and dashboard build in one command.
 - Mission includes a Swarm Goal Console that maps an operator goal to a recommended specialist swarm, blockers, handoffs, and next action.
 - `docs/RUNTIME-COMPARISON.md` explains offline simulation vs. live Codex execution, including artifact paths, credential boundaries, and when each path is appropriate.
@@ -72,7 +73,7 @@ Candidate issues:
 - Add workpaper quality gates for cited inputs, assumptions, calculations, caveats, and reviewer signoff.
 - Add package-level evidence completeness scoring by phase.
 - Add red-flag drilldowns from IC Package back to the originating specialist workpaper and source document.
-- Add exportable markdown/JSON package manifest for investment committee review.
+- Extend the Markdown/JSON IC starter package with richer source drilldowns, reviewer signoff, and package version history.
 
 ### 4. Live Agent Runtime Hardening
 

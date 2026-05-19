@@ -31,6 +31,7 @@ import type {
   DealProgressionSection,
   ExtractionField,
   ExtractionPreview,
+  ExtractionReviewStatus,
   GuideChecklistStatus,
   LaunchReadinessResult,
   OperatorCommand,
@@ -222,6 +223,20 @@ function fieldValue(value: unknown): string {
   if (Array.isArray(value)) return `${value.length} rows`
   if (value && typeof value === 'object') return JSON.stringify(value)
   return '--'
+}
+
+function downloadSafeName(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'deal'
+}
+
+function downloadTextFile(fileName: string, contents: string, mime: string): void {
+  const blob = new Blob([contents], { type: mime })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = fileName
+  anchor.click()
+  URL.revokeObjectURL(url)
 }
 
 function sourceLabel(field: ExtractionField): string {
@@ -419,18 +434,27 @@ function CriteriaPanel({
 function ExtractionPreviewPanel({
   extraction,
   onApply,
+  onReview,
   working,
 }: {
   extraction: ExtractionPreview | null
   onApply: (documentId: string, fieldIds: string[], allowConflicts?: boolean) => Promise<void>
+  onReview: (
+    documentId: string,
+    fieldIds: string[],
+    reviewStatus: Extract<ExtractionReviewStatus, 'rejected' | 'waived'>,
+    note?: string,
+  ) => Promise<void>
   working: boolean
 }) {
   const [selectedFieldIds, setSelectedFieldIds] = useState<string[]>([])
   const [confirmConflicts, setConfirmConflicts] = useState(false)
+  const [reviewNote, setReviewNote] = useState('')
 
   useEffect(() => {
     setSelectedFieldIds([])
     setConfirmConflicts(false)
+    setReviewNote('')
   }, [extraction])
 
   if (!extraction) {
@@ -444,9 +468,25 @@ function ExtractionPreviewPanel({
     )
   }
   const selectedFields = extraction.fields.filter((field) => selectedFieldIds.includes(field.fieldId))
-  const selectableFields = extraction.fields.filter((field) => !field.validationIssues?.length)
+  const extractionDocumentId = extraction.documentId
+  const selectableFields = extraction.fields.filter((field) =>
+    !field.validationIssues?.length &&
+    field.reviewStatus !== 'applied' &&
+    field.reviewStatus !== 'rejected' &&
+    field.reviewStatus !== 'waived'
+  )
   const selectedConflictCount = selectedFields.filter((field) => field.conflict).length
   const canApply = selectedFieldIds.length > 0 && (selectedConflictCount === 0 || confirmConflicts)
+  const selectedReviewableCount = selectedFields.filter((field) =>
+    field.reviewStatus !== 'applied' &&
+    field.reviewStatus !== 'rejected' &&
+    field.reviewStatus !== 'waived'
+  ).length
+  async function handleReview(reviewStatus: Extract<ExtractionReviewStatus, 'rejected' | 'waived'>): Promise<void> {
+    await onReview(extractionDocumentId, selectedFieldIds, reviewStatus, reviewNote)
+    setSelectedFieldIds([])
+    setReviewNote('')
+  }
 
   return (
     <div className="portal-panel" data-testid="extraction-preview">
@@ -458,7 +498,11 @@ function ExtractionPreviewPanel({
         <span className={`status-badge ${statusClass(extraction.status)}`}>{extraction.status}</span>
       </div>
       {extraction.notes.length > 0 && (
-        <p className="text-sm text-gray-400 mt-3">{extraction.notes[0]}</p>
+        <div className="mt-3 space-y-1">
+          {extraction.notes.slice(0, 3).map((note) => (
+            <p key={note} className="text-sm text-gray-400">{note}</p>
+          ))}
+        </div>
       )}
       {extraction.error && (
         <p className="mt-3 border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-100">{extraction.error}</p>
@@ -514,6 +558,7 @@ function ExtractionPreviewPanel({
         ) : (
           extraction.fields.map((field: ExtractionField) => {
             const blocked = Boolean(field.validationIssues?.length)
+            const reviewLocked = field.reviewStatus === 'applied' || field.reviewStatus === 'rejected' || field.reviewStatus === 'waived'
             return (
             <label key={field.fieldId} className="flex items-center gap-3 border border-white/10 bg-black px-3 py-3 text-sm">
               <input
@@ -521,7 +566,7 @@ function ExtractionPreviewPanel({
                 data-testid={`extraction-field-${field.fieldId}`}
                 data-field-path={field.path}
                 className="h-4 w-4 accent-white"
-                disabled={blocked}
+                disabled={blocked || reviewLocked}
                 checked={selectedFieldIds.includes(field.fieldId)}
                 onChange={(event) => {
                   setSelectedFieldIds((current) =>
@@ -536,6 +581,11 @@ function ExtractionPreviewPanel({
                   {field.label}
                   {field.conflict && <span className="status-badge status-running">conflict</span>}
                   {blocked && <span className="status-badge status-blocked">blocked</span>}
+                  {field.reviewStatus && field.reviewStatus !== 'candidate' && (
+                    <span className={`status-badge ${statusClass(field.reviewStatus)}`}>
+                      {field.reviewStatus}
+                    </span>
+                  )}
                 </span>
                 <span className="block font-mono text-xs text-gray-500">{field.path}</span>
                 <span className="mt-1 block text-xs text-gray-500">
@@ -555,6 +605,9 @@ function ExtractionPreviewPanel({
                 {field.validationIssues?.map((issue) => (
                   <span key={issue} className="mt-1 block text-xs text-red-200">{issue}</span>
                 ))}
+                {field.reviewNote && (
+                  <span className="mt-1 block text-xs text-gray-600">Review note: {field.reviewNote}</span>
+                )}
               </span>
               <span className="text-right font-semibold text-white">{fieldValue(field.value)}</span>
             </label>
@@ -578,21 +631,52 @@ function ExtractionPreviewPanel({
           </span>
         </label>
       )}
-      <button
-        type="button"
-        data-testid="apply-extraction"
-        disabled={working || extraction.fields.length === 0 || !canApply}
-        onClick={() => void onApply(extraction.documentId, selectedFieldIds, selectedConflictCount > 0 && confirmConflicts)}
-        className="portal-button portal-button-primary mt-4 w-full"
-      >
-        {selectedFieldIds.length === 0
-          ? 'Select Fields To Approve & Apply'
-          : selectedConflictCount > 0
-            ? confirmConflicts
-              ? `Approve & Apply ${selectedConflictCount} Reviewed Conflict${selectedConflictCount === 1 ? '' : 's'}`
-              : 'Confirm Conflict Review'
-            : 'Approve & Apply Selected Fields'}
-      </button>
+      {selectedFieldIds.length > 0 && (
+        <label className="portal-field mt-4">
+          <span>Review Note</span>
+          <input
+            data-testid="extraction-review-note"
+            value={reviewNote}
+            onChange={(event) => setReviewNote(event.target.value)}
+            placeholder="Why these fields were rejected or waived."
+          />
+        </label>
+      )}
+      <div className="mt-4 grid gap-2 md:grid-cols-3">
+        <button
+          type="button"
+          data-testid="apply-extraction"
+          disabled={working || extraction.fields.length === 0 || !canApply}
+          onClick={() => void onApply(extraction.documentId, selectedFieldIds, selectedConflictCount > 0 && confirmConflicts)}
+          className="portal-button portal-button-primary w-full"
+        >
+          {selectedFieldIds.length === 0
+            ? 'Select Fields To Approve'
+            : selectedConflictCount > 0
+              ? confirmConflicts
+                ? `Approve ${selectedConflictCount} Conflict${selectedConflictCount === 1 ? '' : 's'}`
+                : 'Confirm Conflicts'
+              : 'Approve & Apply'}
+        </button>
+        <button
+          type="button"
+          data-testid="reject-extraction-fields"
+          disabled={working || selectedReviewableCount === 0}
+          onClick={() => void handleReview('rejected')}
+          className="portal-button portal-button-secondary w-full"
+        >
+          Reject Selected
+        </button>
+        <button
+          type="button"
+          data-testid="waive-extraction-fields"
+          disabled={working || selectedReviewableCount === 0}
+          onClick={() => void handleReview('waived')}
+          className="portal-button portal-button-secondary w-full"
+        >
+          Waive Selected
+        </button>
+      </div>
     </div>
   )
 }
@@ -605,6 +689,7 @@ function DocumentIntakePanel({
   onExtract,
   onLoadExtraction,
   onApply,
+  onReview,
 }: {
   documents: SourceDocument[]
   extraction: ExtractionPreview | null
@@ -613,6 +698,12 @@ function DocumentIntakePanel({
   onExtract: (documentId: string) => Promise<ExtractionPreview>
   onLoadExtraction: (documentId: string) => Promise<ExtractionPreview>
   onApply: (documentId: string, fieldIds: string[], allowConflicts?: boolean) => Promise<void>
+  onReview: (
+    documentId: string,
+    fieldIds: string[],
+    reviewStatus: Extract<ExtractionReviewStatus, 'rejected' | 'waived'>,
+    note?: string,
+  ) => Promise<void>
 }) {
   const [autoLoadedDocumentId, setAutoLoadedDocumentId] = useState<string | null>(null)
 
@@ -639,6 +730,13 @@ function DocumentIntakePanel({
     if (doc.status === 'applied') {
       return {
         label: 'View Applied Evidence',
+        disabled: working,
+        onClick: () => void onLoadExtraction(doc.documentId),
+      }
+    }
+    if (doc.status === 'approved' || doc.status === 'rejected' || doc.status === 'waived') {
+      return {
+        label: 'View Review Decision',
         disabled: working,
         onClick: () => void onLoadExtraction(doc.documentId),
       }
@@ -742,7 +840,7 @@ function DocumentIntakePanel({
           )}
         </div>
       </div>
-      <ExtractionPreviewPanel extraction={extraction} working={working} onApply={onApply} />
+      <ExtractionPreviewPanel extraction={extraction} working={working} onApply={onApply} onReview={onReview} />
     </section>
   )
 }
@@ -1378,6 +1476,7 @@ function OperatorBriefing({
           <div className="mt-5 flex flex-wrap gap-3">
             <button
               type="button"
+              data-testid="operator-next-action-primary"
               className="portal-button portal-button-primary"
               onClick={nextAction.onClick}
               disabled={!workspace}
@@ -1386,6 +1485,7 @@ function OperatorBriefing({
             </button>
             <button
               type="button"
+              data-testid="operator-next-action-workflow-launcher"
               className="portal-button portal-button-secondary"
               onClick={onFocusWorkflowLauncher}
             >
@@ -1570,6 +1670,8 @@ export default function DealWorkspace({
     extractDocument,
     loadExtraction,
     applyExtraction,
+    reviewExtraction,
+    exportPackage,
     savePhaseChecklist,
     refreshWorkspace,
   } = useDealWorkspace(dealCheckpoint.dealId)
@@ -1580,6 +1682,7 @@ export default function DealWorkspace({
   const [phaseCodexConcurrency, setPhaseCodexConcurrency] = useState(1)
   const [guidedDemoActive, setGuidedDemoActive] = useState(false)
   const [guidedDemoStep, setGuidedDemoStep] = useState(0)
+  const [packageExportMessage, setPackageExportMessage] = useState<string | null>(null)
 
   useEffect(() => {
     setActiveTab(initialTab ?? (
@@ -1658,6 +1761,18 @@ export default function DealWorkspace({
     for (const document of targetDocuments) {
       await extractDocument(document.documentId)
     }
+  }
+
+  async function handlePackageExport(format: 'markdown' | 'json'): Promise<void> {
+    const exported = await exportPackage('full-acquisition-review')
+    const baseName = `${downloadSafeName(dealCheckpoint.dealName)}-ic-starter-package`
+    if (format === 'json') {
+      downloadTextFile(`${baseName}.json`, JSON.stringify(exported.packageJson, null, 2), 'application/json')
+      setPackageExportMessage(`JSON exported to ${exported.files.json}`)
+      return
+    }
+    downloadTextFile(`${baseName}.md`, exported.markdown, 'text/markdown')
+    setPackageExportMessage(`Markdown exported to ${exported.files.markdown}`)
   }
 
   function focusWorkflowLauncher(): void {
@@ -1815,6 +1930,9 @@ export default function DealWorkspace({
                   onExtract={extractDocument}
                   onLoadExtraction={loadExtraction}
                   onApply={applyExtraction}
+                  onReview={(documentId, fieldIds, reviewStatus, note) =>
+                    reviewExtraction(documentId, fieldIds, reviewStatus, note).then(() => undefined)
+                  }
                 />
               </div>
             )}
@@ -1837,6 +1955,9 @@ export default function DealWorkspace({
                   dealCheckpoint={dealCheckpoint}
                   storyEvents={storyEvents}
                   documentArtifacts={documentArtifacts}
+                  onExportPackage={handlePackageExport}
+                  exportingPackage={working}
+                  exportMessage={packageExportMessage}
                 />
                 <div className="grid gap-4 xl:grid-cols-2">
                   <FindingsPanel dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />

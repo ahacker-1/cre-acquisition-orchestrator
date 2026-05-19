@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { appendFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -7,8 +7,10 @@ import { saveUserDeal } from '../dashboard/server/deal-service.ts'
 import {
   applySourceExtraction,
   evaluateLaunchReadiness,
+  exportIcStarterPackage,
   extractSourceDocument,
   getSourceExtraction,
+  reviewSourceExtraction,
   saveSourceDocument,
 } from '../dashboard/server/workspace-service.ts'
 
@@ -106,10 +108,41 @@ try {
     'NOI should remain missing until T12 evidence is approved',
   )
 
+  const waivedField = appliedPreview.fields.find((field) => field.path === 'financials.grossPotentialRentAnnual')
+  assert.ok(waivedField, 'expected a non-critical rent roll field to waive')
+  const reviewed = reviewSourceExtraction(context, dealId, document.documentId, {
+    fieldIds: [waivedField.fieldId],
+    reviewStatus: 'waived',
+    note: 'Use only after operator reconciles against T12 revenue.',
+  })
+  assert.equal(reviewed.document.status, 'applied')
+  assert.equal(
+    reviewed.extraction.fields.find((field) => field.fieldId === waivedField.fieldId)?.reviewStatus,
+    'waived',
+  )
+
+  const t12Document = saveSourceDocument(context, dealId, fixturePayload('t12-messy-realistic.xlsx')).document
+  const t12Extraction = extractSourceDocument(context, dealId, t12Document.documentId).extraction
+  const noiField = t12Extraction.fields.find((field) => field.path === 'financials.currentNOI')
+  assert.ok(noiField, 'expected current NOI from messy T12 fixture')
+  const t12Applied = applySourceExtraction(context, dealId, t12Document.documentId, {
+    fieldIds: [noiField.fieldId],
+    confirmConflictReview: true,
+  })
+  assert.equal(t12Applied.deal.deal.financials.currentNOI, 95400)
+
+  const quickPackage = exportIcStarterPackage(context, dealId, { workflowId: 'quick-deal-screen' })
+  assert.equal(quickPackage.packageJson.workflowId, 'quick-deal-screen')
+  assert.ok(quickPackage.packageJson.approvedInputs.some((field) => field.path === 'financials.currentNOI'))
+  assert.ok(quickPackage.markdown.includes('## Approved Inputs'))
+  assert.ok(quickPackage.markdown.includes('Source Coverage'))
+  assert.ok(existsSync(quickPackage.files.json))
+  assert.ok(existsSync(quickPackage.files.markdown))
+
   appendFileSync(document.path, '\noperator accidentally replaced source after approval')
   const staleReadiness = evaluateLaunchReadiness(context, dealId, 'quick-deal-screen')
   assert.equal(staleReadiness.sourceCoverage.staleDocumentCount, 1)
-  assert.equal(staleReadiness.sourceCoverage.approvedFieldCount, 0)
+  assert.equal(staleReadiness.sourceCoverage.approvedFieldCount, 1)
   assert.equal(staleReadiness.sourceCoverage.invalidApprovedFieldCount, fieldIds.length)
   assert.ok(staleReadiness.warnings.some((warning) => warning.includes('changed after extraction')))
 

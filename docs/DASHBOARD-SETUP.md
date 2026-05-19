@@ -12,12 +12,12 @@ The dashboard provides a local-first agentic deal team workspace for deal setup,
 - **Mission workspace**: Documents, Mission, Agents, Workpapers, Package, and Advanced views for each deal
 - **Advanced workflow launcher**: Five outcome workflows with saved local presets and run-now launch for operators who want manual control
 - **Runtime selector**: Choose offline simulation or live Codex / ChatGPT execution before launching supported workflows
-- **Document intake**: Upload queue, classification, extraction preview, bulk review, and source-backed apply from local files
+- **Document intake**: Upload queue, classification, extraction preview, approve/reject/waive review, and source-backed apply from local files
 - **Operator briefing**: Best next move, source-backed input coverage, review queue, phase readiness, and workflow-level launch confidence
 - **Phase progress**: Visual progress bars for each of the 5 phases, including skipped-phase visibility for scoped workflows
 - **Agent status**: Per-agent status indicators (pending, running, complete, failed)
 - **Log viewer**: Live log stream from all agents with filtering
-- **Package viewer**: Read final reports, IC review briefs, workpapers, findings, document manifests, and recommendation packages directly in the browser
+- **Package viewer**: Read final reports, IC review briefs, workpapers, findings, document manifests, recommendation packages, and exportable Markdown/JSON IC starter packages directly in the browser
 - **Real-time updates**: WebSocket connection pushes updates as agents write checkpoints
 
 The dashboard consists of three local components:
@@ -80,6 +80,17 @@ http://localhost:5173
 ```
 
 The dashboard loads immediately and attempts to connect to the watcher via WebSocket at `ws://localhost:8080`.
+
+### First Real Deal Fast Path
+
+1. Drop a local rent roll, T12, offering memo, or supporting file package on the front door.
+2. Create the workspace from the quick deal modal.
+3. Open **Evidence** and preview extraction for supported CSV/TXT/MD/XLSX files.
+4. Approve/apply trusted fields, reject bad candidates, or waive deferred fields with a note.
+5. Use the cockpit sidebar and Operator Briefing to resolve missing evidence and launch readiness.
+6. Open **IC Package** and export Markdown or JSON for a reviewable IC starter package.
+
+Parkview Guided Demo remains available for deterministic no-upload tours.
 
 ### Connection Status
 
@@ -162,7 +173,7 @@ Open a saved deal to work inside its full lifecycle workspace. The default exper
 | Mission | Deal-team command center showing the requested goal, readiness, blockers, live agent activity, and next best operator action |
 | Agents | Acquisition Team view showing active and planned specialist agents, phase groupings, statuses, confidence, data gaps, and red flags |
 | Workpapers | Evidence wall of generated workpapers, reports, outputs, source artifacts, and their creating agents |
-| Package | Completion package, IC Review Brief, source confidence, decision checklist, decision log, and final recommendation for the latest run |
+| Package | Completion package, IC Review Brief, source confidence, decision checklist, decision log, export controls, and final recommendation for the latest run |
 | Advanced | Operator Briefing, Deal Progression Guide, phase workspaces, runtime selector, and embedded workflow launcher for manual orchestration control |
 
 ### Mission, Agent Activity, and Operator Command
@@ -263,10 +274,13 @@ POST /api/codex/login
 4. Quick-create uploads show per-file status and can retry failed files. If at least one file succeeds, you can open the workspace and keep working.
 5. For CSV/TXT/MD files and supported XLSX rent-roll/T12 workbooks, click **Extract** and review the preview.
 6. Use **Select Safe Fields** for apply-ready fields, confirm conflicts if needed, review the before/after change summary, then apply them to deal inputs.
+7. Use **Reject Selected** for bad candidates or **Waive Selected** for deferred fields that should remain visible but not silently change deal inputs.
 
 Runtime uploads live under `data/deals/{dealId}/documents/`. Extraction previews live under `data/deals/{dealId}/extractions/`. These local deal files are ignored by git.
 
 PDFs are stored and classified with extraction pending. XLSX extraction is intentionally narrow and review-first: supported rent rolls can use alternate unit/layout/rent/status headers, blank rows, total rows, and common occupancy conventions; supported T12 workbooks can use one or more sheets as long as one sheet has recognizable line-item/account labels and a total, annual, trailing-12, or rightmost numeric column. Unsupported shapes remain stored source files with extraction pending or parser warnings rather than silently changing deal inputs. Known unsupported shapes include password-protected workbooks, image-only/scanned files, heavily merged summary layouts, rent rolls without unit identifiers, T12s without line-item labels, and formulas that do not expose cached numeric values.
+
+Package exports live under `data/deals/{dealId}/packages/` and include approved inputs, source references, assumptions, open questions, red flags, and source-backed launch readiness.
 
 ---
 

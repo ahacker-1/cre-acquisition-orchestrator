@@ -8,6 +8,8 @@ const __dirname = dirname(__filename)
 const dashboardRoot = resolve(__dirname, '..')
 const repoRoot = resolve(dashboardRoot, '..')
 const dataRoot = join(repoRoot, 'data')
+const parserFixturesRoot = join(repoRoot, 'fixtures', 'parsers')
+const firstRealDealRoot = join(repoRoot, 'fixtures', 'first-real-deal')
 
 const DRAFT_DEAL_ID = 'DEAL-2099-901'
 const DRAFT_DEAL_NAME = 'Playwright Draft Deal'
@@ -90,6 +92,10 @@ async function waitForRunIdle(request: APIRequestContext): Promise<void> {
 async function waitForDashboardReady(page: Page): Promise<void> {
   await page.goto('/')
   await expect(page.getByText('Connected')).toBeVisible({ timeout: 20_000 })
+}
+
+async function expectViewportAtTop(page: Page): Promise<void> {
+  await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5_000 }).toBeLessThan(20)
 }
 
 function collectConsoleErrors(page: Page): string[] {
@@ -332,7 +338,7 @@ test('creates a draft from the document-first homepage and uploads the dropped f
 
   await waitForDashboardReady(page)
   await expect(page.getByTestId('drop-zone-hero')).toContainText('Drop the deal. Watch the team go to work.')
-  await expect(page.getByTestId('drop-zone-hero')).toContainText('PDFs and Excel stay stored for review/classification')
+  await expect(page.getByTestId('drop-zone-hero')).toContainText('supported XLSX rent rolls or T12s extract now')
 
   await page.getByTestId('drop-zone-input').setInputFiles({
     name: 'playwright-hero-rent-roll.csv',
@@ -406,6 +412,7 @@ test('shows compact recent deals without changing the full deal library modal', 
 
   await strip.getByTestId(`workspace-docs-${RECENT_DEAL_ID}`).click()
   await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
+  await expectViewportAtTop(page)
   await expect(page.getByTestId('workspace-tab-documents')).toHaveClass(/active/)
 
   await page.getByTestId('header-deals-button').click()
@@ -413,6 +420,23 @@ test('shows compact recent deals without changing the full deal library modal', 
   await expect(modal).toBeVisible()
   await expect(modal.getByTestId(`deal-card-${RECENT_DEAL_ID}`)).toContainText('Ready')
   await expect(modal.getByTestId(`launch-deal-${RECENT_DEAL_ID}`)).toBeVisible()
+
+  expect(consoleErrors).toEqual([])
+})
+
+test('returns to the upload package page from a checkpoint-backed workspace', async ({ page, request }) => {
+  const consoleErrors = collectConsoleErrors(page)
+
+  await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
+  await launchWorkflowForDeal(request, 'quick-deal-screen', WORKSPACE_DEAL_ID)
+  await waitForOperatorDealHub(page, WORKSPACE_DEAL_NAME)
+  await stopActiveRun(request)
+
+  await page.getByTestId('header-upload-package-button').click()
+  await expect(page.getByTestId('drop-zone-hero')).toBeVisible()
+  await expectViewportAtTop(page)
+  await expect(page.getByTestId('drop-zone-hero')).toContainText('Drop the deal. Watch the team go to work.')
+  await expect(page.getByTestId('recent-deals-strip')).toContainText(WORKSPACE_DEAL_NAME)
 
   expect(consoleErrors).toEqual([])
 })
@@ -467,6 +491,8 @@ test('mobile guided workspace smoke @mobile', async ({ page, request }) => {
   await page.getByTestId(`workspace-docs-${WORKSPACE_DEAL_ID}`).click()
   await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
   await expect(page.getByTestId('operator-command-bar')).toBeVisible()
+  await page.getByTestId('workspace-tab-mission').scrollIntoViewIfNeeded()
+  await expect(page.getByTestId('workspace-tab-advanced')).toBeInViewport()
   await page.getByTestId('workspace-tab-mission').click()
   await expect(page.getByTestId('mission-control')).toContainText('Acquisition Command')
   await page.getByTestId('workspace-tab-advanced').click()
@@ -671,44 +697,14 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
 
   await page.getByTestId('workspace-tab-documents').click()
   await page.getByTestId('source-document-upload').setInputFiles([
-    {
-      name: 'playwright-rent-roll.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from([
-        'Unit,Unit Type,SqFt,Market Rent,Current Rent,Status',
-        '101,1BR/1BA,700,1700,1600,Occupied',
-        '102,1BR/1BA,710,1710,1610,Occupied',
-        '201,2BR/2BA,980,2200,2050,Occupied',
-        '202,2BR/2BA,990,2210,0,Vacant',
-      ].join('\n')),
-    },
-    {
-      name: 'playwright-t12-financials.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from([
-        'Line Item,T12 Total',
-        'Total Revenue,520000',
-        'Total Operating Expenses,260000',
-        'Net Operating Income,260000',
-      ].join('\n')),
-    },
-    {
-      name: 'playwright-offering-memo.md',
-      mimeType: 'text/markdown',
-      buffer: Buffer.from([
-        '# Playwright Offering Memo',
-        'Asking Price: $3,750,000',
-        'Total Units | 4-unit community',
-        'Year Built | 2009',
-        'NOI: $260,000',
-        '75% occupancy',
-      ].join('\n')),
-    },
+    join(parserFixturesRoot, 'rent-roll-messy-realistic.xlsx'),
+    join(parserFixturesRoot, 't12-messy-realistic.xlsx'),
+    join(firstRealDealRoot, 'offering-memo-messy-realistic.md'),
   ])
 
-  await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-rent-roll.csv')
-  await expect(page.getByTestId('source-document-t12')).toContainText('playwright-t12-financials.csv')
-  await expect(page.getByTestId('source-document-offering_memo')).toContainText('playwright-offering-memo.md')
+  await expect(page.getByTestId('source-document-rent_roll')).toContainText('rent-roll-messy-realistic.xlsx')
+  await expect(page.getByTestId('source-document-t12')).toContainText('t12-messy-realistic.xlsx')
+  await expect(page.getByTestId('source-document-offering_memo')).toContainText('offering-memo-messy-realistic.md')
   await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('Rent Roll')
   await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('T12')
   await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('Environmental')
@@ -720,8 +716,9 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   const extractionPreview = page.getByTestId('extraction-preview')
 
   await page.getByTestId('extract-document-rent_roll').click()
-  await expect(extractionPreview).toContainText('3 Fields Found')
-  await expect(extractionPreview).toContainText('Parsed 4 rent roll rows')
+  await expect(extractionPreview).toContainText('Fields Found')
+  await expect(extractionPreview).toContainText('Mapped')
+  await expect(extractionPreview).toContainText('Ambiguous occupancy status')
   await expect(extractionPreview).toContainText('Total Units')
   await expect(extractionPreview).toContainText('In-Place Occupancy')
   await extractionPreview.getByTestId('select-all-safe-fields').click()
@@ -740,6 +737,19 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await page.getByTestId('apply-extraction').click()
   await expect(page.getByTestId('source-document-t12')).toContainText('applied')
   await expect(page.getByTestId('cockpit-launch-readiness')).toContainText('3/4')
+
+  await page.getByTestId('extract-document-offering_memo').click()
+  await expect(extractionPreview).toContainText('Asking Price')
+  await extractionPreview.locator('[data-field-path="financials.currentNOI"]').check()
+  await extractionPreview.getByTestId('extraction-review-note').fill('T12 controls NOI for this package.')
+  await page.getByTestId('waive-extraction-fields').click()
+  await expect(extractionPreview).toContainText('waived')
+  await extractionPreview.locator('[data-field-path="financials.askingPrice"]').check()
+  await extractionPreview.locator('[data-field-path="property.yearBuilt"]').check()
+  await extractionPreview.getByTestId('confirm-conflict-review').check()
+  await page.getByTestId('apply-extraction').click()
+  await expect(page.getByTestId('source-document-offering_memo')).toContainText('applied')
+  await expect(page.getByTestId('cockpit-launch-readiness')).toContainText('4/4')
 
   await page.getByTestId('workspace-tab-advanced').click()
   await expect(page.getByTestId('operator-command-bar')).toBeVisible()
@@ -764,9 +774,30 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   const dealRecord = (await dealResponse.json()) as {
     deal: { property?: Record<string, unknown>; financials?: Record<string, unknown> }
   }
-  expect(dealRecord.deal.property?.totalUnits).toBe(4)
-  expect(dealRecord.deal.financials?.currentNOI).toBe(260_000)
-  expect(dealRecord.deal.financials?.trailingT12Revenue).toBe(520_000)
+  expect(dealRecord.deal.property?.totalUnits).toBe(7)
+  expect(dealRecord.deal.property?.yearBuilt).toBe(1998)
+  expect(dealRecord.deal.financials?.askingPrice).toBe(2_450_000)
+  expect(dealRecord.deal.financials?.currentNOI).toBe(95_400)
+  expect(dealRecord.deal.financials?.trailingT12Revenue).toBe(156_600)
+
+  await page.getByTestId('workspace-tab-package').click()
+  const markdownExportResponse = page.waitForResponse(
+    (response) => isApiResponse(response, 'POST', `/api/deals/${WORKSPACE_DEAL_ID}/ic-starter-package`),
+  )
+  const markdownDownload = page.waitForEvent('download')
+  await page.getByTestId('package-export-markdown').click()
+  await expectApiOk(await markdownExportResponse)
+  expect((await markdownDownload).suggestedFilename()).toContain('ic-starter-package.md')
+  await expect(page.getByTestId('package-export-status')).toContainText('Markdown exported')
+
+  const jsonExportResponse = page.waitForResponse(
+    (response) => isApiResponse(response, 'POST', `/api/deals/${WORKSPACE_DEAL_ID}/ic-starter-package`),
+  )
+  const jsonDownload = page.waitForEvent('download')
+  await page.getByTestId('package-export-json').click()
+  await expectApiOk(await jsonExportResponse)
+  expect((await jsonDownload).suggestedFilename()).toContain('ic-starter-package.json')
+  await expect(page.getByTestId('package-export-status')).toContainText('JSON exported')
 
   await page.getByTestId('cockpit-phase-underwriting').click()
   await expect(page.getByRole('heading', { name: 'Agent Playbook' })).toBeVisible()
@@ -820,7 +851,7 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
   await expect(page.getByTestId('source-document-title')).toContainText('playwright-title.pdf')
   await expect(page.getByTestId('source-document-title')).toContainText('Extraction Pending')
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-rent-roll.xlsx')
-  await expect(page.getByTestId('source-document-rent_roll')).toContainText('Extraction Pending')
+  await expect(page.getByTestId('source-document-rent_roll')).toContainText('Preview Extraction')
   await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('PDF and Excel stay honest')
 
   const workspaceResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
@@ -829,7 +860,7 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
     documents: Array<{ fileName?: string; extractionStatus?: string }>
   }
   expect(workspace.documents.find((doc) => doc.fileName === 'playwright-title.pdf')?.extractionStatus).toBe('extraction-pending')
-  expect(workspace.documents.find((doc) => doc.fileName === 'playwright-rent-roll.xlsx')?.extractionStatus).toBe('extraction-pending')
+  expect(workspace.documents.find((doc) => doc.fileName === 'playwright-rent-roll.xlsx')?.extractionStatus).toBe('not-started')
 
   expect(consoleErrors).toEqual([])
 })

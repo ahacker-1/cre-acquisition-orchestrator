@@ -82,6 +82,19 @@ assert.ok(occupancyConventions.notes.some((note) => note.includes("Ambiguous occ
 assert.ok(fieldByPath(occupancyConventions, 'financials.inPlaceOccupancy').confidence < 0.78)
 assertCandidateProvenance(occupancyConventions, 'financials.inPlaceOccupancy', 'Occupancy')
 
+const messyRentRoll = parseXlsx('rent-roll-messy-realistic.xlsx', 'rent_roll')
+
+assert.equal(messyRentRoll.status, 'extracted')
+assert.equal(fieldByPath(messyRentRoll, 'property.totalUnits').value, 7)
+assert.equal(fieldByPath(messyRentRoll, 'financials.inPlaceOccupancy').value, 0.7143)
+assert.equal(fieldByPath(messyRentRoll, 'financials.grossPotentialRentAnnual').value, 183600)
+assert.equal(fieldByPath(messyRentRoll, 'financials.inPlaceRentAnnual').value, 131700)
+assert.ok(messyRentRoll.notes.some((note) => note.includes("Ambiguous occupancy status 'MTM'")))
+assert.ok(messyRentRoll.notes.some((note) => note.includes("Ambiguous occupancy status 'Notice'")))
+assert.ok(messyRentRoll.notes.some((note) => note.includes('Skipped 1 total/subtotal/header row')))
+assertCandidateProvenance(messyRentRoll, 'property.totalUnits', 'RR Export')
+assertCandidateProvenance(messyRentRoll, 'financials.inPlaceOccupancy', 'RR Export')
+
 const multiSheetT12 = parseXlsx('t12-multi-sheet.xlsx', 't12')
 
 assert.equal(multiSheetT12.status, 'extracted')
@@ -90,5 +103,14 @@ assert.equal(fieldByPath(multiSheetT12, 'financials.trailingT12Expenses').value,
 assert.equal(fieldByPath(multiSheetT12, 'financials.currentNOI').value, 940000)
 assertCandidateProvenance(multiSheetT12, 'financials.trailingT12Revenue', 'Trailing 12')
 assertCandidateProvenance(multiSheetT12, 'financials.currentNOI', 'Trailing 12')
+
+const messyT12 = parseXlsx('t12-messy-realistic.xlsx', 't12')
+
+assert.equal(messyT12.status, 'extracted')
+assert.equal(fieldByPath(messyT12, 'financials.trailingT12Revenue').value, 156600)
+assert.equal(fieldByPath(messyT12, 'financials.trailingT12Expenses').value, 61200)
+assert.equal(fieldByPath(messyT12, 'financials.currentNOI').value, 95400)
+assertCandidateProvenance(messyT12, 'financials.trailingT12Revenue', 'T12 - Owner Export')
+assertCandidateProvenance(messyT12, 'financials.currentNOI', 'T12 - Owner Export')
 
 console.log('[parser-service-test] PASS')

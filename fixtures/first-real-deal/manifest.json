@@ -1,0 +1,28 @@
+{
+  "dealId": "FIRST-REAL-DEAL-LAKESIDE",
+  "dealName": "Lakeside Flats Messy Source Package",
+  "goal": "Prove the first-real-deal path with user-supplied source documents, operator review, launch gating, and IC starter package export.",
+  "files": [
+    {
+      "path": "../parsers/rent-roll-messy-realistic.xlsx",
+      "type": "rent_roll",
+      "purpose": "Messy rent roll with title rows, blank rows, totals, ambiguous occupancy conventions, and alternate headers."
+    },
+    {
+      "path": "../parsers/t12-messy-realistic.xlsx",
+      "type": "t12",
+      "purpose": "Multi-sheet T12 workbook with owner-export headers and annualized totals."
+    },
+    {
+      "path": "offering-memo-messy-realistic.md",
+      "type": "offering_memo",
+      "purpose": "Plain-text offering memo headline metrics used for asking price and duplicate-field review."
+    }
+  ],
+  "expectedCriticalFields": [
+    "property.totalUnits",
+    "financials.askingPrice",
+    "financials.currentNOI",
+    "financials.inPlaceOccupancy"
+  ]
+}

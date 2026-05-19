@@ -125,6 +125,8 @@ export interface ExtractionField {
   source: string
   sourceRef: SourceReference
   reviewStatus?: ExtractionReviewStatus
+  reviewNote?: string
+  reviewedAt?: string
   currentValue?: unknown
   conflict?: boolean
   validationIssues?: string[]
@@ -311,6 +313,61 @@ export interface RunInputSnapshot {
   approvedFields: ApprovedFieldManifest
   documents: SourceDocument[]
   readiness: LaunchReadinessResult
+}
+
+export interface IcStarterPackageApprovedInput {
+  fieldId: string
+  path: string
+  label: string
+  value: unknown
+  valueType: ExtractionValueType
+  unit?: string
+  confidence: number
+  approvedAt: string
+  appliedAt?: string
+  sourceRef: SourceReference
+}
+
+export interface IcStarterPackageSourceDocument {
+  documentId: string
+  fileName: string
+  typeLabel: string
+  status: SourceDocumentStatus
+  extractionStatus: ExtractionStatus
+  uploadedAt: string
+  extractedAt?: string
+  reviewedAt?: string
+  appliedAt?: string
+  parserId?: string
+  parserVersion?: string
+  sourceHash?: string
+}
+
+export interface IcStarterPackage {
+  version: number
+  generatedAt: string
+  dealId: string
+  dealName: string
+  workflowId: string
+  criteria: DealCriteria
+  deal: Record<string, unknown>
+  sourceCoverage: LaunchReadinessResult['sourceCoverage']
+  readiness: Pick<LaunchReadinessResult, 'status' | 'blockers' | 'warnings' | 'requiredApprovedFields' | 'approvedFields' | 'missingApprovedFields'>
+  approvedInputs: IcStarterPackageApprovedInput[]
+  sourceDocuments: IcStarterPackageSourceDocument[]
+  assumptions: string[]
+  openQuestions: string[]
+  redFlags: string[]
+  nextAction: OperatorCommand['recommendedAction']
+}
+
+export interface IcStarterPackageExport {
+  packageJson: IcStarterPackage
+  markdown: string
+  files: {
+    json: string
+    markdown: string
+  }
 }
 
 export interface ServiceContext {
@@ -717,6 +774,10 @@ function extractionPath(context: ServiceContext, dealId: string, documentId: str
 
 function approvedFieldsPath(context: ServiceContext, dealId: string): string {
   return join(dealWorkspaceRoot(context, dealId), 'approved-fields.json')
+}
+
+function packagesDir(context: ServiceContext, dealId: string): string {
+  return join(dealWorkspaceRoot(context, dealId), 'packages')
 }
 
 function rollbackDir(context: ServiceContext, dealId: string): string {
@@ -1396,6 +1457,143 @@ function sourceCoverageWarnings(
   return warnings
 }
 
+function normalizeReviewStatus(value: unknown): Extract<ExtractionReviewStatus, 'candidate' | 'rejected' | 'waived'> {
+  return value === 'rejected' || value === 'waived' ? value : 'candidate'
+}
+
+function extractionDocumentStatus(fields: ExtractionField[]): SourceDocumentStatus {
+  const statuses = fields.map((field) => field.reviewStatus ?? 'candidate')
+  if (statuses.length === 0) return 'review_ready'
+  if (statuses.some((status) => status === 'applied')) return 'applied'
+  if (statuses.every((status) => status === 'rejected')) return 'rejected'
+  if (statuses.every((status) => status === 'waived')) return 'waived'
+  if (statuses.some((status) => status === 'approved')) return 'approved'
+  return 'review_ready'
+}
+
+function normalizePackageWorkflowId(context: ServiceContext, workflowId: unknown): string {
+  const requested = asString(workflowId)
+  const workflowIds = workflowIdsForReadiness(context)
+  if (requested && workflowIds.includes(requested)) return requested
+  if (workflowIds.includes('full-acquisition-review')) return 'full-acquisition-review'
+  return workflowIds[0] ?? 'full-acquisition-review'
+}
+
+function displayValue(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  if (Array.isArray(value)) return value.map(displayValue).filter(Boolean).join(', ')
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
+
+function markdownCell(value: unknown): string {
+  return displayValue(value).replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').trim()
+}
+
+function sourceLocationLabel(sourceRef: SourceReference): string {
+  const location = sourceRef.location
+  if (!location) return sourceRef.fileName
+  const parts = [
+    location.sheet ? `sheet ${location.sheet}` : '',
+    location.row ? `row ${location.row}` : '',
+    location.column ? `column ${location.column}` : '',
+    location.line ? `line ${location.line}` : '',
+    location.page ? `page ${location.page}` : '',
+    location.description ?? '',
+  ].filter(Boolean)
+  return parts.length > 0 ? `${sourceRef.fileName} (${parts.join(', ')})` : sourceRef.fileName
+}
+
+function packageOpenQuestions(workspace: DealWorkspace, readiness: LaunchReadinessResult): string[] {
+  const missingFieldQuestions = readiness.missingApprovedFields.map((field) =>
+    `Approve source evidence for ${field}.`
+  )
+  const checklistQuestions = workspace.progressionGuide.sections.flatMap((section) =>
+    section.checklist
+      .filter((item) => item.status !== 'complete' && item.status !== 'waived')
+      .map((item) => `${section.label}: ${item.label}`)
+  )
+  return [...new Set([...missingFieldQuestions, ...checklistQuestions])].slice(0, 12)
+}
+
+function packageAssumptions(criteria: DealCriteria, readiness: LaunchReadinessResult, documents: SourceDocument[]): string[] {
+  const assumptions = [
+    criteria.notes ? `Operator criteria notes remain in force: ${criteria.notes}` : '',
+    readiness.requiredApprovedFields.length > 0
+      ? `Critical launch fields are limited to ${readiness.requiredApprovedFields.join(', ')} for this workflow.`
+      : 'This workflow does not declare critical source-backed launch fields.',
+    documents.some((document) => document.status === 'waived')
+      ? 'At least one source document or extracted field was waived by the operator.'
+      : '',
+    documents.some((document) => document.status === 'rejected')
+      ? 'At least one source document or extracted field was rejected by the operator.'
+      : '',
+  ].filter(Boolean)
+  return assumptions.length > 0 ? assumptions : ['No additional operator assumptions were recorded in the workspace.']
+}
+
+function packageRedFlags(readiness: LaunchReadinessResult): string[] {
+  const urgentWarnings = readiness.warnings.filter((warning) =>
+    /missing|stale|review|not yet applied|parse|invalid/i.test(warning)
+  )
+  const redFlags = [...readiness.blockers, ...urgentWarnings]
+  return redFlags.length > 0 ? [...new Set(redFlags)] : ['No source-backed package red flags were detected by the local readiness checks.']
+}
+
+function renderIcStarterPackageMarkdown(packageJson: IcStarterPackage): string {
+  const approvedRows = packageJson.approvedInputs.length > 0
+    ? packageJson.approvedInputs.map((field) =>
+        `| ${markdownCell(field.label)} | ${markdownCell(field.value)} | ${(field.confidence * 100).toFixed(0)}% | ${markdownCell(sourceLocationLabel(field.sourceRef))} |`
+      )
+    : ['| No approved source-backed fields yet |  |  |  |']
+  const documentRows = packageJson.sourceDocuments.length > 0
+    ? packageJson.sourceDocuments.map((document) =>
+        `| ${markdownCell(document.fileName)} | ${markdownCell(document.typeLabel)} | ${markdownCell(document.status)} | ${markdownCell(document.extractionStatus)} |`
+      )
+    : ['| No source documents uploaded yet |  |  |  |']
+  return [
+    `# IC Starter Package: ${packageJson.dealName}`,
+    '',
+    `Generated: ${packageJson.generatedAt}`,
+    `Workflow: ${packageJson.workflowId}`,
+    `Readiness: ${packageJson.readiness.status}`,
+    '',
+    '## One Best Next Action',
+    `**${packageJson.nextAction.title}**`,
+    packageJson.nextAction.detail,
+    `Action: ${packageJson.nextAction.cta}`,
+    '',
+    '## Source Coverage',
+    `Approved fields: ${packageJson.sourceCoverage.approvedFieldCount}/${packageJson.sourceCoverage.requiredApprovedFieldCount} required`,
+    `Documents uploaded: ${packageJson.sourceCoverage.sourceDocumentCount}`,
+    `Documents waiting for review: ${packageJson.sourceCoverage.reviewReadyDocumentCount}`,
+    '',
+    '## Approved Inputs',
+    '| Field | Approved Value | Confidence | Source |',
+    '| --- | --- | --- | --- |',
+    ...approvedRows,
+    '',
+    '## Source Documents',
+    '| File | Type | Review Status | Extraction Status |',
+    '| --- | --- | --- | --- |',
+    ...documentRows,
+    '',
+    '## Assumptions',
+    ...packageJson.assumptions.map((item) => `- ${item}`),
+    '',
+    '## Open Questions',
+    ...packageJson.openQuestions.map((item) => `- ${item}`),
+    '',
+    '## Red Flags',
+    ...packageJson.redFlags.map((item) => `- ${item}`),
+    '',
+    '## Launch Gate',
+    ...packageJson.readiness.blockers.map((item) => `- Blocker: ${item}`),
+    ...packageJson.readiness.warnings.map((item) => `- Warning: ${item}`),
+    '',
+  ].join('\n')
+}
+
 function applyCriteriaToDeal(deal: Record<string, unknown>, criteria: DealCriteria): Record<string, unknown> {
   const next = JSON.parse(JSON.stringify(deal)) as Record<string, unknown>
   next.investmentStrategy = criteria.investmentStrategy
@@ -1666,6 +1864,65 @@ export function getSourceExtraction(
   return enrichExtractionFields(extraction, record.deal)
 }
 
+export function reviewSourceExtraction(
+  context: ServiceContext,
+  dealId: string,
+  documentId: string,
+  payload: Record<string, unknown>,
+): { document: SourceDocument; extraction: ExtractionPreview } {
+  const record = getDealRecord(context, dealId)
+  if (!record) throw new Error(`Deal not found: ${dealId}`)
+  const extraction = readJson<ExtractionPreview | null>(extractionPath(context, dealId, documentId), null)
+  if (!extraction) throw new Error(`Extraction not found for document: ${documentId}`)
+  if (extraction.status !== 'extracted' || extraction.fields.length === 0) {
+    throw new Error('Only extracted documents with review-ready fields can be reviewed.')
+  }
+  const selectedFieldIds = Array.isArray(payload.fieldIds)
+    ? new Set(payload.fieldIds.filter((entry): entry is string => typeof entry === 'string'))
+    : new Set<string>()
+  if (selectedFieldIds.size === 0) throw new Error('No extraction fields were selected for review.')
+  const availableFieldIds = new Set(extraction.fields.map((field) => extractionFieldId(field)))
+  const unknownSelectedFieldId = [...selectedFieldIds].find((fieldId) => !availableFieldIds.has(fieldId))
+  if (unknownSelectedFieldId) {
+    throw new Error(`Selected extraction field is no longer available: ${unknownSelectedFieldId}`)
+  }
+  const nextStatus = normalizeReviewStatus(payload.reviewStatus)
+  const note = asString(payload.note)
+  const now = new Date().toISOString()
+  const nextExtraction: ExtractionPreview = {
+    ...enrichExtractionFields(extraction, record.deal),
+    reviewStatus: nextStatus,
+    fields: extraction.fields.map((field) => (
+      selectedFieldIds.has(extractionFieldId(field))
+        ? {
+            ...field,
+            fieldId: extractionFieldId(field),
+            reviewStatus: nextStatus,
+            reviewNote: note,
+            reviewedAt: now,
+          }
+        : field
+    )),
+  }
+  const nextDocumentStatus = extractionDocumentStatus(nextExtraction.fields)
+  const nextDocument = updateDocument(context, dealId, documentId, (current) => ({
+    ...current,
+    status: nextDocumentStatus,
+    reviewedAt: now,
+    lifecycleReason: note || current.lifecycleReason,
+    summary: nextStatus === 'waived'
+      ? 'Operator waived selected extracted fields.'
+      : nextStatus === 'rejected'
+        ? 'Operator rejected selected extracted fields.'
+        : current.summary,
+  }))
+  writeJsonAtomic(extractionPath(context, dealId, documentId), nextExtraction)
+  return {
+    document: nextDocument,
+    extraction: enrichExtractionFields(nextExtraction, record.deal),
+  }
+}
+
 export function applySourceExtraction(
   context: ServiceContext,
   dealId: string,
@@ -1834,6 +2091,86 @@ export function applySourceExtraction(
       launchReady: launchValidation.launchReady,
       errors: launchMessages.errors,
       warnings: [...draftMessages.warnings, ...launchMessages.warnings],
+    },
+  }
+}
+
+export function exportIcStarterPackage(
+  context: ServiceContext,
+  dealId: string,
+  payload: Record<string, unknown> = {},
+): IcStarterPackageExport {
+  const record = getDealRecord(context, dealId)
+  if (!record) throw new Error(`Deal not found: ${dealId}`)
+  const workflowId = normalizePackageWorkflowId(context, payload.workflowId)
+  const workspace = getDealWorkspace(context, dealId)
+  const documents = readManifest(context, dealId).documents
+  const approvedFields = approvedFieldManifestWithCurrentEvidence(readApprovedFields(context, dealId), documents)
+  const readiness = evaluateLaunchReadiness(context, dealId, workflowId, { enforceSourceBackedInputs: true })
+  const criteria = readCriteria(context, record)
+  const generatedAt = new Date().toISOString()
+  const packageJson: IcStarterPackage = {
+    version: 1,
+    generatedAt,
+    dealId,
+    dealName: record.item.dealName,
+    workflowId,
+    criteria,
+    deal: record.deal,
+    sourceCoverage: readiness.sourceCoverage,
+    readiness: {
+      status: readiness.status,
+      blockers: readiness.blockers,
+      warnings: readiness.warnings,
+      requiredApprovedFields: readiness.requiredApprovedFields,
+      approvedFields: readiness.approvedFields,
+      missingApprovedFields: readiness.missingApprovedFields,
+    },
+    approvedInputs: approvedFields.fields.map((field) => ({
+      fieldId: field.fieldId,
+      path: field.path,
+      label: field.label,
+      value: field.value,
+      valueType: field.valueType,
+      unit: field.unit,
+      confidence: field.confidence,
+      approvedAt: field.approvedAt,
+      appliedAt: field.appliedAt,
+      sourceRef: field.sourceRef,
+    })),
+    sourceDocuments: documents.map((document) => ({
+      documentId: document.documentId,
+      fileName: document.fileName,
+      typeLabel: document.typeLabel,
+      status: document.status,
+      extractionStatus: document.extractionStatus,
+      uploadedAt: document.uploadedAt,
+      extractedAt: document.extractedAt,
+      reviewedAt: document.reviewedAt,
+      appliedAt: document.appliedAt,
+      parserId: document.parserId,
+      parserVersion: document.parserVersion,
+      sourceHash: document.sourceHash,
+    })),
+    assumptions: packageAssumptions(criteria, readiness, documents),
+    openQuestions: packageOpenQuestions(workspace, readiness),
+    redFlags: packageRedFlags(readiness),
+    nextAction: workspace.operatorCommand.recommendedAction,
+  }
+  const markdown = renderIcStarterPackageMarkdown(packageJson)
+  const outputDir = packagesDir(context, dealId)
+  ensureDir(outputDir)
+  const safeWorkflow = safeSegment(workflowId)
+  const jsonPath = join(outputDir, `${safeWorkflow}-ic-starter-package.json`)
+  const markdownPath = join(outputDir, `${safeWorkflow}-ic-starter-package.md`)
+  writeJsonAtomic(jsonPath, packageJson)
+  writeFileSync(markdownPath, markdown)
+  return {
+    packageJson,
+    markdown,
+    files: {
+      json: jsonPath,
+      markdown: markdownPath,
     },
   }
 }

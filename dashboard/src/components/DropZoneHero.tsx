@@ -79,7 +79,7 @@ export default function DropZoneHero({
           Upload the source package, choose the outcome, and the orchestrator will staff specialist agents for diligence, underwriting, legal review, financing, blockers, and IC package assembly.
         </p>
         <p className="mt-3 text-xs font-semibold uppercase text-gray-500">
-          Source-backed extraction is local-first. CSV, TXT, and Markdown extract now; PDFs and Excel stay stored for review/classification.
+          Source-backed extraction is local-first. CSV, TXT, Markdown, and supported XLSX rent rolls or T12s extract now; PDFs stay stored for review.
         </p>
 
         <div className="mt-8 w-full max-w-3xl">

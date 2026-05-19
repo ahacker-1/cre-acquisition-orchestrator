@@ -107,6 +107,8 @@ export interface ExtractionField {
   source: string
   sourceRef: SourceReference
   reviewStatus?: ExtractionReviewStatus
+  reviewNote?: string
+  reviewedAt?: string
   currentValue?: unknown
   conflict?: boolean
   validationIssues?: string[]
@@ -158,6 +160,39 @@ export interface ApplyExtractionResult {
     launchReady: boolean
     errors: string[]
     warnings: string[]
+  }
+}
+
+export interface ReviewExtractionResult {
+  document: SourceDocument
+  extraction: ExtractionPreview
+}
+
+export interface IcStarterPackageExport {
+  packageJson: {
+    version: number
+    generatedAt: string
+    dealId: string
+    dealName: string
+    workflowId: string
+    sourceCoverage: LaunchReadinessResult['sourceCoverage']
+    readiness: Pick<LaunchReadinessResult, 'status' | 'blockers' | 'warnings' | 'requiredApprovedFields' | 'approvedFields' | 'missingApprovedFields'>
+    approvedInputs: Array<{
+      fieldId: string
+      path: string
+      label: string
+      value: unknown
+      confidence: number
+      sourceRef: SourceReference
+    }>
+    assumptions: string[]
+    openQuestions: string[]
+    redFlags: string[]
+  }
+  markdown: string
+  files: {
+    json: string
+    markdown: string
   }
 }
 

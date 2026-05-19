@@ -19,7 +19,7 @@ Everything in here - the agent prompts, the skills, the schemas, the pipeline ar
 
 Let's bring this industry into the future.
 
-> **Start locally:** The demo runs fully offline with no API keys. You can execute the full acquisition pipeline against sample CRE financials first, then optionally connect ChatGPT/Codex for live agent workflows.
+> **Start locally:** The dashboard runs fully offline with no API keys. You can drop a real local source package, review source-backed extracted fields, and export a Markdown/JSON IC starter package before optionally connecting ChatGPT/Codex for live agent workflows.
 
 > **Disclaimer:** This project is a reference architecture and educational framework, not production software for making investment decisions. The financial calculations, legal checklists, and agent outputs are for demonstration and learning purposes only. Nothing in this repository constitutes financial, legal, or investment advice. Always consult qualified professionals before making real estate investment decisions. This software is provided "as is" without warranty of any kind - see [LICENSE](LICENSE) for full terms.
 
@@ -27,9 +27,9 @@ Let's bring this industry into the future.
 
 ## First-Time Visitor Path
 
-- **Understand the product in 2 minutes:** skim the [Visual Demo Tour](#visual-demo-tour) below, then run the dashboard and click **Start Guided Demo** to walk the deterministic Parkview sample through Command, Swarm Goal Console, Deal Team, Workpapers, and IC Package.
-- **Run the product in 5 minutes:** follow the [Quick Demo](docs/QUICK-DEMO.md) for the shortest offline path from clone to local dashboard. The dashboard Guided Demo Mode does not require uploads or API keys.
-- **Install from scratch:** follow [Quick Start](#quick-start). The default demo is deterministic and runs offline after dependencies are installed.
+- **Run a first real deal in 10 minutes:** follow the [First Deal Guide](docs/FIRST-DEAL-GUIDE.md), start the dashboard, drop local rent roll/T12/offering memo files, review source-backed fields, and export the IC starter package.
+- **Use Parkview as the deterministic fallback:** click **Start Guided Demo** when you want a no-upload sample tour through Command, Swarm Goal Console, Deal Team, Workpapers, and IC Package.
+- **Install from scratch:** follow [Quick Start](#quick-start). The dashboard path is local-first and the sample demo remains deterministic after dependencies are installed.
 - **Choose the right runtime:** read [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md) before sending any real deal context through the optional live-agent path.
 - **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially source-backed extraction, review-grade workpapers, live-runtime hardening, and screenshot automation.
 - **Open public follow-up issues:** use the approval-ready [Issue Seeds](docs/ISSUE-SEEDS.md) for deterministic capture, parser fixtures, PDF/legal extraction, workpaper gates, and runtime docs.
@@ -86,7 +86,7 @@ See [`docs/DEMO-JOURNEY.md`](docs/DEMO-JOURNEY.md) for the full storyboard and [
 - **Safer Workflow Launch** - Embedded workflow launches stay scoped to the open deal instead of inheriting a stale browser draft from local storage.
 - **IC Review Brief** - Completion Package now highlights the next decision, priority red flags, priority data gaps, and source-readiness warnings for operator handoff.
 - **Verified Feature Paths** - Dashboard-launched simulation runs now execute the workflow-aware orchestrator and run contract validation before reporting completion.
-- **Honest Document Intake** - CSV/TXT/MD files remain source-backed extraction paths, while PDF and XLSX files are clearly classified and routed as extraction-pending.
+- **Honest Document Intake** - CSV/TXT/MD and supported XLSX rent-roll/T12 files remain source-backed extraction paths, while PDFs and unsupported workbook shapes are clearly classified and routed for review.
 - **Release-Grade Validation** - Chain verification, legacy CLIs, browser E2E startup, and Codex artifacts are hardened for the public v2.3.0 release.
 
 ---
@@ -297,7 +297,7 @@ Every agent follows a **19-section prompt anatomy standard** (Identity, Mission,
 | Agent | What It Does | Key Outputs |
 |-------|-------------|-------------|
 | **Document Orchestrator** | Classifies incoming documents, routes to appropriate parser, manages extraction pipeline, validates completeness | Document manifest, extraction status, routing decisions |
-| **Rent Roll Parser** | Extracts structured rent roll data from CSV and text/markdown files. PDF and Excel files are classified, routed to the right phase, and marked extraction-pending until a parser is connected. | Structured rent roll JSON, extraction confidence scores, pending extraction status |
+| **Rent Roll Parser** | Extracts structured rent roll data from CSV, text/markdown, and supported XLSX rent rolls with operator review before apply. PDFs and unsupported workbook shapes are classified, routed to the right phase, and left pending review. | Structured rent roll JSON, extraction confidence scores, source provenance, review status |
 | **Financials Parser** | Extracts T-12 operating statements: income line items, expense categories, month-over-month trends | Structured financials JSON, line-item mapping |
 | **Offering Memo Parser** | Extracts property details, investment highlights, financial projections, and market data from offering memoranda | Structured property data, financial assumptions, market summary |
 
@@ -427,13 +427,32 @@ npm run codex:status
 
 Expected login output should say `Logged in using ChatGPT`.
 
+### Run the First Real Deal Workspace
+
+```powershell
+npm run dashboard
+```
+
+Open `http://localhost:5173`, drop a local source package, and create a deal workspace from the dashboard. Start with a rent roll, T12, and offering memo if you have them. Supported XLSX rent rolls and T12s, CSV, TXT, and Markdown files produce candidate fields with provenance, confidence, warnings, and operator review status.
+
+Inside the workspace:
+
+1. Open **Evidence**.
+2. Preview extraction for each source file.
+3. Approve/apply trusted fields, or reject/waive ambiguous fields with a note.
+4. Watch the cockpit sidebar and Operator Briefing show missing evidence and the one best next action.
+5. Use the source-backed launch gate before running a workflow.
+6. Open **IC Package** and export Markdown or JSON for an IC starter package.
+
+The included fixture folder [`fixtures/first-real-deal`](fixtures/first-real-deal) shows a realistic messy package shape: alternate rent-roll headers, blank rows, totals, ambiguous occupancy conventions, a multi-sheet T12, and offering memo headline metrics.
+
 ### Run the Offline Simulation
 
 ```powershell
 npm run demo
 ```
 
-This runs a complete acquisition pipeline for the sample Parkview Apartments deal (200 units, Austin TX, $32M) using the deterministic simulation engine. No API key or AI subscription is required for this path. All 5 phases execute, all 21 specialist agents produce outputs, and a final report with go/no-go recommendation is generated.
+This runs a complete acquisition pipeline for the sample Parkview Apartments deal (200 units, Austin TX, $32M) using the deterministic simulation engine. No API key or AI subscription is required for this path. Use it when you want a repeatable sample run or fresh public-demo artifacts.
 
 To verify the full offline demo path before opening the dashboard, run:
 
@@ -449,7 +468,7 @@ This regenerates demo artifacts, validates contracts and operator guides, runs t
 npm run dashboard
 ```
 
-Open `http://localhost:5173`. The dashboard connects via WebSocket and REST APIs to show the pipeline executing in real time while keeping deal data local.
+Open `http://localhost:5173`. The dashboard connects via WebSocket and REST APIs to show deal workspaces, source review, workflow launch readiness, package export, and pipeline execution while keeping deal data local.
 
 ### Run Live Codex Agents with ChatGPT Login
 
@@ -481,7 +500,7 @@ From the dashboard you can now:
 - save drafts to the deal library
 - open the Operator Deal Hub for each deal
 - upload source documents into the deal workspace
-- extract and approve source-backed inputs from CSV, TXT, MD, and supported XLSX rent-roll/T12 files
+- extract and approve, reject, or waive source-backed inputs from CSV, TXT, MD, and supported XLSX rent-roll/T12 files
 - classify PDFs and unsupported workbook shapes for the right phase with extraction marked pending
 - choose **Codex / ChatGPT** in the Workflow Launcher and click **Login to ChatGPT** if Codex is not already authenticated
 - launch a focused workflow or full acquisition review
@@ -496,8 +515,9 @@ The preferred v2.x path is inside the dashboard:
 3. Confirm the draft deal name
 4. Land in the **Documents** view
 5. Run extraction on CSV/TXT/MD documents or supported XLSX rent rolls/T12s
-6. Approve selected fields before they update the deal inputs
-7. Use the cockpit sidebar to see missing documents and the next phase action
+6. Approve selected fields before they update the deal inputs, or reject/waive ambiguous fields with a note
+7. Use the cockpit sidebar to see missing documents, missing approved fields, and the next phase action
+8. Export the IC starter package from the Package view when the source trail is ready for review
 
 Uploaded files are stored under `data/deals/{dealId}/documents/`, extraction previews under `data/deals/{dealId}/extractions/`, and approved source-backed fields under `data/deals/{dealId}/approved-fields.json`. Runtime deal data stays local and is ignored by git.
 
@@ -550,7 +570,7 @@ The capture script writes the public gallery images under `docs/assets/` for Acq
 - **Deterministic Simulation** - Seeded RNG engine produces realistic CRE financials for demo and testing without any API calls
 - **3 Investment Scenarios** - Core-Plus, Value-Add, and Distressed configurations with different market assumptions and risk tolerances
 - **Failure Injection & Recovery** - Force any agent to fail, resume from 3-tier checkpoint system - models real-world pipeline resilience
-- **Local Document Intake** - Upload and classify source files by deal and phase, with CSV/TXT/MD extraction previews and operator-approved input updates
+- **Local Document Intake** - Upload and classify source files by deal and phase, with CSV/TXT/MD/XLSX extraction previews plus operator approve/reject/waive review
 - **Investment Committee Memo** - Auto-generated structured IC memo with go/no-go recommendation synthesizing all pipeline findings
 
 ---
@@ -594,7 +614,7 @@ cre-acquisition-orchestrator/
 │   │   ├── run-manager.ts     #   Local deterministic run orchestration
 │   │   ├── workflow-service.ts   # Catalog + saved preset APIs
 │   │   ├── workspace-service.ts  # Criteria, documents, phase state, deal workspace APIs
-│   │   └── parser-service.ts  #   CSV/TXT/MD extraction preview and apply logic
+│   │   └── parser-service.ts  #   CSV/TXT/MD/XLSX extraction preview and apply logic
 │   └── e2e/                   #   Playwright coverage for portal and workflow flows
 ├── templates/                 # Output templates (report, IC memo, checkpoints)
 ├── validation/                # Test fixtures and validation runner
@@ -687,10 +707,10 @@ Potential future directions:
 
 | Document | Description |
 |----------|-------------|
-| [Quick Demo](docs/QUICK-DEMO.md) | Five-minute offline path from clone to the v2.5 Source-Backed Deal Intake workspace |
+| [Quick Demo](docs/QUICK-DEMO.md) | Ten-minute local path for a first real source package plus deterministic Parkview fallback |
 | [Demo Journey](docs/DEMO-JOURNEY.md) | Public v2.5 operator storyboard, screenshot path, and guided demo checklist |
 | [Architecture](docs/ARCHITECTURE.md) | Agent hierarchy, phase dependencies, data flow, checkpoint system, file structure |
-| [First Deal Guide](docs/FIRST-DEAL-GUIDE.md) | Step-by-step walkthrough for running your first acquisition analysis |
+| [First Deal Guide](docs/FIRST-DEAL-GUIDE.md) | Step-by-step walkthrough for bringing a local deal package into review and export |
 | [Deal Configuration](docs/DEAL-CONFIGURATION.md) | Complete field reference for `deal.json` |
 | [Threshold Customization](docs/THRESHOLD-CUSTOMIZATION.md) | How to tune investment criteria and risk tolerances |
 | [Agent Development](docs/AGENT-DEVELOPMENT.md) | The 19-section agent anatomy standard for building new agents |

@@ -1,6 +1,6 @@
-# Quick Demo: Run the Agentic Deal Team Workspace in 5 Minutes
+# Quick Demo: First Real Deal Workspace in 10 Minutes
 
-Use this path when you want to prove the product locally before reading the architecture docs. The default demo is deterministic, offline, and does not require API keys.
+Use this path when you want to prove the product locally before reading the architecture docs. The primary path is a local, source-backed workspace for your own files. Parkview remains the deterministic fallback when you want a no-upload sample.
 
 ## What You Will See
 
@@ -12,7 +12,7 @@ The v2.5 demo follows the core operator journey:
 4. **Review workpapers** — evidence and agent outputs are filed for diligence review.
 5. **Open the IC package** — review the committee-ready recommendation package and source trail.
 
-## Start the Offline Demo
+## Start the Dashboard
 
 From a fresh clone:
 
@@ -20,7 +20,6 @@ From a fresh clone:
 git clone https://github.com/ahacker-1/cre-acquisition-orchestrator.git
 cd cre-acquisition-orchestrator
 npm install
-npm run demo
 npm run dashboard
 ```
 
@@ -30,7 +29,19 @@ Open:
 http://localhost:5173
 ```
 
-The dashboard runs locally. The default demo does not call external AI APIs.
+The dashboard runs locally. No external AI APIs are called unless you explicitly choose the optional Codex / ChatGPT runtime later.
+
+## Run a First Real Deal
+
+1. Drop a local rent roll, T12, offering memo, or supporting document package on the front door.
+2. Name the deal and create the workspace.
+3. Open **Evidence** and click **Preview Extraction** for supported CSV/TXT/MD/XLSX source files.
+4. Review candidate fields with provenance, confidence, warnings, and source location.
+5. Approve/apply trusted fields, or reject/waive ambiguous fields with a note.
+6. Use the cockpit sidebar and Operator Briefing to resolve missing evidence and launch readiness.
+7. Open **IC Package** and export Markdown or JSON for an IC starter package.
+
+The repo includes a realistic source-backed package at [`fixtures/first-real-deal`](../fixtures/first-real-deal). It references messy XLSX rent roll and T12 fixtures plus an offering memo excerpt.
 
 If you are deciding between the offline demo and optional live Codex agents, read [`docs/RUNTIME-COMPARISON.md`](RUNTIME-COMPARISON.md). The short version: use the offline demo for first evaluation, screenshots, and release validation; use live Codex only after authentication and data-sharing boundaries are understood.
 
@@ -75,7 +86,7 @@ Current public screenshots for these surfaces live under [`docs/assets/`](assets
 
 ### Offline deterministic demo
 
-The default path uses deterministic sample data and local orchestration artifacts. It is the best path for first-time evaluation because it is repeatable and does not require credentials.
+The deterministic sample uses Parkview data and local orchestration artifacts. It is best for repeatable screenshots, validation, and public walkthroughs.
 
 Use it to evaluate:
 
@@ -85,6 +96,10 @@ Use it to evaluate:
 - generated workpapers/package shape
 - source/evidence expectations
 - release screenshots and docs
+
+### Local first-real-deal workspace
+
+The real-deal path uses user-supplied local documents. Supported extraction still routes candidate fields to operator review before changing deal inputs. The IC starter export is an auditable package starter, not investment advice or autonomous decisioning.
 
 ### Optional live Codex / ChatGPT path
 
@@ -138,12 +153,14 @@ The dashboard uses:
 - `8080` — WebSocket watcher
 - `8081` — local REST API
 
-On Windows / Git Bash, clear stale listeners with:
+On Windows PowerShell, clear stale listeners with:
 
-```bash
-for p in $(netstat -ano | awk '/:(5173|8080|8081) / && /LISTENING/ {print $NF}' | sort -u); do
-  taskkill //PID $p //F || true
-done
+```powershell
+$ports = @(5173, 8080, 8081)
+Get-NetTCPConnection -State Listen |
+  Where-Object { $ports -contains $_.LocalPort } |
+  Select-Object -ExpandProperty OwningProcess -Unique |
+  ForEach-Object { Stop-Process -Id $_ -Force }
 ```
 
 Then restart:
@@ -191,8 +208,9 @@ npm --prefix dashboard run test:e2e
 
 ## Next Reading
 
-- [`docs/DEMO-JOURNEY.md`](DEMO-JOURNEY.md) — public operator storyboard and screenshot refresh path.
-- [`docs/RUNTIME-COMPARISON.md`](RUNTIME-COMPARISON.md) — offline demo vs live Codex expectations, artifacts, and safety boundaries.
-- [`README.md`](../README.md) — project overview, release journey, architecture summary, and setup.
-- [`ROADMAP.md`](../ROADMAP.md) — current priorities and contribution directions.
-- [`docs/ISSUE-SEEDS.md`](ISSUE-SEEDS.md) — approval-ready issue drafts for public follow-up work.
+- [`docs/FIRST-DEAL-GUIDE.md`](FIRST-DEAL-GUIDE.md) - source-backed first-real-deal walkthrough.
+- [`docs/DEMO-JOURNEY.md`](DEMO-JOURNEY.md) - public operator storyboard and screenshot refresh path.
+- [`docs/RUNTIME-COMPARISON.md`](RUNTIME-COMPARISON.md) - offline demo vs live Codex expectations, artifacts, and safety boundaries.
+- [`README.md`](../README.md) - project overview, release journey, architecture summary, and setup.
+- [`ROADMAP.md`](../ROADMAP.md) - current priorities and contribution directions.
+- [`docs/ISSUE-SEEDS.md`](ISSUE-SEEDS.md) - approval-ready issue drafts for public follow-up work.

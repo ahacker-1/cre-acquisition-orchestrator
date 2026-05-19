@@ -11,6 +11,9 @@ interface CompletionPackageProps {
   storyEvents: StoryEvent[]
   documentArtifacts: DocumentArtifact[]
   className?: string
+  onExportPackage?: (format: 'markdown' | 'json') => Promise<void>
+  exportingPackage?: boolean
+  exportMessage?: string | null
 }
 
 interface PhaseOutcome {
@@ -90,6 +93,9 @@ function CompletionPackage({
   storyEvents,
   documentArtifacts,
   className = '',
+  onExportPackage,
+  exportingPackage = false,
+  exportMessage = null,
 }: CompletionPackageProps) {
   const phaseOutcomes = useMemo<PhaseOutcome[]>(() => {
     if (!dealCheckpoint) return []
@@ -190,6 +196,33 @@ function CompletionPackage({
             {displayLabel(dealCheckpoint.status)}
           </span>
         </div>
+        {onExportPackage && (
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              data-testid="package-export-markdown"
+              className="portal-button portal-button-primary"
+              disabled={exportingPackage}
+              onClick={() => void onExportPackage('markdown')}
+            >
+              Export Markdown
+            </button>
+            <button
+              type="button"
+              data-testid="package-export-json"
+              className="portal-button portal-button-secondary"
+              disabled={exportingPackage}
+              onClick={() => void onExportPackage('json')}
+            >
+              Export JSON
+            </button>
+            {exportMessage && (
+              <span className="text-xs uppercase tracking-[0.16em] text-gray-500" data-testid="package-export-status">
+                {exportMessage}
+              </span>
+            )}
+          </div>
+        )}
         <div className="grid gap-3 md:grid-cols-4 mt-5">
           <div className="rounded-lg bg-black/20 px-4 py-3">
             <div className="text-lg font-semibold text-white">{percent(dealCheckpoint.overallProgress)}</div>
