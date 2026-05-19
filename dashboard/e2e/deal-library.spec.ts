@@ -255,6 +255,44 @@ async function waitForOperatorDealHub(page: Page, dealName: string): Promise<voi
   await expect(page.getByRole('main').getByRole('heading', { name: dealName })).toBeVisible({ timeout: 20_000 })
 }
 
+async function openWorkspaceFromRecentDeals(page: Page, dealId: string, dealName: string): Promise<void> {
+  await waitForDashboardReady(page)
+  const workspace = page.getByTestId('operator-deal-hub')
+  const heading = page.getByRole('main').getByRole('heading', { name: dealName })
+  const strip = page.getByTestId('recent-deals-strip')
+  const card = strip.getByTestId(`deal-card-${dealId}`)
+
+  const visibleTarget = await Promise.race([
+    workspace.waitFor({ state: 'visible', timeout: 20_000 }).then(() => 'workspace' as const).catch(() => null),
+    card.waitFor({ state: 'visible', timeout: 20_000 }).then(() => 'card' as const).catch(() => null),
+  ])
+
+  if (visibleTarget === 'workspace' || (await workspace.isVisible())) {
+    await expect(heading).toBeVisible({ timeout: 20_000 })
+    return
+  }
+
+  if (visibleTarget !== 'card') {
+    await expect(card).toBeVisible({ timeout: 1_000 })
+  }
+
+  try {
+    await strip.getByTestId(`workspace-docs-${dealId}`).click({ timeout: 5_000 })
+  } catch (error) {
+    if (!(await workspace.isVisible())) {
+      throw error
+    }
+  }
+
+  if (await workspace.isVisible()) {
+    await expect(heading).toBeVisible({ timeout: 20_000 })
+    return
+  }
+
+  await expect(workspace).toBeVisible({ timeout: 20_000 })
+  await expect(heading).toBeVisible({ timeout: 20_000 })
+}
+
 function documentCoverageStat(page: Page) {
   return page.getByText('Doc Coverage').locator('..')
 }
@@ -449,7 +487,7 @@ test('returns to the upload package page from a checkpoint-backed workspace', as
 
   await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
   await launchWorkflowForDeal(request, 'quick-deal-screen', WORKSPACE_DEAL_ID)
-  await waitForOperatorDealHub(page, WORKSPACE_DEAL_NAME)
+  await openWorkspaceFromRecentDeals(page, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
   await stopActiveRun(request)
 
   await page.getByTestId('header-upload-package-button').click()
