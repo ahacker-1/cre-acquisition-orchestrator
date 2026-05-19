@@ -170,6 +170,7 @@ export default function App() {
   const [quickCreateFiles, setQuickCreateFiles] = useState<File[]>([])
   const [quickCreateIntent, setQuickCreateIntent] = useState<OutcomeIntent>('ic-package')
   const [quickCreateGoal, setQuickCreateGoal] = useState('Build an IC-ready acquisition package')
+  const [frontDoorPinned, setFrontDoorPinned] = useState(false)
 
   // Demo-friendly: Default to Pipeline tab, auto-expand relevant sections
   const runActive = runStatus.state === 'STARTING' || runStatus.state === 'RUNNING' || runStatus.state === 'STOPPING'
@@ -208,12 +209,14 @@ export default function App() {
   }
 
   function openNewDealWizard(): void {
+    setFrontDoorPinned(false)
     setEditingDealId(null)
     setWizardOpen(true)
   }
 
   function openUploadFrontDoor(): void {
     setLibraryError(null)
+    setFrontDoorPinned(true)
     setWorkspaceCheckpoint(null)
     setWorkspaceInitialTab('documents')
     setGuidedDemoAutoStart(false)
@@ -225,6 +228,7 @@ export default function App() {
   }
 
   function openEditDealWizard(dealId: string): void {
+    setFrontDoorPinned(false)
     setFrontDoorOpen(false)
     setEditingDealId(dealId)
     setWizardOpen(true)
@@ -236,6 +240,7 @@ export default function App() {
     setLibraryError(null)
     try {
       const record = await loadDeal(dealId)
+      setFrontDoorPinned(false)
       setFrontDoorOpen(false)
       setWorkspaceCheckpoint(checkpointFromDealRecord(record))
       setWorkspaceInitialTab(section)
@@ -262,6 +267,7 @@ export default function App() {
 
   function handleQuickFiles(files: File[], intent: OutcomeIntent, goalText: string): void {
     setLibraryError(null)
+    setFrontDoorPinned(true)
     setFrontDoorOpen(true)
     setQuickCreateIntent(intent)
     setQuickCreateGoal(goalText)
@@ -270,6 +276,7 @@ export default function App() {
 
   async function handleQuickDealCreated(dealId: string): Promise<void> {
     setQuickCreateFiles([])
+    setFrontDoorPinned(false)
     setFrontDoorOpen(false)
     await refreshDeals()
     await openDealWorkspace(dealId, 'documents')
@@ -277,6 +284,7 @@ export default function App() {
 
   function handleWorkflowLaunchStarted(): void {
     setLibraryError(null)
+    setFrontDoorPinned(false)
     setFrontDoorOpen(false)
     setWorkflowOpen(false)
     setWorkspaceCheckpoint(null)
@@ -297,6 +305,7 @@ export default function App() {
         speed: 'normal',
         reset: match.kind === 'sample',
       })
+      setFrontDoorPinned(false)
       setFrontDoorOpen(false)
       setWorkspaceCheckpoint(checkpointFromDealLibraryItem(launchResponse.deal))
       setLibraryOpen(false)
@@ -313,10 +322,16 @@ export default function App() {
   }, [refreshDeals, runStatus.runId, runStatus.state])
 
   useEffect(() => {
-    if (runActive && dealCheckpoint) {
+    const shouldRevealRunWorkspace =
+      dealCheckpoint &&
+      runStatus.runId &&
+      !frontDoorPinned &&
+      (runActive || runStatus.state === 'COMPLETED')
+
+    if (shouldRevealRunWorkspace) {
       setFrontDoorOpen(false)
     }
-  }, [dealCheckpoint, runActive])
+  }, [dealCheckpoint, frontDoorPinned, runActive, runStatus.runId, runStatus.state])
 
   useEffect(() => {
     if (workspaceCheckpoint && dealCheckpoint?.dealId === workspaceCheckpoint.dealId && runActive) {
@@ -423,6 +438,7 @@ export default function App() {
 
           <button
             onClick={() => {
+              setFrontDoorPinned(false)
               setFrontDoorOpen(false)
               void startLiveRun()
             }}
@@ -621,6 +637,7 @@ export default function App() {
         }}
         onLaunched={() => {
           setLibraryError(null)
+          setFrontDoorPinned(false)
           setFrontDoorOpen(false)
           void refreshDeals()
           scrollToPageTop()
