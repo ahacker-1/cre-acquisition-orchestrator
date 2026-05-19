@@ -100,10 +100,14 @@ function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
+function isRetryableLockError(error) {
+  return ['ELOCKED', 'ECOMPROMISED', 'EPERM', 'EACCES'].includes(error.code);
+}
+
 function acquireFileLock(lockTarget) {
   let delayMs = 25;
   let lastError = null;
-  for (let attempt = 0; attempt < 10; attempt += 1) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
     try {
       return lockfile.lockSync(lockTarget, {
         realpath: false,
@@ -112,7 +116,7 @@ function acquireFileLock(lockTarget) {
       });
     } catch (error) {
       lastError = error;
-      if (!['ELOCKED', 'ECOMPROMISED'].includes(error.code)) throw error;
+      if (!isRetryableLockError(error)) throw error;
       sleepSync(delayMs);
       delayMs = Math.min(Math.round(delayMs * 1.25), 250);
     }
