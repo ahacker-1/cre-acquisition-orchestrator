@@ -250,9 +250,7 @@ async function launchWorkflowForDeal(
 }
 
 async function waitForOperatorDealHub(page: Page, dealName: string): Promise<void> {
-  await waitForDashboardReady(page)
-  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByRole('main').getByRole('heading', { name: dealName })).toBeVisible({ timeout: 20_000 })
+  await openWorkspaceFromRecentDeals(page, WORKSPACE_DEAL_ID, dealName)
 }
 
 async function openWorkspaceFromRecentDeals(page: Page, dealId: string, dealName: string): Promise<void> {
