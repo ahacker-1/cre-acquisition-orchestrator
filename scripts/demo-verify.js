@@ -28,6 +28,10 @@ const steps = [
     command: ['run', 'test:parsers'],
   },
   {
+    name: 'Validate source-backed workspace review/apply flow',
+    command: ['run', 'test:workspace'],
+  },
+  {
     name: 'Validate operator guide contract',
     command: ['run', 'validate:guides'],
   },

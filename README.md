@@ -68,12 +68,13 @@ See [`docs/DEMO-JOURNEY.md`](docs/DEMO-JOURNEY.md) for the full storyboard and [
 
 ---
 
-## What's New in v2.4.0
+## What's New in v2.5.0
 
-- **Agentic Deal Team Workspace** - The dashboard now opens around a simple product journey: add source documents, declare the desired outcome, watch the acquisition team coordinate, and review the package.
-- **Mission-First IA** - Workspace navigation is now Documents, Mission, Agents, Workpapers, Package, and Advanced, so workflow configuration no longer obscures the core user journey.
-- **Visible Agent Communication** - The story pipeline now emits agent messages, handoffs, reviews, dependencies, and phase handoffs so the UI can show why work is moving between agents instead of only showing status ticks.
-- **Workpapers and Package Assembly** - Workpapers/evidence and final package review are first-class surfaces, with source artifacts linked back to the coordinating agents and phase handoffs.
+- **Source-Backed Deal Intake** - XLSX/CSV rent rolls and T12s can become reviewable candidate deal fields with parser metadata, file hashes, confidence, and source-location provenance.
+- **Persisted Extraction Review** - Review-ready and applied document evidence can be reopened without re-running extraction, so the operator workflow survives refresh/navigation.
+- **Approve & Apply Flow** - Underwriting-critical fields are selected, conflict-reviewed, and approved/applied explicitly before changing deal inputs.
+- **Release-Grade Parser Coverage** - Offline verification now covers XLSX parser fixtures plus workspace review/apply persistence and source-backed launch-readiness coverage.
+- **Agentic Deal Team Workspace** - v2.4's Acquisition Command, Swarm Goal Console, visible handoffs, workpapers, and IC package surfaces remain the public demo shell around the new source-backed intake path.
 
 ## What's New in v2.3.0
 
@@ -92,7 +93,7 @@ See [`docs/DEMO-JOURNEY.md`](docs/DEMO-JOURNEY.md) for the full storyboard and [
 
 ## Release Journey
 
-This project has grown in seven public steps: first the agent architecture, then a usable dashboard, then a real operator workspace, then live Codex-backed agent execution, then a document-first cockpit, then a dependable operator workbench, and now an agentic deal-team workspace where users can drop documents, state the goal, watch specialists coordinate, and review the acquisition package.
+This project has grown in eight public steps: first the agent architecture, then a usable dashboard, then a real operator workspace, then live Codex-backed agent execution, then a document-first cockpit, then a dependable operator workbench, then an agentic deal-team workspace, and now source-backed deal intake where uploaded rent rolls and T12s become reviewable, provenance-backed deal inputs.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -103,6 +104,7 @@ This project has grown in seven public steps: first the agent architecture, then
 | **v2.2.0 - Document-First Acquisition Cockpit** | Made the dashboard front door document-first with quick draft creation, upload-to-documents routing, compact recent deals, and a persistent cockpit sidebar. | [RELEASE_NOTES_v2.2.0.md](RELEASE_NOTES_v2.2.0.md) |
 | **v2.3.0 - Operator Workbench** | Added guided deal progression, workflow readiness, upload queue recovery, source-backed change review, safer embedded launch scoping, IC review handoff, and verified public feature paths. | [RELEASE_NOTES_v2.3.0.md](RELEASE_NOTES_v2.3.0.md) |
 | **v2.4.0 - Agentic Deal Team Workspace** | Reframed the dashboard around Acquisition Command, mission intent, visible agent handoffs, specialist team activity, workpapers/evidence, and IC package assembly. | [RELEASE_NOTES_v2.4.0.md](RELEASE_NOTES_v2.4.0.md) |
+| **v2.5.0 - Source-Backed Deal Intake** | Turned XLSX/CSV rent rolls and T12s into persisted, reviewable, provenance-backed candidate fields operators can approve/apply before workflows use them. | [RELEASE_NOTES_v2.5.0.md](RELEASE_NOTES_v2.5.0.md) |
 
 ---
 
@@ -343,7 +345,7 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 
 | View | What It Shows |
 |-----|--------------|
-| **Operator Deal Hub** | Deal lifecycle workspace organized around the current v2.4 journey: Command, Evidence, Deal Team, Workpapers, IC Package, and Controls |
+| **Operator Deal Hub** | Deal lifecycle workspace organized around the current v2.5 journey: Command, Evidence, Deal Team, Workpapers, IC Package, and Controls |
 | **Document Front Door** | First-run homepage drop zone that creates a draft workspace from uploaded deal files before any long-form intake |
 | **Deal Progression Guide** | Default workspace path with phase checklists, missing documents/fields, evidence requirements, helper guidance, recommended actions, and persisted complete/waive notes |
 | **Operator Command Bar** | Persistent workspace command surface with active phase, readiness, blocker count, checklist progress, source-input coverage, and primary next action |
@@ -361,9 +363,9 @@ A React + TypeScript deal cockpit connects to the local watcher and REST API for
 
 The first screen is designed as a document-first acquisition cockpit: drop source files, confirm a deal name, and land in the guided deal workspace before filling the detailed intake. XLSX and CSV rent-roll/T12 files can produce source-backed candidate fields for operator review before they change deal inputs. The full New Deal Wizard remains available from the header and from workspace edit actions when the operator needs launch-ready setup.
 
-For the current v2.4 demo flow, use the [Demo Journey](docs/DEMO-JOURNEY.md). It maps the public story from document intake to Acquisition Command, mission intent, visible agent handoffs, workpapers/evidence, and IC package review. For runtime expectations and data-sharing boundaries, use [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md).
+For the current v2.5 demo flow, use the [Demo Journey](docs/DEMO-JOURNEY.md). It maps the public story from document intake to Acquisition Command, mission intent, visible agent handoffs, workpapers/evidence, and IC package review. For runtime expectations and data-sharing boundaries, use [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md).
 
-Release operators can refresh the v2.4 workspace screenshots with `npm run demo`, `npm run dashboard`, then `npm run screenshots` while the dashboard is running locally.
+Release operators can refresh the current workspace screenshots with `npm run demo`, `npm run dashboard`, then `npm run screenshots` while the dashboard is running locally.
 
 ![Document-first dashboard front door with the drop zone as the primary action](docs/assets/dashboard-front-door.png)
 
@@ -519,7 +521,7 @@ npm run test:e2e
 
 ### Refresh Public Screenshots
 
-When preparing release notes, README updates, or launch materials, regenerate the deterministic sample artifacts and capture the current v2.4 dashboard gallery:
+When preparing release notes, README updates, or launch materials, regenerate the deterministic sample artifacts and capture the current dashboard gallery:
 
 ```powershell
 npm run demo
@@ -683,8 +685,8 @@ Potential future directions:
 
 | Document | Description |
 |----------|-------------|
-| [Quick Demo](docs/QUICK-DEMO.md) | Five-minute offline path from clone to the v2.4 Acquisition Command workspace |
-| [Demo Journey](docs/DEMO-JOURNEY.md) | Public v2.4 operator storyboard, screenshot path, and guided demo checklist |
+| [Quick Demo](docs/QUICK-DEMO.md) | Five-minute offline path from clone to the v2.5 Source-Backed Deal Intake workspace |
+| [Demo Journey](docs/DEMO-JOURNEY.md) | Public v2.5 operator storyboard, screenshot path, and guided demo checklist |
 | [Architecture](docs/ARCHITECTURE.md) | Agent hierarchy, phase dependencies, data flow, checkpoint system, file structure |
 | [First Deal Guide](docs/FIRST-DEAL-GUIDE.md) | Step-by-step walkthrough for running your first acquisition analysis |
 | [Deal Configuration](docs/DEAL-CONFIGURATION.md) | Complete field reference for `deal.json` |

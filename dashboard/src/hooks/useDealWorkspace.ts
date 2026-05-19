@@ -108,6 +108,28 @@ export function useDealWorkspace(dealId: string | null | undefined) {
     }
   }
 
+  async function loadExtraction(documentId: string): Promise<ExtractionPreview> {
+    if (!dealId) throw new Error('Choose a deal before reviewing extracted fields.')
+    setWorking(true)
+    try {
+      const response = await fetch(
+        `${API_URL}/api/deals/${encodeURIComponent(dealId)}/documents/${encodeURIComponent(documentId)}/extraction`,
+      )
+      const payload = await parseJson<{ extraction?: ExtractionPreview; error?: string }>(response)
+      if (!response.ok || !payload.extraction) {
+        throw new Error(payload.error || 'Failed to load extraction preview')
+      }
+      setLastExtraction(payload.extraction)
+      setError(null)
+      return payload.extraction
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      throw err
+    } finally {
+      setWorking(false)
+    }
+  }
+
   async function applyExtraction(documentId: string, fieldIds?: string[], confirmConflictReview = false): Promise<void> {
     if (!dealId) return
     setWorking(true)
@@ -171,6 +193,7 @@ export function useDealWorkspace(dealId: string | null | undefined) {
     saveCriteria,
     uploadDocument,
     extractDocument,
+    loadExtraction,
     applyExtraction,
     savePhaseChecklist,
   }
