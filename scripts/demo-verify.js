@@ -24,6 +24,10 @@ const steps = [
     command: ['run', 'test:goal-helper'],
   },
   {
+    name: 'Validate source-backed parser fixtures',
+    command: ['run', 'test:parsers'],
+  },
+  {
     name: 'Validate operator guide contract',
     command: ['run', 'validate:guides'],
   },

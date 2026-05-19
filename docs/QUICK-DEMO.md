@@ -6,7 +6,7 @@ Use this path when you want to prove the product locally before reading the arch
 
 The v2.4 demo follows the core operator journey:
 
-1. **Drop documents** — start from source material, not a blank automation form.
+1. **Drop documents** — start from source material, not a blank automation form. XLSX/CSV rent rolls and T12s become source-backed candidate fields for operator review.
 2. **State the mission** — preserve the acquisition goal and intended output.
 3. **Watch the team coordinate** — Acquisition Command and Deal Team show specialist activity, phase movement, and handoffs.
 4. **Review workpapers** — evidence and agent outputs are filed for diligence review.
@@ -54,7 +54,7 @@ Before showing the project to someone else, run the one-command verification pat
 npm run demo:verify
 ```
 
-This command regenerates deterministic demo artifacts, validates contracts and operator guides, checks the deterministic swarm-goal helper, runs the system scenarios, and verifies the dashboard production build. It is offline and credential-free by default.
+This command regenerates deterministic demo artifacts, validates contracts and operator guides, checks the deterministic swarm-goal helper, validates source-backed XLSX rent-roll/T12 parser fixtures, runs the system scenarios, and verifies the dashboard production build. It is offline and credential-free by default.
 
 ## Screens to Review
 
