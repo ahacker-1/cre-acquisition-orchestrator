@@ -96,6 +96,33 @@ function checkpointFromDealRecord(record: DealRecordResponse): DealCheckpoint {
   }
 }
 
+function checkpointFromDealLibraryItem(item: DealLibraryItem): DealCheckpoint {
+  return {
+    dealId: item.dealId,
+    dealName: item.dealName,
+    property: {
+      address: item.address || '',
+      city: item.city || '',
+      state: item.state || '',
+      totalUnits: item.totalUnits ?? 0,
+      askingPrice: item.askingPrice ?? 0,
+    },
+    status: item.pipelineStatus || 'running',
+    workflowName: 'Full Acquisition Review',
+    overallProgress: 0,
+    startedAt: item.createdAt || item.updatedAt,
+    lastUpdatedAt: item.updatedAt,
+    phases: {
+      dueDiligence: pendingPhase('Due Diligence', 7),
+      underwriting: pendingPhase('Underwriting', 3),
+      financing: pendingPhase('Financing', 3),
+      legal: pendingPhase('Legal', 6),
+      closing: pendingPhase('Closing', 2),
+    },
+    resumeInstructions: 'Workflow launched. Waiting for live checkpoint updates from the run.',
+  }
+}
+
 function scrollToPageTop(): void {
   window.requestAnimationFrame(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
@@ -265,13 +292,13 @@ export default function App() {
     setLaunchingDealId(dealId)
     setLibraryError(null)
     try {
-      await launchDeal(dealId, {
+      const launchResponse = await launchDeal(dealId, {
         scenario: recommendedScenarioForDeal(match),
         speed: 'normal',
         reset: match.kind === 'sample',
       })
       setFrontDoorOpen(false)
-      setWorkspaceCheckpoint(null)
+      setWorkspaceCheckpoint(checkpointFromDealLibraryItem(launchResponse.deal))
       setLibraryOpen(false)
       scrollToPageTop()
     } catch (err) {
@@ -290,6 +317,12 @@ export default function App() {
       setFrontDoorOpen(false)
     }
   }, [dealCheckpoint, runActive])
+
+  useEffect(() => {
+    if (workspaceCheckpoint && dealCheckpoint?.dealId === workspaceCheckpoint.dealId && runActive) {
+      setWorkspaceCheckpoint(null)
+    }
+  }, [dealCheckpoint, runActive, workspaceCheckpoint])
 
   const visibleDealCheckpoint = frontDoorOpen ? null : workspaceCheckpoint ?? dealCheckpoint
   const showingManualWorkspace = Boolean(workspaceCheckpoint)

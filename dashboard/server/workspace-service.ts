@@ -1,4 +1,5 @@
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -812,8 +813,26 @@ function writeJson(filePath: string, value: unknown): void {
 function writeJsonAtomic(filePath: string, value: unknown): void {
   ensureDir(dirname(filePath))
   const tempPath = `${filePath}.${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}.tmp`
-  writeFileSync(tempPath, JSON.stringify(value, null, 2))
-  renameSync(tempPath, filePath)
+  try {
+    writeFileSync(tempPath, JSON.stringify(value, null, 2))
+    replaceFileWithTemp(tempPath, filePath)
+  } finally {
+    if (existsSync(tempPath)) unlinkSync(tempPath)
+  }
+}
+
+function replaceFileWithTemp(tempPath: string, filePath: string): void {
+  try {
+    renameSync(tempPath, filePath)
+  } catch (error) {
+    const code = typeof (error as NodeJS.ErrnoException).code === 'string'
+      ? (error as NodeJS.ErrnoException).code
+      : ''
+    if (process.platform !== 'win32' || (code !== 'EPERM' && code !== 'EEXIST')) throw error
+    // OneDrive-backed Windows workspaces can reject rename-over-existing even after a serialized write.
+    copyFileSync(tempPath, filePath)
+    unlinkSync(tempPath)
+  }
 }
 
 interface StagedJsonWrite {

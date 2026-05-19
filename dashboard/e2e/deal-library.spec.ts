@@ -325,7 +325,26 @@ test('launches a shipped sample deal from the library', async ({ page, request }
   await waitForDashboardReady(page)
   await stopActiveRun(request)
   const modal = await openDealLibraryModal(page)
+  const launchResponsePromise = page.waitForResponse((response) =>
+    isApiResponse(response, 'POST', `/api/deals/${SAMPLE_DEAL_ID}/launch`)
+  )
   await modal.getByTestId('launch-deal-demo-pass-001').click()
+  const launchResponse = await launchResponsePromise
+  await expectApiOk(launchResponse)
+  const launchPayload = (await launchResponse.json()) as { deal?: { dealId?: string } }
+  expect(launchPayload.deal?.dealId).toBe(SAMPLE_DEAL_ID)
+
+  await expect
+    .poll(
+      async () => {
+        const response = await request.get(`${API_URL}/api/run/status`)
+        if (!response.ok()) return null
+        const payload = (await response.json()) as { dealPath?: string | null }
+        return payload.dealPath ?? null
+      },
+      { timeout: 15_000 },
+    )
+    .toBe('demo/deals/riverside-gardens.json')
 
   await expect(page.getByText('Run: Running')).toBeVisible({ timeout: 15_000 })
   await expect(modal).toBeHidden({ timeout: 20_000 })
@@ -743,7 +762,16 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await expect(extractionPreview).toContainText('Asking Price')
   await extractionPreview.locator('[data-field-path="financials.currentNOI"]').check()
   await extractionPreview.getByTestId('extraction-review-note').fill('T12 controls NOI for this package.')
+  const waiverResponsePromise = page.waitForResponse((response) => {
+    const pathname = new URL(response.url()).pathname
+    return (
+      response.request().method() === 'POST' &&
+      pathname.startsWith(`/api/deals/${WORKSPACE_DEAL_ID}/documents/`) &&
+      pathname.endsWith('/review-extraction')
+    )
+  })
   await page.getByTestId('waive-extraction-fields').click()
+  await expectApiOk(await waiverResponsePromise)
   await expect(extractionPreview).toContainText('waived')
   await extractionPreview.locator('[data-field-path="financials.askingPrice"]').check()
   await extractionPreview.locator('[data-field-path="property.yearBuilt"]').check()
