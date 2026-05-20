@@ -4,7 +4,7 @@ Use this path when you want to prove the product locally before reading the arch
 
 ## What You Will See
 
-The v2.5 demo follows the core operator journey:
+The v2.6 demo follows the core operator journey:
 
 1. **Drop documents** — start from source material, not a blank automation form. XLSX/CSV rent rolls and T12s become source-backed candidate fields for operator review.
 2. **State the mission** — preserve the acquisition goal and intended output.

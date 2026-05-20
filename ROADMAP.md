@@ -6,9 +6,9 @@ The north star is to make `cre-acquisition-orchestrator` the leading open-source
 
 ## Current Release Baseline
 
-**v2.5.0 — Source-Backed Deal Intake** is the current public release. It keeps the v2.4 agentic deal-team workspace, then adds the practical intake loop: upload XLSX/CSV rent rolls and T12s, review source-backed candidate fields with provenance, and approve/apply them before workflows use those inputs.
+**v2.6.0 — Credibility and Infrastructure Hardening** is the current public release. It keeps the v2.5 source-backed deal intake loop, then makes the project easier for first-time visitors and contributors to trust: practitioner-grade Parkview workpapers, strict schemas/enums, local dashboard hardening, API/WebSocket docs, refreshed screenshot assets, and release-please automation.
 
-Release-grade validation for the baseline includes:
+Release-grade validation for this baseline includes:
 
 - `npm run demo`
 - `npm run validate`
@@ -19,6 +19,13 @@ Release-grade validation for the baseline includes:
 - `npm --prefix dashboard run build`
 - `npm --prefix dashboard run test:e2e`
 - `npm --prefix dashboard audit --omit=dev --audit-level=high`
+
+Shipped in v2.6.0:
+
+- Replaced thin Parkview sample artifacts with populated workpapers and stricter completeness checks.
+- Added strict AJV schema validation, canonical shared enums, and per-agent schema coverage for critical specialist outputs.
+- Hardened local dashboard boundaries around paths, uploads, watcher state, loopback assumptions, and CSV formula sanitization.
+- Added API reference, WebSocket events documentation, agent catalog documentation, fixture validation, docs drift checks, and refreshed public screenshots.
 
 ## Near-Term Priorities
 
@@ -52,7 +59,7 @@ Candidate issues:
 - Extend the deterministic screenshot capture script to include the front door, quick-create modal, and source-backed extraction review panel.
 - Rename the screenshot capture script to a version-neutral path.
 
-Shipped through v2.5.0:
+Shipped through v2.6.0:
 
 - Current workspace screenshots for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package live under `docs/assets/`.
 - `npm run screenshots` captures the core workspace gallery against a locally running dashboard.

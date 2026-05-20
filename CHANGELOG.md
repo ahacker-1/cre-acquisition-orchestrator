@@ -27,16 +27,7 @@ This project follows the spirit of [Keep a Changelog](https://keepachangelog.com
 
 ## [Unreleased]
 
-### Added
-
-- First real-deal upload workflow: the first screen centers the upload package path, with a persistent way back to upload from an open workspace.
-- Messy fixture package: `fixtures/first-real-deal` and XLSX parser fixtures model alternate headers, totals rows, blank rows, occupancy conventions, messy rent rolls, and multi-sheet T12s.
-- IC starter export: operators can export a source-aware Markdown/JSON package from the workspace after review.
-- Verification coverage for parser, workspace, dashboard build, and browser E2E checks covering the first-real-deal path and source-backed review/apply loop.
-
-### Changed
-
-- Workspace navigation, mobile tabs, document polling, and transient local file reads were tightened after real-user UI walkthroughs.
+No unreleased changes yet. New work after v2.6.0 should be added here before the next release.
 
 ## [2.5.1] - Stale Source Evidence Gate
 
@@ -109,4 +100,4 @@ This project has grown from agent architecture into a local-first acquisition wo
 | **v2.4.0 - Agentic Deal Team Workspace** | Reframed the dashboard around Acquisition Command, mission intent, visible agent handoffs, specialist team activity, workpapers/evidence, and IC package assembly. | [RELEASE_NOTES_v2.4.0.md](RELEASE_NOTES_v2.4.0.md) |
 | **v2.5.0 - Source-Backed Deal Intake** | Turned XLSX/CSV rent rolls and T12s into persisted, reviewable, provenance-backed candidate fields operators can approve/apply before workflows use them. | [RELEASE_NOTES_v2.5.0.md](RELEASE_NOTES_v2.5.0.md) |
 | **v2.5.1 - Stale Source Evidence Gate** | Added source-freshness protection to workflow launch readiness and bumped the package baseline to `2.5.1`. | [GitHub Tag](https://github.com/ahacker-1/cre-acquisition-orchestrator/tree/v2.5.1) |
-| **Current main - First Real Deal Workflow** | Adds the curated first-real-deal fixture package, broader messy XLSX parser coverage, IC starter export, UI walkthrough hardening, and source-backed browser E2E coverage. | [Latest main](https://github.com/ahacker-1/cre-acquisition-orchestrator) |
+| **v2.6.0 - Credibility and Infrastructure Hardening** | Aligns Parkview around Austin, replaces stub workpapers, enforces strict schemas/enums, hardens local security, documents APIs/events, and refreshes public repo infrastructure. | [RELEASE_NOTES_v2.6.0.md](RELEASE_NOTES_v2.6.0.md) |

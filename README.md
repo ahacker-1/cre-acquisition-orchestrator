@@ -61,11 +61,11 @@ Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6
 
 ## Current Status
 
-Current `main` is ahead of the latest version tag (`v2.5.1`) and represents the first real-deal workflow pass. The stable baseline remains local-first and review-first:
+Current `main` is aligned with the latest public release (`v2.6.0`) and represents the credibility-hardening pass after source-backed deal intake. The stable baseline remains local-first and review-first:
 
 - **Local by default** - offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
-- **Versioned release baseline** - `v2.5.1` adds stale-source launch protection on top of the `v2.5.0` source-backed deal intake release.
-- **Current main** - expands messy real-world parser fixtures, adds a curated first-real-deal fixture package, improves mobile/workspace navigation, and hardens local file-race handling during dashboard polling.
+- **Versioned release baseline** - `v2.6.0` adds practitioner-grade Parkview workpapers, strict schema/enums validation, local dashboard security hardening, API/WebSocket docs, and refreshed public proof assets on top of the `v2.5.x` source-backed intake line.
+- **Current main** - is the v2.6.0 release baseline unless new unreleased work appears after this tag.
 - **Known limits** - PDF/OCR extraction, image-only or heavily merged workbooks, production hosted deployments, and autonomous investment decisions remain out of scope.
 
 See [CHANGELOG.md](CHANGELOG.md) for release history and current-main changes.
@@ -96,7 +96,7 @@ This project has grown from agent architecture into a local-first acquisition wo
 | **v2.4.0 - Agentic Deal Team Workspace** | Reframed the dashboard around Acquisition Command, mission intent, visible agent handoffs, specialist team activity, workpapers/evidence, and IC package assembly. | [RELEASE_NOTES_v2.4.0.md](RELEASE_NOTES_v2.4.0.md) |
 | **v2.5.0 - Source-Backed Deal Intake** | Turned XLSX/CSV rent rolls and T12s into persisted, reviewable, provenance-backed candidate fields operators can approve/apply before workflows use them. | [RELEASE_NOTES_v2.5.0.md](RELEASE_NOTES_v2.5.0.md) |
 | **v2.5.1 - Stale Source Evidence Gate** | Added source-freshness protection to workflow launch readiness and bumped the package baseline to `2.5.1`. | [GitHub Tag](https://github.com/ahacker-1/cre-acquisition-orchestrator/tree/v2.5.1) |
-| **Current main - Credibility and Infrastructure Hardening** | Aligns Parkview around Austin, replaces stub workpapers, enforces strict schemas/enums, hardens local security, documents APIs/events, and refreshes public repo infrastructure. | [CHANGELOG.md](CHANGELOG.md) |
+| **v2.6.0 - Credibility and Infrastructure Hardening** | Aligns Parkview around Austin, replaces stub workpapers, enforces strict schemas/enums, hardens local security, documents APIs/events, and refreshes public repo infrastructure. | [RELEASE_NOTES_v2.6.0.md](RELEASE_NOTES_v2.6.0.md) |
 
 ---
 
