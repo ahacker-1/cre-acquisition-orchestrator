@@ -1,6 +1,6 @@
 # Public Issue Seeds
 
-Use these as approval-ready GitHub issues after v2.5.0. They are intentionally scoped to make the project more legible, impressive, and contributor-friendly for first-time visitors.
+Use these as approval-ready GitHub issues after v2.6.0. They are intentionally scoped to make the project more legible, impressive, and contributor-friendly for first-time visitors.
 
 Do not create these issues automatically from automation. Review the text, adjust labels/milestones, then publish from the GitHub UI or `gh issue create` when ready. If using the CLI snippets below, save each issue body to the referenced `/tmp/*.md` file first.
 
@@ -13,23 +13,24 @@ Do not create these issues automatically from automation. Review the text, adjus
 - `demo`
 - `validation`
 
-## Shipped after v2.5.0
+## Shipped through v2.6.0
 
 - `docs/QUICK-DEMO.md` gives first-time visitors a five-minute offline path from clone to dashboard.
 - `npm run demo:verify` runs the deterministic demo, contract validation, guide validation, system tests, and dashboard production build in one command.
 - `docs/RUNTIME-COMPARISON.md` documents the offline demo vs live Codex split, artifact paths, and no-secret/data-sharing boundaries.
 - XLSX rent rolls and T12s now produce source-backed candidate fields with review/apply persistence and provenance.
 - Parser fixtures now cover alternate rent-roll headers, blank rows, total rows, common occupancy conventions, and multi-sheet T12 workbook selection.
+- v2.6.0 refreshed public screenshots, API/WebSocket docs, agent catalog docs, strict schema validation, local dashboard hardening, and practitioner-grade Parkview workpapers.
 
-## 1. Extend deterministic screenshot capture to front door and quick-create surfaces
+## 1. Add PDF text extraction for offering memoranda and legal checklists
 
-Suggested labels: `enhancement`, `demo`, `validation`
+Suggested labels: `enhancement`, `dashboard`, `validation`
 
 ```bash
 gh issue create \
-  --title "Extend deterministic screenshot capture to front door and quick-create surfaces" \
-  --label enhancement --label demo --label validation \
-  --body-file /tmp/cre-front-door-screenshot-capture.md
+  --title "Add PDF text extraction for offering memoranda and legal checklists" \
+  --label enhancement --label dashboard --label validation \
+  --body-file /tmp/cre-pdf-source-extraction.md
 ```
 
 Issue body:
@@ -37,24 +38,25 @@ Issue body:
 ```markdown
 ## Goal
 
-Make the entire first-time visitor path reproducible, including the front door before a workspace is open.
+Move the document-first workspace beyond spreadsheets by extracting reviewable text fields from common CRE PDFs without bypassing human approval.
 
 ## Scope
 
-Extend the existing `npm run screenshots` / the existing screenshot capture script flow so it captures the first-run front door and quick-create modal in addition to the completed workspace surfaces.
+Add local PDF text extraction for offering memoranda and legal/diligence checklists. Extracted values should become source-backed candidates with confidence, warnings, file hashes, page references, and review/apply state before changing deal inputs.
 
 ## Acceptance Criteria
 
-- [ ] Preserve the existing `npm run screenshots` command.
-- [ ] Capture front door and quick-create modal without depending on stale browser local storage.
-- [ ] Continue capturing Acquisition Command, Mission, Deal Team, Workpapers, and IC Package surfaces.
-- [ ] Update `docs/assets/dashboard-front-door.png` and `docs/assets/quick-deal-create.png` intentionally.
-- [ ] Ensure the command fails clearly if the dashboard cannot start or sample data is missing.
+- [ ] Add a local parser path for text-based PDFs; image-only PDFs should return an explicit unsupported/OCR-needed warning.
+- [ ] Preserve source provenance: file name, hash, page number, snippet, extracted value, confidence/status, and parser metadata.
+- [ ] Route ambiguous extracted values to candidate review with warnings instead of silently applying them.
+- [ ] Add fixtures for at least one offering memo excerpt and one legal/diligence checklist PDF.
+- [ ] Update `docs/FIRST-DEAL-GUIDE.md` and `docs/QUICK-DEMO.md` with supported/unsupported PDF boundaries.
+- [ ] Run `npm run test:parsers`.
+- [ ] Run `npm run test:workspace`.
 - [ ] Run `npm --prefix dashboard run build`.
-- [ ] Run relevant Playwright tests.
 ```
 
-## 2. Continue expanding source-backed parser fixtures for messy real-world rent rolls and T12s
+## 2. Continue expanding source-backed XLSX rent-roll and T12 extraction
 
 Suggested labels: `enhancement`, `dashboard`, `validation`
 
@@ -70,11 +72,11 @@ Issue body:
 ```markdown
 ## Goal
 
-Broaden the v2.5 XLSX parser beyond the current fixture set so it handles more messy real-world rent rolls and T12 workbooks.
+Broaden the v2.5+ XLSX parser beyond the current fixture set so it handles more messy real-world rent rolls and T12 workbooks.
 
 ## Scope
 
-Add fixture variants beyond the current alternate-header, totals-row, blank-row, occupancy-convention, and multi-sheet T12 coverage while preserving the v2.5 safe default: extracted fields must be reviewed and approved/applied before changing deal inputs.
+Add fixture variants beyond the current alternate-header, totals-row, blank-row, occupancy-convention, and multi-sheet T12 coverage while preserving the safe default: extracted fields must be reviewed and approved/applied before changing deal inputs.
 
 ## Acceptance Criteria
 
@@ -122,15 +124,15 @@ Define and validate minimum workpaper fields for cited inputs, assumptions, calc
 - [ ] Run `npm --prefix dashboard run build`.
 ```
 
-## 4. Document offline simulation vs live Codex execution
+## 4. Add a dashboard contributor architecture map
 
-Suggested labels: `documentation`, `good first issue`
+Suggested labels: `documentation`, `good first issue`, `dashboard`
 
 ```bash
 gh issue create \
-  --title "Document offline simulation vs live Codex execution" \
-  --label documentation --label "good first issue" \
-  --body-file /tmp/cre-runtime-comparison-doc.md
+  --title "Add a dashboard contributor architecture map" \
+  --label documentation --label "good first issue" --label dashboard \
+  --body-file /tmp/cre-dashboard-architecture-map.md
 ```
 
 Issue body:
@@ -138,18 +140,51 @@ Issue body:
 ```markdown
 ## Goal
 
-Help new users choose the right runtime path without confusing the deterministic demo with optional live-agent execution.
+Help contributors understand where to change the local dashboard without reverse-engineering the entire React/API/WebSocket workspace.
 
 ## Scope
 
-Add a clear comparison table for offline simulation and Codex / ChatGPT live execution.
+Add a contributor-facing dashboard architecture map covering major screens, shared hooks/services, local REST API routes, WebSocket watcher behavior, state persisted under `data/`, and screenshot/test entry points.
 
 ## Acceptance Criteria
 
-- [ ] Explain which path requires no API keys or subscription.
-- [ ] Explain which path requires local Codex CLI authentication.
-- [ ] List what artifacts each path produces.
-- [ ] Clarify sandbox and no-secret expectations for live runs.
-- [ ] Link from README Quick Start and Demo Journey.
+- [ ] Document the front-door, workspace, evidence/review, deal-team, workpapers, and IC package components.
+- [ ] Document the local API and WebSocket boundaries with links to `docs/API-REFERENCE.md` and `docs/WEBSOCKET-EVENTS.md`.
+- [ ] Document which tests to run for UI-only, parser/workspace, and release-screenshot changes.
+- [ ] Link the map from `CONTRIBUTING.md` and/or `docs/ARCHITECTURE.md`.
 - [ ] Run `git diff --check`.
+```
+
+## 5. Add release checklist automation for tag-readiness
+
+Suggested labels: `enhancement`, `validation`, `documentation`
+
+```bash
+gh issue create \
+  --title "Add release checklist automation for tag-readiness" \
+  --label enhancement --label validation --label documentation \
+  --body-file /tmp/cre-release-checklist-automation.md
+```
+
+Issue body:
+
+```markdown
+## Goal
+
+Reduce release hygiene drift by giving maintainers one local command that checks version alignment, docs, screenshots, validation posture, and release-note readiness before requesting approval to tag or publish.
+
+## Scope
+
+Add a local-only release readiness script/checklist. It should not push, tag, publish, or create GitHub releases.
+
+## Acceptance Criteria
+
+- [ ] Check root and dashboard package versions for alignment.
+- [ ] Check `CHANGELOG.md`, `README.md`, `ROADMAP.md`, and release-notes references for the target version.
+- [ ] Check required public screenshot assets exist and are newer than the last release tag when intentionally refreshed.
+- [ ] Print the exact validation commands maintainers should run before tagging.
+- [ ] Print approval-ready `git tag` / `gh release create` commands without executing them.
+- [ ] Document the command in `CONTRIBUTING.md` or release docs.
+- [ ] Run `npm run validate:docs`.
+- [ ] Run `npm --prefix dashboard run build`.
 ```
