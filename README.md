@@ -72,18 +72,19 @@ See [CHANGELOG.md](CHANGELOG.md) for release history and current-main changes.
 
 ---
 
-## What's New on Current Main
+## What's New in v2.7.0
 
-- **Practitioner-grade Parkview sample** - the bundled Austin/Travis County sample now produces populated 10-year pro formas, 27-scenario matrices, risk-scored IC memo support, rent roll analysis, closing workpapers, and funds-flow outputs a CRE reviewer can actually inspect.
-- **Strict schema layer** - runtime validation now uses AJV strict mode, shared enum refs, per-agent output schemas, and fixture validation so phase outputs fail fast when contracts drift.
-- **Canonical underwriting taxonomy** - EGI/NOI treatment, concessions, bad debt, RUBS recovery, tax reassessment assumptions, DSCR thresholds, and scenario probability policy are aligned across skills, agents, fixtures, and reports.
-- **Source-backed local security** - local path handling, upload size caps, document-route throttling, loopback-only auth checks, CSV formula sanitization, and dependency audit fixes are in place.
-- **Public repo polish** - release-please, fixture/docs drift checks, API docs, WebSocket docs, and generated workpaper completeness checks make the repo easier to trust without dependency-bot or ownership-routing noise.
-- **Dashboard runtime polish** - centralized API/WS config, Vite proxy support, route error boundaries, code splitting, and Playwright coverage keep the operator workspace stable.
+- **Text-based PDF extraction** - offering memos and rent rolls in PDF now produce source-backed candidate fields with per-field confidence and page-level provenance; scanned/image-only PDFs are detected and flagged for OCR rather than silently skipped.
+- **Tougher spreadsheet parsing** - merged-cell workbooks are unmerged and forward-filled before header detection, image-only workbooks are flagged, and new fixtures cover currency symbols, subtotal/total rows, trailing notes, and synonym headers.
+- **Review-grade workpapers** - workpaper quality gates (cited inputs, assumptions, calculations, caveats, reviewer signoff), per-phase evidence-completeness scoring, IC red-flag drilldowns back to the originating workpaper/source, and richer IC export with source drilldowns and package version history.
+- **Source-decision audit trail** - timestamped approve/reject/waive history per field with cross-document conflict blocking, plus field-level provenance deep links from an approved input to its source snippet.
+- **Live Codex runtime hardening** - per-agent retry/backoff, partial-failure re-run-only-failed-agents, secret redaction at the logging boundary, a redacted sample run manifest with its own schema, and an operator "retry failed agents" recovery action.
+- **Single-operator self-host deployment** - `npm run serve` serves the built dashboard plus the loopback API/WS together (loopback-default, not multi-tenant); see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+- **Contributor experience** - an end-to-end "add a new specialist agent" guide, a dashboard architecture map, and a `npm run release:check` readiness gate.
 
 ## Release Journey
 
-This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, and now a credibility-hardened sample package with strict schemas and public-infrastructure guardrails.
+This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, then a credibility-hardened sample package with strict schemas, and now a completion pass that adds PDF extraction, review-grade workpapers, live-runtime hardening, and single-operator self-host deployment.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -97,6 +98,7 @@ This project has grown from agent architecture into a local-first acquisition wo
 | **v2.5.0 - Source-Backed Deal Intake** | Turned XLSX/CSV rent rolls and T12s into persisted, reviewable, provenance-backed candidate fields operators can approve/apply before workflows use them. | [RELEASE_NOTES_v2.5.0.md](RELEASE_NOTES_v2.5.0.md) |
 | **v2.5.1 - Stale Source Evidence Gate** | Added source-freshness protection to workflow launch readiness and bumped the package baseline to `2.5.1`. | [GitHub Tag](https://github.com/ahacker-1/cre-acquisition-orchestrator/tree/v2.5.1) |
 | **v2.6.0 - Credibility and Infrastructure Hardening** | Aligns Parkview around Austin, replaces stub workpapers, enforces strict schemas/enums, hardens local security, documents APIs/events, and refreshes public repo infrastructure. | [RELEASE_NOTES_v2.6.0.md](RELEASE_NOTES_v2.6.0.md) |
+| **v2.7.0 - Completion Pass** | Closes the prior known limits (text-based PDF extraction, merged-cell/image-only workbooks, single-operator self-host deployment) and implements the ROADMAP near-term priorities: review-grade workpapers, live Codex runtime hardening, source-decision audit trail, and contributor tooling. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v2.7.0) |
 
 ---
 
