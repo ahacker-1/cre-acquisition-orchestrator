@@ -508,6 +508,101 @@ function appendReviewerSupport(lines, { agentName, deal, phaseLabel }) {
   lines.push('');
 }
 
+// W60: Workpaper quality gate. Evaluates the standard review-grade checklist
+// (cited inputs, assumptions, calculations, caveats, reviewer signoff). Missing
+// items are surfaced as WARNINGS, never as hard failures, so every existing
+// workpaper still renders.
+function evaluateWorkpaperQualityGate({
+  deal,
+  findings = [],
+  redFlags = [],
+  dataGaps = [],
+  reviewerSignoff
+}) {
+  const signoff = normalizeReviewerSignoff(reviewerSignoff);
+  const hasCitedInputs = Boolean(
+    deal && (deal.dealId || deal.dealName) && (deal.financials || deal.property)
+  );
+  const hasCalculations = Boolean(deal && deal.financials);
+  const hasCaveats = redFlags.length > 0 || dataGaps.length > 0;
+  const hasFindings = findings.length > 0;
+  const items = [
+    {
+      id: 'cited-inputs',
+      label: 'Cited inputs',
+      present: hasCitedInputs,
+      detail: 'Deal identity and source financials/property are tied to config.'
+    },
+    {
+      id: 'assumptions',
+      label: 'Stated assumptions',
+      present: hasFindings || hasCalculations,
+      detail: 'Material assumptions are stated in the findings and analysis.'
+    },
+    {
+      id: 'calculations',
+      label: 'Calculation coverage',
+      present: hasCalculations,
+      detail: 'Pro forma, NOI, and scenario calculations are derived from deal inputs.'
+    },
+    {
+      id: 'caveats',
+      label: 'Caveats, red flags, and data gaps',
+      present: hasCaveats,
+      detail: 'Risk flags and open data gaps are documented for the reviewer.'
+    },
+    {
+      id: 'reviewer-signoff',
+      label: 'Reviewer signoff',
+      present: signoff.state === 'signed',
+      detail:
+        signoff.state === 'signed'
+          ? `Signed by ${signoff.reviewer || 'reviewer'}${signoff.signedAt ? ` at ${signoff.signedAt}` : ''}.`
+          : `Reviewer signoff is ${signoff.state}.`
+    }
+  ];
+  const warnings = items
+    .filter((item) => !item.present)
+    .map((item) => `Quality gate item incomplete: ${item.label} — ${item.detail}`);
+  return {
+    status: warnings.length > 0 ? 'WARNING' : 'PASS',
+    items,
+    warnings,
+    reviewerSignoff: signoff
+  };
+}
+
+function normalizeReviewerSignoff(value) {
+  const raw = value && typeof value === 'object' ? value : {};
+  const reviewer = typeof raw.reviewer === 'string' ? raw.reviewer : '';
+  const note = typeof raw.note === 'string' ? raw.note : '';
+  let state =
+    raw.state === 'signed' || raw.state === 'pending' ? raw.state : 'unsigned';
+  if (state === 'signed' && !reviewer) state = 'pending';
+  const signoff = { state };
+  if (reviewer) signoff.reviewer = reviewer;
+  if (note) signoff.note = note;
+  if (state === 'signed') signoff.signedAt = typeof raw.signedAt === 'string' ? raw.signedAt : null;
+  return signoff;
+}
+
+function appendQualityGate(lines, gate) {
+  lines.push('## Quality Gate');
+  lines.push(`Status: ${gate.status}`);
+  lines.push(`Reviewer signoff: ${gate.reviewerSignoff.state}${gate.reviewerSignoff.reviewer ? ` (${gate.reviewerSignoff.reviewer})` : ''}.`);
+  table(
+    lines,
+    ['Checklist Item', 'Status', 'Detail'],
+    gate.items.map((item) => [item.label, item.present ? 'PASS' : 'WARNING', item.detail])
+  );
+  if (gate.warnings.length > 0) {
+    gate.warnings.forEach((warning) => lines.push(`- WARNING: ${warning}`));
+  } else {
+    lines.push('- All review-grade quality gate items are present.');
+  }
+  lines.push('');
+}
+
 function padToMinimum(lines, minimum, label) {
   if (lines.length >= minimum) return;
   lines.push('## Reviewer Tickmark Log');
@@ -531,9 +626,11 @@ function renderAgentWorkpaper({
   findings = [],
   redFlags = [],
   dataGaps = [],
-  phaseData = {}
+  phaseData = {},
+  reviewerSignoff
 }) {
   const lines = [];
+  const qualityGate = evaluateWorkpaperQualityGate({ deal, findings, redFlags, dataGaps, reviewerSignoff });
   lines.push(`# ${agentName} Workpaper`);
   lines.push('');
   lines.push('## Control Sheet');
@@ -544,9 +641,12 @@ function renderAgentWorkpaper({
   lines.push(`- Started: ${startedAt}`);
   lines.push(`- Completed: ${completedAt}`);
   lines.push(`- Verdict: ${verdict || 'PASS'}`);
+  lines.push(`- Reviewer signoff: ${qualityGate.reviewerSignoff.state}`);
+  lines.push(`- Quality gate: ${qualityGate.status}`);
   lines.push(`- Summary: ${summary || phaseFinding(phaseData, agentName)}`);
   lines.push('');
   appendDealSnapshot(lines, deal);
+  appendQualityGate(lines, qualityGate);
   appendChecklist(lines, agentName);
   lines.push('## Findings');
   if (findings.length === 0) lines.push(`- ${phaseFinding(phaseData, agentName)}`);
@@ -676,6 +776,7 @@ function renderFinalAcquisitionReport(checkpoint, phasesMetadata = []) {
 module.exports = {
   buildScenarioMatrix,
   buildTenYearProForma,
+  evaluateWorkpaperQualityGate,
   renderAgentWorkpaper,
   renderFinalAcquisitionReport
 };

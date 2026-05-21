@@ -168,6 +168,23 @@ export interface ReviewExtractionResult {
   extraction: ExtractionPreview
 }
 
+// W62: red-flag drilldown linkage back to originating workpaper + source snippet.
+export interface IcStarterPackageRedFlagDrilldown {
+  flag: string
+  origin: 'launch-readiness'
+  workpaper: string
+  workflowId: string
+  relatedFields: Array<{
+    fieldId: string
+    path: string
+    label: string
+    documentId: string
+    fileName: string
+    location?: SourceReference['location']
+    raw?: string
+  }>
+}
+
 export interface IcStarterPackageExport {
   packageJson: {
     version: number
@@ -188,6 +205,7 @@ export interface IcStarterPackageExport {
     assumptions: string[]
     openQuestions: string[]
     redFlags: string[]
+    redFlagDrilldowns?: IcStarterPackageRedFlagDrilldown[]
   }
   markdown: string
   files: {

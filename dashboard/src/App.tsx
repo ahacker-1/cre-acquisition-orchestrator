@@ -340,6 +340,13 @@ export default function App() {
 
   const visibleDealCheckpoint = frontDoorOpen ? null : workspaceCheckpoint ?? dealCheckpoint
   const showingManualWorkspace = Boolean(workspaceCheckpoint)
+  // W72: the partial-failure recovery panel reads the LIVE checkpoint + live agent
+  // checkpoints for the viewed deal even when the manual workspace is the active view, so
+  // failed agents surface without the live checkpoint hijacking the manual workspace.
+  const recoveryDealCheckpoint =
+    !frontDoorOpen && dealCheckpoint && visibleDealCheckpoint && dealCheckpoint.dealId === visibleDealCheckpoint.dealId
+      ? dealCheckpoint
+      : null
   const visibleStoryEvents = useMemo(() => {
     if (!visibleDealCheckpoint) return []
     return storyEvents.filter((event) => event.dealId === visibleDealCheckpoint.dealId)
@@ -509,6 +516,8 @@ export default function App() {
                 <DealWorkspace
                   dealCheckpoint={visibleDealCheckpoint}
                   agentCheckpoints={showingManualWorkspace ? new Map() : agentCheckpoints}
+                  liveDealCheckpoint={recoveryDealCheckpoint}
+                  liveAgentCheckpoints={recoveryDealCheckpoint ? agentCheckpoints : new Map()}
                   logEntries={showingManualWorkspace ? [] : logEntries}
                   storyEvents={visibleStoryEvents}
                   documentArtifacts={visibleDocumentArtifacts}

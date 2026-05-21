@@ -1,10 +1,19 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type {
   DealCheckpoint,
   DocumentArtifact,
   PhaseInfo,
+  RedFlag,
   StoryEvent,
 } from '../types/checkpoint'
+
+interface RedFlagDrilldownEntry {
+  id: string
+  phaseKey: string
+  phase: string
+  flag: RedFlag
+  workpaper: DocumentArtifact | null
+}
 
 interface CompletionPackageProps {
   dealCheckpoint: DealCheckpoint | null
@@ -26,6 +35,12 @@ function displayLabel(value: string): string {
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .replace(/[-_]/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
+// W62: normalize phase keys (dueDiligence / due-diligence / due_diligence) so red
+// flags match their originating workpaper artifacts regardless of casing convention.
+function normalizePhase(value: string): string {
+  return value.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase().replace(/-/g, '_')
 }
 
 function percent(value: number): string {
@@ -88,6 +103,74 @@ function issueText(issue: { description?: string; message?: string; category?: s
   return issue.description || issue.message || issue.category || 'Review item'
 }
 
+// W62: Red-flag drilldown. Each flag links back to its originating specialist
+// workpaper (the phase that raised it) and, where one exists, the workpaper artifact
+// + its stored source path. Expanding reveals the origin so an operator can trace
+// the flag without leaving the IC package view.
+function RedFlagDrilldown({ entry }: { entry: RedFlagDrilldownEntry }) {
+  const [open, setOpen] = useState(false)
+  const { flag, phase, workpaper } = entry
+
+  return (
+    <div className="red-flag" data-testid={`red-flag-drilldown-${entry.id}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase text-cre-danger">{phase}</p>
+          <p className="mt-1 text-sm text-gray-300">{issueText(flag)}</p>
+          <div className="mt-2 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.12em]">
+            {flag.severity && (
+              <span className="rounded bg-cre-danger/15 px-2 py-0.5 text-cre-danger">{flag.severity}</span>
+            )}
+            {flag.category && (
+              <span className="rounded bg-white/10 px-2 py-0.5 text-gray-400">{flag.category}</span>
+            )}
+          </div>
+        </div>
+        <button
+          type="button"
+          data-testid={`red-flag-drilldown-toggle-${entry.id}`}
+          aria-expanded={open}
+          className="shrink-0 rounded border border-white/15 px-2 py-1 text-[11px] uppercase tracking-[0.12em] text-gray-300 hover:border-white/40"
+          onClick={() => setOpen((current) => !current)}
+        >
+          {open ? 'Hide origin' : 'Drill to origin'}
+        </button>
+      </div>
+      {open && (
+        <div
+          className="mt-3 rounded-lg border border-cre-border bg-black/30 p-3 text-xs"
+          data-testid={`red-flag-origin-${entry.id}`}
+        >
+          <p className="font-semibold uppercase tracking-[0.12em] text-gray-500">Originating workpaper</p>
+          <p className="mt-1 text-sm text-gray-200" data-testid={`red-flag-origin-workpaper-${entry.id}`}>
+            {workpaper ? workpaper.title : `${phase} specialist workpaper`}
+          </p>
+          <p className="mt-1 text-gray-500">
+            {workpaper
+              ? `${displayLabel(workpaper.docType)} filed by ${displayLabel(workpaper.agent)} in ${displayLabel(workpaper.phase)}.`
+              : `Raised by the ${phase} specialist agents. No filed workpaper artifact is available yet.`}
+          </p>
+          {flag.owner && (
+            <p className="mt-2 text-gray-400">
+              <span className="font-semibold text-gray-300">Owner:</span> {flag.owner}
+            </p>
+          )}
+          {flag.impact && (
+            <p className="mt-1 text-gray-400">
+              <span className="font-semibold text-gray-300">Impact:</span> {flag.impact}
+            </p>
+          )}
+          {workpaper?.path && (
+            <p className="mt-2 break-all font-mono text-[11px] text-gray-600" data-testid={`red-flag-origin-source-${entry.id}`}>
+              {workpaper.path}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function CompletionPackage({
   dealCheckpoint,
   storyEvents,
@@ -127,14 +210,27 @@ function CompletionPackage({
     return [...new Set(findings)].slice(0, 12)
   }, [phaseOutcomes, storyEvents])
 
-  const topRedFlags = useMemo(() => {
+  // W62: each red flag links back to its originating specialist workpaper (the phase
+  // that raised it) and, where one exists, the originating workpaper artifact + source.
+  const redFlagDrilldowns = useMemo(() => {
     return phaseOutcomes.flatMap((outcome) =>
-      outcome.phase.outputs.redFlags.map((flag) => ({
-        phase: outcome.phase.name || displayLabel(outcome.key),
-        flag,
-      })),
-    ).slice(0, 5)
-  }, [phaseOutcomes])
+      outcome.phase.outputs.redFlags.map((flag, index) => {
+        const phaseKey = outcome.key
+        const phaseLabel = outcome.phase.name || displayLabel(phaseKey)
+        const workpaper = packageArtifacts.find((artifact) => artifact.phase === phaseKey)
+          ?? packageArtifacts.find((artifact) => normalizePhase(artifact.phase) === normalizePhase(phaseKey))
+        return {
+          id: `${phaseKey}-${index}`,
+          phaseKey,
+          phase: phaseLabel,
+          flag,
+          workpaper: workpaper ?? null,
+        }
+      }),
+    )
+  }, [phaseOutcomes, packageArtifacts])
+
+  const topRedFlags = useMemo(() => redFlagDrilldowns.slice(0, 5), [redFlagDrilldowns])
 
   const topDataGaps = useMemo(() => {
     return phaseOutcomes.flatMap((outcome) =>
@@ -340,6 +436,22 @@ function CompletionPackage({
           </div>
         )}
       </section>
+
+      {redFlagDrilldowns.length > 0 && (
+        <section className="card" data-testid="red-flag-drilldowns">
+          <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-1">
+            Red Flag Drilldowns
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Each priority flag links back to the specialist workpaper that raised it and its source.
+          </p>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {redFlagDrilldowns.map((entry) => (
+              <RedFlagDrilldown key={entry.id} entry={entry} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="card">
         <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">

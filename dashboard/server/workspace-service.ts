@@ -359,7 +359,17 @@ export interface IcStarterPackage {
   assumptions: string[]
   openQuestions: string[]
   redFlags: string[]
+  // W62: per-red-flag drilldown back to the originating workpaper + source snippet.
+  redFlagDrilldowns: IcStarterPackageRedFlagDrilldown[]
   nextAction: OperatorCommand['recommendedAction']
+  // W63: source drilldown references for each approved input.
+  sourceDrilldown: IcStarterPackageSourceDrilldown[]
+  // W60: quality gate + reviewer signoff state.
+  qualityGate: PackageQualityGate
+  // W61: per-phase evidence completeness scoring.
+  evidenceCompleteness: PackageEvidenceCompleteness
+  // W63: incrementing package version history.
+  versionHistory: PackageVersionHistoryEntry[]
 }
 
 export interface IcStarterPackageExport {
@@ -369,6 +379,126 @@ export interface IcStarterPackageExport {
     json: string
     markdown: string
   }
+}
+
+// W41: Source-field decision audit trail.
+export type FieldDecisionAction = 'approve' | 'reject' | 'waive' | 'needs-review' | 'apply'
+
+export interface FieldDecisionEntry {
+  decisionId: string
+  fieldId: string
+  path: string
+  label: string
+  action: FieldDecisionAction
+  reviewStatus: ExtractionReviewStatus
+  documentId: string
+  decidedAt: string
+  note?: string
+  previousValue?: unknown
+  value?: unknown
+  conflict?: boolean
+}
+
+export interface FieldDecisionHistory {
+  version: number
+  dealId: string
+  updatedAt: string
+  entries: FieldDecisionEntry[]
+}
+
+// W60: Workpaper / package quality gates + reviewer signoff.
+export type QualityGateItemStatus = 'present' | 'missing'
+
+export interface QualityGateItem {
+  id: string
+  label: string
+  status: QualityGateItemStatus
+  detail: string
+}
+
+export type ReviewerSignoffState = 'unsigned' | 'pending' | 'signed'
+
+export interface ReviewerSignoff {
+  state: ReviewerSignoffState
+  reviewer?: string
+  signedAt?: string
+  note?: string
+}
+
+export interface PackageQualityGate {
+  status: 'pass' | 'warning'
+  items: QualityGateItem[]
+  warnings: string[]
+  reviewerSignoff: ReviewerSignoff
+}
+
+// W61: Per-phase evidence completeness scoring.
+export interface PhaseEvidenceCompleteness {
+  phaseSlug: string
+  label: string
+  requiredDocuments: string[]
+  presentDocuments: string[]
+  missingDocuments: string[]
+  requiredFields: string[]
+  presentFields: string[]
+  missingFields: string[]
+  score: number
+  status: 'complete' | 'partial' | 'missing'
+}
+
+export interface PackageEvidenceCompleteness {
+  overallScore: number
+  phases: PhaseEvidenceCompleteness[]
+}
+
+// W63: Source drilldown reference + package version history.
+export interface IcStarterPackageSourceDrilldown {
+  fieldId: string
+  path: string
+  label: string
+  documentId: string
+  fileName: string
+  fileHash?: string
+  parserId: string
+  parserVersion: string
+  location?: SourceReference['location']
+  raw?: string
+}
+
+// W62: Red-flag drilldown linkage. Each red flag links back to its originating
+// specialist workpaper (the readiness/launch gate that raised it) and, where the
+// flag references a specific approved input, the originating source document/snippet.
+export interface IcStarterPackageRedFlagDrilldown {
+  flag: string
+  origin: 'launch-readiness'
+  workpaper: string
+  workflowId: string
+  relatedFields: Array<{
+    fieldId: string
+    path: string
+    label: string
+    documentId: string
+    fileName: string
+    location?: SourceReference['location']
+    raw?: string
+  }>
+}
+
+export interface PackageVersionHistoryEntry {
+  version: number
+  generatedAt: string
+  workflowId: string
+  readinessStatus: LaunchReadinessStatus
+  approvedFieldCount: number
+  evidenceScore: number
+  reviewerSignoffState: ReviewerSignoffState
+}
+
+export interface PackageVersionHistory {
+  version: number
+  dealId: string
+  updatedAt: string
+  entries: PackageVersionHistoryEntry[]
 }
 
 export interface ServiceContext {
@@ -775,6 +905,14 @@ function extractionPath(context: ServiceContext, dealId: string, documentId: str
 
 function approvedFieldsPath(context: ServiceContext, dealId: string): string {
   return join(dealWorkspaceRoot(context, dealId), 'approved-fields.json')
+}
+
+function decisionHistoryPath(context: ServiceContext, dealId: string): string {
+  return join(dealWorkspaceRoot(context, dealId), 'decision-history.json')
+}
+
+function packageVersionHistoryPath(context: ServiceContext, dealId: string, workflowId: string): string {
+  return join(packagesDir(context, dealId), `${safeSegment(workflowId)}-version-history.json`)
 }
 
 function packagesDir(context: ServiceContext, dealId: string): string {
@@ -1386,6 +1524,112 @@ function upsertApprovedFields(
   return [...byPath.values()].sort((a, b) => a.path.localeCompare(b.path))
 }
 
+// W41: Source-field decision audit trail persistence.
+function readDecisionHistory(context: ServiceContext, dealId: string): FieldDecisionHistory {
+  const fallback: FieldDecisionHistory = {
+    version: 1,
+    dealId,
+    updatedAt: new Date().toISOString(),
+    entries: [],
+  }
+  const history = readJson<FieldDecisionHistory>(decisionHistoryPath(context, dealId), fallback)
+  return {
+    version: 1,
+    dealId,
+    updatedAt: asString(history.updatedAt, fallback.updatedAt),
+    entries: Array.isArray(history.entries) ? history.entries : [],
+  }
+}
+
+function decisionStatusToAction(status: ExtractionReviewStatus): FieldDecisionAction {
+  switch (status) {
+    case 'approved':
+      return 'approve'
+    case 'rejected':
+      return 'reject'
+    case 'waived':
+      return 'waive'
+    case 'applied':
+      return 'apply'
+    case 'candidate':
+    default:
+      return 'needs-review'
+  }
+}
+
+function appendDecisionEntries(
+  context: ServiceContext,
+  dealId: string,
+  entries: Array<Omit<FieldDecisionEntry, 'decisionId'>>,
+): FieldDecisionHistory {
+  if (entries.length === 0) return readDecisionHistory(context, dealId)
+  const current = readDecisionHistory(context, dealId)
+  const stamped = entries.map<FieldDecisionEntry>((entry) => ({
+    decisionId: randomUUID(),
+    ...entry,
+  }))
+  const next: FieldDecisionHistory = {
+    version: 1,
+    dealId,
+    updatedAt: entries[entries.length - 1].decidedAt,
+    entries: [...current.entries, ...stamped],
+  }
+  writeJsonAtomic(decisionHistoryPath(context, dealId), next)
+  return next
+}
+
+/**
+ * W41: Detect another document that still carries an unresolved candidate field
+ * for one of the paths being applied, with a value that disagrees with the value
+ * being applied. Returns the first such conflict, or null when none exist.
+ */
+function findUnresolvedCandidateConflict(
+  context: ServiceContext,
+  dealId: string,
+  applyingDocumentId: string,
+  selectedFields: ExtractionField[],
+): { fileName: string; label: string; path: string } | null {
+  const selectedByPath = new Map(selectedFields.map((field) => [field.path, field]))
+  const manifest = readManifest(context, dealId)
+  for (const document of manifest.documents) {
+    if (document.documentId === applyingDocumentId) continue
+    const otherExtraction = readJson<ExtractionPreview | null>(
+      extractionPath(context, dealId, document.documentId),
+      null,
+    )
+    if (!otherExtraction || !Array.isArray(otherExtraction.fields)) continue
+    for (const field of otherExtraction.fields) {
+      const target = selectedByPath.get(field.path)
+      if (!target) continue
+      const status = field.reviewStatus ?? 'candidate'
+      // Only unresolved candidates block; rejected/waived/applied are resolved.
+      if (status !== 'candidate') continue
+      if (!valuesDiffer(field.value, target.value)) continue
+      return { fileName: document.fileName, label: field.label, path: field.path }
+    }
+  }
+  return null
+}
+
+/**
+ * W41: Retrieve the full decision history for a deal, optionally filtered to a
+ * single field path. Entries are returned in chronological order.
+ */
+export function getFieldDecisionHistory(
+  context: ServiceContext,
+  dealId: string,
+  fieldPath?: string,
+): FieldDecisionEntry[] {
+  const history = readDecisionHistory(context, dealId)
+  const entries = typeof fieldPath === 'string' && fieldPath.length > 0
+    ? history.entries.filter((entry) => entry.path === fieldPath)
+    : history.entries
+  return [...entries].sort((a, b) => {
+    const byTime = a.decidedAt.localeCompare(b.decidedAt)
+    return byTime !== 0 ? byTime : a.decisionId.localeCompare(b.decisionId)
+  })
+}
+
 function validationMessages(validation: ReturnType<typeof validateDealConfig>): { errors: string[]; warnings: string[] } {
   return {
     errors: validation.blockingIssues.map((issue) => `${issue.path}: ${issue.message}`),
@@ -1559,6 +1803,178 @@ function packageRedFlags(readiness: LaunchReadinessResult): string[] {
   return redFlags.length > 0 ? [...new Set(redFlags)] : ['No source-backed package red flags were detected by the local readiness checks.']
 }
 
+// W62: Link each package red flag back to its originating specialist workpaper and,
+// where the flag references a specific source-backed field, the originating source
+// document + stored snippet. Readiness-derived flags originate from the launch
+// readiness workpaper for the package workflow.
+function buildRedFlagDrilldowns(
+  redFlags: string[],
+  workflowId: string,
+  sourceDrilldown: IcStarterPackageSourceDrilldown[],
+): IcStarterPackageRedFlagDrilldown[] {
+  const workpaper = `Launch Readiness Gate (${workflowId})`
+  return redFlags.map((flag) => {
+    const normalizedFlag = flag.toLowerCase()
+    // A flag references a field when its label or dotted path appears in the flag text.
+    const relatedFields = sourceDrilldown
+      .filter((entry) => {
+        const label = entry.label.toLowerCase()
+        const path = entry.path.toLowerCase()
+        return (
+          (label.length > 0 && normalizedFlag.includes(label)) ||
+          (path.length > 0 && normalizedFlag.includes(path))
+        )
+      })
+      .map((entry) => ({
+        fieldId: entry.fieldId,
+        path: entry.path,
+        label: entry.label,
+        documentId: entry.documentId,
+        fileName: entry.fileName,
+        location: entry.location,
+        raw: entry.raw,
+      }))
+    return {
+      flag,
+      origin: 'launch-readiness' as const,
+      workpaper,
+      workflowId,
+      relatedFields,
+    }
+  })
+}
+
+// W60: Build the workpaper/package quality gate. Missing items surface as
+// WARNINGS (not hard failures) so existing packages still export.
+function buildPackageQualityGate(
+  packageJson: Pick<
+    IcStarterPackage,
+    'approvedInputs' | 'assumptions' | 'openQuestions' | 'redFlags' | 'sourceDrilldown'
+  >,
+  reviewerSignoff: ReviewerSignoff,
+): PackageQualityGate {
+  const items: QualityGateItem[] = [
+    {
+      id: 'cited-inputs',
+      label: 'Cited inputs',
+      status: packageJson.approvedInputs.length > 0 ? 'present' : 'missing',
+      detail: `${packageJson.approvedInputs.length} approved source-backed input(s) with citations.`,
+    },
+    {
+      id: 'source-drilldown',
+      label: 'Source drilldown references',
+      status: packageJson.sourceDrilldown.length > 0 ? 'present' : 'missing',
+      detail: `${packageJson.sourceDrilldown.length} field-level source reference(s).`,
+    },
+    {
+      id: 'assumptions',
+      label: 'Stated assumptions',
+      status:
+        packageJson.assumptions.length > 0 &&
+        !(packageJson.assumptions.length === 1 &&
+          packageJson.assumptions[0].startsWith('No additional operator assumptions'))
+          ? 'present'
+          : 'missing',
+      detail: `${packageJson.assumptions.length} assumption(s) recorded.`,
+    },
+    {
+      id: 'calculations',
+      label: 'Calculation coverage',
+      status: packageJson.approvedInputs.length > 0 ? 'present' : 'missing',
+      detail: 'Underwriting calculations are derived from approved source-backed inputs.',
+    },
+    {
+      id: 'caveats',
+      label: 'Caveats and red flags',
+      status: packageJson.redFlags.length > 0 || packageJson.openQuestions.length > 0 ? 'present' : 'missing',
+      detail: `${packageJson.redFlags.length} red flag(s) and ${packageJson.openQuestions.length} open question(s).`,
+    },
+    {
+      id: 'reviewer-signoff',
+      label: 'Reviewer signoff',
+      status: reviewerSignoff.state === 'signed' ? 'present' : 'missing',
+      detail:
+        reviewerSignoff.state === 'signed'
+          ? `Signed by ${reviewerSignoff.reviewer || 'reviewer'}${reviewerSignoff.signedAt ? ` at ${reviewerSignoff.signedAt}` : ''}.`
+          : `Reviewer signoff is ${reviewerSignoff.state}.`,
+    },
+  ]
+  const warnings = items
+    .filter((item) => item.status === 'missing')
+    .map((item) => `Quality gate item incomplete: ${item.label} — ${item.detail}`)
+  return {
+    status: warnings.length > 0 ? 'warning' : 'pass',
+    items,
+    warnings,
+    reviewerSignoff,
+  }
+}
+
+function normalizeReviewerSignoff(value: unknown, generatedAt: string): ReviewerSignoff {
+  const raw = asObject(value)
+  const reviewer = asString(raw.reviewer)
+  const note = asString(raw.note)
+  const requestedState = asString(raw.state)
+  let state: ReviewerSignoffState =
+    requestedState === 'signed' || requestedState === 'pending' ? requestedState : 'unsigned'
+  // A signoff is only "signed" when a reviewer is named.
+  if (state === 'signed' && !reviewer) state = 'pending'
+  const signoff: ReviewerSignoff = { state }
+  if (reviewer) signoff.reviewer = reviewer
+  if (note) signoff.note = note
+  if (state === 'signed') signoff.signedAt = asString(raw.signedAt, generatedAt)
+  return signoff
+}
+
+// W61: Score evidence completeness per phase from required-vs-present documents
+// and source-backed fields. Deterministic for a fixed workspace.
+function buildEvidenceCompleteness(
+  phases: PhaseDefinition[],
+  documents: SourceDocument[],
+  approvedPaths: Set<string>,
+): PackageEvidenceCompleteness {
+  const uploadedTypes = new Set(documents.map((doc) => doc.type))
+  const phaseScores = phases.map<PhaseEvidenceCompleteness>((phase) => {
+    const requiredDocuments = [...new Set(phase.requiredDocuments)].sort()
+    const requiredFields = [
+      ...new Set(
+        phase.checklist.flatMap((item) => item.requiredFields).filter((field) => field.length > 0),
+      ),
+    ].sort()
+    const presentDocuments = requiredDocuments.filter((type) => uploadedTypes.has(type))
+    const missingDocuments = requiredDocuments.filter((type) => !uploadedTypes.has(type))
+    const presentFields = requiredFields.filter((field) => approvedPaths.has(field))
+    const missingFields = requiredFields.filter((field) => !approvedPaths.has(field))
+    const requiredCount = requiredDocuments.length + requiredFields.length
+    const presentCount = presentDocuments.length + presentFields.length
+    const score = requiredCount === 0 ? 1 : Number((presentCount / requiredCount).toFixed(4))
+    const status: PhaseEvidenceCompleteness['status'] =
+      score >= 1 ? 'complete' : score > 0 ? 'partial' : 'missing'
+    return {
+      phaseSlug: phase.phaseSlug,
+      label: phase.label,
+      requiredDocuments,
+      presentDocuments,
+      missingDocuments,
+      requiredFields,
+      presentFields,
+      missingFields,
+      score,
+      status,
+    }
+  })
+  const totalRequired = phaseScores.reduce(
+    (sum, phase) => sum + phase.requiredDocuments.length + phase.requiredFields.length,
+    0,
+  )
+  const totalPresent = phaseScores.reduce(
+    (sum, phase) => sum + phase.presentDocuments.length + phase.presentFields.length,
+    0,
+  )
+  const overallScore = totalRequired === 0 ? 1 : Number((totalPresent / totalRequired).toFixed(4))
+  return { overallScore, phases: phaseScores }
+}
+
 function renderIcStarterPackageMarkdown(packageJson: IcStarterPackage): string {
   const approvedRows = packageJson.approvedInputs.length > 0
     ? packageJson.approvedInputs.map((field) =>
@@ -1570,12 +1986,28 @@ function renderIcStarterPackageMarkdown(packageJson: IcStarterPackage): string {
         `| ${markdownCell(document.fileName)} | ${markdownCell(document.typeLabel)} | ${markdownCell(document.status)} | ${markdownCell(document.extractionStatus)} |`
       )
     : ['| No source documents uploaded yet |  |  |  |']
+  // W63: source drilldown rows.
+  const drilldownRows = packageJson.sourceDrilldown.length > 0
+    ? packageJson.sourceDrilldown.map((entry) =>
+        `| ${markdownCell(entry.label)} | ${markdownCell(entry.fileName)} | ${markdownCell(sourceLocationLabel({ ...entry, fileName: entry.fileName } as SourceReference))} | ${markdownCell(entry.parserId)} | ${markdownCell(entry.fileHash ?? '')} |`
+      )
+    : ['| No source drilldown references yet |  |  |  |  |']
+  // W61: per-phase evidence completeness rows.
+  const evidenceRows = packageJson.evidenceCompleteness.phases.map((phase) =>
+    `| ${markdownCell(phase.label)} | ${(phase.score * 100).toFixed(0)}% | ${markdownCell(phase.status)} | ${phase.presentDocuments.length}/${phase.requiredDocuments.length} | ${phase.presentFields.length}/${phase.requiredFields.length} |`
+  )
+  // W60: quality gate rows.
+  const qualityRows = packageJson.qualityGate.items.map((item) =>
+    `| ${markdownCell(item.label)} | ${item.status === 'present' ? 'PASS' : 'WARNING'} | ${markdownCell(item.detail)} |`
+  )
   return [
     `# IC Starter Package: ${packageJson.dealName}`,
     '',
     `Generated: ${packageJson.generatedAt}`,
+    `Package version: ${packageJson.version}`,
     `Workflow: ${packageJson.workflowId}`,
     `Readiness: ${packageJson.readiness.status}`,
+    `Reviewer signoff: ${packageJson.qualityGate.reviewerSignoff.state}`,
     '',
     '## One Best Next Action',
     `**${packageJson.nextAction.title}**`,
@@ -1587,10 +2019,21 @@ function renderIcStarterPackageMarkdown(packageJson: IcStarterPackage): string {
     `Documents uploaded: ${packageJson.sourceCoverage.sourceDocumentCount}`,
     `Documents waiting for review: ${packageJson.sourceCoverage.reviewReadyDocumentCount}`,
     '',
+    '## Evidence Completeness by Phase',
+    `Overall evidence score: ${(packageJson.evidenceCompleteness.overallScore * 100).toFixed(0)}%`,
+    '| Phase | Score | Status | Documents | Fields |',
+    '| --- | --- | --- | --- | --- |',
+    ...evidenceRows,
+    '',
     '## Approved Inputs',
     '| Field | Approved Value | Confidence | Source |',
     '| --- | --- | --- | --- |',
     ...approvedRows,
+    '',
+    '## Source Drilldown',
+    '| Field | File | Location | Parser | Source Hash |',
+    '| --- | --- | --- | --- | --- |',
+    ...drilldownRows,
     '',
     '## Source Documents',
     '| File | Type | Review Status | Extraction Status |',
@@ -1606,9 +2049,46 @@ function renderIcStarterPackageMarkdown(packageJson: IcStarterPackage): string {
     '## Red Flags',
     ...packageJson.redFlags.map((item) => `- ${item}`),
     '',
+    '## Red Flag Drilldowns',
+    ...packageJson.redFlagDrilldowns.flatMap((entry) => {
+      const lines = [`- ${entry.flag}`, `  - Origin: ${entry.workpaper}`]
+      for (const field of entry.relatedFields) {
+        const locationParts = [
+          field.location?.sheet ? `sheet ${field.location.sheet}` : '',
+          typeof field.location?.row === 'number' ? `row ${field.location.row}` : '',
+          field.location?.column ? `column ${field.location.column}` : '',
+          typeof field.location?.line === 'number' ? `line ${field.location.line}` : '',
+          typeof field.location?.page === 'number' ? `page ${field.location.page}` : '',
+        ].filter(Boolean)
+        const location = locationParts.length > 0 ? ` (${locationParts.join(', ')})` : ''
+        lines.push(`  - Source: ${field.label} from ${field.fileName}${location}`)
+      }
+      return lines
+    }),
+    '',
+    '## Quality Gate',
+    `Status: ${packageJson.qualityGate.status === 'pass' ? 'PASS' : 'WARNING'}`,
+    '| Checklist Item | Status | Detail |',
+    '| --- | --- | --- |',
+    ...qualityRows,
+    ...packageJson.qualityGate.warnings.map((item) => `- Warning: ${item}`),
+    '',
+    '## Reviewer Signoff',
+    `- State: ${packageJson.qualityGate.reviewerSignoff.state}`,
+    `- Reviewer: ${packageJson.qualityGate.reviewerSignoff.reviewer ?? 'unassigned'}`,
+    `- Signed at: ${packageJson.qualityGate.reviewerSignoff.signedAt ?? 'not signed'}`,
+    ...(packageJson.qualityGate.reviewerSignoff.note ? [`- Note: ${packageJson.qualityGate.reviewerSignoff.note}`] : []),
+    '',
     '## Launch Gate',
     ...packageJson.readiness.blockers.map((item) => `- Blocker: ${item}`),
     ...packageJson.readiness.warnings.map((item) => `- Warning: ${item}`),
+    '',
+    '## Package Version History',
+    '| Version | Generated | Readiness | Approved Fields | Evidence Score | Signoff |',
+    '| --- | --- | --- | --- | --- | --- |',
+    ...packageJson.versionHistory.map((entry) =>
+      `| ${entry.version} | ${markdownCell(entry.generatedAt)} | ${markdownCell(entry.readinessStatus)} | ${entry.approvedFieldCount} | ${(entry.evidenceScore * 100).toFixed(0)}% | ${markdownCell(entry.reviewerSignoffState)} |`
+    ),
     '',
   ].join('\n')
 }
@@ -1937,6 +2417,26 @@ export function reviewSourceExtraction(
         : current.summary,
   }))
   writeJsonAtomic(extractionPath(context, dealId, documentId), nextExtraction)
+  // W41: record a decision-history entry per reviewed field.
+  appendDecisionEntries(
+    context,
+    dealId,
+    nextExtraction.fields
+      .filter((field) => selectedFieldIds.has(extractionFieldId(field)))
+      .map((field) => ({
+        fieldId: extractionFieldId(field),
+        path: field.path,
+        label: field.label,
+        action: decisionStatusToAction(nextStatus),
+        reviewStatus: nextStatus,
+        documentId,
+        decidedAt: now,
+        note: note || undefined,
+        value: field.value,
+        previousValue: field.currentValue,
+        conflict: Boolean(field.conflict),
+      })),
+  )
   return {
     document: nextDocument,
     extraction: enrichExtractionFields(nextExtraction, record.deal),
@@ -2011,6 +2511,18 @@ export function applySourceExtraction(
   const conflictField = selectedFields.find((field) => field.conflict && payload.confirmConflictReview !== true)
   if (conflictField) {
     throw new Error(`Field requires conflict review before apply: ${conflictField.label}`)
+  }
+  // W41: block apply when another document still has an unresolved candidate for
+  // the same field path that disagrees with the value being applied. Unlike the
+  // same-document value conflict above, this cannot be bypassed with
+  // confirmConflictReview — the competing candidate must be explicitly resolved
+  // (approved, rejected, waived, or applied) first.
+  const crossConflict = findUnresolvedCandidateConflict(context, dealId, documentId, selectedFields)
+  if (crossConflict) {
+    throw new Error(
+      `Field has an unresolved conflicting candidate in ${crossConflict.fileName}: ${crossConflict.label}. ` +
+        'Resolve the conflicting candidate (approve, reject, or waive it) before applying this field.',
+    )
   }
   const nextDeal = JSON.parse(JSON.stringify(localDeal)) as Record<string, unknown>
   for (const field of selectedFields) {
@@ -2099,6 +2611,24 @@ export function applySourceExtraction(
     cleanupStagedWrites(stagedWrites)
     throw error
   }
+  // W41: record an apply decision-history entry per applied field.
+  appendDecisionEntries(
+    context,
+    dealId,
+    selectedFields.map((field) => ({
+      fieldId: field.fieldId,
+      path: field.path,
+      label: field.label,
+      action: 'apply',
+      reviewStatus: 'applied',
+      documentId,
+      decidedAt: now,
+      note: asString(payload.note) || undefined,
+      value: field.value,
+      previousValue: field.currentValue,
+      conflict: Boolean(field.conflict),
+    })),
+  )
   const refreshed = getDealRecord(context, dealId)
   if (!refreshed) throw new Error(`Deal not found after extraction apply: ${dealId}`)
   return {
@@ -2129,8 +2659,68 @@ export function exportIcStarterPackage(
   const readiness = evaluateLaunchReadiness(context, dealId, workflowId, { enforceSourceBackedInputs: true })
   const criteria = readCriteria(context, record)
   const generatedAt = new Date().toISOString()
-  const packageJson: IcStarterPackage = {
+
+  // W63: incrementing package version + version history.
+  const versionHistoryPath = packageVersionHistoryPath(context, dealId, workflowId)
+  const priorHistory = readJson<PackageVersionHistory>(versionHistoryPath, {
     version: 1,
+    dealId,
+    updatedAt: generatedAt,
+    entries: [],
+  })
+  const priorEntries = Array.isArray(priorHistory.entries) ? priorHistory.entries : []
+  const packageVersion = priorEntries.reduce((max, entry) => Math.max(max, entry.version), 0) + 1
+
+  // W60: reviewer signoff state (from payload, defaults to unsigned).
+  const reviewerSignoff = normalizeReviewerSignoff(payload.reviewerSignoff, generatedAt)
+
+  // W63: per-field source drilldown references.
+  const sourceDrilldown: IcStarterPackageSourceDrilldown[] = approvedFields.fields.map((field) => ({
+    fieldId: field.fieldId,
+    path: field.path,
+    label: field.label,
+    documentId: field.sourceRef.documentId,
+    fileName: field.sourceRef.fileName,
+    fileHash: field.sourceRef.fileHash,
+    parserId: field.sourceRef.parserId,
+    parserVersion: field.sourceRef.parserVersion,
+    location: field.sourceRef.location,
+    raw: field.sourceRef.raw,
+  }))
+
+  // W61: per-phase evidence completeness scoring.
+  const approvedPathSet = new Set(approvedFields.fields.map((field) => field.path))
+  const evidenceCompleteness = buildEvidenceCompleteness(
+    operatorGuideSections(context),
+    documents,
+    approvedPathSet,
+  )
+
+  const assumptions = packageAssumptions(criteria, readiness, documents)
+  const openQuestions = packageOpenQuestions(workspace, readiness)
+  const redFlags = packageRedFlags(readiness)
+  // W62: link each red flag back to its originating workpaper + source snippet.
+  const redFlagDrilldowns = buildRedFlagDrilldowns(redFlags, workflowId, sourceDrilldown)
+
+  // W60: quality gate derived from the assembled package + reviewer signoff.
+  const qualityGate = buildPackageQualityGate(
+    { approvedInputs: approvedFields.fields, assumptions, openQuestions, redFlags, sourceDrilldown },
+    reviewerSignoff,
+  )
+
+  const versionHistoryEntry: PackageVersionHistoryEntry = {
+    version: packageVersion,
+    generatedAt,
+    workflowId,
+    readinessStatus: readiness.status,
+    approvedFieldCount: approvedFields.fields.length,
+    evidenceScore: evidenceCompleteness.overallScore,
+    reviewerSignoffState: reviewerSignoff.state,
+  }
+  const versionHistory: PackageVersionHistoryEntry[] = [...priorEntries, versionHistoryEntry]
+
+  const packageJson: IcStarterPackage = {
+    version: packageVersion,
     generatedAt,
     dealId,
     dealName: record.item.dealName,
@@ -2172,10 +2762,15 @@ export function exportIcStarterPackage(
       parserVersion: document.parserVersion,
       sourceHash: document.sourceHash,
     })),
-    assumptions: packageAssumptions(criteria, readiness, documents),
-    openQuestions: packageOpenQuestions(workspace, readiness),
-    redFlags: packageRedFlags(readiness),
+    assumptions,
+    openQuestions,
+    redFlags,
+    redFlagDrilldowns,
     nextAction: workspace.operatorCommand.recommendedAction,
+    sourceDrilldown,
+    qualityGate,
+    evidenceCompleteness,
+    versionHistory,
   }
   const markdown = renderIcStarterPackageMarkdown(packageJson)
   const outputDir = packagesDir(context, dealId)
@@ -2185,6 +2780,13 @@ export function exportIcStarterPackage(
   const markdownPath = join(outputDir, `${safeWorkflow}-ic-starter-package.md`)
   writeJsonAtomic(jsonPath, packageJson)
   writeFileSync(markdownPath, markdown)
+  // W63: persist the incrementing version history for subsequent re-exports.
+  writeJsonAtomic(versionHistoryPath, {
+    version: 1,
+    dealId,
+    updatedAt: generatedAt,
+    entries: versionHistory,
+  })
   return {
     packageJson,
     markdown,

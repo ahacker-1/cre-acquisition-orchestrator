@@ -32,7 +32,7 @@ Let's bring this industry into the future.
 - **Install from scratch:** follow [Quick Start](#quick-start). The dashboard path is local-first and the sample demo remains deterministic after dependencies are installed.
 - **Choose the right runtime:** read [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md) before sending any real deal context through the optional live-agent path.
 - **Understand the system:** read [Architecture](docs/ARCHITECTURE.md), [Agent Catalog](docs/AGENT-CATALOG.md), [API Reference](docs/API-REFERENCE.md), and [WebSocket Events](docs/WEBSOCKET-EVENTS.md).
-- **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially PDF/OCR extraction, legal document parsing, richer live runtime controls, and additional messy parser fixtures.
+- **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially OCR for scanned documents, legal document parsing, richer live runtime controls, and additional messy parser fixtures.
 
 For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the shortest deterministic demo, use [Quick Demo](docs/QUICK-DEMO.md).
 
@@ -41,7 +41,7 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 ## What It Does
 
 - **Document-first deal intake** - upload rent rolls, T12s, offering memos, PDFs, and supporting files into a local workspace.
-- **Source-backed extraction review** - supported XLSX/CSV/TXT/MD sources become candidate fields with confidence, warnings, file hashes, and source-location provenance.
+- **Source-backed extraction review** - supported XLSX/CSV/TXT/MD and text-based PDF sources become candidate fields with confidence, warnings, file hashes, and source-location (sheet/row/column or page) provenance; scanned/image-only documents are detected and flagged for OCR rather than silently skipped.
 - **Human approval gate** - underwriting inputs do not change until the operator approves/applies trusted fields or waives/rejects ambiguous ones.
 - **31-role AI deal team** - 6 orchestrators, 21 acquisition specialists, and 4 document-ingestion roles are defined as markdown prompts.
 - **Visible coordination** - dashboard events show specialist messages, handoffs, dependencies, reviews, workpapers, and package status.
@@ -53,20 +53,20 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 
 | AI Roles | Skills | Schemas | Workflows | Fixtures | Tests passing |
 |----------|--------|---------|-----------|----------|---------------|
-| 31 | 8 | 25 | 5 | 10 | 8 |
+| 31 | 8 | 27 | 5 | 20 | 8 |
 
-Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 25 JSON Schema contracts; 5 workflow definitions; 10 curated fixture files under `fixtures/`; and 8 root `test*` commands tracked by [package.json](package.json).
+Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 20 curated fixture files under `fixtures/`; and 8 root `test*` commands tracked by [package.json](package.json).
 
 ---
 
 ## Current Status
 
-Current `main` is aligned with the latest public release (`v2.6.0`) and represents the credibility-hardening pass after source-backed deal intake. The stable baseline remains local-first and review-first:
+Current `main` is aligned with the latest public release (`v2.7.0`) and completes the ROADMAP near-term priorities while closing the prior known limits. The stable baseline remains local-first and review-first:
 
 - **Local by default** - offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
-- **Versioned release baseline** - `v2.6.0` adds practitioner-grade Parkview workpapers, strict schema/enums validation, local dashboard security hardening, API/WebSocket docs, and refreshed public proof assets on top of the `v2.5.x` source-backed intake line.
-- **Current main** - is the v2.6.0 release baseline unless new unreleased work appears after this tag.
-- **Known limits** - PDF/OCR extraction, image-only or heavily merged workbooks, production hosted deployments, and autonomous investment decisions remain out of scope.
+- **Versioned release baseline** - `v2.7.0` completes the ROADMAP near-term priorities (1–5) and closes the prior known limits (text-based PDF extraction, merged-cell workbooks, single-operator self-host deployment) on top of the `v2.6.0` credibility-hardening release.
+- **Current main** - is the v2.7.0 release baseline unless new unreleased work appears after this tag.
+- **Known limits** - true OCR of scanned/image-only documents (these are detected and flagged for OCR, not extracted), multi-tenant cloud hosting, and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are now supported.
 
 See [CHANGELOG.md](CHANGELOG.md) for release history and current-main changes.
 
@@ -112,27 +112,31 @@ The public demo is intentionally visual: a first-time visitor should understand 
 
 ![Quick deal creation modal showing a queued rent roll file, requested outcome, recommended workflow, and create workspace action](docs/assets/quick-deal-create.png)
 
-### 3. Acquisition Command - executive state of the deal
+### 3. Evidence - source-backed extraction review
+
+![Evidence view showing local source-document intake and an extraction preview with source-backed candidate fields, confidence, file/sheet/row provenance, and the drill-into-source-row action](docs/assets/source-extraction-review.png)
+
+### 4. Acquisition Command - executive state of the deal
 
 ![Acquisition Command showing package readiness, active stage, team pulse, and latest agent movement](docs/assets/acquisition-command.png)
 
-### 4. Mission - turn operator intent into a specialist swarm
+### 5. Mission - turn operator intent into a specialist swarm
 
 ![Swarm Goal Console translating an acquisition goal into recommended workflow, specialists, blockers, and handoff path](docs/assets/swarm-goal-console.png)
 
-### 5. Mission Control - preserve goals, readiness, and next action
+### 6. Mission Control - preserve goals, readiness, and next action
 
 ![Mission Control showing acquisition goal, source coverage, phase readiness, and operator next action](docs/assets/mission-control.png)
 
-### 6. Deal Team - visible specialist coordination
+### 7. Deal Team - visible specialist coordination
 
 ![Deal Team view showing agent messages, handoffs, dependencies, reviews, and phase movement](docs/assets/deal-team-handoffs.png)
 
-### 7. Workpapers - reviewable evidence and outputs
+### 8. Workpapers - reviewable evidence and outputs
 
 ![Workpapers view showing filed specialist outputs, evidence state, and package-linked diligence artifacts](docs/assets/workpapers-evidence.png)
 
-### 8. IC Package - decision-ready acquisition package
+### 9. IC Package - decision-ready acquisition package
 
 ![IC Package view showing recommendation, phase outcomes, red flags, data gaps, manifest, and review trail](docs/assets/ic-package.png)
 
@@ -232,7 +236,7 @@ The Parkview sample follows this path end to end with deterministic data so cont
 
 The full agent catalog is intentionally in the README. A visitor should be able to feel the depth of the system immediately, not after clicking through five files. [docs/AGENT-CATALOG.md](docs/AGENT-CATALOG.md) remains the companion reference, but the core map lives here too.
 
-The canonical open-source catalog contains **31 named AI roles**: 6 orchestrators, 21 acquisition specialists, and 4 source-document ingestion roles. Every role follows the 19-section prompt anatomy standard: Identity, Mission, Tools, Inputs, Strategy, Output Format, Quality Gates, Checkpoint Protocol, Resume Protocol, Error Handling, Confidence Scoring, Dealbreaker Detection, Data Gap Handling, Self-Review, Escalation Rules, Logging, Coordination, Constraints, and Examples. See [Agent Development](docs/AGENT-DEVELOPMENT.md) for the full specification.
+The canonical open-source catalog contains **31 named AI roles**: 6 orchestrators, 21 acquisition specialists, and 4 source-document ingestion roles. The 21 acquisition specialists follow the 19-section prompt anatomy defined in [Agent Development](docs/AGENT-DEVELOPMENT.md) (the canonical specification), which is the authority for section names and order. The 6 orchestrators use a purpose-built orchestrator template and the 4 ingestion roles use a minimal document-parser template, so they do not follow the specialist 19-section spec.
 
 ### Phase Map
 
@@ -333,7 +337,7 @@ Domain files intentionally separate reusable CRE policy from individual agent pr
 
 ## Data Contracts
 
-The repo ships 25 JSON Schema contracts under [schemas/](schemas/), validated with AJV strict mode and shared enum refs.
+The repo ships 27 JSON Schema contracts under [schemas/](schemas/), validated with AJV strict mode and shared enum refs.
 
 | Contract Area | Files | Purpose |
 |---------------|-------|---------|
@@ -343,6 +347,8 @@ The repo ships 25 JSON Schema contracts under [schemas/](schemas/), validated wi
 | Runtime checkpoints | [schemas/checkpoint/](schemas/checkpoint/) | Master and agent checkpoint persistence contracts. |
 | Document manifests | [schemas/documents/manifest.schema.json](schemas/documents/manifest.schema.json) | Local source-document inventory, hashes, and extraction status. |
 | Event payloads | [schemas/events/phase-completion.schema.json](schemas/events/phase-completion.schema.json) | Phase completion events consumed by the dashboard and validation scripts. |
+| Live-run manifest | [schemas/codex/run-manifest.schema.json](schemas/codex/run-manifest.schema.json) | Redacted Codex live-run manifest: run outcome, per-agent attempts, and failed-agent list. |
+| Workpaper quality gate | [schemas/workpapers/quality-gate.schema.json](schemas/workpapers/quality-gate.schema.json) | Workpaper quality-gate block: cited inputs, assumptions, calculations, caveats, and reviewer signoff. |
 
 Schema validation is part of the public credibility story: extra fields fail, legacy enum values fail, and Parkview fixtures must continue to validate.
 
@@ -350,14 +356,16 @@ Schema validation is part of the public credibility story: extra fields fail, le
 
 ## Operator Dashboard
 
-| View | What It Shows |
-|------|---------------|
-| Acquisition Command | Package readiness, active stage, team pulse, source freshness, and latest agent movement. |
+A persistent **Acquisition Command** header bar sits above the workspace tabs, showing package readiness, active stage, team pulse, source freshness, and latest agent movement. Below it, the workspace has six navigation tabs:
+
+| Nav Tab | What It Shows |
+|---------|---------------|
+| Command | Mission Control: acquisition goal capture, source coverage, phase readiness, and operator next action. |
 | Evidence | Source-document coverage, extracted candidates, confidence, warnings, and approve/apply controls. |
-| Mission | Goal capture, workflow recommendation, specialist selection, and launch readiness. |
 | Deal Team | Specialist state, handoffs, messages, dependencies, reviews, and phase progress. |
 | Workpapers | Phase and agent workpapers, evidence status, and output completeness. |
 | IC Package | Recommendation, phase outcomes, red flags, data gaps, manifest, review trail, and export actions. |
+| Controls | Advanced operator controls: deal criteria, pipeline view, and the workflow launcher for starting simulation or live Codex runs. |
 
 The dashboard is intentionally not a landing page. It is the actual workspace: a local operator can start from documents, see what changed, decide what to trust, and export a package.
 
@@ -441,7 +449,7 @@ npm run codex:smoke
 | Capability | Why It Matters |
 |------------|----------------|
 | **31-role acquisition team** | The repo models a real acquisition desk with orchestrators, diligence specialists, underwriting, financing, legal, closing, and ingestion roles instead of one generic assistant. |
-| **19-section prompt anatomy** | Each role has explicit identity, mission, inputs, outputs, quality gates, checkpoint rules, escalation, self-review, logging, and coordination expectations. |
+| **19-section prompt anatomy** | The 21 acquisition specialists follow the 19-section anatomy from [Agent Development](docs/AGENT-DEVELOPMENT.md) (identity, mission, inputs, strategy, outputs, checkpoint/logging/resume protocols, error recovery, dealbreaker detection, confidence scoring, downstream contract, self-review, and self-validation). Orchestrators and ingestion roles use their own purpose-specific templates. |
 | **Local source-package review** | Operators can drop deal files into a local workspace, inspect extracted fields, review source provenance, and decide what becomes deal data. |
 | **Human approval gate** | The system is designed around operator judgment: candidate fields are accepted, rejected, waived, or left unresolved before workflows consume them. |
 | **Strict schema contracts** | Phase outputs, agent findings, checkpoints, document manifests, and events validate against JSON Schema with shared enums and closed objects. |
@@ -628,8 +636,7 @@ The main local gate is intentionally visible because this project is only credib
 ```powershell
 npm run demo:verify
 npm --prefix dashboard run build
-npm --prefix dashboard exec tsc --noEmit
-npm --prefix dashboard exec tsc --noEmit -p tsconfig.server.json
+npm --prefix dashboard run typecheck
 npm run test:parsers
 npm run test:workspace
 npm test
@@ -650,6 +657,8 @@ npm run validate:fixtures
 npm run validate -- --deal-id parkview-2026-001
 ```
 
+`npm run validate -- --deal-id parkview-2026-001` validates a live checkpoint at `data/status/parkview-2026-001.json`, so run `npm run demo` first to generate it. (`npm run demo:verify` already runs this contract validation as part of its sequence.)
+
 ---
 
 ## Documentation Index
@@ -659,12 +668,15 @@ npm run validate -- --deal-id parkview-2026-001
 | [First Deal Guide](docs/FIRST-DEAL-GUIDE.md) | Bring a local source package into review and export |
 | [Quick Demo](docs/QUICK-DEMO.md) | Fast deterministic demo path |
 | [Agent Catalog](docs/AGENT-CATALOG.md) | Full 31-role catalog, skills, and schema contracts |
+| [Contributing a New Agent](docs/CONTRIBUTING-AGENTS.md) | End-to-end guide to add a new specialist agent (prompt, registry, schema, fixture) |
 | [Architecture](docs/ARCHITECTURE.md) | System design, hierarchy, dependencies, data flow |
+| [Dashboard Architecture](docs/DASHBOARD-ARCHITECTURE.md) | Dashboard UI/server component and data-flow map for contributors |
 | [Runtime Comparison](docs/RUNTIME-COMPARISON.md) | Offline demo vs live Codex data-sharing boundaries |
 | [API Reference](docs/API-REFERENCE.md) | Local REST endpoints, request bodies, responses, and errors |
 | [WebSocket Events](docs/WEBSOCKET-EVENTS.md) | Dashboard socket messages and run/story event payloads |
 | [Launch Procedures](docs/LAUNCH-PROCEDURES.md) | Pipeline launch options and validation commands |
 | [Dashboard Setup](docs/DASHBOARD-SETUP.md) | Local dashboard setup, runtime ports, and troubleshooting |
+| [Deployment](docs/DEPLOYMENT.md) | Single-operator production self-host build and serve (loopback-default, not multi-tenant) |
 | [Deal Configuration](docs/DEAL-CONFIGURATION.md) | How to customize deal inputs and assumptions |
 | [Threshold Customization](docs/THRESHOLD-CUSTOMIZATION.md) | How to tune underwriting and dealbreaker policy |
 | [Interpreting Results](docs/INTERPRETING-RESULTS.md) | How to read generated reports and recommendations |

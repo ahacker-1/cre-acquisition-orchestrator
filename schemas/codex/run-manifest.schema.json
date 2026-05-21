@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/codex/run-manifest.schema.json",
+  "title": "Codex Live-Run Manifest",
+  "type": "object",
+  "required": [
+    "runId",
+    "status",
+    "runOutcome",
+    "workflowId",
+    "selectedAgents",
+    "results"
+  ],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "completedAt": { "type": ["string", "null"], "format": "date-time" },
+    "status": { "type": "string", "enum": ["COMPLETE", "FAILED", "DRY_RUN"] },
+    "runOutcome": { "type": "string", "enum": ["success", "partial", "failed"] },
+    "codexVersion": { "type": ["string", "null"] },
+    "codexLoginStatus": { "type": ["string", "null"] },
+    "workflowId": { "type": "string", "minLength": 1 },
+    "workflowName": { "type": ["string", "null"] },
+    "scenarioName": { "type": ["string", "null"] },
+    "dealId": { "type": ["string", "null"] },
+    "dealPath": { "type": ["string", "null"] },
+    "inputSnapshotPath": { "type": ["string", "null"] },
+    "inputSnapshotSummary": { "type": ["object", "string", "null"] },
+    "concurrency": { "type": "integer", "minimum": 1 },
+    "sandbox": { "type": "string", "minLength": 1 },
+    "search": { "type": "boolean" },
+    "dryRun": { "type": "boolean" },
+    "maxRetries": { "type": "integer", "minimum": 0 },
+    "retryBaseMs": { "type": "integer", "minimum": 0 },
+    "rerunFailed": { "type": "boolean" },
+    "failedAgents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["agentName", "status", "attempts"],
+        "properties": {
+          "phase": { "type": "string", "minLength": 1 },
+          "phaseLabel": { "type": "string" },
+          "agentName": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "minLength": 1 },
+          "attempts": { "type": "integer", "minimum": 0 },
+          "error": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "selectedAgents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["agentName"],
+        "properties": {
+          "phase": { "type": "string", "minLength": 1 },
+          "phaseLabel": { "type": "string" },
+          "agentName": { "type": "string", "minLength": 1 },
+          "promptFile": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["status", "agentName", "attempts"],
+        "properties": {
+          "status": { "type": "string", "minLength": 1 },
+          "phase": { "type": "string", "minLength": 1 },
+          "phaseLabel": { "type": "string" },
+          "agentName": { "type": "string", "minLength": 1 },
+          "attempts": { "type": "integer", "minimum": 0 },
+          "promptPath": { "type": ["string", "null"] },
+          "outputPath": { "type": ["string", "null"] },
+          "logPath": { "type": ["string", "null"] },
+          "exitCode": { "type": ["integer", "null"] },
+          "error": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "logExcerpt": { "type": ["string", "null"] }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cre-acquisition-orchestrator.local/schemas/workpapers/quality-gate.schema.json",
+  "title": "Workpaper Quality Gate",
+  "description": "Review-grade quality gate emitted on IC starter packages and agent workpapers (ROADMAP P3 / W60). Missing checklist items surface as warnings, never as hard failures.",
+  "type": "object",
+  "required": [
+    "status",
+    "items",
+    "warnings",
+    "reviewerSignoff"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["pass", "warning"],
+      "description": "pass when every checklist item is present; warning when one or more items are missing."
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "status", "detail"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": ["present", "missing"]
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "reviewerSignoff": {
+      "type": "object",
+      "required": ["state"],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": ["unsigned", "pending", "signed"]
+        },
+        "reviewer": {
+          "type": "string"
+        },
+        "signedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

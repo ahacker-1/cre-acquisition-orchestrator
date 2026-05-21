@@ -15,6 +15,191 @@ const { StoryEngine } = require('./lib/story-engine');
 const BASE_DIR = path.resolve(__dirname, '..');
 const SAFE_RUN_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
+// ---------------------------------------------------------------------------
+// W73 - No-secret-logging redaction (pure)
+// ---------------------------------------------------------------------------
+const SECRET_MASK = '[REDACTED]';
+
+// Each rule is a regex with a replacer that preserves a leading label/prefix
+// (so "Authorization: Bearer xyz" becomes "Authorization: [REDACTED]") while
+// masking the secret value itself. Ordered most-specific first.
+const SECRET_RULES = [
+  // Authorization headers: "Authorization: Bearer <token>" or "Authorization: <token>".
+  // The negative lookahead keeps redaction idempotent (never re-masks an
+  // existing [REDACTED] token, which would otherwise swallow trailing chars).
+  {
+    pattern: /(authorization\s*[:=]\s*)(?:bearer\s+)?(?!\[REDACTED\])[^\s"',]+/gi,
+    replace: (_match, prefix) => `${prefix}${SECRET_MASK}`
+  },
+  // Bare "Bearer <token>" anywhere
+  {
+    pattern: /\bbearer\s+(?!\[REDACTED\])[A-Za-z0-9._\-+/=]+/gi,
+    replace: () => `Bearer ${SECRET_MASK}`
+  },
+  // OpenAI / ChatGPT style keys: sk-..., sk-proj-..., rk-..., etc. (>= 20 chars of body)
+  {
+    pattern: /\b(?:sk|rk|pk|ssk)-(?:[A-Za-z0-9_-]*-)?[A-Za-z0-9_-]{20,}/g,
+    replace: () => SECRET_MASK
+  },
+  // GitHub-style tokens (ghp_, gho_, ghs_, github_pat_, etc.)
+  {
+    pattern: /\b(?:gh[posru]|github_pat)_[A-Za-z0-9_]{20,}/g,
+    replace: () => SECRET_MASK
+  },
+  // AWS access key ids
+  {
+    pattern: /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g,
+    replace: () => SECRET_MASK
+  },
+  // Keyed secret assignments: api_key / apikey / access_token / refresh_token /
+  // client_secret / password / secret = "<value>" (JSON, env, query-string forms).
+  // The key itself may be quoted (JSON: "access_token":"...") so we allow an
+  // optional closing quote on the key before the : or = separator.
+  {
+    pattern:
+      /(["']?(?:api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|secret[_-]?key|password|passwd|token)["']?\s*[:=]\s*)(?:"([^"]+)"|'([^']+)'|(?!\[REDACTED\])([^\s,&}]+))/gi,
+    replace: (_match, prefix, dq, sq, bare) => {
+      if (dq !== undefined) return `${prefix}"${SECRET_MASK}"`;
+      if (sq !== undefined) return `${prefix}'${SECRET_MASK}'`;
+      return `${prefix}${bare !== undefined ? SECRET_MASK : ''}`;
+    }
+  },
+  // Long opaque token-looking strings: hex (>= 32) or base64url-ish (>= 40).
+  // Run last so labelled values above are masked with their prefix preserved.
+  {
+    pattern: /\b[0-9a-f]{32,}\b/gi,
+    replace: () => SECRET_MASK
+  },
+  {
+    pattern: /\b[A-Za-z0-9_-]{40,}\b/g,
+    replace: () => SECRET_MASK
+  }
+];
+
+function redactSecrets(text) {
+  if (text === null || text === undefined) return text;
+  let value = typeof text === 'string' ? text : String(text);
+  for (const rule of SECRET_RULES) {
+    value = value.replace(rule.pattern, rule.replace);
+  }
+  return value;
+}
+
+// ---------------------------------------------------------------------------
+// W70 - Per-agent retry/backoff (pure)
+// ---------------------------------------------------------------------------
+function defaultSleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function computeBackoffMs(attemptIndex, baseBackoffMs) {
+  // attemptIndex is zero-based: first retry waits baseBackoffMs, then doubles.
+  const base = Number(baseBackoffMs) > 0 ? Number(baseBackoffMs) : 0;
+  if (base === 0) return 0;
+  return base * Math.pow(2, Math.max(0, attemptIndex));
+}
+
+// Runs `fn(attemptNumber)` and retries on transient failure with exponential
+// backoff. `fn` should resolve on success or reject on failure. Returns the
+// resolved value AND records attempt count via the returned object shape only
+// when callers wrap it; here we surface attempts through onAttempt callback.
+async function runWithRetry(fn, options = {}) {
+  const maxRetries = Number.isInteger(options.maxRetries) && options.maxRetries >= 0 ? options.maxRetries : 2;
+  const baseBackoffMs = Number(options.baseBackoffMs) >= 0 ? Number(options.baseBackoffMs) : 1000;
+  const isTransient = typeof options.isTransient === 'function' ? options.isTransient : () => true;
+  const sleep = typeof options.sleep === 'function' ? options.sleep : defaultSleep;
+  const onAttempt = typeof options.onAttempt === 'function' ? options.onAttempt : null;
+
+  let attempt = 0;
+  let lastError = null;
+  // Total tries = 1 initial + maxRetries retries.
+  while (attempt <= maxRetries) {
+    const attemptNumber = attempt + 1;
+    try {
+      const value = await fn(attemptNumber);
+      if (onAttempt) onAttempt({ attempt: attemptNumber, outcome: 'success' });
+      return { value, attempts: attemptNumber };
+    } catch (error) {
+      lastError = error;
+      const transient = isTransient(error);
+      if (onAttempt) {
+        onAttempt({ attempt: attemptNumber, outcome: transient ? 'transient-error' : 'permanent-error', error });
+      }
+      if (!transient || attempt >= maxRetries) {
+        const wrapped = error instanceof Error ? error : new Error(String(error));
+        wrapped.attempts = attemptNumber;
+        throw wrapped;
+      }
+      const backoff = computeBackoffMs(attempt, baseBackoffMs);
+      if (backoff > 0) await sleep(backoff);
+      attempt += 1;
+    }
+  }
+  // Unreachable, but keep a defined throw for safety.
+  const fallback = lastError instanceof Error ? lastError : new Error('runWithRetry exhausted');
+  fallback.attempts = attempt;
+  throw fallback;
+}
+
+// ---------------------------------------------------------------------------
+// W71 - Partial-failure semantics (pure)
+// ---------------------------------------------------------------------------
+// Statuses that count as a "pass" for outcome purposes. DRY_RUN is treated as
+// non-failing (a dry run never actually executes an agent).
+const NON_FAILING_STATUSES = new Set(['PASS', 'DRY_RUN']);
+
+function computeRunOutcome(results) {
+  const list = Array.isArray(results) ? results : [];
+  const failedAgents = list
+    .filter((result) => result && !NON_FAILING_STATUSES.has(result.status))
+    .map((result) => ({
+      phase: result.phase,
+      phaseLabel: result.phaseLabel,
+      agentName: result.agentName,
+      status: result.status,
+      attempts: result.attempts,
+      error: result.error || null
+    }));
+
+  const passedCount = list.filter((result) => result && NON_FAILING_STATUSES.has(result.status)).length;
+  const failedCount = failedAgents.length;
+
+  let runOutcome;
+  if (list.length === 0) {
+    runOutcome = 'failed';
+  } else if (failedCount === 0) {
+    runOutcome = 'success';
+  } else if (passedCount === 0) {
+    runOutcome = 'failed';
+  } else {
+    runOutcome = 'partial';
+  }
+
+  // Backward-compatible manifest status mapping (existing consumers expect
+  // COMPLETE / FAILED). "partial" maps to FAILED so existing FAIL-detection and
+  // exit-code-1 behavior is preserved.
+  const status = runOutcome === 'success' ? 'COMPLETE' : 'FAILED';
+
+  return { runOutcome, status, failedAgents, passedCount, failedCount, totalCount: list.length };
+}
+
+// Given a prior manifest object, return the list of agent selectors that
+// FAILED so a rerun can target only those.
+function selectFailedAgentSelectors(priorManifest) {
+  if (!priorManifest || typeof priorManifest !== 'object') return [];
+  // Prefer the explicit failedAgents list when present (W71 manifests).
+  if (Array.isArray(priorManifest.failedAgents) && priorManifest.failedAgents.length > 0) {
+    return priorManifest.failedAgents
+      .filter((entry) => entry && entry.agentName)
+      .map((entry) => ({ phase: entry.phase, agentName: entry.agentName }));
+  }
+  // Fall back to deriving from results for older manifests.
+  const results = Array.isArray(priorManifest.results) ? priorManifest.results : [];
+  return results
+    .filter((result) => result && !NON_FAILING_STATUSES.has(result.status))
+    .map((result) => ({ phase: result.phase, agentName: result.agentName }));
+}
+
 function requireSafeRunId(runId) {
   const value = String(runId || '').trim();
   if (!SAFE_RUN_ID_PATTERN.test(value) || value.includes('..')) {
@@ -39,6 +224,8 @@ function parseArgs() {
     return values;
   }
   const inputSnapshotArg = getArg('--input-snapshot', null);
+  const rerunFailed = args.includes('--rerun-failed');
+  const rawRunId = getArg('--run-id', `codex-${Date.now()}`);
   return {
     dealPath: path.resolve(BASE_DIR, getArg('--deal', 'config/deal.json')),
     inputSnapshotPath: inputSnapshotArg ? path.resolve(BASE_DIR, inputSnapshotArg) : null,
@@ -48,12 +235,27 @@ function parseArgs() {
     agentNames: getAll('--agent'),
     maxAgents: Number(getArg('--max-agents', '0')) || 0,
     concurrency: Math.max(1, Number(getArg('--concurrency', '2')) || 2),
-    runId: requireSafeRunId(getArg('--run-id', `codex-${Date.now()}`)),
+    runId: requireSafeRunId(rawRunId),
     model: getArg('--model', null),
     sandbox: getArg('--sandbox', 'read-only'),
     dryRun: args.includes('--dry-run'),
-    search: args.includes('--search')
+    search: args.includes('--search'),
+    // W70: per-agent retry/backoff (default 2 retries, 1000ms base)
+    maxRetries: Math.max(0, Number(getArg('--max-retries', '2')) || 0),
+    retryBaseMs: Math.max(0, Number(getArg('--retry-base-ms', '1000')) || 0),
+    // W71: rerun only the failed agents from a prior run's manifest
+    rerunFailed
   };
+}
+
+// W71: read failed-agent selectors from a prior run's persisted manifest.json.
+function readPriorFailedSelectors(runId) {
+  const priorManifestPath = path.join(BASE_DIR, 'data', 'codex-runs', runId, 'manifest.json');
+  const priorManifest = readJsonIfExists(priorManifestPath);
+  if (!priorManifest) {
+    throw new Error(`--rerun-failed could not read prior manifest at ${toRepoPath(priorManifestPath)}`);
+  }
+  return selectFailedAgentSelectors(priorManifest);
 }
 
 function readJson(filePath) {
@@ -243,11 +445,17 @@ function writeSummary(runDir, manifest) {
   lines.push(`- Workflow: ${manifest.workflowName}`);
   lines.push(`- Scenario: ${manifest.scenarioName}`);
   lines.push(`- Status: ${manifest.status}`);
+  if (manifest.runOutcome) lines.push(`- Outcome: ${manifest.runOutcome}`);
   lines.push(`- Agents: ${manifest.results.length}`);
+  if (Array.isArray(manifest.failedAgents) && manifest.failedAgents.length > 0) {
+    lines.push(`- Failed agents: ${manifest.failedAgents.map((agent) => agent.agentName).join(', ')}`);
+  }
   lines.push('');
   lines.push('## Results');
   manifest.results.forEach((result) => {
-    lines.push(`- ${result.status}: ${result.phaseLabel} / ${result.agentName} -> ${result.outputPath || result.error || 'no output'}`);
+    const attemptLabel = typeof result.attempts === 'number' ? ` (attempts: ${result.attempts})` : '';
+    const detail = result.outputPath || redactSecrets(result.error || '') || 'no output';
+    lines.push(`- ${result.status}: ${result.phaseLabel} / ${result.agentName}${attemptLabel} -> ${detail}`);
   });
   const summaryPath = path.join(runDir, 'summary.md');
   fs.writeFileSync(summaryPath, `${lines.join('\n')}\n`);
@@ -309,6 +517,7 @@ async function runAgentTask({
       phase: task.phaseMeta.key,
       phaseLabel: task.phaseMeta.label,
       agentName: task.agentName,
+      attempts: 0,
       promptPath: toRepoPath(promptPath),
       outputPath: toRepoPath(outputPath)
     };
@@ -334,14 +543,49 @@ async function runAgentTask({
   codexArgs.push('-');
 
   console.log(`[codex-run] Starting ${task.phaseMeta.label} / ${task.agentName}`);
-  const result = await runStreaming('codex', codexArgs, {
-    cwd: BASE_DIR,
-    input: prompt,
-    logFile: logPath
-  });
+
+  // W70: wrap the Codex invocation in retry/backoff. A transient failure is a
+  // non-zero exit or a missing output file (the codex process failed to
+  // produce a memo). runStreaming itself resolves rather than rejects, so we
+  // translate "did not succeed" into a thrown error that runWithRetry can see.
+  const runOnce = options.runStreamingFn || runStreaming;
+  let result = { code: null, stdout: '', stderr: '' };
+  let attempts = 0;
+  const execute = async (attemptNumber) => {
+    attempts = attemptNumber;
+    result = await runOnce('codex', codexArgs, {
+      cwd: BASE_DIR,
+      input: prompt,
+      logFile: logPath,
+      redact: redactSecrets
+    });
+    if (!(result.code === 0 && fs.existsSync(outputPath))) {
+      const reason = redactSecrets(result.stderr || result.stdout || 'Codex did not produce an output file').slice(0, 2000);
+      const error = new Error(reason);
+      error.exitCode = result.code;
+      throw error;
+    }
+    return result;
+  };
+
+  try {
+    await runWithRetry(execute, {
+      maxRetries: options.maxRetries,
+      baseBackoffMs: options.retryBaseMs,
+      sleep: options.sleep, // injectable for tests; defaults to real timer
+      isTransient: () => true,
+      onAttempt: ({ attempt, outcome }) => {
+        if (outcome === 'transient-error') {
+          console.warn(`[codex-run] ${task.agentName} attempt ${attempt} failed; retrying.`);
+        }
+      }
+    });
+  } catch {
+    // Final failure handled below via the ok/result inspection.
+  }
 
   const ok = result.code === 0 && fs.existsSync(outputPath);
-  console.log(`[codex-run] ${ok ? 'Complete' : 'Failed'} ${task.phaseMeta.label} / ${task.agentName}`);
+  console.log(`[codex-run] ${ok ? 'Complete' : 'Failed'} ${task.phaseMeta.label} / ${task.agentName} (attempts: ${attempts})`);
   if (ok) {
     const extracted = extractAgentVerdict(outputPath);
     story.registerExternalDocument({
@@ -371,7 +615,8 @@ async function runAgentTask({
       title: `${task.agentName} failed`,
       status: 'FAIL',
       exitCode: result.code,
-      error: (result.stderr || result.stdout || 'Codex did not produce an output file').slice(0, 2000)
+      attempts,
+      error: redactSecrets(result.stderr || result.stdout || 'Codex did not produce an output file').slice(0, 2000)
     });
   }
   return {
@@ -379,11 +624,12 @@ async function runAgentTask({
     phase: task.phaseMeta.key,
     phaseLabel: task.phaseMeta.label,
     agentName: task.agentName,
+    attempts,
     promptPath: toRepoPath(promptPath),
     outputPath: ok ? toRepoPath(outputPath) : null,
     logPath: toRepoPath(logPath),
     exitCode: result.code,
-    error: ok ? null : (result.stderr || result.stdout || 'Codex did not produce an output file').slice(0, 2000)
+    error: ok ? null : redactSecrets(result.stderr || result.stdout || 'Codex did not produce an output file').slice(0, 2000)
   };
 }
 
@@ -420,6 +666,19 @@ async function main() {
   const workflow = getWorkflowById(BASE_DIR, options.workflowId);
   const scenarioName = options.scenarioName || workflow.recommendedScenario || 'core-plus';
   const scenarioConfig = readScenarioConfig(BASE_DIR, scenarioName);
+
+  // W71: when re-running only failed agents, read the prior run's manifest and
+  // narrow the agent filter to its failedAgents before task selection.
+  let rerunSelectors = null;
+  if (options.rerunFailed) {
+    rerunSelectors = readPriorFailedSelectors(options.runId);
+    if (rerunSelectors.length === 0) {
+      throw new Error(`--rerun-failed: prior run ${options.runId} had no failed agents to re-run.`);
+    }
+    options.agentNames = rerunSelectors.map((selector) => selector.agentName);
+    console.log(`[codex-run] Re-running ${rerunSelectors.length} failed agent(s) from prior run ${options.runId}.`);
+  }
+
   const tasks = selectTasks(options, registry, workflow);
 
   if (tasks.length === 0) {
@@ -475,6 +734,11 @@ async function main() {
     sandbox: options.sandbox,
     search: options.search,
     dryRun: options.dryRun,
+    maxRetries: options.maxRetries,
+    retryBaseMs: options.retryBaseMs,
+    rerunFailed: options.rerunFailed,
+    runOutcome: null,
+    failedAgents: [],
     selectedAgents: tasks.map((task) => ({
       phase: task.phaseMeta.key,
       phaseLabel: task.phaseMeta.label,
@@ -505,7 +769,12 @@ async function main() {
     })
   );
   manifest.completedAt = nowIso();
-  manifest.status = manifest.results.some((result) => result.status === 'FAIL') ? 'FAILED' : 'COMPLETE';
+  // W71: derive machine-readable outcome (success | partial | failed) and the
+  // failed-agent list; status stays backward-compatible (COMPLETE | FAILED).
+  const outcome = computeRunOutcome(manifest.results);
+  manifest.runOutcome = outcome.runOutcome;
+  manifest.failedAgents = outcome.failedAgents;
+  manifest.status = outcome.status;
   fs.writeFileSync(path.join(runDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
   const summaryPath = writeSummary(runDir, manifest);
   story.registerExternalDocument({
@@ -534,7 +803,20 @@ async function main() {
   if (manifest.status !== 'COMPLETE') process.exitCode = 1;
 }
 
-main().catch((error) => {
-  console.error(`[codex-run] Failed: ${error.message}`);
-  process.exit(1);
-});
+// Only auto-run when invoked directly as a CLI. When required as a module
+// (e.g. unit tests), the pure helpers below are importable without executing
+// the live Codex path.
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(`[codex-run] Failed: ${error.message}`);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  redactSecrets,
+  computeBackoffMs,
+  runWithRetry,
+  computeRunOutcome,
+  selectFailedAgentSelectors
+};

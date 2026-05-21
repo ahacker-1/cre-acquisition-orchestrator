@@ -1,0 +1,74 @@
+{
+  "runId": "codex-sample-redacted",
+  "startedAt": "2026-05-20T14:02:11.000Z",
+  "completedAt": "2026-05-20T14:09:48.000Z",
+  "status": "FAILED",
+  "runOutcome": "partial",
+  "codexVersion": "codex-cli 0.0.0 (sample)",
+  "codexLoginStatus": "Logged in (sample)",
+  "workflowId": "quick-deal-screen",
+  "workflowName": "Quick Deal Screen",
+  "scenarioName": "core-plus",
+  "dealId": "sample-deal-0001",
+  "dealPath": "config/deal.json",
+  "inputSnapshotPath": null,
+  "inputSnapshotSummary": null,
+  "concurrency": 2,
+  "sandbox": "read-only",
+  "search": false,
+  "dryRun": false,
+  "maxRetries": 2,
+  "retryBaseMs": 1000,
+  "rerunFailed": false,
+  "failedAgents": [
+    {
+      "phase": "underwriting",
+      "phaseLabel": "Underwriting",
+      "agentName": "scenario-analyst",
+      "status": "FAIL",
+      "attempts": 3,
+      "error": "Codex exec returned non-zero exit. Auth header was Authorization: [REDACTED]. token=[REDACTED]"
+    }
+  ],
+  "selectedAgents": [
+    {
+      "phase": "underwriting",
+      "phaseLabel": "Underwriting",
+      "agentName": "financial-model-builder",
+      "promptFile": "agents/underwriting/financial-model-builder.md"
+    },
+    {
+      "phase": "underwriting",
+      "phaseLabel": "Underwriting",
+      "agentName": "scenario-analyst",
+      "promptFile": "agents/underwriting/scenario-analyst.md"
+    }
+  ],
+  "results": [
+    {
+      "status": "PASS",
+      "phase": "underwriting",
+      "phaseLabel": "Underwriting",
+      "agentName": "financial-model-builder",
+      "attempts": 1,
+      "promptPath": "data/codex-runs/codex-sample-redacted/underwriting/financial-model-builder.prompt.md",
+      "outputPath": "data/codex-runs/codex-sample-redacted/underwriting/financial-model-builder.md",
+      "logPath": "data/codex-runs/codex-sample-redacted/underwriting/financial-model-builder.log",
+      "exitCode": 0,
+      "error": null
+    },
+    {
+      "status": "FAIL",
+      "phase": "underwriting",
+      "phaseLabel": "Underwriting",
+      "agentName": "scenario-analyst",
+      "attempts": 3,
+      "promptPath": "data/codex-runs/codex-sample-redacted/underwriting/scenario-analyst.prompt.md",
+      "outputPath": null,
+      "logPath": "data/codex-runs/codex-sample-redacted/underwriting/scenario-analyst.log",
+      "exitCode": 1,
+      "error": "Codex exec returned non-zero exit. Auth header was Authorization: [REDACTED]. token=[REDACTED]"
+    }
+  ],
+  "logExcerpt": "[codex] connecting with Authorization: [REDACTED]\n[codex] session token=[REDACTED]\n[codex] underwriting note: Net operating income held at the 6.1% in-place cap; rent roll shows 92% occupancy.\n[codex] api_key=[REDACTED]\n[codex] exec failed: upstream returned 503 (transient)"
+}

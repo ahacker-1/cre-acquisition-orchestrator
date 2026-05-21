@@ -6,7 +6,7 @@ The north star is to make `cre-acquisition-orchestrator` the leading open-source
 
 ## Current Release Baseline
 
-**v2.6.0 — Credibility and Infrastructure Hardening** is the current public release. It keeps the v2.5 source-backed deal intake loop, then makes the project easier for first-time visitors and contributors to trust: practitioner-grade Parkview workpapers, strict schemas/enums, local dashboard hardening, API/WebSocket docs, refreshed screenshot assets, and release-please automation.
+**v2.7.0 — Completion Pass** is the current public release. Building on the v2.6.0 credibility-hardening baseline, it implements the near-term priorities below and closes the prior known limits: text-based PDF extraction, merged-cell/image-only workbook handling, review-grade workpapers (quality gates, evidence completeness, red-flag drilldowns), live Codex runtime hardening, single-operator self-host deployment, and contributor tooling — while keeping the deterministic offline demo as the default.
 
 Release-grade validation for this baseline includes:
 
@@ -35,10 +35,8 @@ Goal: move from classified/stored files toward auditable extraction across the d
 
 Candidate issues:
 
-- Add PDF text extraction for offering memoranda and legal checklists with explicit confidence and pending-review states.
 - Continue expanding parser fixtures for messy real-world rent rolls, trailing-12s, and unit mixes.
-- Continue hardening reject/waive review history and source-field decision audit trails before applying values to deal state.
-- Add field-level provenance deep links from approved inputs to source document snippets.
+- True OCR for scanned/image-only documents (these are currently detected and flagged for OCR, not extracted).
 
 Shipped in v2.5.0:
 
@@ -48,6 +46,12 @@ Shipped in v2.5.0:
 - `npm run test:parsers` validates XLSX parser fixtures for rent roll and T12 field mapping.
 - `npm run test:workspace` validates persisted extraction retrieval, conflict-aware approve/apply, approved-field provenance, and launch-readiness source coverage.
 - Parser fixtures now cover alternate rent-roll headers, blank rows, total rows, common occupancy conventions, and multi-sheet T12 workbook selection while preserving candidate review warnings and field-level provenance.
+
+Shipped on current main (completion pass):
+
+- Text-based PDF extraction for offering memoranda / rent rolls via the local Python bridge (`scripts/parse_pdf.py`, pdfplumber): per-field confidence, page-level provenance, and candidate-review status; scanned/image-only PDFs are detected and flagged for OCR rather than silently skipped.
+- Merged-cell workbook handling (unmerge + forward-fill before header detection) and image-only workbook detection (flagged needs-OCR), plus additional messy rent-roll/T12 fixtures (currency symbols, subtotal/total rows, trailing notes, synonym headers).
+- Source-field decision audit trail: timestamped approve/reject/waive/needs-review history retrievable per field, with cross-document conflict blocking before apply.
 
 ### 2. Demo Journey and Public Proof
 

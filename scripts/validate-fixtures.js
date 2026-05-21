@@ -30,6 +30,12 @@ function schemaForFixture(filePath) {
       rootName: 'documentsManifest'
     };
   }
+  if (/(^|\/)codex-run-sample\/manifest\.json$/.test(rel)) {
+    return {
+      schemaPath: path.join(BASE_DIR, 'schemas', 'codex', 'run-manifest.schema.json'),
+      rootName: 'codexRunManifest'
+    };
+  }
   const phaseMatch = rel.match(/\/phase-outputs\/([a-z-]+)-output\.json$/);
   if (phaseMatch) {
     return {

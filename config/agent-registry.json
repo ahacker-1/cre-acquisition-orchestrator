@@ -186,6 +186,40 @@
         "critical": true,
         "dependencies": ["closing-coordinator"]
       }
+    },
+    "ingestion": {
+      "document-orchestrator": {
+        "file": "agents/ingestion/document-orchestrator.md",
+        "inputs": ["incoming deal documents", "documents/incoming/"],
+        "outputs": ["document manifest", "extraction status", "routing decisions"],
+        "phase": "ingestion",
+        "critical": false,
+        "dependencies": []
+      },
+      "rent-roll-parser": {
+        "file": "agents/ingestion/rent-roll-parser.md",
+        "inputs": ["rent roll document (XLSX, CSV, text/markdown)"],
+        "outputs": ["structured rent roll JSON", "extraction confidence", "source provenance"],
+        "phase": "ingestion",
+        "critical": false,
+        "dependencies": ["document-orchestrator"]
+      },
+      "financials-parser": {
+        "file": "agents/ingestion/financials-parser.md",
+        "inputs": ["T-12 operating statement", "income/expense report"],
+        "outputs": ["structured financials JSON", "line-item mapping"],
+        "phase": "ingestion",
+        "critical": false,
+        "dependencies": ["document-orchestrator"]
+      },
+      "offering-memo-parser": {
+        "file": "agents/ingestion/offering-memo-parser.md",
+        "inputs": ["offering memorandum", "marketing brochure", "property flyer"],
+        "outputs": ["structured property data", "financial assumptions", "market summary"],
+        "phase": "ingestion",
+        "critical": false,
+        "dependencies": ["document-orchestrator"]
+      }
     }
   },
   "skills": {
@@ -195,7 +229,8 @@
     "risk-scoring": "skills/risk-scoring.md",
     "multifamily-benchmarks": "skills/multifamily-benchmarks.md",
     "lender-criteria": "skills/lender-criteria.md",
-    "legal-checklist": "skills/legal-checklist.md"
+    "legal-checklist": "skills/legal-checklist.md",
+    "self-review-protocol": "skills/self-review-protocol.md"
   },
   "templates": {
     "agent-checkpoint": "templates/agent-checkpoint.json",
@@ -210,6 +245,7 @@
   "totalAgents": {
     "orchestrators": 6,
     "specialists": 21,
-    "total": 27
+    "ingestion": 4,
+    "total": 31
   }
 }

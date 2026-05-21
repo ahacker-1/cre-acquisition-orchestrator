@@ -96,6 +96,50 @@ async function clickTab(page, id) {
   await page.waitForTimeout(350)
 }
 
+// W50: capture the source-backed extraction review panel. Runs in an isolated page so it
+// does not disturb the deterministic demo gallery captured on the main page. Creates a deal
+// from the document-first front door, opens Evidence, previews extraction, and captures the
+// candidate-field review panel. Skips gracefully if the front door is not the landing view.
+async function captureSourceExtractionReview(browser) {
+  const reviewPage = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1 })
+  try {
+    await reviewPage.goto(baseURL, { waitUntil: 'networkidle' })
+    await reviewPage.getByText('Connected').waitFor({ timeout: 20_000 })
+    await reviewPage.addStyleTag({
+      content: `*, *::before, *::after { animation-duration: 0.001s !important; transition-duration: 0.001s !important; scroll-behavior: auto !important; }`,
+    })
+    const hero = reviewPage.getByTestId('drop-zone-hero')
+    if (!(await hero.isVisible().catch(() => false))) {
+      // A deal is already open (e.g. the demo run captured on the main page); return to the
+      // document-first upload front door via the header affordance.
+      const uploadButton = reviewPage.getByTestId('header-upload-package-button')
+      if (await uploadButton.isVisible().catch(() => false)) {
+        await uploadButton.click()
+        await hero.waitFor({ timeout: 10_000 }).catch(() => {})
+      }
+    }
+    if (!(await hero.isVisible().catch(() => false))) {
+      console.warn('skip source-extraction-review.png: document-first front door not reachable')
+      return
+    }
+    await reviewPage.getByTestId('drop-zone-input').setInputFiles(sampleUploadPath)
+    await reviewPage.getByTestId('quick-deal-modal').waitFor({ timeout: 20_000 })
+    await reviewPage.getByTestId('quick-deal-create').click()
+    await reviewPage.getByTestId('operator-deal-hub').waitFor({ timeout: 30_000 })
+    await reviewPage.getByTestId('workspace-tab-documents').click()
+    const extractButton = reviewPage.getByTestId('extract-document-rent_roll')
+    await extractButton.waitFor({ timeout: 20_000 })
+    await extractButton.click()
+    const preview = reviewPage.getByTestId('extraction-preview')
+    await preview.waitFor({ timeout: 30_000 })
+    await preview.getByText('Fields Found').first().waitFor({ timeout: 30_000 })
+    await reviewPage.waitForTimeout(400)
+    await capture(reviewPage, 'source-extraction-review.png')
+  } finally {
+    await reviewPage.close()
+  }
+}
+
 const browser = await chromium.launch({ headless: true })
 const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1 })
 
@@ -156,5 +200,7 @@ await capture(page, 'workpapers-evidence.png')
 await clickTab(page, 'package')
 await page.getByTestId('completion-package-view').waitFor({ timeout: 20_000 })
 await capture(page, 'ic-package.png')
+
+await captureSourceExtractionReview(browser)
 
 await browser.close()

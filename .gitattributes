@@ -1,0 +1,13 @@
+# Treat binary fixtures and assets as binary so git never applies EOL/CRLF
+# normalization. CRLF conversion corrupts PDFs, spreadsheets, and images on
+# checkout (which would break the parser fixtures on a fresh clone).
+*.pdf binary
+*.xlsx binary
+*.xls binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary

@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type APIResponse, type Page } from '@playwright/test'
-import { existsSync, rmSync } from 'fs'
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs'
 import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -20,6 +20,11 @@ const WORKSPACE_DEAL_ID = 'DEAL-2099-903'
 const WORKSPACE_DEAL_NAME = 'Playwright Operator Hub Deal'
 const RECENT_DEAL_ID = 'DEAL-2099-904'
 const RECENT_DEAL_NAME = 'Playwright Recent Deal'
+const PARTIAL_DEAL_ID = 'DEAL-2099-905'
+const PARTIAL_DEAL_NAME = 'Playwright Partial Failure Deal'
+const PARTIAL_RUN_ID = 'codex-playwright-partial-001'
+const RED_FLAG_DEAL_ID = 'DEAL-2099-906'
+const RED_FLAG_DEAL_NAME = 'Playwright Red Flag Deal'
 
 const API_URL = 'http://127.0.0.1:8081'
 
@@ -56,6 +61,137 @@ function cleanupGeneratedRuntimeArtifacts(dealId: string): void {
       rmSync(target, { recursive: true, force: true })
     }
   }
+}
+
+// W72: write a deal checkpoint that finished with a failed specialist agent, plus its
+// agent checkpoint and an `agent_failed` story event. The watcher broadcasts these over
+// the WebSocket so the dashboard surfaces the partial-failure recovery panel offline,
+// without depending on a real Codex process.
+const PARTIAL_FAILED_AGENT = 'scenario-analyst'
+
+function writePartialFailureCheckpoint(dealId: string, dealName: string): void {
+  const updatedAt = '2099-01-01T00:00:00.000Z'
+  const checkpoint = {
+    dealId,
+    dealName,
+    property: { address: '900 Partial Way', city: 'Austin', state: 'TX', zip: '78701', totalUnits: 12, askingPrice: 3_600_000 },
+    status: 'COMPLETE',
+    workflowId: 'quick-deal-screen',
+    workflowName: 'Quick Deal Screen',
+    runtimeProvider: 'codex',
+    overallProgress: 100,
+    startedAt: updatedAt,
+    lastUpdatedAt: updatedAt,
+    completedAt: updatedAt,
+    phases: {
+      underwriting: {
+        status: 'COMPLETE',
+        progress: 1,
+        outputs: { phaseSummary: 'Underwriting completed with a failed specialist.', keyFindings: [], redFlags: [], dataGaps: [], phaseVerdict: 'NEEDS_REVIEW' },
+        agentStatuses: {
+          'financial-model-builder': 'complete',
+          'scenario-analyst': 'failed',
+        },
+      },
+    },
+    resumeInstructions: 'Re-run the failed scenario-analyst agent.',
+  }
+
+  const dealStatusFile = join(dataRoot, 'status', `${dealId}.json`)
+  const agentFile = join(dataRoot, 'status', dealId, 'agents', `${PARTIAL_FAILED_AGENT}.json`)
+
+  mkdirSync(dirname(agentFile), { recursive: true })
+  writeFileSync(dealStatusFile, JSON.stringify(checkpoint, null, 2))
+  writeFileSync(
+    agentFile,
+    JSON.stringify(
+      {
+        agentName: PARTIAL_FAILED_AGENT,
+        phase: 'underwriting',
+        dealId,
+        status: 'failed',
+        progress: 0,
+        startedAt: updatedAt,
+        completedAt: null,
+        lastUpdatedAt: updatedAt,
+        resumePoint: null,
+        outputs: { summary: 'Scenario analyst failed to produce a workpaper.', findings: [], metrics: {}, verdict: null },
+        dataGaps: [],
+        errors: [{ message: 'Codex exec returned non-zero exit.', timestamp: updatedAt, recoverable: true }],
+        redFlags: [],
+        childAgents: [],
+      },
+      null,
+      2,
+    ),
+  )
+}
+
+// Written after the client connects: the watcher broadcasts the new ndjson file's
+// `agent_failed` event over the WebSocket, supplying the prior run id used for re-run.
+function writePartialFailureEvent(dealId: string, runId: string): void {
+  const eventsFile = join(dataRoot, 'status', dealId, `run-${runId}-events.ndjson`)
+  mkdirSync(dirname(eventsFile), { recursive: true })
+  writeFileSync(
+    eventsFile,
+    JSON.stringify({
+      runId,
+      dealId,
+      seq: 1,
+      ts: '2099-01-01T00:00:00.000Z',
+      kind: 'agent_failed',
+      phase: 'underwriting',
+      phaseLabel: 'Underwriting',
+      agent: PARTIAL_FAILED_AGENT,
+      summary: 'Scenario analyst failed after 3 attempts.',
+    }) + '\n',
+  )
+}
+
+// W62: write a completed deal checkpoint that carries a specialist red flag so the IC
+// package view can drill from the flag back to its originating workpaper. Broadcast over
+// the WebSocket by the watcher, so no real run is required.
+function writeRedFlagRun(dealId: string, dealName: string): void {
+  const updatedAt = '2099-02-01T00:00:00.000Z'
+  const checkpoint = {
+    dealId,
+    dealName,
+    property: { address: '700 Red Flag Road', city: 'Austin', state: 'TX', zip: '78701', totalUnits: 18, askingPrice: 3_600_000 },
+    status: 'COMPLETE',
+    workflowId: 'quick-deal-screen',
+    workflowName: 'Quick Deal Screen',
+    overallProgress: 100,
+    startedAt: updatedAt,
+    lastUpdatedAt: updatedAt,
+    completedAt: updatedAt,
+    phases: {
+      underwriting: {
+        status: 'COMPLETE',
+        progress: 1,
+        verdict: 'NEEDS_REVIEW',
+        outputs: {
+          phaseSummary: 'Underwriting flagged a debt service coverage concern.',
+          keyFindings: ['DSCR below lender threshold'],
+          redFlags: [
+            {
+              description: 'Projected DSCR of 1.05x is below the 1.25x lender minimum.',
+              severity: 'HIGH',
+              category: 'financing',
+              owner: 'Financial Model Builder',
+              impact: 'May block agency debt sizing at the target leverage.',
+            },
+          ],
+          dataGaps: [],
+          phaseVerdict: 'NEEDS_REVIEW',
+        },
+        agentStatuses: { 'financial-model-builder': 'complete' },
+      },
+    },
+    resumeInstructions: 'Review the DSCR red flag before committee.',
+  }
+  const dealStatusFile = join(dataRoot, 'status', `${dealId}.json`)
+  mkdirSync(dirname(dealStatusFile), { recursive: true })
+  writeFileSync(dealStatusFile, JSON.stringify(checkpoint, null, 2))
 }
 
 async function expectApiOk(response: APIResponse): Promise<void> {
@@ -303,6 +439,8 @@ test.beforeEach(async ({ request }) => {
   cleanupDealArtifacts(SAMPLE_DEAL_ID)
   cleanupDealArtifacts(WORKSPACE_DEAL_ID)
   cleanupDealArtifacts(RECENT_DEAL_ID)
+  cleanupDealArtifacts(PARTIAL_DEAL_ID)
+  cleanupDealArtifacts(RED_FLAG_DEAL_ID)
   cleanupGeneratedRuntimeArtifacts(WORKSPACE_DEAL_ID)
   cleanupWorkflowPresets()
   await stopActiveRun(request)
@@ -783,6 +921,18 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await page.getByTestId('apply-extraction').click()
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('applied')
 
+  // W42: from the applied rent roll, drill into the originating source row to read the
+  // stored snippet / location for an approved input.
+  await expect(page.getByTestId('extract-document-rent_roll')).toContainText('View Applied Evidence')
+  await page.getByTestId('extract-document-rent_roll').click()
+  const appliedTotalUnits = extractionPreview.locator('label:has([data-field-path="property.totalUnits"])')
+  await expect(appliedTotalUnits).toBeVisible()
+  const drilldownToggle = appliedTotalUnits.getByTestId(/^source-drilldown-toggle-/)
+  await expect(drilldownToggle).toBeVisible()
+  await drilldownToggle.click()
+  await expect(appliedTotalUnits.getByTestId(/^source-drilldown-file-/)).toContainText('rent-roll-messy-realistic.xlsx')
+  await expect(appliedTotalUnits.getByTestId(/^source-drilldown-location-/)).toContainText(/Sheet|Row/)
+
   await page.getByTestId('extract-document-t12').click()
   await expect(extractionPreview).toContainText('3 Fields Found')
   await expect(extractionPreview).toContainText('Trailing T12 Revenue')
@@ -1000,18 +1150,31 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   // The launch itself is verified by the run-status poll above. Keep the post-launch assertions on
   // stable workspace surfaces so this test does not race the live WebSocket refresh after relaunch.
 
-  await page.getByTestId('workspace-tab-agents').click()
-  await expect(page.getByTestId('agent-tree')).toContainText('Deal Team Lead')
+  // Re-assert the agents tab until it settles; after a relaunch the workspace can reset
+  // the active tab when the live checkpoint flips to complete.
+  const agentTree = page.getByTestId('agent-tree')
+  await expect(async () => {
+    await page.getByTestId('workspace-tab-agents').click()
+    await expect(agentTree).toBeVisible({ timeout: 5_000 })
+  }).toPass({ timeout: 20_000 })
+  await expect(agentTree).toContainText('Deal Team Lead')
   await expect(page.getByTestId('agent-phase-row-due-diligence')).toContainText(/Complete|Running|Skipped/)
   await expect(page.getByTestId('agent-row-rent-roll-analyst')).toContainText(/Filed|Working now|Queued/)
   await expect(page.getByTestId('agent-row-financial-model-builder')).toContainText(/Stress-testing returns|Filed/)
 
-  await page.getByTestId('workspace-tab-advanced').click()
-  await expect(page.getByText('skipped').first()).toBeVisible({ timeout: 20_000 })
+  await expect(async () => {
+    await page.getByTestId('workspace-tab-advanced').click()
+    await expect(page.getByText('skipped').first()).toBeVisible({ timeout: 5_000 })
+  }).toPass({ timeout: 20_000 })
 
-  await page.getByTestId('workspace-tab-package').click()
+  // After a relaunch the workspace can reset the active tab when the live checkpoint
+  // flips to complete; re-assert the package tab until the package view settles so this
+  // navigation does not race the post-relaunch WebSocket refresh.
   const packageView = page.getByTestId('completion-package-view')
-  await expect(packageView).toBeVisible()
+  await expect(async () => {
+    await page.getByTestId('workspace-tab-package').click()
+    await expect(packageView).toBeVisible({ timeout: 5_000 })
+  }).toPass({ timeout: 20_000 })
   await expect(packageView).toContainText('Completion Package')
   await expect(packageView.getByTestId('ic-review-brief')).toContainText('IC Review Brief')
   await expect(packageView.getByTestId('ic-review-brief')).toContainText('Recommended next decision')
@@ -1023,5 +1186,81 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   await expect(packageView).toContainText('Final Recommendation Package')
   await expect(packageView).toContainText('Priority Flags')
 
+  expect(consoleErrors).toEqual([])
+})
+
+test('drills a red flag back to its originating specialist workpaper in the IC package', async ({ page, request }) => {
+  const consoleErrors = collectConsoleErrors(page)
+
+  await saveLaunchReadyDeal(request, RED_FLAG_DEAL_ID, RED_FLAG_DEAL_NAME)
+  // Write the completed-with-red-flag checkpoint before connecting so it arrives in the
+  // initial WebSocket payload and becomes the live checkpoint for this deal.
+  writeRedFlagRun(RED_FLAG_DEAL_ID, RED_FLAG_DEAL_NAME)
+  await stopActiveRun(request)
+  await openWorkspaceFromRecentDeals(page, RED_FLAG_DEAL_ID, RED_FLAG_DEAL_NAME)
+
+  // Re-assert the package tab until the live checkpoint settles so this navigation does
+  // not race a late WebSocket checkpoint refresh that can reset the active tab.
+  const drilldowns = page.getByTestId('red-flag-drilldowns')
+  await expect(async () => {
+    await page.getByTestId('workspace-tab-package').click()
+    await expect(drilldowns).toBeVisible({ timeout: 5_000 })
+  }).toPass({ timeout: 25_000 })
+  await expect(drilldowns).toContainText('Projected DSCR of 1.05x is below the 1.25x lender minimum.')
+
+  const firstFlag = drilldowns.getByTestId(/^red-flag-drilldown-underwriting-/).first()
+  await firstFlag.getByTestId(/^red-flag-drilldown-toggle-/).click()
+  await expect(firstFlag.getByTestId(/^red-flag-origin-workpaper-/)).toContainText(/Underwriting/i)
+  await expect(firstFlag).toContainText('Originating workpaper')
+  await expect(firstFlag).toContainText('Financial Model Builder')
+
+  cleanupDealArtifacts(RED_FLAG_DEAL_ID)
+  expect(consoleErrors).toEqual([])
+})
+
+test('surfaces failed agents and retries only them through the run API', async ({ page, request }) => {
+  const consoleErrors = collectConsoleErrors(page)
+
+  await saveLaunchReadyDeal(request, PARTIAL_DEAL_ID, PARTIAL_DEAL_NAME)
+  // Write the partial-failure checkpoint + failed agent before connecting so they arrive
+  // in the initial WebSocket payload and drive the live workspace for this deal.
+  writePartialFailureCheckpoint(PARTIAL_DEAL_ID, PARTIAL_DEAL_NAME)
+  await stopActiveRun(request)
+  await openWorkspaceFromRecentDeals(page, PARTIAL_DEAL_ID, PARTIAL_DEAL_NAME)
+
+  // The agent_failed story event is broadcast as a new ndjson file is added, so write it
+  // after the client has connected to supply the prior run id used for the re-run.
+  writePartialFailureEvent(PARTIAL_DEAL_ID, PARTIAL_RUN_ID)
+
+  const recovery = page.getByTestId('partial-failure-recovery')
+  await expect(recovery).toBeVisible({ timeout: 20_000 })
+  await expect(recovery.getByTestId('partial-failure-outcome')).toContainText('partial')
+  await expect(recovery.getByTestId('failed-agent-scenario-analyst')).toBeVisible()
+
+  const retryButton = recovery.getByTestId('retry-failed-agents')
+  await expect(retryButton).toBeEnabled({ timeout: 20_000 })
+
+  // Intercept the run-start call so no real Codex process is launched, and assert the
+  // request re-runs only the failed agents from the prior run id.
+  let capturedBody: Record<string, unknown> | null = null
+  await page.route('**/api/run/start', async (route) => {
+    capturedBody = route.request().postDataJSON() as Record<string, unknown>
+    await route.fulfill({
+      status: 202,
+      contentType: 'application/json',
+      body: JSON.stringify({ runId: PARTIAL_RUN_ID, status: 'starting', state: 'STARTING' }),
+    })
+  })
+
+  await retryButton.click()
+  await expect(recovery.getByTestId('partial-failure-status')).toContainText(PARTIAL_RUN_ID, { timeout: 20_000 })
+
+  expect(capturedBody).not.toBeNull()
+  expect(capturedBody!.codexRerunFailed).toBe(true)
+  expect(capturedBody!.codexRerunRunId).toBe(PARTIAL_RUN_ID)
+  expect(capturedBody!.runtimeProvider).toBe('codex')
+  expect(capturedBody!.reset).toBe(false)
+
+  cleanupDealArtifacts(PARTIAL_DEAL_ID)
   expect(consoleErrors).toEqual([])
 })

@@ -40,6 +40,115 @@ def compact_text(value: Any) -> str:
     return re.sub(r"[^a-z0-9]+", "", normalize_text(value))
 
 
+def read_sheet_metadata(file_path: str) -> Dict[str, Dict[str, Any]]:
+    """Collect per-sheet merged-cell ranges and image counts via openpyxl.
+
+    Returned shape:
+        {sheet_name: {"merged": [(min_row, min_col, max_row, max_col), ...],
+                       "image_count": int,
+                       "text_cell_count": int}}
+    Rows/cols are 1-based Excel coordinates (matching openpyxl).
+    """
+    metadata: Dict[str, Dict[str, Any]] = {}
+    try:
+        wb = openpyxl.load_workbook(file_path, data_only=True, read_only=False)
+    except Exception:
+        return metadata
+
+    for sheet_name in wb.sheetnames:
+        ws = wb[sheet_name]
+        merged = []
+        for merged_range in list(ws.merged_cells.ranges):
+            merged.append((merged_range.min_row, merged_range.min_col, merged_range.max_row, merged_range.max_col))
+
+        # Count cells that carry extractable text (ignore pure whitespace).
+        text_cell_count = 0
+        for row in ws.iter_rows(values_only=True):
+            for value in row:
+                if value is None:
+                    continue
+                if isinstance(value, str):
+                    if value.strip():
+                        text_cell_count += 1
+                else:
+                    text_cell_count += 1
+
+        image_count = 0
+        try:
+            image_count = len(getattr(ws, "_images", []) or [])
+        except Exception:
+            image_count = 0
+
+        metadata[sheet_name] = {
+            "merged": merged,
+            "image_count": image_count,
+            "text_cell_count": text_cell_count,
+        }
+
+    try:
+        wb.close()
+    except Exception:
+        pass
+    return metadata
+
+
+def fill_merged_cells(raw_df: pd.DataFrame, merged_ranges: List[tuple]) -> pd.DataFrame:
+    """Forward-fill the top-left value of each merged range across the range.
+
+    openpyxl/pandas only populate the top-left cell of a merged region; the
+    remaining cells are blank/NaN, which silently degrades header detection and
+    column/label mapping. We propagate the anchor value across every cell in the
+    merged span so a merged header row maps correctly and merged label columns
+    inherit their value.
+    """
+    if not merged_ranges:
+        return raw_df
+
+    # Use object dtype so propagating a string anchor into an otherwise-numeric
+    # column does not trigger pandas dtype-incompatibility warnings/errors.
+    # Downstream parsing normalizes/cleans values regardless of dtype.
+    filled = raw_df.astype(object).copy()
+    n_rows = filled.shape[0]
+    n_cols = filled.shape[1]
+    for (min_row, min_col, max_row, max_col) in merged_ranges:
+        # Convert 1-based Excel coordinates to 0-based DataFrame indices.
+        top = min_row - 1
+        left = min_col - 1
+        if top < 0 or left < 0 or top >= n_rows or left >= n_cols:
+            continue
+        anchor = filled.iat[top, left]
+        if pd.isna(anchor):
+            continue
+
+        is_horizontal = max_col > min_col
+        is_vertical = max_row > min_row
+
+        # A purely horizontal single-row merge that has NO other data in its row
+        # is a full-width title/section banner, not a column header group.
+        # Forward-filling it would fabricate a fake multi-column header row and
+        # corrupt header detection, so skip it (the banner stays a single cell,
+        # which header detection already ignores).
+        if is_horizontal and not is_vertical:
+            row_values = [
+                filled.iat[top, c]
+                for c in range(n_cols)
+                if not (left <= c < max_col)
+            ]
+            has_other_data = any(
+                not pd.isna(value) and str(value).strip() for value in row_values
+            )
+            if not has_other_data:
+                continue
+
+        for r in range(top, min(max_row, n_rows)):
+            for c in range(left, min(max_col, n_cols)):
+                if r == top and c == left:
+                    continue
+                if pd.isna(filled.iat[r, c]):
+                    filled.iat[r, c] = anchor
+    return filled
+
+
 def detect_document_type(df: pd.DataFrame, filename: str) -> str:
     """Detect if document is rent roll or T12 based on content."""
     filename_lower = filename.lower()
@@ -83,7 +192,34 @@ def find_header_row(df: pd.DataFrame, max_rows: int = 15) -> int:
 def prepare_table(raw_df: pd.DataFrame, sheet_name: str) -> pd.DataFrame:
     """Convert a raw worksheet into a parsed table while preserving Excel row/column provenance."""
     header_row = find_header_row(raw_df)
-    headers = [str(value).strip() if not pd.isna(value) else f"Column {index + 1}" for index, value in enumerate(raw_df.iloc[header_row])]
+    raw_headers = [
+        str(value).strip() if not pd.isna(value) else None
+        for value in raw_df.iloc[header_row]
+    ]
+
+    # Detect duplicate non-empty header labels. This happens when a single
+    # merged header cell has been forward-filled across multiple columns, which
+    # makes the resulting column mapping genuinely ambiguous (e.g. two columns
+    # both labelled "Market Rent"). We disambiguate the column names so each is
+    # addressable, but record the ambiguity so parsers can surface a warning
+    # instead of silently mis-mapping.
+    seen: Dict[str, int] = {}
+    ambiguous_headers: List[str] = []
+    headers: List[str] = []
+    for index, value in enumerate(raw_headers):
+        if value is None or value == "":
+            headers.append(f"Column {index + 1}")
+            continue
+        normalized = normalize_text(value)
+        if normalized and normalized in seen:
+            seen[normalized] += 1
+            if value not in ambiguous_headers:
+                ambiguous_headers.append(value)
+            headers.append(f"{value} ({seen[normalized]})")
+        else:
+            seen[normalized] = 0
+            headers.append(value)
+
     data = raw_df.iloc[header_row + 1:].copy()
     data.columns = headers
     data["__excel_row_number"] = data.index + 1
@@ -91,6 +227,7 @@ def prepare_table(raw_df: pd.DataFrame, sheet_name: str) -> pd.DataFrame:
     data.attrs["sheet_name"] = sheet_name
     data.attrs["header_row_number"] = header_row + 1
     data.attrs["column_positions"] = {str(header): index + 1 for index, header in enumerate(headers)}
+    data.attrs["ambiguous_headers"] = ambiguous_headers
     return data
 
 
@@ -253,6 +390,14 @@ def parse_rent_roll(df: pd.DataFrame, filename: str) -> Dict[str, Any]:
         "success": True
     }
 
+    ambiguous_headers = df.attrs.get("ambiguous_headers") or []
+    if ambiguous_headers:
+        result["warnings"].append(
+            "Ambiguous merged header column(s) detected (duplicate label(s): "
+            + ", ".join(ambiguous_headers)
+            + "); left for candidate review to avoid silently mis-mapping rent columns."
+        )
+
     # Map columns
     column_mapping: Dict[str, Any] = {}
     used_columns = set()
@@ -304,10 +449,29 @@ def parse_rent_roll(df: pd.DataFrame, filename: str) -> Dict[str, Any]:
             return "occupied"
         return "vacant"
 
+    # Columns that signal a row carries actual unit data (vs a free-text note).
+    data_columns = [
+        column_mapping[field]
+        for field in ('unit_type', 'sqft', 'market_rent', 'actual_rent', 'status', 'tenant')
+        if field in column_mapping
+    ]
+
+    def has_unit_data(row: pd.Series) -> bool:
+        if not data_columns:
+            return True
+        for column in data_columns:
+            value = row.get(column)
+            if pd.isna(value):
+                continue
+            if str(value).strip():
+                return True
+        return False
+
     # Parse each unit
     units = []
     skipped_total_rows = 0
     skipped_blank_rows = 0
+    skipped_note_rows = 0
     for _, row in df.iterrows():
         if empty_row(row):
             skipped_blank_rows += 1
@@ -325,6 +489,13 @@ def parse_rent_roll(df: pd.DataFrame, filename: str) -> Dict[str, Any]:
         unit['unitId'] = str(unit_id_value).strip()
         if not unit['unitId'] or unit['unitId'].lower() == 'nan':
             skipped_blank_rows += 1
+            continue
+
+        # A row that names something in the unit-id column but carries no rent,
+        # size, type, status, or tenant data is a trailing note / disclaimer
+        # rather than a unit. Exclude it instead of inflating the unit count.
+        if not has_unit_data(row):
+            skipped_note_rows += 1
             continue
 
         if 'unit_type' in column_mapping:
@@ -354,6 +525,8 @@ def parse_rent_roll(df: pd.DataFrame, filename: str) -> Dict[str, Any]:
         result['warnings'].append(f"Skipped {skipped_total_rows} total/subtotal/header row(s) before aggregation.")
     if skipped_blank_rows:
         result['warnings'].append(f"Skipped {skipped_blank_rows} blank row(s) before aggregation.")
+    if skipped_note_rows:
+        result['warnings'].append(f"Skipped {skipped_note_rows} trailing note/non-data row(s) before aggregation.")
 
     # Calculate aggregates
     if units:
@@ -456,6 +629,14 @@ def parse_t12(df: pd.DataFrame, filename: str) -> Dict[str, Any]:
         "warnings": [],
         "success": True
     }
+
+    ambiguous_headers = df.attrs.get("ambiguous_headers") or []
+    if ambiguous_headers:
+        result["warnings"].append(
+            "Ambiguous merged header column(s) detected (duplicate label(s): "
+            + ", ".join(ambiguous_headers)
+            + "); left for candidate review to avoid silently mis-mapping value columns."
+        )
 
     visible_columns = [column for column in df.columns if not str(column).startswith("__")]
     line_item_col = find_column(visible_columns, ['line item', 'account', 'account name', 'description', 'category'])
@@ -640,12 +821,48 @@ def main():
         workbook = pd.read_excel(file_path, engine='openpyxl', sheet_name=None, header=None)
         filename = Path(file_path).name
 
+        # Collect merged-range + image metadata once, then forward-fill merged
+        # cells so merged headers/labels map correctly (W10). pandas only keeps
+        # the top-left value of a merged region.
+        sheet_metadata = read_sheet_metadata(file_path)
+        for sheet_name, raw_df in list(workbook.items()):
+            meta = sheet_metadata.get(sheet_name, {})
+            merged_ranges = meta.get("merged") or []
+            if merged_ranges:
+                workbook[sheet_name] = fill_merged_cells(raw_df, merged_ranges)
+
         # Detect or use specified type
         if doc_type == 'auto':
             best_sheet_name, best_raw_df = choose_sheet(workbook, 'auto')
             doc_type = detect_document_type(prepare_table(best_raw_df, best_sheet_name), filename)
         else:
             best_sheet_name, best_raw_df = choose_sheet(workbook, doc_type)
+
+        # Image-only / scanned sheet detection (W11). A target sheet that holds
+        # embedded image(s) but essentially no extractable tabular text needs OCR
+        # and cannot be parsed into fields. Return a clear, non-empty status
+        # instead of crashing or silently producing zeroed output.
+        target_meta = sheet_metadata.get(best_sheet_name, {})
+        image_count = int(target_meta.get("image_count", 0) or 0)
+        text_cell_count = int(target_meta.get("text_cell_count", 0) or 0)
+        if image_count > 0 and text_cell_count < 3:
+            print(json.dumps({
+                "success": True,
+                "needsOcr": True,
+                "status": "needs-ocr",
+                "source": {
+                    "file": filename,
+                    "type": doc_type if doc_type in ("rent_roll", "t12") else "unknown",
+                    "sheet": best_sheet_name,
+                },
+                "warnings": [
+                    f"Sheet '{best_sheet_name}' contains {image_count} embedded image(s) and "
+                    f"{text_cell_count} text cell(s); it appears to be a scanned/image-only "
+                    "document that requires OCR. No tabular fields could be extracted."
+                ],
+                "fields": [],
+            }, indent=2))
+            return
 
         df = prepare_table(best_raw_df, best_sheet_name)
 

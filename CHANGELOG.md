@@ -4,6 +4,32 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [2.7.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.6.0...v2.7.0) (2026-05-21)
+
+A completion pass that closes the README "known limits", implements the ROADMAP near-term
+priorities (1–5), and reconciles documentation/claims with the codebase. The deterministic
+offline demo remains the default; all changes are backward-compatible.
+
+### Features
+
+* **Document intelligence:** text-based PDF extraction via a local `pdfplumber` bridge (`scripts/parse_pdf.py`) with per-field confidence, page-level provenance, and candidate-review status; scanned/image-only PDFs are detected and flagged for OCR rather than silently skipped.
+* **Excel parsing:** merged-cell handling (unmerge + forward-fill before header detection) and image-only workbook detection; additional messy rent-roll/T12 parser fixtures (currency symbols, subtotal/total rows, trailing notes, synonym headers).
+* **Review-grade workpapers:** workpaper quality gates (cited inputs, assumptions, calculations, caveats, reviewer signoff) with a new `schemas/workpapers/quality-gate.schema.json`, per-phase evidence-completeness scoring, IC-package red-flag drilldowns back to the originating workpaper/source, and richer Markdown/JSON IC export with source drilldowns, reviewer signoff, and package version history.
+* **Source review:** field-level decision audit trail (timestamped approve/reject/waive history with cross-document conflict blocking) and field-level provenance deep links from approved inputs to the source snippet/location.
+* **Live Codex runtime hardening:** per-agent retry/backoff, partial-failure semantics with re-run-only-failed agents, secret redaction at the logging boundary, a committed redacted sample manifest, and a `schemas/codex/run-manifest.schema.json` contract. Operator-visible "retry failed agents" recovery in the dashboard.
+* **Deployment:** single-operator self-host serve path (`scripts/serve-prod.mjs`, `npm run serve`) that serves the built dashboard and the loopback API/WS together (loopback-default; not multi-tenant), documented in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+* **Contributor experience:** end-to-end "add a new specialist agent" guide, a dashboard architecture map, and a `npm run release:check` readiness gate.
+
+### Bug Fixes
+
+* Corrected the README "Validation Gate" type-check commands (npm 11 swallowed `--noEmit`); added a cwd-correct `npm --prefix dashboard run typecheck` script.
+* Registered the 4 document-ingestion roles and the `self-review-protocol` skill in `config/agent-registry.json` (now reports the full 31 roles / 8 skills).
+
+### Documentation
+
+* Scoped the "19-section prompt anatomy" claim to the 21 acquisition specialists (orchestrators and ingestion roles use their own templates); reconciled the dashboard view table and PDF/known-limits wording with the implementation.
+* Updated "By the Numbers" to 31 roles / 8 skills / 27 schemas / 5 workflows / 20 fixtures / 8 test scripts; added the Evidence extraction-review screenshot to the demo tour.
+
 ## [2.6.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.5.1...v2.6.0) (2026-05-19)
 
 

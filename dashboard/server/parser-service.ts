@@ -430,6 +430,28 @@ function runExcelPythonParser(input: ParserInput, documentType: string): { parse
   return { error: errors.join(' | ') }
 }
 
+function runPdfPythonParser(input: ParserInput, documentType: string): { parsed?: Record<string, unknown>; error?: string } {
+  const scriptPath = safePaths.assertWithinBase(input.projectRoot, join(input.projectRoot, 'scripts', 'parse_pdf.py'), 'PDF parser script path')
+  const errors: string[] = []
+  for (const candidate of pythonCandidates()) {
+    const result = spawnSync(candidate.command, [...candidate.args, scriptPath, input.filePath, '--type', documentType], {
+      cwd: input.projectRoot,
+      encoding: 'utf8',
+      timeout: 15000,
+    })
+    const output = `${result.stdout || ''}${result.stderr || ''}`.trim()
+    if (!result.error && result.status === 0) {
+      try {
+        return { parsed: JSON.parse(result.stdout || '{}') as Record<string, unknown> }
+      } catch {
+        return { error: output || 'PDF parser returned invalid JSON.' }
+      }
+    }
+    errors.push(`${candidate.command}: ${result.error?.message || output || `exit ${result.status ?? 'unknown'}`}`)
+  }
+  return { error: errors.join(' | ') }
+}
+
 function parsedWarnings(parsed: Record<string, unknown>): string[] {
   return Array.isArray(parsed.warnings)
     ? parsed.warnings.filter((warning): warning is string => typeof warning === 'string' && warning.trim().length > 0)
@@ -537,6 +559,25 @@ function parseExcelIfAvailable(input: ParserInput, hash: string): ParserExtracti
   if (parsed.success === false) {
     return unavailable(input, hash, parserId, typeof parsed.error === 'string' ? parsed.error : 'Excel parser unavailable.')
   }
+  if (parsed.needsOcr === true) {
+    const warnings = parsedWarnings(parsed)
+    return {
+      documentId: input.documentId,
+      status: 'unsupported',
+      extractedAt: new Date().toISOString(),
+      fields: [],
+      metrics: { excelSummary: parsed, needsOcr: true },
+      notes: [
+        'Excel sheet appears to be image-only/scanned and needs OCR; no tabular fields could be extracted.',
+        ...warnings.map((warning) => `Parser warning: ${warning}`),
+      ],
+      parserId: 'excel-image-ocr-parser',
+      parserVersion: PARSER_VERSION,
+      sourceHash: hash,
+      reviewStatus: 'candidate',
+      error: 'Image-only Excel sheet requires OCR.',
+    }
+  }
   if (documentType === 'rent_roll') return mapExcelRentRoll(input, hash, parsed)
   if (documentType === 't12') return mapExcelT12(input, hash, parsed)
   return {
@@ -546,6 +587,110 @@ function parseExcelIfAvailable(input: ParserInput, hash: string): ParserExtracti
     fields: [],
     metrics: { excelSummary: parsed },
     notes: ['Excel parsed successfully, but no source-backed field mapping exists for this document type yet.'],
+    parserId,
+    parserVersion: PARSER_VERSION,
+    sourceHash: hash,
+    reviewStatus: 'candidate',
+  }
+}
+
+interface PdfBridgeField {
+  path: string
+  label: string
+  value: unknown
+  confidence: number
+  page: number
+  raw?: string
+  unit?: string
+}
+
+function asPdfBridgeFields(parsed: Record<string, unknown>): PdfBridgeField[] {
+  if (!Array.isArray(parsed.fields)) return []
+  const fields: PdfBridgeField[] = []
+  for (const entry of parsed.fields) {
+    const record = asRecord(entry)
+    const path = typeof record.path === 'string' ? record.path : ''
+    const label = typeof record.label === 'string' ? record.label : path
+    const confidence = numberFieldValue(record.confidence)
+    const page = numberFieldValue(record.page)
+    if (!path || confidence === null) continue
+    fields.push({
+      path,
+      label,
+      value: record.value ?? null,
+      confidence,
+      page: page !== null && page >= 1 ? Math.trunc(page) : 1,
+      raw: typeof record.raw === 'string' ? record.raw : undefined,
+      unit: typeof record.unit === 'string' ? record.unit : undefined,
+    })
+  }
+  return fields
+}
+
+function parsePdfIfAvailable(input: ParserInput, hash: string): ParserExtractionPreview {
+  const scriptPath = join(input.projectRoot, 'scripts', 'parse_pdf.py')
+  const parserId = 'pdf-text-parser'
+  if (!existsSync(scriptPath)) {
+    return unavailable(input, hash, parserId, 'PDF parser script is not available.')
+  }
+  const documentType =
+    input.type === 'rent_roll' ? 'rent_roll' : input.type === 't12' ? 't12' : input.type === 'offering_memo' ? 'offering_memo' : 'auto'
+  const { parsed, error } = runPdfPythonParser(input, documentType)
+  if (!parsed) return unavailable(input, hash, parserId, error || 'PDF parser failed.')
+  if (parsed.success === false) {
+    return unavailable(input, hash, parserId, typeof parsed.error === 'string' ? parsed.error : 'PDF parser unavailable.')
+  }
+  const warnings = parsedWarnings(parsed)
+
+  // W21: Scanned / image-only PDF with no extractable text layer. Degrade
+  // gracefully to an explicit needs-OCR status rather than a silent empty
+  // result or a crash. Mirrors the Excel image-only path.
+  if (parsed.needsOcr === true) {
+    return {
+      documentId: input.documentId,
+      status: 'unsupported',
+      extractedAt: new Date().toISOString(),
+      fields: [],
+      metrics: { needsOcr: true, pdfProvenance: asRecord(parsed.provenance) },
+      notes: [
+        'PDF appears to be scanned/image-only and needs OCR; no text-layer fields could be extracted.',
+        ...warnings.map((warning) => `Parser warning: ${warning}`),
+      ],
+      parserId: 'pdf-image-ocr-parser',
+      parserVersion: PARSER_VERSION,
+      sourceHash: hash,
+      reviewStatus: 'candidate',
+      error: 'Image-only/scanned PDF requires OCR.',
+    }
+  }
+
+  // W20: Text-based PDF. Map each bridge field into a source-backed candidate
+  // field with page-level provenance (location.page).
+  const bridgeFields = asPdfBridgeFields(parsed)
+  const fields: ParserExtractionField[] = bridgeFields.map((bridgeField) =>
+    field(
+      input,
+      hash,
+      parserId,
+      bridgeField.path,
+      bridgeField.label,
+      bridgeField.value,
+      bridgeField.confidence,
+      bridgeField.unit,
+      { page: bridgeField.page, description: `Extracted from PDF page ${bridgeField.page}` },
+      bridgeField.raw,
+    ),
+  )
+
+  return {
+    documentId: input.documentId,
+    status: fields.length > 0 ? 'extracted' : 'unsupported',
+    extractedAt: new Date().toISOString(),
+    fields,
+    metrics: { needsOcr: false, pdfProvenance: asRecord(parsed.provenance) },
+    notes: fields.length > 0
+      ? [`Mapped ${fields.length} source-backed field(s) from the PDF text layer.`, ...warnings.map((warning) => `Parser warning: ${warning}`)]
+      : ['PDF text layer was readable, but no headline metrics were found.', ...warnings.map((warning) => `Parser warning: ${warning}`)],
     parserId,
     parserVersion: PARSER_VERSION,
     sourceHash: hash,
@@ -606,18 +751,7 @@ export function runDocumentParser(input: ParserInput): ParserExtractionPreview {
   const hash = fileHash(safeFilePath)
 
   if (isParserPendingOnly(safeInput.fileName, safeInput.mime)) {
-    return {
-      documentId: safeInput.documentId,
-      status: 'extraction-pending',
-      extractedAt: new Date().toISOString(),
-      fields: [],
-      metrics: {},
-      notes: ['PDF was stored and classified. PDF text extraction is not included in this local milestone.'],
-      parserId: 'pdf-pending-parser',
-      parserVersion: PARSER_VERSION,
-      sourceHash: hash,
-      reviewStatus: 'candidate',
-    }
+    return parsePdfIfAvailable(safeInput, hash)
   }
 
   if (extension === '.xlsx') return parseExcelIfAvailable(safeInput, hash)

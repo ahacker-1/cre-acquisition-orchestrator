@@ -50,6 +50,12 @@ export interface StartRunRequest {
   codexSandbox?: string | null
   codexModel?: string | null
   codexSearch?: boolean
+  // W70: per-agent retry/backoff configuration (optional, backward-compatible).
+  codexMaxRetries?: number | null
+  codexRetryBaseMs?: number | null
+  // W71: re-run only the failed agents from a prior run (requires reusing its run id).
+  codexRerunFailed?: boolean
+  codexRerunRunId?: string | null
 }
 
 export interface RunMessage {
@@ -131,6 +137,12 @@ function sanitizePositiveInteger(value: unknown, fallback: number | null = null)
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
   const nextValue = Math.round(value)
   return nextValue > 0 ? nextValue : fallback
+}
+
+function sanitizeNonNegativeInteger(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
+  const nextValue = Math.round(value)
+  return nextValue >= 0 ? nextValue : fallback
 }
 
 function sanitizeOptionalString(value: unknown): string | null {
@@ -267,8 +279,17 @@ export class RunManager {
     const codexSandbox = sanitizeOptionalString(request.codexSandbox) || 'read-only'
     const codexModel = sanitizeOptionalString(request.codexModel)
     const codexSearch = request.codexSearch === true
+    // W70: retries default to small (2) when omitted; 0 is an explicit valid choice.
+    const codexMaxRetries = sanitizeNonNegativeInteger(request.codexMaxRetries, 2)
+    const codexRetryBaseMs = sanitizeNonNegativeInteger(request.codexRetryBaseMs, 1000)
+    // W71: rerun-failed reuses the prior run's id so its manifest can be read.
+    const codexRerunFailed = request.codexRerunFailed === true
+    const codexRerunRunId = sanitizeOptionalString(request.codexRerunRunId)
     const reset = request.reset !== false
-    const runId = `run_${nowIso().replace(/[:.]/g, '-')}`
+    const runId =
+      codexRerunFailed && runtimeProvider === 'codex' && codexRerunRunId
+        ? codexRerunRunId
+        : `run_${nowIso().replace(/[:.]/g, '-')}`
     const outputPath = runtimeProvider === 'codex' ? `data/codex-runs/${runId}` : null
 
     this.status = {
@@ -337,10 +358,15 @@ export class RunManager {
             String(codexConcurrency),
             '--sandbox',
             codexSandbox,
+            '--max-retries',
+            String(codexMaxRetries),
+            '--retry-base-ms',
+            String(codexRetryBaseMs),
             ...(inputSnapshotPath ? ['--input-snapshot', inputSnapshotPath] : []),
             ...(codexMaxAgents ? ['--max-agents', String(codexMaxAgents)] : []),
             ...(codexModel ? ['--model', codexModel] : []),
             ...(codexSearch ? ['--search'] : []),
+            ...(codexRerunFailed ? ['--rerun-failed'] : []),
           ]
         : [
             scriptPath,
@@ -491,6 +517,10 @@ export class RunManager {
             codexSandbox,
             codexSearch,
             codexModel,
+            codexMaxRetries,
+            codexRetryBaseMs,
+            codexRerunFailed,
+            codexRerunRunId,
           }
         : {}),
     })

@@ -13,6 +13,7 @@ import StoryNarrative from './StoryNarrative'
 import TimelineView from './TimelineView'
 import { useDealWorkspace } from '../hooks/useDealWorkspace'
 import { useWorkflows } from '../hooks/useWorkflows'
+import { collectFailedAgents, recoveryRunId, retryFailedAgents } from '../lib/runRecovery'
 import type {
   AgentCheckpoint,
   DealCheckpoint,
@@ -35,6 +36,7 @@ import type {
   OperatorGuideAction,
   PhaseWorkspaceStatus,
   SourceDocument,
+  SourceReference,
 } from '../types/workspace'
 import type { WorkflowLaunchResponse, WorkflowPreset } from '../types/workflows'
 
@@ -45,6 +47,8 @@ const WorkflowLauncher = lazy(() => import('./WorkflowLauncher'))
 interface DealWorkspaceProps {
   dealCheckpoint: DealCheckpoint
   agentCheckpoints: Map<string, AgentCheckpoint>
+  liveDealCheckpoint?: DealCheckpoint | null
+  liveAgentCheckpoints?: Map<string, AgentCheckpoint>
   logEntries: LogEntry[]
   storyEvents: StoryEvent[]
   documentArtifacts: DocumentArtifact[]
@@ -193,6 +197,12 @@ function isCompleteStatus(status: string): boolean {
   return /^complete|completed$/i.test(status)
 }
 
+// W72: a run is still active (so re-running failed agents would conflict) when the
+// deal checkpoint reports a running/starting status.
+function isRunActive(dealCheckpoint: DealCheckpoint): boolean {
+  return /^running|starting|in_progress|stopping$/i.test(dealCheckpoint.status)
+}
+
 function checklistStatusLabel(status: GuideChecklistStatus): string {
   return status.replace(/_/g, ' ')
 }
@@ -273,6 +283,80 @@ function sourceEvidence(field: ExtractionField): string[] {
   if (location?.line) parts.push(`Line ${location.line}`)
   if (location?.page) parts.push(`Page ${location.page}`)
   return parts
+}
+
+// W42: structured, human-readable location of the originating source row/cell/line/page.
+function formatSourceLocation(location: SourceReference['location'] | undefined): string {
+  if (!location) return ''
+  const parts: string[] = []
+  if (location.sheet) parts.push(`Sheet ${location.sheet}`)
+  if (typeof location.row === 'number') parts.push(`Row ${location.row}`)
+  if (location.column) parts.push(`Column ${location.column}`)
+  if (typeof location.line === 'number') parts.push(`Line ${location.line}`)
+  if (typeof location.page === 'number') parts.push(`Page ${location.page}`)
+  if (location.description) parts.push(location.description)
+  return parts.join(' / ')
+}
+
+// W42: Field-level provenance deep link. From an approved/applied input the operator
+// can drill into the originating source row/cell/line and read the stored raw snippet
+// plus its structured location. Uses the existing sourceRef.raw / location data.
+function FieldSourceDrilldown({ field }: { field: ExtractionField }) {
+  const [open, setOpen] = useState(false)
+  const sourceRef = field.sourceRef
+  if (!sourceRef) return null
+  const locationText = formatSourceLocation(sourceRef.location)
+  const raw = sourceRef.raw
+  // Nothing to drill into if neither a raw snippet nor a structured location exists.
+  if (!raw && !locationText) return null
+
+  return (
+    <span className="mt-2 block">
+      <button
+        type="button"
+        data-testid={`source-drilldown-toggle-${field.fieldId}`}
+        aria-expanded={open}
+        className="portal-button portal-button-secondary min-h-8 px-2 py-1 text-[11px]"
+        onClick={() => setOpen((current) => !current)}
+      >
+        {open ? 'Hide source row' : 'Drill into source row'}
+      </button>
+      {open && (
+        <span
+          className="mt-2 block border border-white/10 bg-black px-3 py-2 text-xs text-gray-300"
+          data-testid={`source-drilldown-${field.fieldId}`}
+        >
+          <span className="block font-semibold uppercase tracking-[0.14em] text-gray-500">
+            Originating source
+          </span>
+          <span className="mt-1 block text-gray-300" data-testid={`source-drilldown-file-${field.fieldId}`}>
+            {sourceRef.fileName}
+          </span>
+          {locationText && (
+            <span
+              className="mt-1 block font-mono text-[11px] text-gray-400"
+              data-testid={`source-drilldown-location-${field.fieldId}`}
+            >
+              {locationText}
+            </span>
+          )}
+          {raw && (
+            <span
+              className="mt-2 block whitespace-pre-wrap break-words rounded bg-white/5 px-2 py-1 font-mono text-[11px] text-gray-200"
+              data-testid={`source-drilldown-snippet-${field.fieldId}`}
+            >
+              {raw}
+            </span>
+          )}
+          <span className="mt-2 block font-mono text-[10px] uppercase tracking-[0.12em] text-gray-600">
+            Parser {sourceRef.parserId}
+            {sourceRef.parserVersion ? ` v${sourceRef.parserVersion}` : ''}
+            {sourceRef.fileHash ? ` / hash ${sourceRef.fileHash.slice(0, 10)}` : ''}
+          </span>
+        </span>
+      )}
+    </span>
+  )
 }
 
 function phaseFromCheckpoint(
@@ -608,11 +692,7 @@ function ExtractionPreviewPanel({
                     {sourceEvidence(field).join(' / ')}
                   </span>
                 )}
-                {field.sourceRef?.raw && (
-                  <span className="mt-1 block truncate text-xs text-gray-600" title={field.sourceRef.raw}>
-                    Raw: {field.sourceRef.raw}
-                  </span>
-                )}
+                <FieldSourceDrilldown field={field} />
                 {field.validationIssues?.map((issue) => (
                   <span key={issue} className="mt-1 block text-xs text-red-200">{issue}</span>
                 ))}
@@ -1648,9 +1728,111 @@ function Overview({
   )
 }
 
+// W72: Operator-visible partial-failure recovery. Surfaces failed specialist agents
+// from a run and offers a one-click "Retry failed agents" action wired to the run API
+// (codexRerunFailed / codexRerunRunId). Renders nothing when there are no failures.
+function PartialFailureRecovery({
+  dealCheckpoint,
+  agentCheckpoints,
+  storyEvents,
+  dealPath,
+  runActive,
+}: {
+  dealCheckpoint: DealCheckpoint
+  agentCheckpoints: Map<string, AgentCheckpoint>
+  storyEvents: StoryEvent[]
+  dealPath: string | null
+  runActive: boolean
+}) {
+  const failedAgents = useMemo(
+    () => collectFailedAgents(dealCheckpoint, agentCheckpoints, storyEvents),
+    [dealCheckpoint, agentCheckpoints, storyEvents],
+  )
+  const rerunRunId = useMemo(() => recoveryRunId(storyEvents), [storyEvents])
+  const [working, setWorking] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+
+  if (failedAgents.length === 0) return null
+
+  const canRetry = Boolean(dealPath && rerunRunId) && !runActive && !working
+
+  async function handleRetry(): Promise<void> {
+    if (!dealPath || !rerunRunId) return
+    setWorking(true)
+    setMessage(null)
+    try {
+      const result = await retryFailedAgents({
+        dealPath,
+        runId: rerunRunId,
+        workflowId: dealCheckpoint.workflowId,
+        scenario: 'core-plus',
+      })
+      setMessage(`Retrying ${failedAgents.length} failed agent${failedAgents.length === 1 ? '' : 's'} on run ${result.runId ?? rerunRunId}.`)
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : String(err))
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  return (
+    <section className="portal-panel border border-cre-danger/40" data-testid="partial-failure-recovery">
+      <div className="portal-section-header">
+        <div>
+          <p className="portal-kicker">Partial Run Recovery</p>
+          <h2 className="portal-title">
+            {failedAgents.length} specialist{failedAgents.length === 1 ? '' : 's'} failed
+          </h2>
+        </div>
+        <span className="status-badge status-blocked" data-testid="partial-failure-outcome">partial</span>
+      </div>
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-400">
+        The run finished with failed agents. Re-run only the failed specialists without restarting the
+        whole workflow. Completed workpapers are preserved.
+      </p>
+      <ul className="mt-4 grid gap-2 md:grid-cols-2">
+        {failedAgents.map((agent) => (
+          <li
+            key={agent.agentName}
+            className="border border-white/10 bg-black px-3 py-2 text-sm"
+            data-testid={`failed-agent-${agent.agentName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`}
+          >
+            <span className="block font-semibold text-gray-200">{agent.agentName}</span>
+            <span className="block text-xs uppercase tracking-[0.14em] text-gray-500">{displaySlug(agent.phase)}</span>
+            {agent.reason && <span className="mt-1 block text-xs text-gray-500">{agent.reason}</span>}
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          data-testid="retry-failed-agents"
+          className="portal-button portal-button-primary"
+          disabled={!canRetry}
+          onClick={() => void handleRetry()}
+        >
+          {working ? 'Retrying' : 'Retry failed agents'}
+        </button>
+        {!rerunRunId && (
+          <span className="text-xs text-gray-500" data-testid="partial-failure-no-run">
+            No prior run id available to re-run from.
+          </span>
+        )}
+        {message && (
+          <span className="text-xs uppercase tracking-[0.14em] text-gray-400" data-testid="partial-failure-status">
+            {message}
+          </span>
+        )}
+      </div>
+    </section>
+  )
+}
+
 export default function DealWorkspace({
   dealCheckpoint,
   agentCheckpoints,
+  liveDealCheckpoint = null,
+  liveAgentCheckpoints,
   logEntries,
   storyEvents,
   documentArtifacts,
@@ -1888,6 +2070,14 @@ export default function DealWorkspace({
         onAction={handleGuideAction}
         hasRuntimeEvidence={dealCheckpoint.status !== 'pending' && (storyEvents.length > 0 || documentArtifacts.length > 0)}
         isCompleteRun={isCompleteStatus(dealCheckpoint.status)}
+      />
+
+      <PartialFailureRecovery
+        dealCheckpoint={liveDealCheckpoint ?? dealCheckpoint}
+        agentCheckpoints={liveAgentCheckpoints ?? agentCheckpoints}
+        storyEvents={storyEvents}
+        dealPath={deals.find((entry) => entry.dealId === (liveDealCheckpoint ?? dealCheckpoint).dealId)?.dealPath ?? null}
+        runActive={launchingWorkflowId !== null || isRunActive(liveDealCheckpoint ?? dealCheckpoint)}
       />
 
       {(error || launchMessage) && (

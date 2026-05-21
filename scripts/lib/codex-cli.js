@@ -117,6 +117,10 @@ function ensureDir(dirPath) {
 function runStreaming(command, args = [], options = {}) {
   const cwd = options.cwd || process.cwd();
   const logFile = options.logFile || null;
+  // W73: optional secret-redaction applied before any text is persisted to the
+  // log file or accumulated into the returned stdout/stderr. Defaults to a
+  // no-op so callers that do not pass a redactor keep verbatim behavior.
+  const redact = typeof options.redact === 'function' ? options.redact : (text) => text;
   if (logFile) ensureDir(path.dirname(logFile));
 
   return new Promise((resolve) => {
@@ -139,22 +143,23 @@ function runStreaming(command, args = [], options = {}) {
     }
 
     child.stdout.on('data', (data) => {
-      const text = data.toString();
+      const text = redact(data.toString());
       stdout += text;
       writeLog(text);
       if (options.onStdout) options.onStdout(text);
     });
 
     child.stderr.on('data', (data) => {
-      const text = data.toString();
+      const text = redact(data.toString());
       stderr += text;
       writeLog(text);
       if (options.onStderr) options.onStderr(text);
     });
 
     child.on('error', (error) => {
-      stderr += error.message;
-      writeLog(error.message);
+      const text = redact(error.message);
+      stderr += text;
+      writeLog(text);
     });
 
     child.on('close', (code) => {

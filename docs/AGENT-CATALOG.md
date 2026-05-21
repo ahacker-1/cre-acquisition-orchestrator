@@ -2,7 +2,7 @@
 
 The canonical open-source catalog contains **31 named AI roles**: 6 orchestrators, 21 acquisition specialists, and 4 source-document ingestion roles.
 
-Every role follows the 19-section prompt anatomy standard: Identity, Mission, Tools, Inputs, Strategy, Output Format, Quality Gates, Checkpoint Protocol, Resume Protocol, Error Handling, Confidence Scoring, Dealbreaker Detection, Data Gap Handling, Self-Review, Escalation Rules, Logging, Coordination, Constraints, and Examples. See [Agent Development](AGENT-DEVELOPMENT.md) for the full specification.
+The 21 acquisition specialists follow the 19-section prompt anatomy defined in [Agent Development](AGENT-DEVELOPMENT.md), which is the canonical specification for section names and order. The 6 orchestrators use a purpose-specific orchestrator template and the 4 ingestion roles use a minimal parser template, so those 10 roles do not follow the specialist 19-section spec.
 
 ## Phase Map
 
