@@ -1,0 +1,74 @@
+{
+  "$schema": "../../../../config/deal-schema.json",
+  "dealId": "va-overlevered-ltv",
+  "dealName": "Crestline Park",
+  "property": {
+    "address": "3100 Crestline Park Way",
+    "city": "Charlotte",
+    "state": "NC",
+    "zip": "28208",
+    "county": "Mecklenburg",
+    "propertyType": "multifamily",
+    "yearBuilt": 2001,
+    "totalUnits": 156,
+    "totalSqFt": 133980,
+    "avgUnitSqFt": 859,
+    "unitMix": {
+      "types": [
+        {
+          "type": "1BR/1BA",
+          "count": 66,
+          "avgSqFt": 680,
+          "marketRent": 1480,
+          "inPlaceRent": 1360
+        },
+        {
+          "type": "2BR/2BA",
+          "count": 90,
+          "avgSqFt": 990,
+          "marketRent": 1900,
+          "inPlaceRent": 1780
+        }
+      ]
+    }
+  },
+  "financials": {
+    "askingPrice": 18400000,
+    "pricePerUnit": 117949,
+    "currentNOI": 960000,
+    "inPlaceOccupancy": 0.9103,
+    "trailingT12Revenue": 2120000,
+    "trailingT12Expenses": 1160000,
+    "estimatedClosingCosts": 552000,
+    "proFormaNOI": 1560000,
+    "marketOccupancy": 0.93,
+    "renovationBudget": 1650000
+  },
+  "financing": {
+    "targetLTV": 0.82,
+    "estimatedRate": 0.064,
+    "loanTerm": 10,
+    "amortization": 30,
+    "loanType": "Bridge",
+    "interestOnly": true,
+    "ioPeriod": 2
+  },
+  "investmentStrategy": "value-add",
+  "targetHoldPeriod": 5,
+  "targetIRR": 0.17,
+  "targetEquityMultiple": 1.9,
+  "targetCashOnCash": 0.06,
+  "seller": {
+    "name": "P. Romano",
+    "entity": "Crestline Park Investors LLC",
+    "broker": "H. Bell",
+    "brokerFirm": "Queen City Realty Capital"
+  },
+  "timeline": {
+    "psaExecutionDate": "2026-03-02",
+    "ddStartDate": "2026-03-03",
+    "ddExpirationDate": "2026-04-02",
+    "closingDate": "2026-05-04"
+  },
+  "notes": "Value-add underwritten at an over-levered 82% LTV."
+}

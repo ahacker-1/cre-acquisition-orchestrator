@@ -1,0 +1,237 @@
+{
+  "dealId": "ds-occupancy-collapse",
+  "archetype": "distressed",
+  "narrative": "Distressed asset at 62% in-place occupancy with collapsed cash flow; the deal is structured with permanent (non-bridge) financing and no lease-up capital, so debt service cannot be covered - a dealbreaker.",
+  "documents": [
+    {
+      "file": "documents/rent-roll.xlsx",
+      "type": "rent_roll",
+      "quirks": [
+        "occupancy-quirks"
+      ]
+    },
+    {
+      "file": "documents/t12.xlsx",
+      "type": "t12",
+      "quirks": []
+    },
+    {
+      "file": "documents/offering-memo.pdf",
+      "type": "offering_memo",
+      "quirks": []
+    }
+  ],
+  "extraction": {
+    "fields": [
+      {
+        "path": "property.totalUnits",
+        "value": 150,
+        "source": "rent_roll",
+        "tolerance": {
+          "type": "exact"
+        }
+      },
+      {
+        "path": "financials.inPlaceOccupancy",
+        "value": 0.62,
+        "source": "rent_roll",
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.01
+        }
+      },
+      {
+        "path": "financials.grossPotentialRentAnnual",
+        "value": 2676000,
+        "source": "rent_roll",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.01
+        }
+      },
+      {
+        "path": "financials.inPlaceRentAnnual",
+        "value": 1512960,
+        "source": "rent_roll",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.01
+        }
+      },
+      {
+        "path": "financials.trailingT12Revenue",
+        "value": 1120000,
+        "source": "t12",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.005
+        }
+      },
+      {
+        "path": "financials.trailingT12Expenses",
+        "value": 1066000,
+        "source": "t12",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.005
+        }
+      },
+      {
+        "path": "financials.currentNOI",
+        "value": 54000,
+        "source": "t12",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.01
+        }
+      },
+      {
+        "path": "financials.askingPrice",
+        "value": 9800000,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.005
+        }
+      },
+      {
+        "path": "property.totalUnits",
+        "value": 150,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "exact"
+        }
+      },
+      {
+        "path": "property.yearBuilt",
+        "value": 1989,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "exact"
+        }
+      },
+      {
+        "path": "financials.inPlaceOccupancy",
+        "value": 0.62,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.01
+        }
+      },
+      {
+        "path": "financials.currentNOI",
+        "value": 54000,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.01
+        }
+      }
+    ]
+  },
+  "financials": {
+    "metrics": [
+      {
+        "key": "noi",
+        "value": 54000,
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.02
+        },
+        "class": "determinable"
+      },
+      {
+        "key": "egi",
+        "value": 1120000,
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.02
+        },
+        "class": "determinable"
+      },
+      {
+        "key": "capRate",
+        "value": 0.0055,
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.0015
+        },
+        "class": "determinable"
+      },
+      {
+        "key": "dscr",
+        "value": 0.1,
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.08
+        },
+        "class": "determinable"
+      },
+      {
+        "key": "irr",
+        "value": -0.99,
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.03
+        },
+        "class": "model-dependent"
+      },
+      {
+        "key": "equityMultiple",
+        "value": -2.38,
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.2
+        },
+        "class": "model-dependent"
+      }
+    ]
+  },
+  "redFlags": [
+    {
+      "id": "deferred-maintenance",
+      "category": "PHYSICAL",
+      "severity": "MEDIUM",
+      "required": false,
+      "keywords": [
+        "deferred maintenance",
+        "capital",
+        "condition",
+        "repairs"
+      ]
+    }
+  ],
+  "dealbreakers": [
+    {
+      "id": "occupancy-collapse-no-bridge",
+      "required": true,
+      "keywords": [
+        "occupancy",
+        "62%",
+        "0.62",
+        "vacant",
+        "lease-up",
+        "no bridge",
+        "cannot cover",
+        "negative cash flow",
+        "collapse"
+      ]
+    }
+  ],
+  "icVerdict": {
+    "value": "FAIL",
+    "directional": "no-go",
+    "rationale": "62% occupancy with permanent (non-bridge) financing and no lease-up capital cannot cover debt service. Without a bridge-loan and lease-up restructure this is a no-go."
+  },
+  "referenceModel": {
+    "holdYears": 5,
+    "revenueGrowth": 0.03,
+    "expenseGrowth": 0.024,
+    "exitCap": 0.008,
+    "equity": 3234000,
+    "loanAmount": 6860000,
+    "annualDebtService": 536665,
+    "note": "irr/equityMultiple computed by the documented reference model in eval/generators/generate_deals.py (see eval/generators/README.md). Determinable metrics (noi/egi/capRate/dscr) are exact arithmetic on the planted spec."
+  }
+}

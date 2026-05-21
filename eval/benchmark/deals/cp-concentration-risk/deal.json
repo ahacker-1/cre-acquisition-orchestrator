@@ -1,0 +1,71 @@
+{
+  "$schema": "../../../../config/deal-schema.json",
+  "dealId": "cp-concentration-risk",
+  "dealName": "Foundry Yard Apartments",
+  "property": {
+    "address": "55 Foundry Yard Road",
+    "city": "Greenville",
+    "state": "SC",
+    "zip": "29605",
+    "county": "Greenville",
+    "propertyType": "multifamily",
+    "yearBuilt": 2011,
+    "totalUnits": 120,
+    "totalSqFt": 100200,
+    "avgUnitSqFt": 835,
+    "unitMix": {
+      "types": [
+        {
+          "type": "1BR/1BA",
+          "count": 60,
+          "avgSqFt": 690,
+          "marketRent": 1500,
+          "inPlaceRent": 1455
+        },
+        {
+          "type": "2BR/2BA",
+          "count": 60,
+          "avgSqFt": 980,
+          "marketRent": 1980,
+          "inPlaceRent": 1920
+        }
+      ]
+    }
+  },
+  "financials": {
+    "askingPrice": 17000000,
+    "pricePerUnit": 141667,
+    "currentNOI": 960000,
+    "inPlaceOccupancy": 0.9417,
+    "trailingT12Revenue": 1980000,
+    "trailingT12Expenses": 1020000,
+    "estimatedClosingCosts": 510000
+  },
+  "financing": {
+    "targetLTV": 0.6,
+    "estimatedRate": 0.061,
+    "loanTerm": 10,
+    "amortization": 30,
+    "loanType": "Agency",
+    "interestOnly": false,
+    "ioPeriod": 0
+  },
+  "investmentStrategy": "core-plus",
+  "targetHoldPeriod": 5,
+  "targetIRR": 0.14,
+  "targetEquityMultiple": 1.75,
+  "targetCashOnCash": 0.07,
+  "seller": {
+    "name": "D. Nguyen",
+    "entity": "Foundry Yard Partners LLC",
+    "broker": "S. Whitfield",
+    "brokerFirm": "Piedmont Multifamily Group"
+  },
+  "timeline": {
+    "psaExecutionDate": "2026-02-16",
+    "ddStartDate": "2026-02-17",
+    "ddExpirationDate": "2026-03-19",
+    "closingDate": "2026-04-20"
+  },
+  "notes": "Core-plus with single-employer tenant concentration disclosed in the OM."
+}

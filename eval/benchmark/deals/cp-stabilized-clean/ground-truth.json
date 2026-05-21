@@ -1,0 +1,208 @@
+{
+  "dealId": "cp-stabilized-clean",
+  "archetype": "core-plus",
+  "narrative": "A stabilized, well-occupied community with in-place cash flow and no material defects; included as a false-positive control (no planted red flags).",
+  "documents": [
+    {
+      "file": "documents/rent-roll.xlsx",
+      "type": "rent_roll",
+      "quirks": [
+        "alt-headers"
+      ]
+    },
+    {
+      "file": "documents/t12.xlsx",
+      "type": "t12",
+      "quirks": []
+    },
+    {
+      "file": "documents/offering-memo.pdf",
+      "type": "offering_memo",
+      "quirks": []
+    }
+  ],
+  "extraction": {
+    "fields": [
+      {
+        "path": "property.totalUnits",
+        "value": 120,
+        "source": "rent_roll",
+        "tolerance": {
+          "type": "exact"
+        }
+      },
+      {
+        "path": "financials.inPlaceOccupancy",
+        "value": 0.9417,
+        "source": "rent_roll",
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.01
+        }
+      },
+      {
+        "path": "financials.grossPotentialRentAnnual",
+        "value": 2894400,
+        "source": "rent_roll",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.01
+        }
+      },
+      {
+        "path": "financials.inPlaceRentAnnual",
+        "value": 2631900,
+        "source": "rent_roll",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.01
+        }
+      },
+      {
+        "path": "financials.trailingT12Revenue",
+        "value": 2360000,
+        "source": "t12",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.005
+        }
+      },
+      {
+        "path": "financials.trailingT12Expenses",
+        "value": 1210000,
+        "source": "t12",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.005
+        }
+      },
+      {
+        "path": "financials.currentNOI",
+        "value": 1150000,
+        "source": "t12",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.01
+        }
+      },
+      {
+        "path": "financials.askingPrice",
+        "value": 19170000,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.005
+        }
+      },
+      {
+        "path": "property.totalUnits",
+        "value": 120,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "exact"
+        }
+      },
+      {
+        "path": "property.yearBuilt",
+        "value": 2008,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "exact"
+        }
+      },
+      {
+        "path": "financials.inPlaceOccupancy",
+        "value": 0.94,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.01
+        }
+      },
+      {
+        "path": "financials.currentNOI",
+        "value": 1150000,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.01
+        }
+      }
+    ]
+  },
+  "financials": {
+    "metrics": [
+      {
+        "key": "noi",
+        "value": 1150000,
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.02
+        },
+        "class": "determinable"
+      },
+      {
+        "key": "egi",
+        "value": 2360000,
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.02
+        },
+        "class": "determinable"
+      },
+      {
+        "key": "capRate",
+        "value": 0.06,
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.0015
+        },
+        "class": "determinable"
+      },
+      {
+        "key": "dscr",
+        "value": 1.31,
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.08
+        },
+        "class": "determinable"
+      },
+      {
+        "key": "irr",
+        "value": 0.1099,
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.03
+        },
+        "class": "model-dependent"
+      },
+      {
+        "key": "equityMultiple",
+        "value": 1.63,
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.2
+        },
+        "class": "model-dependent"
+      }
+    ]
+  },
+  "redFlags": [],
+  "dealbreakers": [],
+  "icVerdict": {
+    "value": "PASS",
+    "directional": "go",
+    "rationale": "Stabilized core-plus asset; ~6.0% going-in cap, DSCR well above 1.25x, no material red flags. Clean control deal."
+  },
+  "referenceModel": {
+    "holdYears": 5,
+    "revenueGrowth": 0.03,
+    "expenseGrowth": 0.024,
+    "exitCap": 0.0625,
+    "equity": 7284600,
+    "loanAmount": 12460500,
+    "annualDebtService": 877348,
+    "note": "irr/equityMultiple computed by the documented reference model in eval/generators/generate_deals.py (see eval/generators/README.md). Determinable metrics (noi/egi/capRate/dscr) are exact arithmetic on the planted spec."
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "$schema": "../../../../config/deal-schema.json",
+  "dealId": "va-sub120-dscr",
+  "dealName": "Brookhaven Flats",
+  "property": {
+    "address": "900 Brookhaven Avenue",
+    "city": "Phoenix",
+    "state": "AZ",
+    "zip": "85021",
+    "county": "Maricopa",
+    "propertyType": "multifamily",
+    "yearBuilt": 1999,
+    "totalUnits": 150,
+    "totalSqFt": 122400,
+    "avgUnitSqFt": 816,
+    "unitMix": {
+      "types": [
+        {
+          "type": "1BR/1BA",
+          "count": 72,
+          "avgSqFt": 660,
+          "marketRent": 1420,
+          "inPlaceRent": 1280
+        },
+        {
+          "type": "2BR/2BA",
+          "count": 78,
+          "avgSqFt": 960,
+          "marketRent": 1850,
+          "inPlaceRent": 1690
+        }
+      ]
+    }
+  },
+  "financials": {
+    "askingPrice": 15500000,
+    "pricePerUnit": 103333,
+    "currentNOI": 958000,
+    "inPlaceOccupancy": 0.8733,
+    "trailingT12Revenue": 2020000,
+    "trailingT12Expenses": 1062000,
+    "estimatedClosingCosts": 465000,
+    "proFormaNOI": 1460000,
+    "marketOccupancy": 0.94,
+    "renovationBudget": 1400000
+  },
+  "financing": {
+    "targetLTV": 0.72,
+    "estimatedRate": 0.065,
+    "loanTerm": 10,
+    "amortization": 30,
+    "loanType": "Bank",
+    "interestOnly": false,
+    "ioPeriod": 0
+  },
+  "investmentStrategy": "value-add",
+  "targetHoldPeriod": 5,
+  "targetIRR": 0.16,
+  "targetEquityMultiple": 1.85,
+  "targetCashOnCash": 0.06,
+  "seller": {
+    "name": "K. Osei",
+    "entity": "Brookhaven Flats LLC",
+    "broker": "L. Marsh",
+    "brokerFirm": "Desert Capital Advisors"
+  },
+  "timeline": {
+    "psaExecutionDate": "2026-02-23",
+    "ddStartDate": "2026-02-24",
+    "ddExpirationDate": "2026-03-26",
+    "closingDate": "2026-04-27"
+  },
+  "notes": "Value-add with sub-1.20x going-in DSCR at targeted leverage."
+}

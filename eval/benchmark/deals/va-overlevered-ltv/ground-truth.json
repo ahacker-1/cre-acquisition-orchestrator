@@ -1,0 +1,225 @@
+{
+  "dealId": "va-overlevered-ltv",
+  "archetype": "value-add",
+  "narrative": "Value-add deal underwritten at an aggressive 82% LTV; leverage exceeds prudent limits and the going-in DSCR is correspondingly strained.",
+  "documents": [
+    {
+      "file": "documents/rent-roll.xlsx",
+      "type": "rent_roll",
+      "quirks": [
+        "subtotal-rows"
+      ]
+    },
+    {
+      "file": "documents/t12.xlsx",
+      "type": "t12",
+      "quirks": []
+    },
+    {
+      "file": "documents/offering-memo.pdf",
+      "type": "offering_memo",
+      "quirks": []
+    }
+  ],
+  "extraction": {
+    "fields": [
+      {
+        "path": "property.totalUnits",
+        "value": 156,
+        "source": "rent_roll",
+        "tolerance": {
+          "type": "exact"
+        }
+      },
+      {
+        "path": "financials.inPlaceOccupancy",
+        "value": 0.9103,
+        "source": "rent_roll",
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.01
+        }
+      },
+      {
+        "path": "financials.grossPotentialRentAnnual",
+        "value": 3224160,
+        "source": "rent_roll",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.01
+        }
+      },
+      {
+        "path": "financials.inPlaceRentAnnual",
+        "value": 2730720,
+        "source": "rent_roll",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.01
+        }
+      },
+      {
+        "path": "financials.trailingT12Revenue",
+        "value": 2120000,
+        "source": "t12",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.005
+        }
+      },
+      {
+        "path": "financials.trailingT12Expenses",
+        "value": 1160000,
+        "source": "t12",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.005
+        }
+      },
+      {
+        "path": "financials.currentNOI",
+        "value": 960000,
+        "source": "t12",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.01
+        }
+      },
+      {
+        "path": "financials.askingPrice",
+        "value": 18400000,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.005
+        }
+      },
+      {
+        "path": "property.totalUnits",
+        "value": 156,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "exact"
+        }
+      },
+      {
+        "path": "property.yearBuilt",
+        "value": 2001,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "exact"
+        }
+      },
+      {
+        "path": "financials.inPlaceOccupancy",
+        "value": 0.91,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.01
+        }
+      },
+      {
+        "path": "financials.currentNOI",
+        "value": 960000,
+        "source": "offering_memo",
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.01
+        }
+      }
+    ]
+  },
+  "financials": {
+    "metrics": [
+      {
+        "key": "noi",
+        "value": 960000,
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.02
+        },
+        "class": "determinable"
+      },
+      {
+        "key": "egi",
+        "value": 2120000,
+        "tolerance": {
+          "type": "relative",
+          "pct": 0.02
+        },
+        "class": "determinable"
+      },
+      {
+        "key": "capRate",
+        "value": 0.0522,
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.0015
+        },
+        "class": "determinable"
+      },
+      {
+        "key": "dscr",
+        "value": 0.85,
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.08
+        },
+        "class": "determinable"
+      },
+      {
+        "key": "irr",
+        "value": 0.0691,
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.03
+        },
+        "class": "model-dependent"
+      },
+      {
+        "key": "equityMultiple",
+        "value": 1.42,
+        "tolerance": {
+          "type": "absolute",
+          "abs": 0.2
+        },
+        "class": "model-dependent"
+      }
+    ]
+  },
+  "redFlags": [
+    {
+      "id": "over-levered-ltv",
+      "category": "FINANCING",
+      "severity": "HIGH",
+      "required": true,
+      "keywords": [
+        "ltv",
+        "82%",
+        "over-levered",
+        "overleveraged",
+        "leverage",
+        "above 80",
+        "refinance risk",
+        "0.82"
+      ]
+    }
+  ],
+  "dealbreakers": [],
+  "icVerdict": {
+    "value": "CONDITIONAL",
+    "directional": "go",
+    "rationale": "Attractive value-add basis but 82% LTV is over-levered with elevated refinance risk. Proceed conditional on reducing leverage to <=75% or securing additional equity."
+  },
+  "referenceModel": {
+    "holdYears": 5,
+    "revenueGrowth": 0.03,
+    "expenseGrowth": 0.024,
+    "exitCap": 0.0547,
+    "equity": 3864000,
+    "loanAmount": 15088000,
+    "annualDebtService": 1132516,
+    "note": "irr/equityMultiple computed by the documented reference model in eval/generators/generate_deals.py (see eval/generators/README.md). Determinable metrics (noi/egi/capRate/dscr) are exact arithmetic on the planted spec."
+  }
+}

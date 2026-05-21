@@ -53,9 +53,36 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 
 | AI Roles | Skills | Schemas | Workflows | Fixtures | Tests passing |
 |----------|--------|---------|-----------|----------|---------------|
-| 31 | 8 | 27 | 5 | 20 | 8 |
+| 31 | 8 | 27 | 5 | 20 | 9 |
 
-Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 20 curated fixture files under `fixtures/`; and 8 root `test*` commands tracked by [package.json](package.json).
+Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 20 curated fixture files under `fixtures/`; and 9 root `test*` commands tracked by [package.json](package.json).
+
+---
+
+## Honest Evaluation — Prove It
+
+Architecture isn't accuracy. This repo ships an **open evaluation harness** that scores the
+orchestrator on synthetic deals with known correct answers and reports honest numbers — including
+where it falls short. Run it yourself:
+
+```bash
+npm run eval        # scores the benchmark -> eval/results/{scorecard.json, TRUST-REPORT.md}
+```
+
+It measures **three layers that are NOT equivalent** (full methodology + how to extend:
+[eval/README.md](eval/README.md); full results: [eval/results/TRUST-REPORT.md](eval/results/TRUST-REPORT.md)):
+
+| Layer | What it proves | Current result |
+|---|---|---|
+| **Extraction** (deterministic parsers) | recovering known fields from deliberately messy XLSX/PDF docs | precision/recall/F1 = **100%** across **8/8** deals |
+| **Simulation** (offline demo — a *fixture*, **not** reasoning) | the deterministic engine; a high score here is largely tautological | determinable financials 100% (by construction), but IC-verdict match only **3/8** and red-flag recall **50%** — concrete evidence it does **not** reason |
+| **Live agent reasoning** (real Codex LLM — *the number that counts*) | the product's actual judgment | on the deal measured so far (`cp-insurance-understated`, Codex CLI 0.132.0): IC verdict **exact match**, determinable financials **100%**, planted red-flag recall **100%**; IRR/equity-multiple **not produced** in the quick screen (a known gap) |
+
+**Honest scope:** the deterministic layers cover all 8 benchmark deals; the live layer in the committed
+scorecard covers **1 of 8** (live Codex runs are time/cost-bound — the harness runs all 8 via
+`npm run eval`). The benchmark, ground truth, scorer, and tolerances are committed and fixed before
+runs; nothing is tuned to flatter the system. See [EVAL-PLAN.md](EVAL-PLAN.md) for the methodology and
+the full honest log (including the contamination bugs the eval caught in its own first runs).
 
 ---
 

@@ -1,0 +1,74 @@
+{
+  "$schema": "../../../../config/deal-schema.json",
+  "dealId": "ds-occupancy-collapse",
+  "dealName": "Harborview Terrace",
+  "property": {
+    "address": "77 Harborview Terrace",
+    "city": "Toledo",
+    "state": "OH",
+    "zip": "43604",
+    "county": "Lucas",
+    "propertyType": "multifamily",
+    "yearBuilt": 1989,
+    "totalUnits": 150,
+    "totalSqFt": 117000,
+    "avgUnitSqFt": 780,
+    "unitMix": {
+      "types": [
+        {
+          "type": "1BR/1BA",
+          "count": 80,
+          "avgSqFt": 640,
+          "marketRent": 1300,
+          "inPlaceRent": 1180
+        },
+        {
+          "type": "2BR/2BA",
+          "count": 70,
+          "avgSqFt": 940,
+          "marketRent": 1700,
+          "inPlaceRent": 1560
+        }
+      ]
+    }
+  },
+  "financials": {
+    "askingPrice": 9800000,
+    "pricePerUnit": 65333,
+    "currentNOI": 54000,
+    "inPlaceOccupancy": 0.62,
+    "trailingT12Revenue": 1120000,
+    "trailingT12Expenses": 1066000,
+    "estimatedClosingCosts": 294000,
+    "proFormaNOI": 1050000,
+    "marketOccupancy": 0.9,
+    "renovationBudget": 2100000
+  },
+  "financing": {
+    "targetLTV": 0.7,
+    "estimatedRate": 0.068,
+    "loanTerm": 10,
+    "amortization": 30,
+    "loanType": "Bank",
+    "interestOnly": false,
+    "ioPeriod": 0
+  },
+  "investmentStrategy": "opportunistic",
+  "targetHoldPeriod": 5,
+  "targetIRR": 0.2,
+  "targetEquityMultiple": 2.0,
+  "targetCashOnCash": 0.04,
+  "seller": {
+    "name": "(REO - lender owned)",
+    "entity": "Harborview Terrace LLC",
+    "broker": "C. Dunn",
+    "brokerFirm": "Midwest Distressed Assets"
+  },
+  "timeline": {
+    "psaExecutionDate": "2026-03-16",
+    "ddStartDate": "2026-03-17",
+    "ddExpirationDate": "2026-04-16",
+    "closingDate": "2026-05-18"
+  },
+  "notes": "Distressed: 62% occupancy financed with permanent debt and no bridge/lease-up capital."
+}

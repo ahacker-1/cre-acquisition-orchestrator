@@ -22,8 +22,13 @@ data/workflow-presets/
 data/runs/
 data/codex-runs/
 data/normalized/
+data/eval-runs/
 # Keep data/examples/ (curated sample output)
 !data/examples/
+
+# Python bytecode (eval generators)
+__pycache__/
+*.pyc
 
 # Environment
 .env

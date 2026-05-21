@@ -1,0 +1,74 @@
+{
+  "$schema": "../../../../config/deal-schema.json",
+  "dealId": "ds-dscr-below-080",
+  "dealName": "Sterling Mill Lofts",
+  "property": {
+    "address": "412 Sterling Mill Road",
+    "city": "Birmingham",
+    "state": "AL",
+    "zip": "35203",
+    "county": "Jefferson",
+    "propertyType": "multifamily",
+    "yearBuilt": 1992,
+    "totalUnits": 120,
+    "totalSqFt": 93120,
+    "avgUnitSqFt": 776,
+    "unitMix": {
+      "types": [
+        {
+          "type": "1BR/1BA",
+          "count": 64,
+          "avgSqFt": 650,
+          "marketRent": 1350,
+          "inPlaceRent": 1240
+        },
+        {
+          "type": "2BR/2BA",
+          "count": 56,
+          "avgSqFt": 920,
+          "marketRent": 1720,
+          "inPlaceRent": 1600
+        }
+      ]
+    }
+  },
+  "financials": {
+    "askingPrice": 9200000,
+    "pricePerUnit": 76667,
+    "currentNOI": 320000,
+    "inPlaceOccupancy": 0.7083,
+    "trailingT12Revenue": 1240000,
+    "trailingT12Expenses": 920000,
+    "estimatedClosingCosts": 276000,
+    "proFormaNOI": 860000,
+    "marketOccupancy": 0.9,
+    "renovationBudget": 1500000
+  },
+  "financing": {
+    "targetLTV": 0.75,
+    "estimatedRate": 0.072,
+    "loanTerm": 10,
+    "amortization": 30,
+    "loanType": "Bank",
+    "interestOnly": false,
+    "ioPeriod": 0
+  },
+  "investmentStrategy": "opportunistic",
+  "targetHoldPeriod": 5,
+  "targetIRR": 0.2,
+  "targetEquityMultiple": 2.0,
+  "targetCashOnCash": 0.04,
+  "seller": {
+    "name": "(special servicer)",
+    "entity": "Sterling Mill Lofts LP",
+    "broker": "V. Crane",
+    "brokerFirm": "Southeast Special Situations"
+  },
+  "timeline": {
+    "psaExecutionDate": "2026-03-23",
+    "ddStartDate": "2026-03-24",
+    "ddExpirationDate": "2026-04-23",
+    "closingDate": "2026-05-25"
+  },
+  "notes": "Distressed: going-in DSCR below 0.80x at proposed leverage/rate."
+}

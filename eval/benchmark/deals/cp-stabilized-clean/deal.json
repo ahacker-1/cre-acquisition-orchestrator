@@ -1,0 +1,71 @@
+{
+  "$schema": "../../../../config/deal-schema.json",
+  "dealId": "cp-stabilized-clean",
+  "dealName": "Maplewood Commons",
+  "property": {
+    "address": "4200 Maplewood Drive",
+    "city": "Austin",
+    "state": "TX",
+    "zip": "78745",
+    "county": "Travis",
+    "propertyType": "multifamily",
+    "yearBuilt": 2008,
+    "totalUnits": 120,
+    "totalSqFt": 110160,
+    "avgUnitSqFt": 918,
+    "unitMix": {
+      "types": [
+        {
+          "type": "1BR/1BA",
+          "count": 48,
+          "avgSqFt": 720,
+          "marketRent": 1650,
+          "inPlaceRent": 1600
+        },
+        {
+          "type": "2BR/2BA",
+          "count": 72,
+          "avgSqFt": 1050,
+          "marketRent": 2250,
+          "inPlaceRent": 2175
+        }
+      ]
+    }
+  },
+  "financials": {
+    "askingPrice": 19170000,
+    "pricePerUnit": 159750,
+    "currentNOI": 1150000,
+    "inPlaceOccupancy": 0.9417,
+    "trailingT12Revenue": 2360000,
+    "trailingT12Expenses": 1210000,
+    "estimatedClosingCosts": 575100
+  },
+  "financing": {
+    "targetLTV": 0.65,
+    "estimatedRate": 0.058,
+    "loanTerm": 10,
+    "amortization": 30,
+    "loanType": "Agency",
+    "interestOnly": false,
+    "ioPeriod": 0
+  },
+  "investmentStrategy": "core-plus",
+  "targetHoldPeriod": 5,
+  "targetIRR": 0.13,
+  "targetEquityMultiple": 1.7,
+  "targetCashOnCash": 0.07,
+  "seller": {
+    "name": "R. Patel",
+    "entity": "Maplewood Holdings LLC",
+    "broker": "Jane Cole",
+    "brokerFirm": "Apex Capital Markets"
+  },
+  "timeline": {
+    "psaExecutionDate": "2026-02-02",
+    "ddStartDate": "2026-02-03",
+    "ddExpirationDate": "2026-03-05",
+    "closingDate": "2026-04-06"
+  },
+  "notes": "Stabilized core-plus control deal with no planted issues."
+}

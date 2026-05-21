@@ -1,0 +1,287 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cre-acquisition-orchestrator.local/eval/schemas/scorecard.schema.json",
+  "title": "CRE Evaluation Scorecard",
+  "description": "Full scorecard emitted by the evaluation harness (eval/run-eval.mjs). Three honestly-separable layers: extraction (deterministic parser), simulation (fixture baseline, NOT reasoning), and live (real LLM agent reasoning — the headline number). Ratios are nullable: null/N-A validates wherever a denominator was zero.",
+  "type": "object",
+  "required": ["generatedAt", "runId", "layers", "deals"],
+  "additionalProperties": false,
+  "definitions": {
+    "ratio": {
+      "description": "A ratio in [0,1], or null when N/A (denominator was zero).",
+      "type": ["number", "null"]
+    },
+    "aggregateMetric": {
+      "description": "Macro-average of one metric across deals, with the count of contributing deals.",
+      "type": "object",
+      "required": ["mean", "n"],
+      "additionalProperties": false,
+      "properties": {
+        "mean": { "type": ["number", "null"] },
+        "n": { "type": "integer", "minimum": 0 },
+        "note": { "type": "string" }
+      }
+    },
+    "tolerance": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["exact", "relative", "absolute"] },
+        "pct": { "type": "number" },
+        "abs": { "type": "number" }
+      }
+    },
+    "scalar": {
+      "description": "Expected/actual values: number, string, boolean, or null when absent.",
+      "type": ["number", "string", "boolean", "null"]
+    },
+    "extractionScore": {
+      "type": "object",
+      "required": [
+        "precision",
+        "recall",
+        "f1",
+        "numericWithinTolerance",
+        "matched",
+        "extractedCount",
+        "groundTruthCount",
+        "perField"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "precision": { "$ref": "#/definitions/ratio" },
+        "recall": { "$ref": "#/definitions/ratio" },
+        "f1": { "$ref": "#/definitions/ratio" },
+        "numericWithinTolerance": { "$ref": "#/definitions/ratio" },
+        "matched": { "type": "integer", "minimum": 0 },
+        "extractedCount": { "type": "integer", "minimum": 0 },
+        "groundTruthCount": { "type": "integer", "minimum": 0 },
+        "perField": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "expected", "actual", "matched", "present"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string" },
+              "expected": { "$ref": "#/definitions/scalar" },
+              "actual": { "$ref": "#/definitions/scalar" },
+              "matched": { "type": "boolean" },
+              "present": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "financialBucket": {
+      "type": "object",
+      "required": ["withinTolerance", "total", "ratio", "perMetric"],
+      "additionalProperties": false,
+      "properties": {
+        "withinTolerance": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 },
+        "ratio": { "$ref": "#/definitions/ratio" },
+        "perMetric": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/financialMetricRow" }
+        }
+      }
+    },
+    "financialMetricRow": {
+      "type": "object",
+      "required": ["key", "expected", "actual", "class", "matched", "tolerance"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "type": "string" },
+        "expected": { "$ref": "#/definitions/scalar" },
+        "actual": { "$ref": "#/definitions/scalar" },
+        "class": { "type": "string", "enum": ["determinable", "model-dependent"] },
+        "matched": { "type": "boolean" },
+        "tolerance": { "$ref": "#/definitions/tolerance" }
+      }
+    },
+    "financialScore": {
+      "type": "object",
+      "required": ["determinable", "modelDependent", "perMetric"],
+      "additionalProperties": false,
+      "properties": {
+        "determinable": { "$ref": "#/definitions/financialBucket" },
+        "modelDependent": { "$ref": "#/definitions/financialBucket" },
+        "perMetric": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/financialMetricRow" }
+        }
+      }
+    },
+    "flagScore": {
+      "type": "object",
+      "required": ["recall", "precision", "total", "detected", "perFlag"],
+      "additionalProperties": false,
+      "properties": {
+        "recall": { "$ref": "#/definitions/ratio" },
+        "requiredRecall": { "$ref": "#/definitions/ratio" },
+        "precision": { "$ref": "#/definitions/ratio" },
+        "total": { "type": "integer", "minimum": 0 },
+        "detected": { "type": "integer", "minimum": 0 },
+        "requiredTotal": { "type": "integer", "minimum": 0 },
+        "requiredDetected": { "type": "integer", "minimum": 0 },
+        "falsePositiveCount": { "type": "integer", "minimum": 0 },
+        "perFlag": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "required", "detected", "matchedText"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": ["string", "null"] },
+              "required": { "type": "boolean" },
+              "detected": { "type": "boolean" },
+              "matchedText": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "dealbreakerScore": {
+      "type": "object",
+      "required": ["recall", "total", "detected", "perDealbreaker"],
+      "additionalProperties": false,
+      "properties": {
+        "recall": { "$ref": "#/definitions/ratio" },
+        "total": { "type": "integer", "minimum": 0 },
+        "detected": { "type": "integer", "minimum": 0 },
+        "perDealbreaker": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "required", "detected", "matchedText"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": ["string", "null"] },
+              "required": { "type": "boolean" },
+              "detected": { "type": "boolean" },
+              "matchedText": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "verdictScore": {
+      "type": "object",
+      "required": [
+        "exactMatch",
+        "directionalMatch",
+        "expected",
+        "actual",
+        "expectedDirection",
+        "actualDirection"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "exactMatch": { "type": "boolean" },
+        "directionalMatch": { "type": "boolean" },
+        "expected": { "type": "string", "enum": ["PASS", "CONDITIONAL", "FAIL", "UNKNOWN"] },
+        "actual": { "type": "string", "enum": ["PASS", "CONDITIONAL", "FAIL", "UNKNOWN"] },
+        "expectedDirection": { "type": "string", "enum": ["go", "no-go", "unknown"] },
+        "actualDirection": { "type": "string", "enum": ["go", "no-go", "unknown"] }
+      }
+    },
+    "partialFailure": {
+      "type": ["object", "null"],
+      "required": ["failedAgents", "note"],
+      "additionalProperties": false,
+      "properties": {
+        "failedAgents": { "type": "array", "items": { "type": "string" } },
+        "note": { "type": "string" }
+      }
+    },
+    "dealScorecard": {
+      "description": "Per-deal, per-layer scorecard produced by scoreDeal(). Sub-scores not applicable to the layer are null.",
+      "type": "object",
+      "required": ["dealId", "layer"],
+      "additionalProperties": false,
+      "properties": {
+        "dealId": { "type": ["string", "null"] },
+        "layer": { "type": "string", "enum": ["extraction", "sim", "live"] },
+        "archetype": { "type": ["string", "null"] },
+        "extraction": {
+          "oneOf": [{ "$ref": "#/definitions/extractionScore" }, { "type": "null" }]
+        },
+        "financials": {
+          "oneOf": [{ "$ref": "#/definitions/financialScore" }, { "type": "null" }]
+        },
+        "redFlags": {
+          "oneOf": [{ "$ref": "#/definitions/flagScore" }, { "type": "null" }]
+        },
+        "dealbreakers": {
+          "oneOf": [{ "$ref": "#/definitions/dealbreakerScore" }, { "type": "null" }]
+        },
+        "verdict": {
+          "oneOf": [{ "$ref": "#/definitions/verdictScore" }, { "type": "null" }]
+        },
+        "partialFailure": { "$ref": "#/definitions/partialFailure" }
+      }
+    },
+    "layerAggregate": {
+      "description": "Aggregate metrics for one layer plus the deal scorecards that fed it.",
+      "type": "object",
+      "required": ["metrics", "counts", "deals"],
+      "additionalProperties": false,
+      "properties": {
+        "metrics": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/aggregateMetric" }
+        },
+        "counts": {
+          "type": "object",
+          "required": ["deals"],
+          "additionalProperties": true,
+          "properties": {
+            "deals": { "type": "integer", "minimum": 0 },
+            "partialFailures": { "type": "integer", "minimum": 0 },
+            "byLayer": {
+              "type": "object",
+              "additionalProperties": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "deals": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/dealScorecard" }
+        }
+      }
+    }
+  },
+  "properties": {
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "runId": { "type": "string", "minLength": 1 },
+    "model": { "type": ["string", "null"] },
+    "codexVersion": { "type": ["string", "null"] },
+    "evalVersion": { "type": ["string", "null"] },
+    "layers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "extraction": {
+          "oneOf": [{ "$ref": "#/definitions/layerAggregate" }, { "type": "null" }]
+        },
+        "simulation": {
+          "oneOf": [{ "$ref": "#/definitions/layerAggregate" }, { "type": "null" }]
+        },
+        "live": {
+          "oneOf": [{ "$ref": "#/definitions/layerAggregate" }, { "type": "null" }]
+        }
+      }
+    },
+    "deals": {
+      "description": "Flat list of every per-deal scorecard across all layers in this run.",
+      "type": "array",
+      "items": { "$ref": "#/definitions/dealScorecard" }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

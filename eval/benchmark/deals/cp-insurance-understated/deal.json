@@ -1,0 +1,71 @@
+{
+  "$schema": "../../../../config/deal-schema.json",
+  "dealId": "cp-insurance-understated",
+  "dealName": "Riverside Gardens",
+  "property": {
+    "address": "1820 Riverside Parkway",
+    "city": "Dallas",
+    "state": "TX",
+    "zip": "75215",
+    "county": "Dallas",
+    "propertyType": "multifamily",
+    "yearBuilt": 2005,
+    "totalUnits": 120,
+    "totalSqFt": 105120,
+    "avgUnitSqFt": 876,
+    "unitMix": {
+      "types": [
+        {
+          "type": "1BR/1BA",
+          "count": 54,
+          "avgSqFt": 700,
+          "marketRent": 1600,
+          "inPlaceRent": 1560
+        },
+        {
+          "type": "2BR/2BA",
+          "count": 66,
+          "avgSqFt": 1020,
+          "marketRent": 2200,
+          "inPlaceRent": 2120
+        }
+      ]
+    }
+  },
+  "financials": {
+    "askingPrice": 20000000,
+    "pricePerUnit": 166667,
+    "currentNOI": 1148000,
+    "inPlaceOccupancy": 0.9417,
+    "trailingT12Revenue": 2280000,
+    "trailingT12Expenses": 1132000,
+    "estimatedClosingCosts": 600000
+  },
+  "financing": {
+    "targetLTV": 0.65,
+    "estimatedRate": 0.06,
+    "loanTerm": 10,
+    "amortization": 30,
+    "loanType": "Agency",
+    "interestOnly": false,
+    "ioPeriod": 0
+  },
+  "investmentStrategy": "core-plus",
+  "targetHoldPeriod": 5,
+  "targetIRR": 0.13,
+  "targetEquityMultiple": 1.7,
+  "targetCashOnCash": 0.065,
+  "seller": {
+    "name": "M. Alvarez",
+    "entity": "Riverside Gardens LP",
+    "broker": "Tom Reed",
+    "brokerFirm": "Lone Star Realty Advisors"
+  },
+  "timeline": {
+    "psaExecutionDate": "2026-02-09",
+    "ddStartDate": "2026-02-10",
+    "ddExpirationDate": "2026-03-12",
+    "closingDate": "2026-04-13"
+  },
+  "notes": "Core-plus with an understated insurance line in the T12."
+}
