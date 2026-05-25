@@ -349,3 +349,17 @@ scorecard + trust report committed under `eval/results/`. Completion report belo
   (tenant concentration / insurance-understatement / missing-Phase-I + OM-vs-T12 NOI conflict), whose
   planted issues are buried in the documents rather than tripping a numeric threshold. The
   2026-05-24 trim entry above is left intact as the historical record.
+- 2026-05-25 (returns-accuracy goal): Cut **v2.8.0**, then root-caused the model-dependent (IRR/EM) soft
+  spot and extended the live layer to **all 8 deals** (run `final8`). (1) Fixed a real EXTRACTION bug —
+  the live-workpaper parser dropped a leading minus, so a distressed deal's "-99.0% IRR / -2.38x EM" was
+  read as +99% / +2.38 (`ds-occupancy-collapse` model-dependent 0% → 100%; regression test added). (2)
+  Tried surfacing the deal's return assumptions to the underwriting agents (Phase 1.5a); it REGRESSED
+  `cp-insurance`'s verdict (CONDITIONAL → FAIL) without improving model-dependent accuracy, so it was
+  reverted — on narrative deals the agents' returns legitimately diverge from the stated-figure reference
+  model. Honest 8-deal live result: extraction 100%, determinable 100%, narrative red-flag recall 100%,
+  dealbreaker recall 100%, **IC verdict 7/8 (88%)**, **model-dependent 50%** — a genuine assumption-driven
+  limit: the agents diverge from the reference model in BOTH directions (cp-concentration & va-sub120 too
+  optimistic; cp-insurance & ds-dscr too conservative / declined). `cp-insurance` is borderline (verdict
+  oscillates CONDITIONAL↔FAIL run-to-run); this run drew FAIL, and the prior n=6 100%-IC figure rode a
+  favorable CONDITIONAL draw that was lost when the deal was re-run. Nothing tuned to flatter; ground
+  truth and tolerances unchanged.

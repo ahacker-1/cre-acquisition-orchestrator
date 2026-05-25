@@ -76,37 +76,44 @@ It measures **three layers that are NOT equivalent** (full methodology + how to 
 |---|---|---|
 | **Extraction** (deterministic parsers) | recovering known fields from deliberately messy XLSX/PDF docs | precision/recall/F1 = **100%** across **8/8** deals |
 | **Simulation** (offline demo — a *fixture*, **not** reasoning) | the deterministic engine on the benchmark | determinable financials **100%** (n=8) but IC-verdict only **75%** exact, and it **misses every narrative red flag** — it over-PASSes the tenant-concentration and insurance-understatement deals (0% recall). It computes; it does **not** reason. |
-| **Live agent reasoning** (real Codex LLM — *the number that counts*) | the product's actual judgment | Codex CLI 0.132.0, 2026-05-25, **6 of 8 deals**: IC-verdict **100%** exact / **100%** directional, determinable financial **96%**, **narrative red-flag recall 100%** — the agents genuinely flag the tenant concentration, insurance understatement, and missing Phase I that the fixture is blind to. Remaining soft spot: model-dependent returns (IRR / equity multiple) at **50%**. |
+| **Live agent reasoning** (real Codex LLM — *the number that counts*) | the product's actual judgment | Codex CLI 0.132.0, 2026-05-25, **all 8 deals**: determinable financial **100%**, **narrative red-flag recall 100%**, dealbreaker recall **100%**, IC-verdict **88%** exact / **88%** directional (7 of 8). The agents genuinely flag the tenant concentration, insurance understatement, and missing Phase I the fixture is blind to. Two honest soft spots: **model-dependent returns (IRR / equity multiple) at 50%** (assumption-driven — see below), and one borderline deal (`cp-insurance-understated`) whose verdict oscillates CONDITIONAL↔FAIL across runs. |
 
 **Honest scope:** the benchmark is **8 synthetic deals** across core-plus / value-add / distressed, with
-both determinable and **narrative** (document-buried) planted risks. The offline layers score all 8; the
-**live layer covers 6 of 8** — the costly Codex runs were scoped to a representative subset that includes
-all three narrative-risk deals (`cp-concentration-risk`, `cp-insurance-understated`, `va-missing-phase1`);
-`va-sub120-dscr` and `ds-dscr-below-080` are not yet live-scored. Ground truth, the scorer, and tolerances
-are committed and fixed before runs; **nothing is tuned to flatter** — the live numbers re-score the
-**real** Codex workpapers, and the narrative catches were verified by reading the workpapers (e.g. *"≈60%
-of residents work for Carolina Logistics → correlated vacancy/rollover"*, *"only $41K/yr insurance vs a
-materially higher market underwrite → DSCR ~1.15x"*). The honest weaknesses the report still shows: the
-deterministic simulation is **blind to narrative risk** (that is exactly what the live layer is for), live
-**model-dependent returns are 50%**, and live coverage is **6 of 8** deals. See [EVAL-PLAN.md](EVAL-PLAN.md)
-and [eval/results/TRUST-REPORT.md](eval/results/TRUST-REPORT.md) for the full committed report (model, date,
+both determinable and **narrative** (document-buried) planted risks, and the **live layer now covers all 8**.
+Ground truth, the scorer, and tolerances are committed and fixed before runs; **nothing is tuned to
+flatter** — the live numbers re-score the **real** Codex workpapers, and the narrative catches were verified
+by reading them (e.g. *"≈60% of residents work for Carolina Logistics → correlated vacancy/rollover"*, *"only
+$41K/yr insurance vs a materially higher market underwrite → DSCR ~1.15x"*). The honest weaknesses the report
+still shows: **(1)** the deterministic simulation is **blind to narrative risk** (that is exactly what the
+live layer is for); **(2) model-dependent returns are 50%** — IRR / equity multiple are genuinely
+assumption-driven, and the live agents' return assumptions diverge from the benchmark's reference model in
+**both directions** (some deals more optimistic, some more conservative), so this is a real limitation, not a
+parser bug; and **(3) IC verdict is 7 of 8** — `cp-insurance-understated` is a borderline deal whose verdict
+oscillates between CONDITIONAL and FAIL across runs (the agent conservatively models the understated
+insurance), and this run drew FAIL. See [EVAL-PLAN.md](EVAL-PLAN.md) and
+[eval/results/TRUST-REPORT.md](eval/results/TRUST-REPORT.md) for the full committed report (model, date,
 per-deal results, and weaknesses).
 
 ---
 
 ## Current Status
 
-Current `main` is aligned with the latest public release (`v2.7.0`) and completes the ROADMAP near-term priorities while closing the prior known limits. The stable baseline remains local-first and review-first:
+Current `main` is the latest public release (`v2.8.0`). It hardens the real-world document-drop journey and ships an honest open evaluation harness on top of the `v2.7.0` completion pass. The stable baseline remains local-first and review-first:
 
 - **Local by default** - offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
-- **Versioned release baseline** - `v2.7.0` completes the ROADMAP near-term priorities (1–5) and closes the prior known limits (text-based PDF extraction, merged-cell workbooks, single-operator self-host deployment) on top of the `v2.6.0` credibility-hardening release.
-- **Current main** - is the v2.7.0 release baseline unless new unreleased work appears after this tag.
-- **Unreleased (drop-flow hardening)** - a pass focused on the real-world document-drop journey: parser confident-wrong fixes (vacant-`$0` rent no longer deflates in-place averages), parser robustness (CSV size cap, corrupt-file `parse_failed`, path-redacted errors, resilient interpreter selection), content-aware rent-roll/T12 classification, a threshold-driven IC verdict (consults `config/thresholds.json`; fixed a clean deal wrongly marked FAIL), an automated "real-world pile" smoke test (`npm run test:pile`), an `npm run eval:offline` mode, and a hardened live (Codex) eval that **proves the agents detect narrative risks** (tenant concentration, insurance understatement, missing Phase I) the deterministic fixture is blind to — live narrative red-flag recall 100% / IC verdict 100% exact on the scored subset. See [CHANGELOG.md](CHANGELOG.md) `[Unreleased]`.
-- **Known limits** - true OCR of scanned/image-only documents (these are detected and flagged for OCR, not extracted), multi-tenant cloud hosting, and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are now supported.
+- **Versioned release baseline** - `v2.8.0` adds real-world drop-flow hardening (parser confident-wrong/robustness fixes, content-aware rent-roll/T12 classification, a threshold-driven IC verdict, an automated `npm run test:pile` smoke test) and an open evaluation harness with an honest trust report, on top of the `v2.7.0` completion pass and the `v2.6.0` credibility-hardening release.
+- **Honest evaluation** - `npm run eval` scores the orchestrator on an **8-deal** synthetic benchmark and reports honest numbers including where it falls short (see [Honest Evaluation](#honest-evaluation--prove-it)). The live (Codex) layer covers all 8 deals; the documented soft spots are model-dependent returns (~50%) and one borderline IC verdict.
+- **Known limits** - true OCR of scanned/image-only documents (these are detected and flagged for OCR, not extracted), multi-tenant cloud hosting, and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are supported.
 
-See [CHANGELOG.md](CHANGELOG.md) for release history and current-main changes.
+See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
+
+## What's New in v2.8.0
+
+- **Real-world drop-flow hardening** - a messy pile of T12s, rent rolls, offering memos, and junk files flows through classify → extract → review → workflow → export with no crashes, silent skips, or confidently-wrong numbers: vacant-`$0` rent no longer deflates in-place averages, content-aware rent-roll/T12 classification, graceful `parse_failed` for oversized/corrupt inputs, path-redacted parser errors, and an automated `npm run test:pile` smoke test.
+- **Threshold-driven IC verdict** - the deterministic engine consults `config/thresholds.json` for dealbreakers and a deal-specific exit cap (fixed a clean deal wrongly marked FAIL).
+- **Open evaluation harness** - `npm run eval` scores an **8-deal** synthetic benchmark (with `npm run eval:offline` for the no-API layers) and writes an honest trust report. The live (Codex) layer proves the agents catch narrative risks the deterministic fixture is blind to (red-flag recall 100%, IC verdict 88%, determinable 100%), with model-dependent returns (~50%) documented as an honest limit. See [Honest Evaluation](#honest-evaluation--prove-it).
 
 ## What's New in v2.7.0
 
@@ -135,6 +142,7 @@ This project has grown from agent architecture into a local-first acquisition wo
 | **v2.5.1 - Stale Source Evidence Gate** | Added source-freshness protection to workflow launch readiness and bumped the package baseline to `2.5.1`. | [GitHub Tag](https://github.com/ahacker-1/cre-acquisition-orchestrator/tree/v2.5.1) |
 | **v2.6.0 - Credibility and Infrastructure Hardening** | Aligns Parkview around Austin, replaces stub workpapers, enforces strict schemas/enums, hardens local security, documents APIs/events, and refreshes public repo infrastructure. | [RELEASE_NOTES_v2.6.0.md](RELEASE_NOTES_v2.6.0.md) |
 | **v2.7.0 - Completion Pass** | Closes the prior known limits (text-based PDF extraction, merged-cell/image-only workbooks, single-operator self-host deployment) and implements the ROADMAP near-term priorities: review-grade workpapers, live Codex runtime hardening, source-decision audit trail, and contributor tooling. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v2.7.0) |
+| **v2.8.0 - Drop-Flow Hardening + Honest Eval** | Hardens the real-world document-drop journey (parser confident-wrong/robustness fixes, content-aware classification, threshold-driven IC verdict, `npm run test:pile`) and ships an open evaluation harness with an honest trust report — live agents scored on all 8 synthetic deals, proving narrative-risk detection while honestly documenting the model-dependent-returns soft spot. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v2.8.0) |
 
 ---
 

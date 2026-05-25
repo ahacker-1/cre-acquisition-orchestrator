@@ -1,6 +1,6 @@
 # CRE Acquisition Orchestrator — Trust Report
 
-_Generated 2026-05-25T14:53:03.027Z · run `live-8deal` · eval v1.0.0_
+_Generated 2026-05-25T18:09:01.115Z · run `final8` · eval v1.0.0_
 
 > **How to read this report.** Three layers are measured separately and they are NOT
 > equivalent:
@@ -22,13 +22,13 @@ _Generated 2026-05-25T14:53:03.027Z · run `live-8deal` · eval v1.0.0_
 
 | Metric | Live (reasoning) | Simulation (fixture) | Target |
 |---|---|---|---|
-| Financial accuracy — determinable | 96% ✅ (n=6) | 100% (n=8) | 85% |
-| Financial accuracy — model-dependent | 50% (n=6) | 50% (n=8) | — |
-| Red-flag recall (required) | 100% ✅ (n=4) | 60% (n=5) | 70% |
-| Red-flag recall (all planted) | 100% (n=5) | 50% (n=6) | — |
-| Dealbreaker recall | 100% ✅ (n=1) | 100% (n=2) | 90% |
-| IC verdict — exact match | 100% ✅ (n=6) | 75% (n=8) | 60% |
-| IC verdict — directional match | 100% ✅ (n=6) | 100% (n=8) | 80% |
+| Financial accuracy — determinable | 100% ✅ (n=8) | 100% (n=8) | 85% |
+| Financial accuracy — model-dependent | 50% (n=8) | 50% (n=8) | — |
+| Red-flag recall (required) | 100% ✅ (n=5) | 60% (n=5) | 70% |
+| Red-flag recall (all planted) | 100% (n=6) | 50% (n=6) | — |
+| Dealbreaker recall | 100% ✅ (n=2) | 100% (n=2) | 90% |
+| IC verdict — exact match | 88% ✅ (n=8) | 75% (n=8) | 60% |
+| IC verdict — directional match | 88% ✅ (n=8) | 100% (n=8) | 80% |
 
 ### Extraction layer (deterministic parser)
 
@@ -44,15 +44,17 @@ _Generated 2026-05-25T14:53:03.027Z · run `live-8deal` · eval v1.0.0_
 | Deal | Archetype | IC expected | IC actual | Dir? | Det. fin | Model fin | RF req-recall | Dealbreaker | Partial fail |
 |---|---|---|---|---|---|---|---|---|---|
 | cp-concentration-risk | core-plus | CONDITIONAL | CONDITIONAL | ✓ | 100% | 0% | 100% | — | — |
-| cp-insurance-understated | core-plus | CONDITIONAL | CONDITIONAL | ✓ | 75% | 0% | 100% | — | — |
+| cp-insurance-understated | core-plus | CONDITIONAL | FAIL | ✗ | 100% | 0% | 100% | — | — |
 | cp-stabilized-clean | core-plus | PASS | PASS | ✓ | 100% | 100% | N/A | — | — |
-| ds-occupancy-collapse | distressed | FAIL | FAIL | ✓ | 100% | 0% | N/A | 100% | — |
+| ds-dscr-below-080 | distressed | FAIL | FAIL | ✓ | 100% | 0% | N/A | 100% | — |
+| ds-occupancy-collapse | distressed | FAIL | FAIL | ✓ | 100% | 100% | N/A | 100% | — |
 | va-missing-phase1 | value-add | CONDITIONAL | CONDITIONAL | ✓ | 100% | 100% | 100% | — | — |
 | va-overlevered-ltv | value-add | CONDITIONAL | CONDITIONAL | ✓ | 100% | 100% | 100% | — | — |
+| va-sub120-dscr | value-add | CONDITIONAL | CONDITIONAL | ✓ | 100% | 0% | 100% | — | — |
 
 ## Where it breaks (honest weaknesses)
 
-_No live-layer misses recorded against targets in this run._
+- live: deal **cp-insurance-understated** IC verdict expected CONDITIONAL, got FAIL.
 
 ## Per-deal — deterministic simulation (fixture baseline)
 
@@ -71,7 +73,7 @@ _Reminder: these numbers come from fixed arithmetic + scenario config, not reaso
 
 ## Run notes
 
-- Live path: Codex codex-cli 0.132.0 (Logged in using ChatGPT); workflow quick-deal-screen; runs 2026-05-25T13:51:08.798Z .. 2026-05-25T05:32:19.543Z.
+- Live path: Codex codex-cli 0.132.0 (Logged in using ChatGPT); workflow quick-deal-screen; runs 2026-05-25T13:51:08.798Z .. 2026-05-25T18:07:03.127Z.
 
 ## Methodology & reproduction
 
