@@ -140,8 +140,13 @@ function findMetric(text, labelAlt, kind, goingIn = false) {
   // spans a line break to bind to a label on the next line (the one-metric-per-
   // line "## Metrics" block would otherwise read line N's value as line N+1's
   // metric — e.g. "$960,000\nEGI:" read as EGI).
-  if (kind === 'pct') valTok = String.raw`(${NUM})[^\S\n]*%`;
-  else if (kind === 'mult') valTok = String.raw`(${NUM})[^\S\n]*[x×]`;
+  // A leading "-" attached to the number is captured so negative returns survive
+  // (a distressed deal's "Leveraged IRR: -99.0%" / "Equity Multiple: -2.38x" must
+  // NOT be read as +99% / +2.38x). The minus must abut the digit, so a dash used
+  // as a separator ("IRR - 12%") is not mistaken for a negative. NUM is wrapped in
+  // (?:...) because its top-level alternation would otherwise leak past the sign.
+  if (kind === 'pct') valTok = String.raw`(-?(?:${NUM}))[^\S\n]*%`;
+  else if (kind === 'mult') valTok = String.raw`(-?(?:${NUM}))[^\S\n]*[x×]`;
   // NUM contains a top-level alternation, so it MUST be wrapped in (?:...) when
   // embedded in a larger alternation — otherwise its `|` leaks and breaks the
   // surrounding branches (this silently dropped the "$" money branch once).

@@ -802,6 +802,16 @@ test('parseFinancials: a real projected value still reads when not a threshold',
   closeTo(f.equityMultiple, 1.6);
 });
 
+test('parseFinancials: negative returns (distressed) keep their sign', () => {
+  // A distressed deal where the agent correctly reports catastrophic returns.
+  // The extractor MUST preserve the leading minus — dropping it (reading
+  // "-99.0%" as "+99%") flips a precise match into a wild miss.
+  const md = ['## Metrics', 'Leveraged IRR: -99.0%', 'Equity Multiple: -2.38x'].join('\n');
+  const f = parseFinancials(md);
+  closeTo(f.irr, -0.99);
+  closeTo(f.equityMultiple, -2.38);
+});
+
 test('parseVerdict: reads PASS/CONDITIONAL/FAIL from the verdict section', () => {
   assert.equal(parseVerdict('## Agent Verdict\nFAIL — debt service not covered.'), 'FAIL');
   assert.equal(parseVerdict('## Agent Verdict\nCONDITIONAL pending lower leverage.'), 'CONDITIONAL');
