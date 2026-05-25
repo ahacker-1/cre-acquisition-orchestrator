@@ -133,9 +133,14 @@ Ordering: (2) parser P1–P4 [agent, running] → (3) classification P5 → (4) 
       `npm run validate:docs` ✓ (31/8/27/5/36/10), `npm run validate:guides` ✓, dashboard build+typecheck ✓,
       `npm audit --omit=dev` ✓ (0 vulns). e2e pending.
 - [x] G. Ledger complete — every item PASS with evidence (this file).
-- [~] (bonus) H. Live Codex run — NOT run (operator de-scoped live as optional/bonus; cost-conscious).
-      Codex IS logged in (codex-cli 0.132.0); `npm run eval` runs the live headline on demand. The
-      committed report covers the offline layers honestly; live availability noted in README.
+- [x] (bonus) H. Live Codex run — DONE (operator requested it). `node eval/run-eval.mjs --mode all` on the
+      3 deals; Codex CLI 0.132.0, 2026-05-25; run `live-full`. HONEST live numbers (n=3): determinable
+      financial 67%, IC exact 33%, directional 67% — all BELOW target (85/60/80); RF + dealbreaker recall
+      100% where planted; over-conservative on cp-stabilized (PASS→CONDITIONAL) and va-overlevered
+      (CONDITIONAL→FAIL). Reported truthfully in README + eval/results/TRUST-REPORT.md "where it breaks";
+      NOT tuned to flatter (cardinal rule). INCIDENT: mid-run OneDrive sync deleted 9 tracked files (incl.
+      the 3 ground-truth answer keys); detected on a 10-min progress check and restored from HEAD BEFORE the
+      scoring phase, so the committed live scores are valid. Re-verified git tree intact before commit.
 - [x] RELEASE: docs updated — 8→3 sweep (eval/README, eval/generators/README, generate_deals.py,
       EVAL-PLAN, EVAL-GOAL, USABILITY-GOAL), README counts (36 fixtures / 10 tests) + Honest-Evaluation
       rewrite (3 deals, real numbers) + unreleased status bullet, CHANGELOG [Unreleased] (moved to top),

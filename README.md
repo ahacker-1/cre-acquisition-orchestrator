@@ -76,16 +76,17 @@ It measures **three layers that are NOT equivalent** (full methodology + how to 
 |---|---|---|
 | **Extraction** (deterministic parsers) | recovering known fields from deliberately messy XLSX/PDF docs | precision/recall/F1 = **100%** across **3/3** deals |
 | **Simulation** (offline demo — a *fixture*, **not** reasoning) | the deterministic engine on the benchmark | determinable financials **100%** and IC-verdict **3/3** (the verdict is threshold-driven from `config/thresholds.json`), but model-dependent returns (IRR / equity multiple) only **33%** within tolerance and narrative red-flag recall **50%** — it computes, it does **not** reason |
-| **Live agent reasoning** (real Codex LLM — *the number that counts*) | the product's actual judgment | run `npm run eval` to populate (Codex CLI 0.132.0 detected, logged in); the committed pass here covers the offline layers — live reasoning is the headline metric |
+| **Live agent reasoning** (real Codex LLM — *the number that counts*) | the product's actual judgment | Codex CLI 0.132.0, 2026-05-25 (n=3): determinable financial accuracy **67%**, IC-verdict **33%** exact / **67%** directional — all **below the 85% / 60% / 80% targets**. It correctly flagged the distressed deal's dealbreaker and red flags (**100%** recall) but was over-conservative on the clean deal (PASS→CONDITIONAL) and the over-levered deal (CONDITIONAL→FAIL). Honest headline: **the live agents currently miss the verdict/financial targets on this sample.** |
 
-**Honest scope:** the committed report covers the offline layers (extraction + simulation) on all **3**
-benchmark deals; the benchmark was trimmed to **3 representative archetype deals** (clean core-plus,
-value-add, distressed) for a fast, focused regression loop. Ground truth, the scorer, and tolerances
-are committed and fixed before runs; nothing is tuned to flatter the system. The deterministic
-simulation **cannot detect narrative risks** (e.g. tenant concentration, insurance understatement,
-missing documents) — a known limit of the fixture layer, and exactly what the live layer measures.
-See [EVAL-PLAN.md](EVAL-PLAN.md) for the methodology and [eval/results/TRUST-REPORT.md](eval/results/TRUST-REPORT.md)
-for the full committed report.
+**Honest scope:** the committed report now covers **all three layers — extraction, simulation, and live
+Codex reasoning — on all 3 benchmark deals** (trimmed to one clean core-plus, one value-add, one
+distressed for a fast, focused loop). Ground truth, the scorer, and tolerances are committed and fixed
+before runs; **nothing is tuned to flatter the system** — the live agents underperform the verdict and
+financial-accuracy targets on this n=3 sample, and the report says so in its "where it breaks" section.
+The deterministic simulation **cannot detect narrative risks** (tenant concentration, insurance
+understatement, missing documents); the live layer reasons over them but is over-conservative here. See
+[EVAL-PLAN.md](EVAL-PLAN.md) and [eval/results/TRUST-REPORT.md](eval/results/TRUST-REPORT.md) for the
+full committed report (model, date, per-deal results, and weaknesses).
 
 ---
 
