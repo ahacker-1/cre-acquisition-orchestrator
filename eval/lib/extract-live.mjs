@@ -201,11 +201,17 @@ export function parseLiveRunDir({
 
   const wp = (name) => (workpaperByAgent[name] && workpaperByAgent[name].markdown) || ''
 
-  // Financials — prefer financial-model-builder, fall back to ic-memo / scenario.
+  // Financials — financial-model-builder is authoritative for the underwriting
+  // metrics (NOI, cap rate, DSCR, IRR, equity multiple). EGI is the operating-
+  // statement (T12) figure that the opex-analyst states authoritatively and the
+  // underwriting workpapers typically omit, so include opex-analyst as a lower-
+  // priority source. mergeMetrics only fills a key the higher-priority workpapers
+  // left null, so this recovers EGI without overriding any UW-authoritative metric.
   const fmb = parseFinancials(wp('financial-model-builder'))
   const icm = parseFinancials(wp('ic-memo-writer'))
   const sca = parseFinancials(wp('scenario-analyst'))
-  const metrics = mergeMetrics(fmb, icm, sca)
+  const opex = parseFinancials(wp('opex-analyst'))
+  const metrics = mergeMetrics(fmb, icm, sca, opex)
 
   // Flag texts — every PASSing workpaper contributes (DD agents catch
   // occupancy/environmental/concentration; UW agents catch DSCR/leverage).
