@@ -1,6 +1,6 @@
 # CRE Acquisition Orchestrator — Trust Report
 
-_Generated 2026-05-25T04:03:32.183Z · run `live-full` · eval v1.0.0_
+_Generated 2026-05-25T05:46:52.803Z · run `live-fix1-final` · eval v1.0.0_
 
 > **How to read this report.** Three layers are measured separately and they are NOT
 > equivalent:
@@ -22,13 +22,13 @@ _Generated 2026-05-25T04:03:32.183Z · run `live-full` · eval v1.0.0_
 
 | Metric | Live (reasoning) | Simulation (fixture) | Target |
 |---|---|---|---|
-| Financial accuracy — determinable | 67% ⚠️ (n=3) | 100% (n=3) | 85% |
-| Financial accuracy — model-dependent | 33% (n=3) | 33% (n=3) | — |
+| Financial accuracy — determinable | 100% ✅ (n=3) | 100% (n=3) | 85% |
+| Financial accuracy — model-dependent | 67% (n=3) | 33% (n=3) | — |
 | Red-flag recall (required) | 100% ✅ (n=1) | 100% (n=1) | 70% |
 | Red-flag recall (all planted) | 100% (n=2) | 50% (n=2) | — |
 | Dealbreaker recall | 100% ✅ (n=1) | 100% (n=1) | 90% |
-| IC verdict — exact match | 33% ⚠️ (n=3) | 100% (n=3) | 60% |
-| IC verdict — directional match | 67% ⚠️ (n=3) | 100% (n=3) | 80% |
+| IC verdict — exact match | 100% ✅ (n=3) | 100% (n=3) | 60% |
+| IC verdict — directional match | 100% ✅ (n=3) | 100% (n=3) | 80% |
 
 ### Extraction layer (deterministic parser)
 
@@ -43,17 +43,13 @@ _Generated 2026-05-25T04:03:32.183Z · run `live-full` · eval v1.0.0_
 
 | Deal | Archetype | IC expected | IC actual | Dir? | Det. fin | Model fin | RF req-recall | Dealbreaker | Partial fail |
 |---|---|---|---|---|---|---|---|---|---|
-| cp-stabilized-clean | core-plus | PASS | CONDITIONAL | ✓ | 75% | 100% | N/A | — | — |
-| ds-occupancy-collapse | distressed | FAIL | FAIL | ✓ | 75% | 0% | N/A | 100% | — |
-| va-overlevered-ltv | value-add | CONDITIONAL | FAIL | ✗ | 50% | 0% | 100% | — | — |
+| cp-stabilized-clean | core-plus | PASS | PASS | ✓ | 100% | 100% | N/A | — | — |
+| ds-occupancy-collapse | distressed | FAIL | FAIL | ✓ | 100% | 0% | N/A | 100% | — |
+| va-overlevered-ltv | value-add | CONDITIONAL | CONDITIONAL | ✓ | 100% | 100% | 100% | — | — |
 
 ## Where it breaks (honest weaknesses)
 
-- live: **financialDeterminable** = 67% is below the 85% target (n=3).
-- live: **icExactMatch** = 33% is below the 60% target (n=3).
-- live: **icDirectionalMatch** = 67% is below the 80% target (n=3).
-- live: deal **cp-stabilized-clean** IC verdict expected PASS, got CONDITIONAL.
-- live: deal **va-overlevered-ltv** IC verdict expected CONDITIONAL, got FAIL.
+_No live-layer misses recorded against targets in this run._
 
 ## Per-deal — deterministic simulation (fixture baseline)
 
@@ -67,7 +63,7 @@ _Reminder: these numbers come from fixed arithmetic + scenario config, not reaso
 
 ## Run notes
 
-- Live path: Codex codex-cli 0.132.0 (Logged in using ChatGPT); workflow quick-deal-screen; runs 2026-05-25T03:24:14.211Z .. 2026-05-25T04:03:32.116Z.
+- Live path: Codex codex-cli 0.132.0 (Logged in using ChatGPT); workflow quick-deal-screen; runs 2026-05-25T04:50:39.096Z .. 2026-05-25T05:32:19.543Z.
 
 ## Methodology & reproduction
 

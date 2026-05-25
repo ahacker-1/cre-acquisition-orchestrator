@@ -729,6 +729,45 @@ test('parseFinancials: value-before-label and unit-rejection (real agent phrasin
   closeTo(f.capRate, 0.0618);
 });
 
+test('parseFinancials: rich metrics block — going-in wins over pro-forma; no cross-line label binding', () => {
+  // Real failure mode from a financial-model-builder "## Metrics" block: many
+  // labeled variants appear one per line, plus an early prose line mentioning
+  // pro-forma NOI. The scorer must read the GOING-IN values, must NOT bind a
+  // value on line N to a label on line N+1 (e.g. read "LTV: 82.0%" as the cap
+  // rate, or the NOI value as EGI), and must prefer going-in over pro-forma /
+  // stabilized variants.
+  const md = [
+    'CONDITIONAL. 82.0% LTV, 0.85x going-in DSCR on amortizing debt; pro forma NOI of $1.56M would support coverage if achieved.',
+    '',
+    '## Metrics',
+    'NOI: $960,000',
+    'EGI: $2,120,000',
+    'LTV: 82.0%',
+    'Going-in Cap Rate: 5.22%',
+    'Going-in DSCR (amortizing): 0.85x',
+    'Going-in DSCR (interest-only): 0.99x',
+    'Pro Forma NOI: $1,560,000',
+    'Stabilized DSCR (amortizing): 1.38x'
+  ].join('\n');
+  const f = parseFinancials(md);
+  assert.equal(f.noi, 960000); // going-in NOI, not the $1.56M pro forma
+  assert.equal(f.egi, 2120000); // EGI line, not the NOI value on the prior line
+  closeTo(f.capRate, 0.0522); // cap rate, not the 82% LTV on the prior line
+  closeTo(f.dscr, 0.85); // going-in amortizing, not 1.38x stabilized / 0.99x IO
+});
+
+test('parseFinancials: DSCR as "Label (qualifier): value" and "Nx amortizing DSCR"', () => {
+  // Metrics-block phrasing where DSCR carries a parenthetical basis and an IO
+  // variant follows; read the parenthetical-labelled value, prefer amortizing.
+  const block = parseFinancials(
+    ['## Metrics', 'Going-in DSCR (amortizing): 1.31x', 'Going-in DSCR (interest-only): 1.59x'].join('\n')
+  );
+  closeTo(block.dscr, 1.31);
+  // Value-before-label with a basis adjective between value and label.
+  const prose = parseFinancials('Going-in coverage is 1.31x amortizing DSCR at the deal rate.');
+  closeTo(prose.dscr, 1.31);
+});
+
 test('parseFinancials: context numbers are NOT mistaken for metrics', () => {
   // The agent declined to compute IRR/EM (no scenario matrix). "27-scenario"
   // must NOT be read as 27% IRR or 27x equity multiple — those stay null.

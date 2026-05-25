@@ -98,10 +98,13 @@ function sectionBody(sections, names) {
 // appears within `window` chars AFTER any of the keyword regexes.
 // A number, optionally with thousands separators / decimals.
 const NUM = String.raw`\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?`;
-// Optional qualifier words that may sit between the number and its label.
-const QUAL = String.raw`(?:going-in\s+|going in\s+|current\s+|stabilized\s+|levered\s+|leveraged\s+|in-place\s+|in place\s+|year[\s-]?1\s+|base\s+)?`;
+// Optional qualifier words that may sit between the number and its label. The
+// inter-word whitespace is HORIZONTAL-only ([^\S\n]) so a value on one line can
+// never bind to a label on the next (in a one-metric-per-line "## Metrics" block
+// that would otherwise read line N's value as line N+1's metric).
+const QUAL = String.raw`(?:going-in[^\S\n]+|going in[^\S\n]+|current[^\S\n]+|stabilized[^\S\n]+|levered[^\S\n]+|leveraged[^\S\n]+|in-place[^\S\n]+|in place[^\S\n]+|year[ -]?1[^\S\n]+|base[^\S\n]+|amorti[sz]ing[^\S\n]+|amorti[sz]ed[^\S\n]+)?`;
 // Optional connector words between a label and its number ("DSCR of 1.13x").
-const CONN = String.raw`(?:\s*(?:of about|of|is|are|at|=|:|~|about|approximately|projected at|implies an?|implied|around|near|of roughly|roughly)?\s*(?:about\s+|approximately\s+|roughly\s+|~\s*)?)`;
+const CONN = String.raw`(?:[^\S\n]*(?:of about|of|is|are|at|=|:|~|about|approximately|projected at|implies an?|implied|around|near|of roughly|roughly)?[^\S\n]*(?:about[^\S\n]+|approximately[^\S\n]+|roughly[^\S\n]+|~[^\S\n]*)?)`;
 
 // Finds a metric value by its label, requiring the value to carry the metric's
 // UNIT so we never grab a neighbouring context number (a scenario count, a hold
@@ -121,18 +124,34 @@ const CONN = String.raw`(?:\s*(?:of about|of|is|are|at|=|:|~|about|approximately
 // thresholds, and the agent explicitly could not compute the deal's IRR/EM.)
 const THRESHOLD_RE = /\b(?:threshold|require[sd]?|minimum|maximum|\bmin\b|target|hurdle|at least|underwriting (?:minimum|standard|threshold|target)|must (?:be|exceed|clear)|pass(?:ing)? bar)\b/i;
 
-function findMetric(text, labelAlt, kind) {
+// Disqualifying qualifiers for the GOING-IN determinable metrics (NOI, EGI, cap
+// rate, DSCR). The ground truth defines these as the going-in / in-place figures,
+// so a value labelled pro-forma / stabilized / projected / exit / reversion /
+// stressed / scenario / interest-only is NOT the metric we want. If one of these
+// sits next to the matched label, skip the candidate (the going-in value stated
+// elsewhere wins). NOT applied to IRR / equity multiple, which are inherently
+// projected returns with no going-in vs. pro-forma distinction.
+const GOING_IN_DISQUALIFIER_RE = /\b(?:pro[\s-]?forma|proforma|stabili[sz]ed|projected|forecast(?:ed)?|exit|reversion|terminal|year[\s-]?[2-9]|yr[\s-]?[2-9]|stressed|scenario|downside|upside|interest[\s-]?only)\b/i;
+
+function findMetric(text, labelAlt, kind, goingIn = false) {
   if (typeof text !== 'string' || text.length === 0) return null;
   let valTok;
-  if (kind === 'pct') valTok = String.raw`(${NUM})\s*%`;
-  else if (kind === 'mult') valTok = String.raw`(${NUM})\s*[x×]`;
+  // All inter-token whitespace is HORIZONTAL-only ([^\S\n]) so a value never
+  // spans a line break to bind to a label on the next line (the one-metric-per-
+  // line "## Metrics" block would otherwise read line N's value as line N+1's
+  // metric — e.g. "$960,000\nEGI:" read as EGI).
+  if (kind === 'pct') valTok = String.raw`(${NUM})[^\S\n]*%`;
+  else if (kind === 'mult') valTok = String.raw`(${NUM})[^\S\n]*[x×]`;
   // NUM contains a top-level alternation, so it MUST be wrapped in (?:...) when
   // embedded in a larger alternation — otherwise its `|` leaks and breaks the
   // surrounding branches (this silently dropped the "$" money branch once).
-  else valTok = String.raw`(\$\s?(?:${NUM})\s*(?:mm|bn|b|m|million|k|thousand)?|(?:${NUM})\s*(?:mm|bn|b|m|million|k|thousand))`;
+  else valTok = String.raw`(\$[^\S\n]?(?:${NUM})[^\S\n]*(?:mm|bn|b|m|million|k|thousand)?|(?:${NUM})[^\S\n]*(?:mm|bn|b|m|million|k|thousand))`;
 
-  const beforeRe = new RegExp(`${valTok}\\s*${QUAL}(?:${labelAlt})`, 'gi');
-  const afterRe = new RegExp(`(?:${labelAlt})${CONN}${valTok}`, 'gi');
+  const beforeRe = new RegExp(`${valTok}[^\\S\\n]*${QUAL}(?:${labelAlt})`, 'gi');
+  // Allow one parenthetical basis/qualifier between the label and its value
+  // ("Going-in DSCR (amortizing): 1.31x"). The qualifier text stays inside the
+  // matched span, so the disqualifier check still sees e.g. "(interest-only)".
+  const afterRe = new RegExp(`(?:${labelAlt})(?:[^\\S\\n]*\\([^)\\n]*\\))?${CONN}${valTok}`, 'gi');
 
   // Collect every full match from both directions, then take the earliest one
   // that is NOT in a threshold/requirement context.
@@ -151,6 +170,7 @@ function findMetric(text, labelAlt, kind) {
     const lineStart = text.lastIndexOf('\n', c.index - 1) + 1;
     const ctx = text.slice(Math.max(lineStart, c.index - 60), c.end);
     if (THRESHOLD_RE.test(ctx)) continue; // a requirement/target, not the metric
+    if (goingIn && GOING_IN_DISQUALIFIER_RE.test(ctx)) continue; // pro-forma/exit/etc., not the going-in figure
     if (kind === 'pct') return parsePercent(c.cap + '%');
     if (kind === 'mult') return parseRatio(c.cap);
     return parseMoney(c.cap);
@@ -163,10 +183,10 @@ function findMetric(text, labelAlt, kind) {
 export function parseFinancials(markdown) {
   const text = typeof markdown === 'string' ? markdown : '';
   return {
-    noi: findMetric(text, 'net operating income|noi', 'money'),
-    egi: findMetric(text, 'effective gross income|egi', 'money'),
-    capRate: findMetric(text, 'cap(?:italization)?[ -]?rate', 'pct'),
-    dscr: findMetric(text, 'dscr|debt[ -]service[ -]coverage(?: ratio)?', 'mult'),
+    noi: findMetric(text, 'net operating income|noi', 'money', true),
+    egi: findMetric(text, 'effective gross income|egi', 'money', true),
+    capRate: findMetric(text, 'cap(?:italization)?[ -]?rate', 'pct', true),
+    dscr: findMetric(text, 'dscr|debt[ -]service[ -]coverage(?: ratio)?', 'mult', true),
     irr: findMetric(text, 'leveraged irr|levered irr|irr|internal rate of return', 'pct'),
     equityMultiple: findMetric(text, 'equity[ -]multiple|equity[ -]multiplier|moic', 'mult')
   };
