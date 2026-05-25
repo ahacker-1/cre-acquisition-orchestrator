@@ -6,17 +6,21 @@ This project follows the spirit of [Keep a Changelog](https://keepachangelog.com
 
 ## [2.8.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.7.0...v2.8.0) (2026-05-25)
 
+Two themes: hardening the real-world document-drop journey, and shipping an honest open
+evaluation harness that proves the live agents detect document-buried ("narrative") risks the
+deterministic demo is blind to. The offline demo remains the default; all changes are
+backward-compatible.
 
 ### Features
 
-* harden real-world document drop flow; trim eval benchmark to 3 ([f5b4959](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/f5b495996399b1eae686b2947932e90b0e966329))
-* open evaluation harness + honest trust report (npm run eval) ([d686cf6](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/d686cf6a742ebca57d2f7be500dc234a321bf9e6))
-
+* **Real-world drop-flow hardening:** a messy real-world pile (T12s, rent rolls, offering memos, plus junk files) now flows through classify → extract → review → workflow → export with no crashes, silent skips, or confidently-wrong numbers. Vacant `$0` rent rows no longer deflate in-place rent averages (Excel and CSV paths); rent roll vs T12 is classified by document content, not just filename; oversized CSVs and corrupt/unreadable workbooks degrade to a graceful `parse_failed` (no hangs); local filesystem paths are redacted from parser errors; and Python-interpreter selection falls back resiliently. An automated smoke test (`npm run test:pile`) drives the nasty pile through the real parser and asserts a typed per-file outcome.
+* **Threshold-driven IC verdict:** the deterministic engine now consults `config/thresholds.json` for dealbreakers (instead of scenario-baked text) and uses a deal-specific exit cap — fixing a clean deal that was wrongly marked FAIL.
+* **Open evaluation harness (`npm run eval`):** scores the orchestrator on a benchmark of 8 synthetic deals (core-plus / value-add / distressed, with both determinable and narrative document-buried planted risks) against committed ground truth, and writes an honest trust report to `eval/results/{scorecard.json,TRUST-REPORT.md}`. An `npm run eval:offline` mode runs the no-API extraction + simulation layers. The report measures three non-equivalent layers — deterministic extraction, the simulation *fixture* (not reasoning), and live Codex agent reasoning — and reports where the system falls short.
+* **Live narrative-risk proof:** the live (Codex) layer is proven on the hard, document-buried deals — it genuinely flags tenant concentration, insurance understatement, and missing Phase I that the deterministic fixture is structurally blind to. Offline scores all 8 deals; live covers a representative 6-deal subset: **live narrative red-flag recall 100%, IC verdict 100% exact (n=6), determinable financial 96%**. The remaining honest soft spot is model-dependent returns (IRR / equity multiple) at ~50%. Nothing was tuned to flatter; ground truth is fixed and committed. See [eval/results/TRUST-REPORT.md](eval/results/TRUST-REPORT.md).
 
 ### Bug Fixes
 
-* **eval:** disambiguate going-in vs pro-forma metrics -&gt; live 100% determinable / 100% IC verdict ([11e0448](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/11e04486954da55fe7517bf8aab10a0ac69854c6))
-* **eval:** read EGI from opex-analyst + add metrics/threshold-verdict agent contract ([a446bf7](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/a446bf7f5332cf9da2e6db12c1bcd5a69df9d565))
+* **eval:** hardened the live-workpaper extractor — source EGI from the OpEx analyst; match values to labels on the same line only (a value never binds across a line break); prefer going-in metrics over pro-forma/stabilized/exit/interest-only variants; and parse `DSCR (amortizing): X`. Backed by a required machine-parseable agent `## Metrics` block (amortizing-basis DSCR) and a threshold-driven verdict rule. These lifted live determinable-financial accuracy and IC verdict to target.
 
 ## [Unreleased]
 
