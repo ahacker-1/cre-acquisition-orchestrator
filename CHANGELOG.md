@@ -4,6 +4,21 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [Unreleased]
+
+### Real-world drop-flow hardening
+
+Hardening pass focused on the offline document-drop journey so a messy real-world pile (T12s, rent
+rolls, offering memos, plus junk files) flows through classify → extract → review → workflow →
+export with no crashes, silent skips, or confidently-wrong numbers.
+
+* **Parser confident-wrong fix:** vacant `$0` rent rows no longer deflate in-place rent averages — a vacant unit contributes its market rent to GPR but `$0` to in-place rent instead of dragging the average down. Applied to both the Excel and CSV parsing paths.
+* **Parser robustness:** CSV inputs over the size cap now degrade to a graceful `parse_failed` status instead of hanging or crashing; corrupt/unreadable workbooks return `parse_failed` (rather than the misleading `parser-unavailable`); local filesystem paths are redacted from parser error messages; and the Python-interpreter selection is now resilient (falls back across available interpreters instead of failing when one is missing).
+* **Content-aware document classification:** rent roll vs T12 is now classified by document content (not just filename), preventing a mislabeled file from being silently routed to the wrong parser and losing data.
+* **Threshold-driven IC verdict:** the deterministic engine now consults `config/thresholds.json` for dealbreakers when forming the IC verdict (instead of relying on scenario-baked text), and uses a deal-specific exit cap. This fixed a clean deal being wrongly marked FAIL.
+* **Real-world pile smoke test:** an automated test (`npm run test:pile`) drives a deliberately nasty pile of files through the real parser and asserts a typed per-file outcome — every file is classified and stored, parseable files extract with provenance, and unparseable/irrelevant files are flagged gracefully.
+* **Eval benchmark trimmed:** the benchmark is now 3 representative deals (one per archetype: `cp-stabilized-clean`, `va-overlevered-ltv`, `ds-occupancy-collapse`); the other archetype specs remain defined in `eval/generators/generate_deals.py` for extension. Added an `npm run eval:offline` mode that runs the offline (extraction + simulation) layers without the live agents.
+
 ## [2.7.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.6.0...v2.7.0) (2026-05-21)
 
 A completion pass that closes the README "known limits", implements the ROADMAP near-term
@@ -50,10 +65,6 @@ offline demo remains the default; all changes are backward-compatible.
 * stabilize CI lock handling ([8052130](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/805213084fdf939338fd522ffe8a78176ecc91be))
 * stabilize dashboard launch lifecycle ([4edd907](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/4edd90783525dba1a103b3fdbd20bf1285bf5cb0))
 * stabilize fast checkpoint workspace reveal ([09496f4](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/09496f4aa83b702821010429b527ebc6ae1e1c28))
-
-## [Unreleased]
-
-No unreleased changes yet. New work after v2.6.0 should be added here before the next release.
 
 ## [2.5.1] - Stale Source Evidence Gate
 

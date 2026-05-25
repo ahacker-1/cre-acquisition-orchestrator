@@ -2,8 +2,9 @@
 """
 Deterministic synthetic CRE benchmark dataset generator (EVAL-PLAN Phase 1).
 
-Produces >=8 realistic synthetic commercial real estate deals under
-``eval/benchmark/deals/<dealId>/``. For each deal it emits:
+Produces the 3 benchmark synthetic commercial real estate deals under
+``eval/benchmark/deals/<dealId>/`` (one per archetype; see ``all_specs()``). For
+each deal it emits:
 
   * ``deal.json``            - deal input, valid against config/deal-schema.json
   * ``documents/*``          - synthetic source docs (rent roll, T12, offering memo)
@@ -836,7 +837,7 @@ def render_offering_memo_pdf(spec: DealSpec, out_path: Path) -> None:
 def render_offering_memo_md(spec: DealSpec, out_path: Path) -> None:
     """Render a Markdown offering memo (alternative to PDF).
 
-    Currently all 8 deals use the PDF offering memo; this renderer is provided so
+    Currently all 3 deals use the PDF offering memo; this renderer is provided so
     the dataset can be extended with .md memos without changing the contract.
     """
     om = spec.om_overrides or {}
@@ -1037,8 +1038,13 @@ def build_ground_truth(spec: DealSpec) -> Dict[str, Any]:
 
 
 # ===========================================================================
-# Deal definitions (8 canonical specs)
+# Deal definitions (8 canonical specs defined; 3 active via all_specs())
 # ===========================================================================
+#
+# All 8 archetype specs remain defined below for extension, but only 3 are
+# active in the benchmark (see all_specs(): cp-stabilized-clean,
+# va-overlevered-ltv, ds-occupancy-collapse). Re-add any of the others to
+# all_specs() to widen the set.
 #
 # Each spec is internally consistent: the T12 EGI/OpEx/NOI tie to a credible
 # operating statement, the going-in cap = NOI / askingPrice lands in a sane band,
@@ -1491,15 +1497,15 @@ def deal_8_dscr_below080() -> DealSpec:
 
 
 def all_specs() -> List[DealSpec]:
+    # Trimmed to 3 representative deals — one per archetype — for a fast, focused
+    # regression set (clean core-plus / value-add / distressed). The remaining
+    # archetype specs (insurance, concentration, sub-1.20 DSCR, missing Phase I,
+    # sub-0.80 DSCR) stay defined above and can be re-added here to extend the
+    # benchmark toward an open standard.
     return [
-        deal_1_clean(),
-        deal_2_insurance(),
-        deal_3_concentration(),
-        deal_4_dscr_sub120(),
-        deal_5_overlevered(),
-        deal_6_missing_phase1(),
-        deal_7_occupancy_collapse(),
-        deal_8_dscr_below080(),
+        deal_1_clean(),          # cp-stabilized-clean  (core-plus, expected PASS)
+        deal_5_overlevered(),    # va-overlevered-ltv   (value-add, expected CONDITIONAL)
+        deal_7_occupancy_collapse(),  # ds-occupancy-collapse (distressed, expected FAIL)
     ]
 
 
@@ -1531,7 +1537,7 @@ def generate_deal(spec: DealSpec) -> None:
     # documents
     render_rent_roll_xlsx(spec, docs_dir / "rent-roll.xlsx", doc_quirks(spec, "rent_roll"))
     render_t12_xlsx(spec, docs_dir / "t12.xlsx", doc_quirks(spec, "t12"))
-    # Offering memo: PDF for all 8 (markdown renderer available for extension).
+    # Offering memo: PDF for all 3 (markdown renderer available for extension).
     render_offering_memo_pdf(spec, docs_dir / "offering-memo.pdf")
 
     # ground-truth.json

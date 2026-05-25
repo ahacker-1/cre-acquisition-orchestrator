@@ -114,7 +114,7 @@
       "impact": "Could reduce certainty of execution",
       "owner": "quote-comparator",
       "status": "OPEN",
-      "createdAt": "2026-05-19T20:23:14.131Z"
+      "createdAt": "2026-05-25T02:29:58.199Z"
     }
   ],
   "dataGaps": [
@@ -126,7 +126,7 @@
       "impact": "Could reduce confidence in recommendation",
       "owner": "lender-outreach",
       "status": "OPEN",
-      "createdAt": "2026-05-19T20:23:14.131Z"
+      "createdAt": "2026-05-25T02:29:58.199Z"
     }
   ],
   "agentFindings": {

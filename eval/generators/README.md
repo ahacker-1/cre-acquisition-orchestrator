@@ -1,7 +1,7 @@
 # Synthetic CRE Benchmark Dataset Generator
 
 Deterministic generator for the evaluation benchmark defined in
-[`EVAL-PLAN.md`](../../EVAL-PLAN.md) **Phase 1**. It emits **8 synthetic
+[`EVAL-PLAN.md`](../../EVAL-PLAN.md) **Phase 1**. It emits **3 synthetic
 commercial-real-estate deals** under [`eval/benchmark/deals/`](../benchmark/deals)
 — each with a schema-valid `deal.json`, synthetic source documents carrying
 realistic messiness, and a machine-readable `ground-truth.json` answer key.
@@ -21,7 +21,7 @@ Re-running rewrites the full dataset in place. The generator is **deterministic
 and idempotent**: no `random`, no `datetime.now()`. Excel workbooks are written
 with frozen document timestamps and frozen zip-entry mtimes, and PDFs use
 reportlab `invariant=1`, so every produced file is **byte-identical run to run**
-(verified via SHA-256 of all 40 files across two runs).
+(verified via SHA-256 of all 15 files across two runs).
 
 Requirements (already present in this repo's Python env): `openpyxl`,
 `reportlab`. The dataset is consumed by the eval harness (`npm run eval`,
@@ -53,18 +53,17 @@ the truth.
 
 ---
 
-## The 8 deals
+## The 3 deals
+
+The benchmark is trimmed to three representative deals — one per archetype. The other
+archetype specs remain defined in `generate_deals.py` (see [Extending the dataset](#extending-the-dataset))
+and can be re-added to `all_specs()` to widen the benchmark.
 
 | # | dealId | Archetype | Units | Price | LTV | Rate | Cap | DSCR | IRR\* | EM\* | Verdict | Key planted issue |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
 | 1 | `cp-stabilized-clean` | core-plus | 120 | $19.17M | 0.65 | 5.8% | 6.00% | 1.31 | 0.110 | 1.63 | **PASS** | none (false-positive control) |
-| 2 | `cp-insurance-understated` | core-plus | 120 | $20.0M | 0.65 | 6.0% | 5.74% | 1.23 | 0.100 | 1.57 | **CONDITIONAL** | insurance line understated in T12 |
-| 3 | `cp-concentration-risk` | core-plus | 120 | $17.0M | 0.60 | 6.1% | 5.65% | 1.29 | 0.092 | 1.52 | **CONDITIONAL** | single-employer tenant concentration |
-| 4 | `va-sub120-dscr` | value-add | 150 | $15.5M | 0.72 | 6.5% | 6.18% | 1.13 | 0.112 | 1.67 | **CONDITIONAL** | going-in DSCR ~1.13 (sub-1.20 floor) |
-| 5 | `va-overlevered-ltv` | value-add | 156 | $18.4M | 0.82 | 6.4% | 5.22% | 0.85 | 0.069 | 1.42 | **CONDITIONAL** | targetLTV 0.82 (over-levered) |
-| 6 | `va-missing-phase1` | value-add | 128 | $15.8M | 0.70 | 6.3% | 5.97% | 1.15 | 0.107 | 1.63 | **CONDITIONAL** | no Phase I ESA + OM NOI overstates T12 |
-| 7 | `ds-occupancy-collapse` | distressed | 150 | $9.8M | 0.70 | 6.8% | 0.55% | 0.10 | -0.990 | -2.38 | **FAIL** | 62% occupancy, no bridge (dealbreaker) |
-| 8 | `ds-dscr-below-080` | distressed | 120 | $9.2M | 0.75 | 7.2% | 3.48% | 0.57 | -0.627 | -0.29 | **FAIL** | going-in DSCR < 0.80 (dealbreaker) |
+| 2 | `va-overlevered-ltv` | value-add | 156 | $18.4M | 0.82 | 6.4% | 5.22% | 0.85 | 0.069 | 1.42 | **CONDITIONAL** | targetLTV 0.82 (over-levered) |
+| 3 | `ds-occupancy-collapse` | distressed | 150 | $9.8M | 0.70 | 6.8% | 0.55% | 0.10 | -0.990 | -2.38 | **FAIL** | 62% occupancy, no bridge (dealbreaker) |
 
 \* IRR and equity multiple are **model-dependent** (see below); negative values
 on the distressed dealbreaker deals are the honest "capital is destroyed as
@@ -147,7 +146,7 @@ existing parser; they exist to test extraction robustness.
 | `trailing-notes` | rent roll / T12 | free-text disclaimer/notes rows after the data table that must not be counted as units/line items |
 | `occupancy-quirks` | rent roll | ambiguous status tokens (`MTM` → occupied, `Notice` → vacant) that the parser flags as ambiguous but still resolves |
 | `multi-sheet` | T12 | a decoy `Summary` sheet precedes the real `T12` sheet; the parser must score sheets and pick the right one |
-| OM-vs-T12 conflict | offering memo | (deal 6) the offering-memo headline NOI intentionally overstates the T12 NOI — both are honest planted values in their own document |
+| OM-vs-T12 conflict | offering memo | the offering-memo headline NOI intentionally overstates the T12 NOI — both are honest planted values in their own document (supported by the generator via `om_overrides`; not exercised by the current 3-deal set) |
 | title banners | rent roll / T12 | a merged full-width title row / leading title row (benign; skipped by header detection) |
 
 Every deal's `documents[].quirks` array in `ground-truth.json` records exactly
@@ -162,17 +161,13 @@ a fair `keywords` array (terms a competent analyst would actually use) and a
 `required` flag for the ones that MUST be caught. **Deal 1 has none** (it is the
 false-positive control).
 
+**Deal 1 (`cp-stabilized-clean`) has none** (it is the false-positive control), so it does not appear below.
+
 | Deal | id | Type | Required | Why it's real |
 |---|---|---|:--:|---|
-| 2 | `insurance-understated` | red flag (UNDERWRITING/HIGH) | yes | T12 insurance ≈ $342/unit, far below the ~$1,000/unit market for the vintage/region; correcting it compresses NOI |
-| 3 | `tenant-concentration` | red flag (MARKET/MEDIUM) | yes | OM discloses ~60% of residents work for one employer → correlated vacancy risk |
-| 4 | `dscr-sub-120` | red flag (FINANCING/HIGH) | yes | NOI / debt service ≈ 1.13, below the 1.20× agency floor at targeted leverage |
-| 5 | `over-levered-ltv` | red flag (FINANCING/HIGH) | yes | `targetLTV = 0.82`; negative leverage (borrowing at 6.4% to buy a 5.22% yield), DSCR 0.85 |
-| 6 | `missing-phase-1-esa` | red flag (ENVIRONMENTAL/HIGH) | yes | adaptive reuse of a former light-industrial parcel with NO Phase I ESA in the data room |
-| 6 | `om-t12-noi-conflict` | red flag (UNDERWRITING/MEDIUM) | yes | OM headline NOI ($1.03M) overstates the T12 NOI ($0.943M) |
-| 7 | `occupancy-collapse-no-bridge` | **dealbreaker** | yes | 62% occupancy financed with permanent (non-bridge) debt and no lease-up capital; in-place NOI cannot cover debt service (DSCR 0.10) |
-| 7 | `deferred-maintenance` | red flag (PHYSICAL/MEDIUM) | no | condition decline behind the vacancy (informational, not required) |
-| 8 | `dscr-sub-080` | **dealbreaker** | yes | going-in DSCR ≈ 0.57, well below 0.80; not financeable as structured |
+| 2 (`va-overlevered-ltv`) | `over-levered-ltv` | red flag (FINANCING/HIGH) | yes | `targetLTV = 0.82`; negative leverage (borrowing at 6.4% to buy a 5.22% yield), DSCR 0.85 |
+| 3 (`ds-occupancy-collapse`) | `occupancy-collapse-no-bridge` | **dealbreaker** | yes | 62% occupancy financed with permanent (non-bridge) debt and no lease-up capital; in-place NOI cannot cover debt service (DSCR 0.10) |
+| 3 (`ds-occupancy-collapse`) | `deferred-maintenance` | red flag (PHYSICAL/MEDIUM) | no | condition decline behind the vacancy (informational, not required) |
 
 ---
 

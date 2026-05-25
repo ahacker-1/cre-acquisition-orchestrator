@@ -1,0 +1,5 @@
+Unit,Unit Type,SqFt,Market Rent,Current Rent,Status
+101,1BR/1BA,720,1450,1400,Occupied
+102,2BR/2BA,1050,2150,2025,Occupied
+103,2BR/2BA,1050,2150,0,Vacant
+104,Studio,520,1200,1175,Occupied

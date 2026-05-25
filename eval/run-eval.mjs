@@ -134,8 +134,26 @@ function main() {
   if (recovered > 0) console.log(`[eval] recovered ${recovered} answer-key path(s) from a prior interrupted run`)
 
   const args = parseArgs(process.argv.slice(2))
+  // Modes: `all` = every layer (incl. live Codex); `offline` = the no-API layers
+  // (extraction + sim); or a single layer; or a comma-separated subset
+  // (e.g. `--mode extraction,sim`).
+  const KNOWN_MODES = ['extraction', 'sim', 'live']
   const runModes =
-    args.mode === 'all' ? ['extraction', 'sim', 'live'] : [args.mode]
+    args.mode === 'all'
+      ? ['extraction', 'sim', 'live']
+      : args.mode === 'offline'
+        ? ['extraction', 'sim']
+        : args.mode
+            .split(',')
+            .map((m) => m.trim())
+            .filter((m) => m.length > 0)
+  const unknownModes = runModes.filter((m) => !KNOWN_MODES.includes(m) && m !== 'reparse')
+  if (runModes.length === 0 || unknownModes.length > 0) {
+    process.stderr.write(
+      `[eval] invalid --mode "${args.mode}". Use: all | offline | extraction | sim | live | reparse (or a comma-separated subset).\n`,
+    )
+    process.exit(1)
+  }
   const deals = loadDeals(args.deals)
   if (deals.length === 0) {
     process.stderr.write('[eval] no benchmark deals found/selected.\n')

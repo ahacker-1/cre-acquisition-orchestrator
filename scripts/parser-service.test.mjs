@@ -1,7 +1,21 @@
 import assert from 'node:assert/strict'
+import { existsSync, statSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runDocumentParser } from '../dashboard/server/parser-service.ts'
+
+// The oversized-CSV fixture is generated at test time, not committed (a ~35 MB
+// file does not belong in git). Any file exceeding the parser's 25 MB cap
+// exercises the same byte-size guard; we write ~27 MB of valid rent-roll rows.
+export function ensureOversizedCsv(filePath) {
+  if (existsSync(filePath) && statSync(filePath).size > 26 * 1024 * 1024) return
+  const header = 'Unit,Unit Type,SqFt,Market Rent,Current Rent,Status\n'
+  const row = '101,1BR/1BA,720,1650,1575,Occupied\n'
+  const target = 27 * 1024 * 1024
+  const parts = [header]
+  for (let size = header.length; size < target; size += row.length) parts.push(row)
+  writeFileSync(filePath, parts.join(''))
+}
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const fixturesRoot = resolve(projectRoot, 'fixtures', 'parsers')
@@ -26,6 +40,43 @@ function parsePdf(fileName, type) {
     type,
     projectRoot,
   })
+}
+
+const MIME_BY_EXT = {
+  '.csv': 'text/csv',
+  '.txt': 'text/plain',
+  '.md': 'text/markdown',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.pdf': 'application/pdf',
+}
+
+// Parse a fixture from an arbitrary directory (used to exercise the adversarial
+// real-world pile in addition to the curated fixtures/parsers set).
+function parseFile(dir, fileName, type) {
+  const extension = fileName.slice(fileName.lastIndexOf('.')).toLowerCase()
+  return runDocumentParser({
+    documentId: fileName.replace(/\W+/g, '-'),
+    fileName,
+    filePath: resolve(dir, fileName),
+    mime: MIME_BY_EXT[extension] || 'application/octet-stream',
+    type,
+    projectRoot,
+    allowedBasePath: projectRoot,
+  })
+}
+
+function parseCsv(fileName, type) {
+  return parseFile(fixturesRoot, fileName, type)
+}
+
+const realWorldPileRoot = resolve(projectRoot, 'fixtures', 'real-world-pile')
+
+function unitMixByType(preview) {
+  const mix = preview.fields.find((field) => field.path === 'property.unitMix.types')?.value
+  assert.ok(Array.isArray(mix), `expected unit mix array in ${preview.documentId}`)
+  const byType = new Map()
+  for (const bucket of mix) byType.set(bucket.type, bucket)
+  return byType
 }
 
 function fieldByPath(preview, path) {
@@ -296,5 +347,92 @@ assert.ok(
   !scannedPdf.error || /ocr|scan|image/i.test(scannedPdf.error),
   'image-only PDF must not crash with a generic parse error',
 )
+
+// ---------------------------------------------------------------------------
+// P1 - Excel per-unit-type in-place rent must average over OCCUPIED units only.
+// A vacant unit with $0 contract rent must NOT deflate the in-place average for
+// its unit type (numerator and denominator must be consistent). Market rent
+// stays averaged over ALL units of the type.
+// ---------------------------------------------------------------------------
+
+const excelVacant = parseXlsx('rent-roll-merged-headers.xlsx', 'rent_roll')
+assert.equal(excelVacant.status, 'extracted')
+const excelMix = unitMixByType(excelVacant)
+// 1BR/1BA: one occupied @ $1575, one vacant @ $0. In-place rent must be 1575
+// (occupied-only), NOT 788 (the buggy $1575 / 2 deflation).
+const excel1br = excelMix.get('1BR/1BA')
+assert.ok(excel1br, 'expected a 1BR/1BA bucket')
+assert.equal(excel1br.count, 2)
+assert.equal(excel1br.occupiedCount, 1)
+assert.equal(excel1br.inPlaceRent, 1575)
+// Market rent stays averaged over all units of the type (asked regardless of
+// occupancy): (1650 + 1650) / 2 = 1650.
+assert.equal(excel1br.marketRent, 1650)
+// 2BR/2BA: both occupied; average unchanged.
+const excel2br = excelMix.get('2BR/2BA')
+assert.equal(excel2br.inPlaceRent, 2188)
+
+// ---------------------------------------------------------------------------
+// P2 - Native CSV rent-roll path: same occupied-only in-place rent semantics.
+// numberFromCell("0") returns 0; that 0 must be excluded from BOTH numerator and
+// denominator of the in-place average. All-vacant types must report null.
+// ---------------------------------------------------------------------------
+
+const csvVacant = parseCsv('rent-roll-vacant-units.csv', 'rent_roll')
+assert.equal(csvVacant.status, 'extracted')
+const csvMix = unitMixByType(csvVacant)
+// 1BR/1BA: occupied @ $1575 + vacant @ $0 -> 1575 (not 788).
+const csv1br = csvMix.get('1BR/1BA')
+assert.equal(csv1br.count, 2)
+assert.equal(csv1br.inPlaceRent, 1575)
+assert.equal(csv1br.marketRent, 1650)
+// 2BR/2BA: occupied @ $2025 + vacant @ $0 -> 2025 (not the buggy 1013).
+const csv2br = csvMix.get('2BR/2BA')
+assert.equal(csv2br.count, 2)
+assert.equal(csv2br.inPlaceRent, 2025)
+assert.equal(csv2br.marketRent, 2250)
+// 3BR/2BA: ALL units vacant -> in-place rent is null, NOT 0. Market rent
+// (asked) is still reported.
+const csv3br = csvMix.get('3BR/2BA')
+assert.equal(csv3br.count, 2)
+assert.equal(csv3br.inPlaceRent, null)
+assert.equal(csv3br.marketRent, 2900)
+
+// ---------------------------------------------------------------------------
+// P3 - Native CSV path must guard against oversized in-process parsing. A file
+// past the documented byte cap must degrade to parse_failed with a clear,
+// non-leaking message instead of being loaded fully into memory.
+// ---------------------------------------------------------------------------
+
+ensureOversizedCsv(resolve(realWorldPileRoot, 'huge-rent-roll.csv'))
+const hugeCsv = parseFile(realWorldPileRoot, 'huge-rent-roll.csv', 'rent_roll')
+assert.equal(hugeCsv.status, 'parse_failed', 'oversized CSV must degrade to parse_failed, not extract')
+assert.equal(hugeCsv.fields.length, 0)
+assert.ok(
+  hugeCsv.error && /too large|split|pre-process/i.test(hugeCsv.error),
+  'expected an oversized-file message guiding the operator to split/pre-process',
+)
+// A normal small CSV is unaffected by the guard.
+const smallCsv = parseCsv('rent-roll-vacant-units.csv', 'rent_roll')
+assert.equal(smallCsv.status, 'extracted')
+
+// ---------------------------------------------------------------------------
+// P4 - A genuinely corrupt .xlsx is a FILE problem, not an environment problem.
+// It must surface as parse_failed (the file is bad), distinct from
+// parser-unavailable (no interpreter/deps). No absolute local filesystem paths
+// may leak in the error/notes.
+// ---------------------------------------------------------------------------
+
+const corrupt = parseFile(realWorldPileRoot, 'corrupt.xlsx', 'rent_roll')
+assert.equal(corrupt.status, 'parse_failed', 'corrupt .xlsx must be parse_failed, not parser-unavailable')
+assert.equal(corrupt.fields.length, 0)
+const corruptText = `${corrupt.error || ''} ${(corrupt.notes || []).join(' ')}`
+// No leaked absolute paths (drive-letter Windows paths, UNC, or interpreter exe).
+assert.ok(!/[A-Za-z]:\\/.test(corruptText), `corrupt error must not leak a Windows path: ${corruptText}`)
+assert.ok(!/\\\\[^\s]+\\/.test(corruptText), `corrupt error must not leak a UNC path: ${corruptText}`)
+assert.ok(!/python(3|313)?\.exe/i.test(corruptText), `corrupt error must not leak an interpreter exe path: ${corruptText}`)
+assert.ok(!/[/]usr[/]|[/]home[/]/.test(corruptText), `corrupt error must not leak a POSIX path: ${corruptText}`)
+// The message should still describe a real file/parse problem.
+assert.ok(corrupt.error && corrupt.error.trim().length > 0, 'corrupt parse_failed must carry an error message')
 
 console.log('[parser-service-test] PASS')

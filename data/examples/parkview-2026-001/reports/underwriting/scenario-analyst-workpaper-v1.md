@@ -5,10 +5,12 @@
 - Property: Parkview Apartments
 - Phase: Underwriting
 - Agent: scenario-analyst
-- Started: 2026-05-19T20:23:14.101Z
-- Completed: 2026-05-19T20:23:14.104Z
+- Started: 2026-05-25T02:29:58.170Z
+- Completed: 2026-05-25T02:29:58.173Z
 - Verdict: PASS
-- Summary: 1/27 sensitivity scenarios pass constraints.
+- Reviewer signoff: unsigned
+- Quality gate: WARNING
+- Summary: 9/27 sensitivity scenarios pass constraints.
 
 ## Deal Snapshot
 | Metric | Value |
@@ -23,6 +25,18 @@
 | Loan Amount | $24,000,000 |
 | Rate / LTV | 6.50% / 75.0% |
 | Equity Required | $10,960,000 |
+
+## Quality Gate
+Status: WARNING
+Reviewer signoff: unsigned.
+| Checklist Item | Status | Detail |
+| --- | --- | --- |
+| Cited inputs | PASS | Deal identity and source financials/property are tied to config. |
+| Stated assumptions | PASS | Material assumptions are stated in the findings and analysis. |
+| Calculation coverage | PASS | Pro forma, NOI, and scenario calculations are derived from deal inputs. |
+| Caveats, red flags, and data gaps | PASS | Risk flags and open data gaps are documented for the reviewer. |
+| Reviewer signoff | WARNING | Reviewer signoff is unsigned. |
+- WARNING: Quality gate item incomplete: Reviewer signoff — Reviewer signoff is unsigned.
 
 ## Work Program
 - Run 27 rent/vacancy/exit-cap scenarios.
@@ -49,17 +63,17 @@
 - QC15: Reviewer can trace every major figure to a table above.
 
 ## Findings
-- 1/27 sensitivity scenarios pass constraints.
+- 9/27 sensitivity scenarios pass constraints.
 
 ## Agent Analysis
-Primary finding: 1/27 sensitivity scenarios pass constraints.
+Primary finding: 9/27 sensitivity scenarios pass constraints.
 
 ### Underwriting Conclusions
 - Current NOI: $1,688,500.
 - Stabilized NOI: $2,400,000.
 - Amortizing DSCR: 0.93x.
 - IO DSCR: 1.08x.
-- Scenario pass count: 1/27.
+- Scenario pass count: 9/27.
 - Recommendation posture: proceed only with explicit debt-sizing, tax, and execution mitigations.
 
 ## 10-Year Pro Forma
@@ -81,36 +95,36 @@ Debt service uses the stated 2-year interest-only period, then 30-year amortizat
 Matrix dimensions: 3 rent cases x 3 vacancy cases x 3 exit-cap cases. Rent, vacancy, and exit-cap shocks are symmetric around base.
 | Scenario | Rent | Vacancy | Exit Cap | IRR | Equity Multiple | DSCR | Verdict |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| RENT_DOWN_VACANCY_HIGH_EXIT_TIGHT | Downside | High | 6.25% | 10.7% | 1.63x | 1.04x | FAIL |
-| RENT_DOWN_VACANCY_HIGH_EXIT_BASE | Downside | High | 6.75% | 6.8% | 1.37x | 1.04x | FAIL |
-| RENT_DOWN_VACANCY_HIGH_EXIT_WIDE | Downside | High | 7.25% | 2.8% | 1.14x | 1.04x | FAIL |
-| RENT_DOWN_VACANCY_BASE_EXIT_TIGHT | Downside | Base | 6.25% | 12.1% | 1.73x | 1.06x | FAIL |
-| RENT_DOWN_VACANCY_BASE_EXIT_BASE | Downside | Base | 6.75% | 8.2% | 1.46x | 1.06x | FAIL |
-| RENT_DOWN_VACANCY_BASE_EXIT_WIDE | Downside | Base | 7.25% | 4.4% | 1.23x | 1.06x | FAIL |
-| RENT_DOWN_VACANCY_LOW_EXIT_TIGHT | Downside | Low | 6.25% | 13.4% | 1.82x | 1.08x | FAIL |
-| RENT_DOWN_VACANCY_LOW_EXIT_BASE | Downside | Low | 6.75% | 9.6% | 1.55x | 1.08x | FAIL |
-| RENT_DOWN_VACANCY_LOW_EXIT_WIDE | Downside | Low | 7.25% | 5.9% | 1.31x | 1.08x | FAIL |
-| RENT_BASE_VACANCY_HIGH_EXIT_TIGHT | Base | High | 6.25% | 12.1% | 1.73x | 1.06x | FAIL |
-| RENT_BASE_VACANCY_HIGH_EXIT_BASE | Base | High | 6.75% | 8.2% | 1.46x | 1.06x | FAIL |
-| RENT_BASE_VACANCY_HIGH_EXIT_WIDE | Base | High | 7.25% | 4.4% | 1.23x | 1.06x | FAIL |
-| RENT_BASE_VACANCY_BASE_EXIT_TIGHT | Base | Base | 6.25% | 13.4% | 1.82x | 1.08x | FAIL |
-| RENT_BASE_VACANCY_BASE_EXIT_BASE | Base | Base | 6.75% | 9.6% | 1.55x | 1.08x | FAIL |
-| RENT_BASE_VACANCY_BASE_EXIT_WIDE | Base | Base | 7.25% | 5.9% | 1.31x | 1.08x | FAIL |
-| RENT_BASE_VACANCY_LOW_EXIT_TIGHT | Base | Low | 6.25% | 14.6% | 1.92x | 1.10x | FAIL |
-| RENT_BASE_VACANCY_LOW_EXIT_BASE | Base | Low | 6.75% | 11.0% | 1.64x | 1.10x | FAIL |
-| RENT_BASE_VACANCY_LOW_EXIT_WIDE | Base | Low | 7.25% | 7.3% | 1.40x | 1.10x | FAIL |
-| RENT_UP_VACANCY_HIGH_EXIT_TIGHT | Upside | High | 6.25% | 13.4% | 1.82x | 1.08x | FAIL |
-| RENT_UP_VACANCY_HIGH_EXIT_BASE | Upside | High | 6.75% | 9.6% | 1.55x | 1.08x | FAIL |
-| RENT_UP_VACANCY_HIGH_EXIT_WIDE | Upside | High | 7.25% | 5.9% | 1.31x | 1.08x | FAIL |
-| RENT_UP_VACANCY_BASE_EXIT_TIGHT | Upside | Base | 6.25% | 14.6% | 1.92x | 1.10x | FAIL |
-| RENT_UP_VACANCY_BASE_EXIT_BASE | Upside | Base | 6.75% | 11.0% | 1.64x | 1.10x | FAIL |
-| RENT_UP_VACANCY_BASE_EXIT_WIDE | Upside | Base | 7.25% | 7.3% | 1.40x | 1.10x | FAIL |
-| RENT_UP_VACANCY_LOW_EXIT_TIGHT | Upside | Low | 6.25% | 15.8% | 2.01x | 1.13x | PASS |
-| RENT_UP_VACANCY_LOW_EXIT_BASE | Upside | Low | 6.75% | 12.3% | 1.72x | 1.13x | FAIL |
-| RENT_UP_VACANCY_LOW_EXIT_WIDE | Upside | Low | 7.25% | 8.7% | 1.48x | 1.13x | FAIL |
+| RENT_DOWN_VACANCY_HIGH_EXIT_TIGHT | Downside | High | 5.03% | 20.7% | 2.50x | 1.04x | FAIL |
+| RENT_DOWN_VACANCY_HIGH_EXIT_BASE | Downside | High | 5.53% | 16.5% | 2.10x | 1.04x | FAIL |
+| RENT_DOWN_VACANCY_HIGH_EXIT_WIDE | Downside | High | 6.03% | 12.5% | 1.76x | 1.04x | FAIL |
+| RENT_DOWN_VACANCY_BASE_EXIT_TIGHT | Downside | Base | 5.03% | 21.9% | 2.61x | 1.06x | FAIL |
+| RENT_DOWN_VACANCY_BASE_EXIT_BASE | Downside | Base | 5.53% | 17.8% | 2.20x | 1.06x | FAIL |
+| RENT_DOWN_VACANCY_BASE_EXIT_WIDE | Downside | Base | 6.03% | 13.8% | 1.86x | 1.06x | FAIL |
+| RENT_DOWN_VACANCY_LOW_EXIT_TIGHT | Downside | Low | 5.03% | 23.0% | 2.72x | 1.08x | FAIL |
+| RENT_DOWN_VACANCY_LOW_EXIT_BASE | Downside | Low | 5.53% | 18.9% | 2.31x | 1.08x | FAIL |
+| RENT_DOWN_VACANCY_LOW_EXIT_WIDE | Downside | Low | 6.03% | 15.1% | 1.96x | 1.08x | FAIL |
+| RENT_BASE_VACANCY_HIGH_EXIT_TIGHT | Base | High | 5.03% | 21.9% | 2.61x | 1.06x | FAIL |
+| RENT_BASE_VACANCY_HIGH_EXIT_BASE | Base | High | 5.53% | 17.8% | 2.20x | 1.06x | FAIL |
+| RENT_BASE_VACANCY_HIGH_EXIT_WIDE | Base | High | 6.03% | 13.8% | 1.86x | 1.06x | FAIL |
+| RENT_BASE_VACANCY_BASE_EXIT_TIGHT | Base | Base | 5.03% | 23.0% | 2.72x | 1.08x | FAIL |
+| RENT_BASE_VACANCY_BASE_EXIT_BASE | Base | Base | 5.53% | 18.9% | 2.31x | 1.08x | FAIL |
+| RENT_BASE_VACANCY_BASE_EXIT_WIDE | Base | Base | 6.03% | 15.1% | 1.96x | 1.08x | FAIL |
+| RENT_BASE_VACANCY_LOW_EXIT_TIGHT | Base | Low | 5.03% | 24.1% | 2.83x | 1.10x | PASS |
+| RENT_BASE_VACANCY_LOW_EXIT_BASE | Base | Low | 5.53% | 20.1% | 2.41x | 1.10x | PASS |
+| RENT_BASE_VACANCY_LOW_EXIT_WIDE | Base | Low | 6.03% | 16.3% | 2.06x | 1.10x | PASS |
+| RENT_UP_VACANCY_HIGH_EXIT_TIGHT | Upside | High | 5.03% | 23.0% | 2.72x | 1.08x | FAIL |
+| RENT_UP_VACANCY_HIGH_EXIT_BASE | Upside | High | 5.53% | 18.9% | 2.31x | 1.08x | FAIL |
+| RENT_UP_VACANCY_HIGH_EXIT_WIDE | Upside | High | 6.03% | 15.1% | 1.96x | 1.08x | FAIL |
+| RENT_UP_VACANCY_BASE_EXIT_TIGHT | Upside | Base | 5.03% | 24.1% | 2.83x | 1.10x | PASS |
+| RENT_UP_VACANCY_BASE_EXIT_BASE | Upside | Base | 5.53% | 20.1% | 2.41x | 1.10x | PASS |
+| RENT_UP_VACANCY_BASE_EXIT_WIDE | Upside | Base | 6.03% | 16.3% | 2.06x | 1.10x | PASS |
+| RENT_UP_VACANCY_LOW_EXIT_TIGHT | Upside | Low | 5.03% | 25.2% | 2.94x | 1.13x | PASS |
+| RENT_UP_VACANCY_LOW_EXIT_BASE | Upside | Low | 5.53% | 21.2% | 2.51x | 1.13x | PASS |
+| RENT_UP_VACANCY_LOW_EXIT_WIDE | Upside | Low | 6.03% | 17.5% | 2.15x | 1.13x | PASS |
 
 ## Red Flags
-- HIGH | SENSITIVITY | Scenario pass-rate 3.7% below target | Impact: Increases downside loss probability
+- HIGH | SENSITIVITY | Scenario pass-rate 33.3% below target | Impact: Increases downside loss probability
 
 ## Data Gaps
 - None identified by this agent.
@@ -164,17 +178,3 @@ Matrix dimensions: 3 rent cases x 3 vacancy cases x 3 exit-cap cases. Rent, vaca
 - scenario-analyst tickmark 17: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
 - scenario-analyst tickmark 18: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
 - scenario-analyst tickmark 19: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 20: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 21: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 22: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 23: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 24: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 25: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 26: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 27: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 28: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 29: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 30: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 31: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 32: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.
-- scenario-analyst tickmark 33: reviewed source tie-out, calculation flow, risk wording, and downstream handoff consistency.

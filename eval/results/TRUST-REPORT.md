@@ -1,6 +1,6 @@
 # CRE Acquisition Orchestrator — Trust Report
 
-_Generated 2026-05-21T17:23:06.453Z · run `final-bench` · eval v1.0.0_
+_Generated 2026-05-25T03:04:22.603Z · run `eval-2026-05-25T03-04-11-509Z` · eval v1.0.0_
 
 > **How to read this report.** Three layers are measured separately and they are NOT
 > equivalent:
@@ -16,34 +16,28 @@ _Generated 2026-05-21T17:23:06.453Z · run `final-bench` · eval v1.0.0_
 > 3. **Extraction (deterministic parsers).** How well the document parsers recover known
 >    field values from deliberately messy synthetic spreadsheets/PDFs. No LLM involved.
 
-**Live model:** Codex CLI default model · **Codex:** codex-cli 0.132.0
+**Live model:** _live layer not included in this run._
 
 ## Headline numbers
 
 | Metric | Live (reasoning) | Simulation (fixture) | Target |
 |---|---|---|---|
-| Financial accuracy — determinable | 100% ✅ (n=1) | 100% (n=8) | 85% |
-| Financial accuracy — model-dependent | 0% (n=1) | 13% (n=8) | — |
-| Red-flag recall (required) | 100% ✅ (n=1) | 60% (n=5) | 70% |
-| Red-flag recall (all planted) | 100% (n=1) | 50% (n=6) | — |
-| Dealbreaker recall | N/A (n=0) | 100% (n=2) | 90% |
-| IC verdict — exact match | 100% ✅ (n=1) | 50% (n=8) | 60% |
-| IC verdict — directional match | 100% ✅ (n=1) | 50% (n=8) | 80% |
+| Financial accuracy — determinable | N/A (n=0) | 100% (n=3) | 85% |
+| Financial accuracy — model-dependent | N/A (n=0) | 33% (n=3) | — |
+| Red-flag recall (required) | N/A (n=0) | 100% (n=1) | 70% |
+| Red-flag recall (all planted) | N/A (n=0) | 50% (n=2) | — |
+| Dealbreaker recall | N/A (n=0) | 100% (n=1) | 90% |
+| IC verdict — exact match | N/A (n=0) | 100% (n=3) | 60% |
+| IC verdict — directional match | N/A (n=0) | 100% (n=3) | 80% |
 
 ### Extraction layer (deterministic parser)
 
 | Metric | Value | Target |
 |---|---|---|
-| Field precision | 100% ✅ (n=8) | 90% |
-| Field recall | 100% ✅ (n=8) | 85% |
-| Field F1 | 100% (n=8) | — |
-| Numeric within tolerance | 100% ✅ (n=8) | 90% |
-
-## Per-deal — live agent reasoning
-
-| Deal | Archetype | IC expected | IC actual | Dir? | Det. fin | Model fin | RF req-recall | Dealbreaker | Partial fail |
-|---|---|---|---|---|---|---|---|---|---|
-| cp-insurance-understated | core-plus | CONDITIONAL | CONDITIONAL | ✓ | 100% | 0% | 100% | — | — |
+| Field precision | 100% ✅ (n=3) | 90% |
+| Field recall | 100% ✅ (n=3) | 85% |
+| Field F1 | 100% (n=3) | — |
+| Numeric within tolerance | 100% ✅ (n=3) | 90% |
 
 ## Where it breaks (honest weaknesses)
 
@@ -55,18 +49,9 @@ _Reminder: these numbers come from fixed arithmetic + scenario config, not reaso
 
 | Deal | IC expected | IC actual | Det. fin | RF recall |
 |---|---|---|---|---|
-| cp-concentration-risk | CONDITIONAL | FAIL | 100% | 0% |
-| cp-insurance-understated | CONDITIONAL | FAIL | 100% | 0% |
-| cp-stabilized-clean | PASS | FAIL | 100% | N/A |
-| ds-dscr-below-080 | FAIL | FAIL | 100% | N/A |
+| cp-stabilized-clean | PASS | PASS | 100% | N/A |
 | ds-occupancy-collapse | FAIL | FAIL | 100% | 0% |
-| va-missing-phase1 | CONDITIONAL | FAIL | 100% | 100% |
 | va-overlevered-ltv | CONDITIONAL | CONDITIONAL | 100% | 100% |
-| va-sub120-dscr | CONDITIONAL | CONDITIONAL | 100% | 100% |
-
-## Run notes
-
-- Live path: Codex codex-cli 0.132.0 (Logged in using ChatGPT); workflow quick-deal-screen; runs 2026-05-21T17:03:52.880Z .. 2026-05-21T17:16:44.626Z.
 
 ## Methodology & reproduction
 

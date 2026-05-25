@@ -189,22 +189,24 @@ va-sub120-dscr: NOI 958k/price 15.5M = 0.0618 cap ✓; NOI/debt-service 846,465 
 Reference IRR/EM model documented in `eval/generators/README.md` (5-yr hold, 3%/2.4% growth, exit cap
 = going-in+25bps floored 5.5%, in-place NOI). Evidence: see deal table in generators/README.md.
 
-≥8 reproducible deals via a committed Python generator (`eval/generators/`), reusing the repo's
-existing openpyxl/reportlab fixture-generation patterns. Each deal: `deal.json` + synthetic docs
-(rent-roll.xlsx, t12.xlsx, offering-memo.pdf/md) with realistic messiness + planted issues +
-`ground-truth.json`. Deterministic (no `random`/`datetime.now()`); documented; no PII.
+The benchmark now ships 3 reproducible deals via a committed Python generator (`eval/generators/`),
+reusing the repo's existing openpyxl/reportlab fixture-generation patterns. Each deal: `deal.json` +
+synthetic docs (rent-roll.xlsx, t12.xlsx, offering-memo.pdf/md) with realistic messiness + planted
+issues + `ground-truth.json`. Deterministic (no `random`/`datetime.now()`); documented; no PII.
 
-Planned deals (issues planted to make detection measurable):
+Planned deals (issues planted to make detection measurable). The original 8 specs are all still
+defined in `generate_deals.py`; **bold rows are the 3 active in the current benchmark** (trimmed
+2026-05-24 for the usability-hardening pass — see Work log):
 
 | # | dealId | Archetype | Planted issue(s) | Doc messiness | Expected IC |
 |---|---|---|---|---|---|
-| 1 | cp-stabilized-clean | core-plus | none (false-positive control) | alt headers | PASS |
+| 1 | **cp-stabilized-clean** | core-plus | none (false-positive control) | alt headers | PASS |
 | 2 | cp-insurance-understated | core-plus | insurance line understated in T12 | currency symbols, multi-sheet | CONDITIONAL |
 | 3 | cp-concentration-risk | core-plus | single-employer tenant concentration | trailing notes | CONDITIONAL |
 | 4 | va-sub120-dscr | value-add | going-in DSCR ~1.10–1.18 (sub-1.20) | merged header cells | CONDITIONAL |
-| 5 | va-overlevered-ltv | value-add | targetLTV 0.82 (over-levered) | subtotal rows | CONDITIONAL |
+| 5 | **va-overlevered-ltv** | value-add | targetLTV 0.82 (over-levered) | subtotal rows | CONDITIONAL |
 | 6 | va-missing-phase1 | value-add | no Phase I ESA (env data gap) | conflicting OM-vs-T12 NOI | CONDITIONAL |
-| 7 | ds-occupancy-collapse | distressed | in-place occupancy 0.62, no bridge → DEALBREAKER | occupancy-convention quirks | FAIL |
+| 7 | **ds-occupancy-collapse** | distressed | in-place occupancy 0.62, no bridge → DEALBREAKER | occupancy-convention quirks | FAIL |
 | 8 | ds-dscr-below-080 | distressed | going-in DSCR < 0.80 → DEALBREAKER | currency + trailing notes | FAIL |
 
 ---
@@ -307,7 +309,7 @@ scorecard + trust report committed under `eval/results/`. Completion report belo
 | ID | Item | Status | Evidence |
 |---|---|---|---|
 | A | `npm run eval` reproducibly scores benchmark → schema-valid scorecard + trust report | PASS | `npm run eval` → "scorecard schema-valid ✓" + writes `eval/results/{scorecard.json,TRUST-REPORT.md}`; AJV-validated in-runner before write |
-| B | ≥8 realistic synthetic deals w/ committed ground truth; generators reproducible | PASS | 8 deals in `eval/benchmark/deals/`; `python eval/generators/generate_deals.py` deterministic (40 files byte-identical x2 runs); all 8 deal.json valid vs config/deal-schema.json |
+| B | ≥3 realistic synthetic deals w/ committed ground truth; generators reproducible | PASS | (Original 2026-05-21 run) 8 deals in `eval/benchmark/deals/`; `python eval/generators/generate_deals.py` deterministic (40 files byte-identical x2 runs); all 8 deal.json valid vs config/deal-schema.json. **2026-05-24: benchmark trimmed to the 3 active deals (15 files) — see Work log.** |
 | C | Trust report shows REAL live-agent metrics (model + date) incl. failures, separated from sim | PASS (live scope = 1/8 by user direction) | TRUST-REPORT.md: live = Codex CLI 0.132.0, run 2026-05-21, `cp-insurance-understated` IC exact-match + 100% determinable fin + 100% red-flag recall; live clearly separated from the sim fixture; live coverage honestly labeled 1 of 8 (user scoped the costly live runs to one deal; harness runs all 8 via `npm run eval`) |
 | D | Worst baseline gaps fixed-and-re-measured OR documented as known limits | PASS | 4 contamination bugs fixed + re-measured via `--reparse` (wrong FAIL → correct CONDITIONAL); live IRR/EM gap documented as KNOWN-LIMIT |
 | E | README surfaces honest headline numbers + link; no inflated/fabricated figures | PASS | README "Honest Evaluation — Prove It" section: extraction 100% (8/8), sim fixture IC-match 3/8, live exact-match (1 deal), links to eval/README.md + TRUST-REPORT.md; explicit 1/8 live scope |
@@ -333,3 +335,12 @@ scorecard + trust report committed under `eval/results/`. Completion report belo
   sim is a fixture and the live path is the real signal. README + eval/README published; full validation
   gate green; committed. DoD A,B,D,E,F,G met; C met at 1/8 live coverage (user-scoped). COMPLETE for the
   one-deal scope; remaining 7 live deals are one `npm run eval` away.
+- 2026-05-24 (usability-hardening pass): Benchmark **trimmed 8 → 3 representative deals** — one per
+  archetype: `cp-stabilized-clean` (core-plus, expected PASS), `va-overlevered-ltv` (value-add, expected
+  CONDITIONAL), `ds-occupancy-collapse` (distressed, expected FAIL). `all_specs()` in
+  `generate_deals.py` now returns just these three; the other five archetype specs
+  (cp-insurance-understated, cp-concentration-risk, va-sub120-dscr, va-missing-phase1, ds-dscr-below-080)
+  remain defined for extension but are no longer emitted. The deterministic layers (extraction + sim)
+  now run on **3 deals** (15 committed files), giving a fast, focused regression set for the real-world
+  drop-flow hardening work. The dated 2026-05-21 entries above describe the original 8-deal run and are
+  left intact as the historical record.

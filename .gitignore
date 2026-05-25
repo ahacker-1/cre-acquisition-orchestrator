@@ -50,3 +50,7 @@ desktop.ini
 
 # Misc
 *.log
+
+# Oversized parser-cap test fixture — generated at test time, not committed
+# (see ensureOversizedCsv in scripts/real-world-pile.test.mjs / parser-service.test.mjs).
+fixtures/real-world-pile/huge-rent-roll.csv

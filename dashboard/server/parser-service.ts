@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync, statSync } from 'fs'
 import { extname, join } from 'path'
 import { createRequire } from 'module'
 import { spawnSync } from 'child_process'
@@ -67,6 +67,13 @@ export interface ParserInput {
 }
 
 const PARSER_VERSION = 'source-backed-v1'
+
+// The native CSV/text path reads the whole file into memory and parses it
+// in-process with no spawn timeout (unlike the Python parsers). Guard against
+// oversized inputs that would risk heap exhaustion / unbounded latency. A file
+// past EITHER cap degrades gracefully to parse_failed rather than being loaded.
+const MAX_TEXT_PARSE_BYTES = 25 * 1024 * 1024 // 25 MB on-disk cap
+const MAX_TEXT_PARSE_ROWS = 250_000 // parsed-row cap (sane upper bound for a rent roll / T12)
 
 export function isParserRunnable(fileName: string, mime: string): boolean {
   const extension = extname(fileName).toLowerCase()
@@ -261,8 +268,17 @@ function parseRentRoll(input: ParserInput, rows: string[][], hash: string): Pars
     const market = marketRentIndex >= 0 ? numberFromCell(row[marketRentIndex] || '') : null
     const current = currentRentIndex >= 0 ? numberFromCell(row[currentRentIndex] || '') : null
     if (sqft !== null) bucket.sqft.push(sqft)
+    // Market rent (asking) is averaged over ALL units of the type, regardless
+    // of occupancy.
     if (market !== null) bucket.market.push(market)
-    if (current !== null) bucket.current.push(current)
+    // In-place rent (contract/current) is averaged over OCCUPIED units only:
+    // units with a positive contract rent. A vacant unit reports 0, and
+    // numberFromCell('0') returns 0 (not null); pushing that 0 would deflate
+    // both the numerator and denominator inconsistently (e.g. a $2025 occupied
+    // unit + a $0 vacant unit averaging to 1013 instead of 2025). Exclude
+    // non-positive rents so average() over the surviving values is consistent;
+    // an all-vacant type yields an empty array and average() returns null.
+    if (current !== null && current > 0) bucket.current.push(current)
   })
 
   const unitMixTypes = [...unitMix.entries()].map(([type, bucket]) => ({
@@ -386,6 +402,54 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 }
 
+// Redact absolute local filesystem paths (and interpreter executables) from any
+// error/notes string surfaced to the caller, so we never leak machine layout
+// such as C:\Users\...\Python313\python.exe or the input file's full path.
+function redactPaths(text: string): string {
+  if (!text) return text
+  return text
+    // Windows drive-letter paths (greedy across path separators, stopping at
+    // quotes/whitespace) -> [path].
+    .replace(/[A-Za-z]:\\[^"'\s|]*/g, '[path]')
+    // UNC paths (\\server\share\...).
+    .replace(/\\\\[^"'\s|]+/g, '[path]')
+    // POSIX absolute paths that look like real filesystem locations.
+    .replace(/\/(?:usr|home|opt|var|tmp|etc|bin|Users|Library|Applications)\/[^"'\s|]*/g, '[path]')
+    // Any residual bare interpreter executable reference.
+    .replace(/python(?:3|313)?\.exe/gi, '[python]')
+    .trim()
+}
+
+// Markers that indicate the Python interpreter ran but is missing the parsing
+// dependencies (openpyxl / pdfplumber / pandas). These candidates should be
+// SKIPPED in favor of the next interpreter rather than treated as the
+// controlling failure.
+const DEPS_MISSING_MARKERS = [/missing dependenc/i, /no module named/i, /modulenotfounderror/i]
+
+function isDepsMissing(text: string): boolean {
+  return DEPS_MISSING_MARKERS.some((marker) => marker.test(text))
+}
+
+// A Python parser candidate that printed a structured {"success": false, ...}
+// failure that is NOT a deps-missing message represents a real FILE/parse
+// failure (e.g. openpyxl's "File is not a zip file" for a corrupt .xlsx). Detect
+// it from stdout even when the script exited non-zero.
+function structuredFileFailure(stdout: string): string | null {
+  const trimmed = (stdout || '').trim()
+  if (!trimmed) return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(trimmed)
+  } catch {
+    return null
+  }
+  const record = asRecord(parsed)
+  if (record.success !== false) return null
+  const error = typeof record.error === 'string' ? record.error : ''
+  if (isDepsMissing(error)) return null
+  return error || 'The file could not be parsed.'
+}
+
 function numberFieldValue(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
@@ -408,48 +472,90 @@ function pythonCandidates(): Array<{ command: string; args: string[] }> {
   return candidates.filter((candidate): candidate is { command: string; args: string[] } => Boolean(candidate.command))
 }
 
-function runExcelPythonParser(input: ParserInput, documentType: string): { parsed?: Record<string, unknown>; error?: string } {
-  const scriptPath = safePaths.assertWithinBase(input.projectRoot, join(input.projectRoot, 'scripts', 'parse_excel.py'), 'Excel parser script path')
-  const errors: string[] = []
-  for (const candidate of pythonCandidates()) {
-    const result = spawnSync(candidate.command, [...candidate.args, scriptPath, input.filePath, '--type', documentType], {
-      cwd: input.projectRoot,
-      encoding: 'utf8',
-      timeout: 15000,
-    })
-    const output = `${result.stdout || ''}${result.stderr || ''}`.trim()
-    if (!result.error && result.status === 0) {
-      try {
-        return { parsed: JSON.parse(result.stdout || '{}') as Record<string, unknown> }
-      } catch {
-        return { error: output || 'Excel parser returned invalid JSON.' }
-      }
-    }
-    errors.push(`${candidate.command}: ${result.error?.message || output || `exit ${result.status ?? 'unknown'}`}`)
-  }
-  return { error: errors.join(' | ') }
+// Discriminated result of trying the ordered Python interpreter candidates:
+// - parsed:            a candidate succeeded; parsed JSON payload.
+// - parseFailedError:  a candidate ran but the FILE is bad (real parse failure).
+// - unavailableError:  no interpreter could run / all lack dependencies.
+// All error strings are path-redacted before being surfaced.
+interface PythonRunResult {
+  parsed?: Record<string, unknown>
+  parseFailedError?: string
+  unavailableError?: string
 }
 
-function runPdfPythonParser(input: ParserInput, documentType: string): { parsed?: Record<string, unknown>; error?: string } {
-  const scriptPath = safePaths.assertWithinBase(input.projectRoot, join(input.projectRoot, 'scripts', 'parse_pdf.py'), 'PDF parser script path')
-  const errors: string[] = []
+function runPythonParser(input: ParserInput, scriptName: string, parserLabel: string, documentType: string): PythonRunResult {
+  const scriptPath = safePaths.assertWithinBase(
+    input.projectRoot,
+    join(input.projectRoot, 'scripts', scriptName),
+    `${parserLabel} parser script path`,
+  )
+  // Non-controlling failures (interpreter absent or dependencies missing) are
+  // tracked separately so they never become the surfaced error when a later
+  // candidate could succeed -- and so an all-deps-missing environment reports a
+  // clear, actionable message instead of a noisy spawn-error chain.
+  let sawDepsMissing = false
+  let sawInterpreter = false
+  const otherErrors: string[] = []
+
   for (const candidate of pythonCandidates()) {
     const result = spawnSync(candidate.command, [...candidate.args, scriptPath, input.filePath, '--type', documentType], {
       cwd: input.projectRoot,
       encoding: 'utf8',
       timeout: 15000,
     })
-    const output = `${result.stdout || ''}${result.stderr || ''}`.trim()
-    if (!result.error && result.status === 0) {
+    const stdout = result.stdout || ''
+    const stderr = result.stderr || ''
+    const combined = `${stdout}${stderr}`.trim()
+
+    // Interpreter not present on this machine (ENOENT etc.): skip silently.
+    if (result.error) {
+      continue
+    }
+    sawInterpreter = true
+
+    if (result.status === 0) {
       try {
-        return { parsed: JSON.parse(result.stdout || '{}') as Record<string, unknown> }
+        return { parsed: JSON.parse(stdout || '{}') as Record<string, unknown> }
       } catch {
-        return { error: output || 'PDF parser returned invalid JSON.' }
+        return { parseFailedError: redactPaths(combined) || `${parserLabel} parser returned invalid JSON.` }
       }
     }
-    errors.push(`${candidate.command}: ${result.error?.message || output || `exit ${result.status ?? 'unknown'}`}`)
+
+    // Non-zero exit. Distinguish "interpreter lacks the parsing dependencies"
+    // (skip, try the next interpreter) from a real structured FILE failure
+    // (surface immediately as parse_failed).
+    if (isDepsMissing(combined)) {
+      sawDepsMissing = true
+      continue
+    }
+    const fileFailure = structuredFileFailure(stdout)
+    if (fileFailure) {
+      return { parseFailedError: redactPaths(fileFailure) }
+    }
+    otherErrors.push(redactPaths(combined) || `exit ${result.status ?? 'unknown'}`)
   }
-  return { error: errors.join(' | ') }
+
+  if (sawDepsMissing && otherErrors.length === 0) {
+    return {
+      unavailableError:
+        'Python parser dependencies (openpyxl/pdfplumber) not installed for any available interpreter.',
+    }
+  }
+  if (otherErrors.length > 0) {
+    return { unavailableError: otherErrors.join(' | ') }
+  }
+  if (!sawInterpreter) {
+    return { unavailableError: `No Python interpreter is available to run the ${parserLabel} parser.` }
+  }
+  return { unavailableError: `${parserLabel} parser failed.` }
+}
+
+function runExcelPythonParser(input: ParserInput, documentType: string): PythonRunResult {
+  return runPythonParser(input, 'parse_excel.py', 'Excel', documentType)
+}
+
+function runPdfPythonParser(input: ParserInput, documentType: string): PythonRunResult {
+  return runPythonParser(input, 'parse_pdf.py', 'PDF', documentType)
 }
 
 function parsedWarnings(parsed: Record<string, unknown>): string[] {
@@ -554,10 +660,19 @@ function parseExcelIfAvailable(input: ParserInput, hash: string): ParserExtracti
     return unavailable(input, hash, parserId, 'Excel parser script is not available.')
   }
   const documentType = input.type === 'rent_roll' ? 'rent_roll' : input.type === 't12' ? 't12' : 'auto'
-  const { parsed, error } = runExcelPythonParser(input, documentType)
-  if (!parsed) return unavailable(input, hash, parserId, error || 'Excel parser failed.')
+  const { parsed, parseFailedError, unavailableError } = runExcelPythonParser(input, documentType)
+  // The FILE is bad (e.g. corrupt/non-zip .xlsx): distinct from a missing
+  // interpreter/dependency. Surface as parse_failed, not parser-unavailable.
+  if (parseFailedError) return parseFailed(input, hash, parserId, redactPaths(parseFailedError))
+  if (!parsed) return unavailable(input, hash, parserId, redactPaths(unavailableError || 'Excel parser failed.'))
   if (parsed.success === false) {
-    return unavailable(input, hash, parserId, typeof parsed.error === 'string' ? parsed.error : 'Excel parser unavailable.')
+    const failureError = typeof parsed.error === 'string' ? parsed.error : 'The file could not be parsed.'
+    // A structured failure from a successful (exit 0) run is still a file
+    // problem unless it is a deps-missing message.
+    if (isDepsMissing(failureError)) {
+      return unavailable(input, hash, parserId, redactPaths(failureError))
+    }
+    return parseFailed(input, hash, parserId, redactPaths(failureError))
   }
   if (parsed.needsOcr === true) {
     const warnings = parsedWarnings(parsed)
@@ -635,10 +750,17 @@ function parsePdfIfAvailable(input: ParserInput, hash: string): ParserExtraction
   }
   const documentType =
     input.type === 'rent_roll' ? 'rent_roll' : input.type === 't12' ? 't12' : input.type === 'offering_memo' ? 'offering_memo' : 'auto'
-  const { parsed, error } = runPdfPythonParser(input, documentType)
-  if (!parsed) return unavailable(input, hash, parserId, error || 'PDF parser failed.')
+  const { parsed, parseFailedError, unavailableError } = runPdfPythonParser(input, documentType)
+  // The FILE is bad (e.g. an unreadable/corrupt PDF): distinct from a missing
+  // interpreter/dependency. Surface as parse_failed, not parser-unavailable.
+  if (parseFailedError) return parseFailed(input, hash, parserId, redactPaths(parseFailedError))
+  if (!parsed) return unavailable(input, hash, parserId, redactPaths(unavailableError || 'PDF parser failed.'))
   if (parsed.success === false) {
-    return unavailable(input, hash, parserId, typeof parsed.error === 'string' ? parsed.error : 'PDF parser unavailable.')
+    const failureError = typeof parsed.error === 'string' ? parsed.error : 'The file could not be parsed.'
+    if (isDepsMissing(failureError)) {
+      return unavailable(input, hash, parserId, redactPaths(failureError))
+    }
+    return parseFailed(input, hash, parserId, redactPaths(failureError))
   }
   const warnings = parsedWarnings(parsed)
 
@@ -772,9 +894,34 @@ export function runDocumentParser(input: ParserInput): ParserExtractionPreview {
 
   let raw = ''
   try {
+    // Size guard (P3): the native text path parses fully in-process with no
+    // spawn timeout, so cap on-disk bytes before reading the whole file into
+    // memory. A file past the cap degrades to parse_failed instead of risking
+    // heap exhaustion / unbounded latency.
+    const byteSize = statSync(safeFilePath).size
+    if (byteSize > MAX_TEXT_PARSE_BYTES) {
+      const sizeMb = (byteSize / 1024 / 1024).toFixed(1)
+      const capMb = (MAX_TEXT_PARSE_BYTES / 1024 / 1024).toFixed(0)
+      return parseFailed(
+        safeInput,
+        hash,
+        'text-parser',
+        `File too large for in-process parsing (${sizeMb} MB exceeds the ${capMb} MB cap); split or pre-process the file before parsing.`,
+      )
+    }
     raw = readFileSync(safeFilePath, 'utf8')
     if (safeInput.type === 'offering_memo') return parseOfferingMemo(safeInput, raw, hash)
     const rows = parseCsvRows(raw)
+    // Row guard (P3): a file under the byte cap can still carry an unreasonable
+    // number of rows; cap the parsed-row count as a second graceful backstop.
+    if (rows.length > MAX_TEXT_PARSE_ROWS) {
+      return parseFailed(
+        safeInput,
+        hash,
+        'text-parser',
+        `File too large for in-process parsing (${rows.length} rows exceeds the ${MAX_TEXT_PARSE_ROWS} row cap); split or pre-process the file before parsing.`,
+      )
+    }
     if (safeInput.type === 'rent_roll') return parseRentRoll(safeInput, rows, hash)
     if (safeInput.type === 't12') return parseT12(safeInput, rows, hash)
   } catch (error) {

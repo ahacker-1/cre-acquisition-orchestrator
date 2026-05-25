@@ -53,9 +53,9 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 
 | AI Roles | Skills | Schemas | Workflows | Fixtures | Tests passing |
 |----------|--------|---------|-----------|----------|---------------|
-| 31 | 8 | 27 | 5 | 20 | 9 |
+| 31 | 8 | 27 | 5 | 36 | 10 |
 
-Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 20 curated fixture files under `fixtures/`; and 9 root `test*` commands tracked by [package.json](package.json).
+Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 36 curated fixture files under `fixtures/` (messy parser fixtures, the adversarial real-world-pile smoke set, and the first-deal package); and 10 root `test*` commands tracked by [package.json](package.json).
 
 ---
 
@@ -74,15 +74,18 @@ It measures **three layers that are NOT equivalent** (full methodology + how to 
 
 | Layer | What it proves | Current result |
 |---|---|---|
-| **Extraction** (deterministic parsers) | recovering known fields from deliberately messy XLSX/PDF docs | precision/recall/F1 = **100%** across **8/8** deals |
-| **Simulation** (offline demo — a *fixture*, **not** reasoning) | the deterministic engine; a high score here is largely tautological | determinable financials 100% (by construction), but IC-verdict match only **3/8** and red-flag recall **50%** — concrete evidence it does **not** reason |
-| **Live agent reasoning** (real Codex LLM — *the number that counts*) | the product's actual judgment | on the deal measured so far (`cp-insurance-understated`, Codex CLI 0.132.0): IC verdict **exact match**, determinable financials **100%**, planted red-flag recall **100%**; IRR/equity-multiple **not produced** in the quick screen (a known gap) |
+| **Extraction** (deterministic parsers) | recovering known fields from deliberately messy XLSX/PDF docs | precision/recall/F1 = **100%** across **3/3** deals |
+| **Simulation** (offline demo — a *fixture*, **not** reasoning) | the deterministic engine on the benchmark | determinable financials **100%** and IC-verdict **3/3** (the verdict is threshold-driven from `config/thresholds.json`), but model-dependent returns (IRR / equity multiple) only **33%** within tolerance and narrative red-flag recall **50%** — it computes, it does **not** reason |
+| **Live agent reasoning** (real Codex LLM — *the number that counts*) | the product's actual judgment | run `npm run eval` to populate (Codex CLI 0.132.0 detected, logged in); the committed pass here covers the offline layers — live reasoning is the headline metric |
 
-**Honest scope:** the deterministic layers cover all 8 benchmark deals; the live layer in the committed
-scorecard covers **1 of 8** (live Codex runs are time/cost-bound — the harness runs all 8 via
-`npm run eval`). The benchmark, ground truth, scorer, and tolerances are committed and fixed before
-runs; nothing is tuned to flatter the system. See [EVAL-PLAN.md](EVAL-PLAN.md) for the methodology and
-the full honest log (including the contamination bugs the eval caught in its own first runs).
+**Honest scope:** the committed report covers the offline layers (extraction + simulation) on all **3**
+benchmark deals; the benchmark was trimmed to **3 representative archetype deals** (clean core-plus,
+value-add, distressed) for a fast, focused regression loop. Ground truth, the scorer, and tolerances
+are committed and fixed before runs; nothing is tuned to flatter the system. The deterministic
+simulation **cannot detect narrative risks** (e.g. tenant concentration, insurance understatement,
+missing documents) — a known limit of the fixture layer, and exactly what the live layer measures.
+See [EVAL-PLAN.md](EVAL-PLAN.md) for the methodology and [eval/results/TRUST-REPORT.md](eval/results/TRUST-REPORT.md)
+for the full committed report.
 
 ---
 
@@ -93,6 +96,7 @@ Current `main` is aligned with the latest public release (`v2.7.0`) and complete
 - **Local by default** - offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
 - **Versioned release baseline** - `v2.7.0` completes the ROADMAP near-term priorities (1–5) and closes the prior known limits (text-based PDF extraction, merged-cell workbooks, single-operator self-host deployment) on top of the `v2.6.0` credibility-hardening release.
 - **Current main** - is the v2.7.0 release baseline unless new unreleased work appears after this tag.
+- **Unreleased (drop-flow hardening)** - a pass focused on the real-world document-drop journey: parser confident-wrong fixes (vacant-`$0` rent no longer deflates in-place averages), parser robustness (CSV size cap, corrupt-file `parse_failed`, path-redacted errors, resilient interpreter selection), content-aware rent-roll/T12 classification, a threshold-driven IC verdict (consults `config/thresholds.json`; fixed a clean deal wrongly marked FAIL), an automated "real-world pile" smoke test (`npm run test:pile`), and a 3-deal eval benchmark with an offline mode (`npm run eval:offline`). See [CHANGELOG.md](CHANGELOG.md) `[Unreleased]`.
 - **Known limits** - true OCR of scanned/image-only documents (these are detected and flagged for OCR, not extracted), multi-tenant cloud hosting, and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are now supported.
 
 See [CHANGELOG.md](CHANGELOG.md) for release history and current-main changes.

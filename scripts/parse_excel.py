@@ -533,7 +533,18 @@ def parse_rent_roll(df: pd.DataFrame, filename: str) -> Dict[str, Any]:
         total_units = len(units)
         occupied = sum(1 for u in units if u.get('status') == 'occupied')
 
-        # Unit mix calculation
+        # Unit mix calculation.
+        #
+        # "In-place rent" (a.k.a. current/contract rent) for a unit TYPE is the
+        # average contract rent over OCCUPIED units only -- units that carry a
+        # positive contract rent. Vacant units (contract rent 0/blank) must be
+        # excluded from BOTH the numerator (actual_sum) and the denominator
+        # (in_place_count) so the average is internally consistent. Dividing a
+        # vacant-excluded sum by the full unit count silently deflates in-place
+        # rent (e.g. one $1575 occupied + one $0 vacant 1BR -> 788 instead of
+        # 1575). Market rent stays averaged over ALL units of the type because
+        # the asking rent is quoted regardless of occupancy. If every unit of a
+        # type is vacant, in-place rent is null (not 0).
         type_groups = {}
         for unit in units:
             t = unit.get('type', 'Unknown')
@@ -544,6 +555,7 @@ def parse_rent_roll(df: pd.DataFrame, filename: str) -> Dict[str, Any]:
                     'sqft_sum': 0,
                     'market_sum': 0,
                     'actual_sum': 0,
+                    'in_place_count': 0,
                     'occupied': 0
                 }
             type_groups[t]['count'] += 1
@@ -551,21 +563,29 @@ def parse_rent_roll(df: pd.DataFrame, filename: str) -> Dict[str, Any]:
                 type_groups[t]['sqft_sum'] += unit['sqft']
             if unit.get('marketRent'):
                 type_groups[t]['market_sum'] += unit['marketRent']
-            if unit.get('actualRent'):
-                type_groups[t]['actual_sum'] += unit['actualRent']
+            actual_rent = unit.get('actualRent')
+            if actual_rent is not None and actual_rent > 0:
+                type_groups[t]['actual_sum'] += actual_rent
+                type_groups[t]['in_place_count'] += 1
             if unit.get('status') == 'occupied':
                 type_groups[t]['occupied'] += 1
 
         unit_mix = []
         for t, data in type_groups.items():
+            in_place_count = data['in_place_count']
             unit_mix.append({
                 'type': t,
                 'count': data['count'],
                 'avgSqFt': round(data['sqft_sum'] / data['count']) if data['count'] > 0 else None,
                 'marketRent': round(data['market_sum'] / data['count']) if data['count'] > 0 else None,
-                'inPlaceRent': round(data['actual_sum'] / data['count']) if data['count'] > 0 else None,
+                'inPlaceRent': round(data['actual_sum'] / in_place_count) if in_place_count > 0 else None,
                 'occupiedCount': data['occupied']
             })
+            if data['count'] > 0 and in_place_count == 0:
+                result['warnings'].append(
+                    f"Unit type '{t}' has no occupied units with a positive contract rent; "
+                    "in-place rent reported as null (no leasing comp to average)."
+                )
 
         result['unitMix'] = sorted(unit_mix, key=lambda x: x['type'])
 

@@ -38,7 +38,7 @@ npm run eval:sim           # deterministic simulation only (fast, no LLM)
 npm run eval:live          # live Codex agents only (requires Codex CLI logged in; slow)
 ```
 
-Useful flags (pass after `--`, e.g. `node eval/run-eval.mjs --mode live --deals va-sub120-dscr`):
+Useful flags (pass after `--`, e.g. `node eval/run-eval.mjs --mode live --deals va-overlevered-ltv`):
 
 - `--mode all|extraction|sim|live` (default `all`)
 - `--deals <id,id,...>` — score a subset
@@ -71,18 +71,13 @@ agents reason from the deal inputs, not from pre-computed numbers.
   determinable + model-dependent financial metrics, planted red flags, dealbreakers, and the correct
   IC verdict). See `EVAL-PLAN.md` §0(a) for the schema.
 
-The eight committed deals span the spectrum and plant specific, detectable issues:
+The three committed deals span the spectrum and plant specific, detectable issues:
 
 | dealId | Archetype | Planted issue | Expected IC |
 |---|---|---|---|
 | `cp-stabilized-clean` | core-plus | none (false-positive control) | PASS |
-| `cp-insurance-understated` | core-plus | T12 insurance line far below market | CONDITIONAL |
-| `cp-concentration-risk` | core-plus | single-employer tenant concentration | CONDITIONAL |
-| `va-sub120-dscr` | value-add | going-in DSCR ~1.13 (below 1.20 floor) | CONDITIONAL |
 | `va-overlevered-ltv` | value-add | 82% LTV / negative leverage | CONDITIONAL |
-| `va-missing-phase1` | value-add | no Phase I ESA + OM-vs-T12 NOI conflict | CONDITIONAL |
 | `ds-occupancy-collapse` | distressed | 62% occupancy, no bridge → dealbreaker | FAIL |
-| `ds-dscr-below-080` | distressed | going-in DSCR < 0.80 → dealbreaker | FAIL |
 
 ## Metrics, tolerances & matching
 

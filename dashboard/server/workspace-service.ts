@@ -1021,7 +1021,7 @@ function phaseLabelForSlug(context: ServiceContext, slug: string): string {
   return operatorGuideSections(context).find((phase) => phase.phaseSlug === slug)?.label ?? 'Underwriting'
 }
 
-function classifyDocument(fileName: string): string {
+function classifyByFileName(fileName: string): string {
   const lower = fileName.toLowerCase()
   if (lower.includes('rent') && lower.includes('roll')) return 'rent_roll'
   if (lower.includes('t12') || lower.includes('operating') || lower.includes('financial')) return 't12'
@@ -1036,6 +1036,41 @@ function classifyDocument(fileName: string): string {
   if (lower.includes('loan') || lower.includes('debt')) return 'loan_documents'
   if (lower.includes('closing') || lower.includes('settlement')) return 'closing_statement'
   return 'other'
+}
+
+// P5: a text content sample (rent rolls / T12s are tabular text or CSV). Returns
+// 'rent_roll' | 't12' | null when the content unambiguously matches one of the two
+// tabular financial document types. Binary formats (xlsx/pdf) decode to noise here
+// and simply return null, so the filename guess stands.
+function sniffTabularType(contentSample?: string): 'rent_roll' | 't12' | null {
+  if (!contentSample) return null
+  const sample = contentSample.slice(0, 8192)
+  const looksRentRoll =
+    /unit\s*type|floor\s*plan|bed\s*\/\s*bath|bed\/bath/i.test(sample) &&
+    /market\s*rent|asking\s*rent|in-?place|current\s*rent|contract\s*rent|sq\s*ft|square/i.test(sample)
+  const looksT12 =
+    /line\s*item/i.test(sample) &&
+    /effective\s*gross\s*income|total\s*operating\s*expenses|net\s*operating\s*income|\bnoi\b|gross\s*potential\s*rent/i.test(
+      sample,
+    )
+  if (looksRentRoll && !looksT12) return 'rent_roll'
+  if (looksT12 && !looksRentRoll) return 't12'
+  return null
+}
+
+// P5: classify a document. Filename is the primary signal, but for the two tabular
+// financial types (rent roll / T12) a clear content signal OVERRIDES an ambiguous or
+// wrong filename guess — otherwise a file like "operating-statement.csv" (rent-roll
+// content) is routed to the T12 parser, finds nothing, and the data is silently
+// dropped. Content only overrides routing between rent_roll/t12/other; it never
+// overrides an explicit narrative type (offering memo, legal docs, etc.).
+function classifyDocument(fileName: string, contentSample?: string): string {
+  const byName = classifyByFileName(fileName)
+  const byContent = sniffTabularType(contentSample)
+  if (byContent && byContent !== byName && (byName === 'rent_roll' || byName === 't12' || byName === 'other')) {
+    return byContent
+  }
+  return byName
 }
 
 function extractBase64(payload: Record<string, unknown>): Buffer {
@@ -2264,7 +2299,9 @@ export function saveSourceDocument(
   if (!fileName) throw new Error('Missing required field: fileName')
   const content = extractBase64(payload)
   const mime = inferMime(fileName, payload.mime)
-  const type = classifyDocument(fileName)
+  // P5: give the classifier a text sample so tabular content (rent roll / T12) is
+  // routed by what the file IS, not just what it's named — preventing silent data loss.
+  const type = classifyDocument(fileName, content.subarray(0, 8192).toString('utf8'))
   const docType = DOCUMENT_TYPES[type] ?? DOCUMENT_TYPES.other
   const now = new Date().toISOString()
   const baseName = basename(fileName)

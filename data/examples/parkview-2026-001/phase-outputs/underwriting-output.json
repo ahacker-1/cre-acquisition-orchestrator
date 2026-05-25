@@ -6,8 +6,8 @@
     "stabilizedCapRate": 0.0686,
     "year1NOI": 1688500,
     "stabilizedNOI": 2400000,
-    "leveragedIRR": 0.0963,
-    "equityMultiple": 1.547,
+    "leveragedIRR": 0.1895,
+    "equityMultiple": 2.305,
     "cashOnCash": -0.0086,
     "equityRequired": 10960000,
     "debtRequest": 24000000,
@@ -15,11 +15,11 @@
     "targetDSCR": 0.947
   },
   "scenarioSummary": {
-    "baseIRR": 0.0963,
-    "worstIRR": 0.0284,
-    "bestIRR": 0.1584,
-    "medianIRR": 0.0963,
-    "passRate": 0.037,
+    "baseIRR": 0.1895,
+    "worstIRR": 0.125,
+    "bestIRR": 0.252,
+    "medianIRR": 0.1895,
+    "passRate": 0.3333,
     "dscrRange": {
       "min": 1.039,
       "max": 1.126
@@ -141,12 +141,12 @@
   "returnMetrics": [
     {
       "metric": "Leveraged IRR",
-      "value": "9.6%",
+      "value": "19%",
       "target": "15%"
     },
     {
       "metric": "Equity Multiple",
-      "value": "1.55x",
+      "value": "2.31x",
       "target": "1.8x"
     },
     {
@@ -170,12 +170,12 @@
       "exitCapCase": "Exit cap tightens 50 bps",
       "rentShock": -0.02,
       "vacancyShock": -0.02,
-      "exitCapRate": 0.0625,
+      "exitCapRate": 0.050265625,
       "probability": 0.015625,
-      "irr": 0.1073,
-      "equityMultiple": 1.632,
+      "irr": 0.2071,
+      "equityMultiple": 2.496,
       "dscr": 1.039,
-      "exitValue": 39698496,
+      "exitValue": 49360890,
       "pass": false
     },
     {
@@ -185,12 +185,12 @@
       "exitCapCase": "Base exit cap",
       "rentShock": -0.02,
       "vacancyShock": -0.02,
-      "exitCapRate": 0.0675,
+      "exitCapRate": 0.055265625,
       "probability": 0.03125,
-      "irr": 0.0679,
-      "equityMultiple": 1.369,
+      "irr": 0.1653,
+      "equityMultiple": 2.097,
       "dscr": 1.039,
-      "exitValue": 36757867,
+      "exitValue": 44895104,
       "pass": false
     },
     {
@@ -200,12 +200,12 @@
       "exitCapCase": "Exit cap widens 50 bps",
       "rentShock": -0.02,
       "vacancyShock": -0.02,
-      "exitCapRate": 0.07250000000000001,
+      "exitCapRate": 0.060265624999999996,
       "probability": 0.015625,
-      "irr": 0.0284,
-      "equityMultiple": 1.142,
+      "irr": 0.125,
+      "equityMultiple": 1.764,
       "dscr": 1.039,
-      "exitValue": 34222841,
+      "exitValue": 41170335,
       "pass": false
     },
     {
@@ -215,12 +215,12 @@
       "exitCapCase": "Exit cap tightens 50 bps",
       "rentShock": -0.02,
       "vacancyShock": 0,
-      "exitCapRate": 0.0625,
+      "exitCapRate": 0.050265625,
       "probability": 0.03125,
-      "irr": 0.1207,
-      "equityMultiple": 1.726,
+      "irr": 0.2188,
+      "equityMultiple": 2.608,
       "dscr": 1.061,
-      "exitValue": 40525548,
+      "exitValue": 50389242,
       "pass": false
     },
     {
@@ -230,12 +230,12 @@
       "exitCapCase": "Base exit cap",
       "rentShock": -0.02,
       "vacancyShock": 0,
-      "exitCapRate": 0.0675,
+      "exitCapRate": 0.055265625,
       "probability": 0.0625,
-      "irr": 0.0824,
-      "equityMultiple": 1.458,
+      "irr": 0.1776,
+      "equityMultiple": 2.201,
       "dscr": 1.061,
-      "exitValue": 37523656,
+      "exitValue": 45830419,
       "pass": false
     },
     {
@@ -245,12 +245,12 @@
       "exitCapCase": "Exit cap widens 50 bps",
       "rentShock": -0.02,
       "vacancyShock": 0,
-      "exitCapRate": 0.07250000000000001,
+      "exitCapRate": 0.060265624999999996,
       "probability": 0.03125,
-      "irr": 0.0441,
-      "equityMultiple": 1.227,
+      "irr": 0.138,
+      "equityMultiple": 1.861,
       "dscr": 1.061,
-      "exitValue": 34935817,
+      "exitValue": 42028051,
       "pass": false
     },
     {
@@ -260,12 +260,12 @@
       "exitCapCase": "Exit cap tightens 50 bps",
       "rentShock": -0.02,
       "vacancyShock": 0.02,
-      "exitCapRate": 0.0625,
+      "exitCapRate": 0.050265625,
       "probability": 0.015625,
-      "irr": 0.1337,
-      "equityMultiple": 1.821,
+      "irr": 0.2302,
+      "equityMultiple": 2.721,
       "dscr": 1.082,
-      "exitValue": 41352600,
+      "exitValue": 51417594,
       "pass": false
     },
     {
@@ -275,12 +275,12 @@
       "exitCapCase": "Base exit cap",
       "rentShock": -0.02,
       "vacancyShock": 0.02,
-      "exitCapRate": 0.0675,
+      "exitCapRate": 0.055265625,
       "probability": 0.03125,
-      "irr": 0.0963,
-      "equityMultiple": 1.547,
+      "irr": 0.1895,
+      "equityMultiple": 2.305,
       "dscr": 1.082,
-      "exitValue": 38289444,
+      "exitValue": 46765734,
       "pass": false
     },
     {
@@ -290,12 +290,12 @@
       "exitCapCase": "Exit cap widens 50 bps",
       "rentShock": -0.02,
       "vacancyShock": 0.02,
-      "exitCapRate": 0.07250000000000001,
+      "exitCapRate": 0.060265624999999996,
       "probability": 0.015625,
-      "irr": 0.0591,
-      "equityMultiple": 1.311,
+      "irr": 0.1507,
+      "equityMultiple": 1.958,
       "dscr": 1.082,
-      "exitValue": 35648793,
+      "exitValue": 42885766,
       "pass": false
     },
     {
@@ -305,12 +305,12 @@
       "exitCapCase": "Exit cap tightens 50 bps",
       "rentShock": 0,
       "vacancyShock": -0.02,
-      "exitCapRate": 0.0625,
+      "exitCapRate": 0.050265625,
       "probability": 0.03125,
-      "irr": 0.1207,
-      "equityMultiple": 1.726,
+      "irr": 0.2188,
+      "equityMultiple": 2.608,
       "dscr": 1.061,
-      "exitValue": 40525548,
+      "exitValue": 50389242,
       "pass": false
     },
     {
@@ -320,12 +320,12 @@
       "exitCapCase": "Base exit cap",
       "rentShock": 0,
       "vacancyShock": -0.02,
-      "exitCapRate": 0.0675,
+      "exitCapRate": 0.055265625,
       "probability": 0.0625,
-      "irr": 0.0824,
-      "equityMultiple": 1.458,
+      "irr": 0.1776,
+      "equityMultiple": 2.201,
       "dscr": 1.061,
-      "exitValue": 37523656,
+      "exitValue": 45830419,
       "pass": false
     },
     {
@@ -335,12 +335,12 @@
       "exitCapCase": "Exit cap widens 50 bps",
       "rentShock": 0,
       "vacancyShock": -0.02,
-      "exitCapRate": 0.07250000000000001,
+      "exitCapRate": 0.060265624999999996,
       "probability": 0.03125,
-      "irr": 0.0441,
-      "equityMultiple": 1.227,
+      "irr": 0.138,
+      "equityMultiple": 1.861,
       "dscr": 1.061,
-      "exitValue": 34935817,
+      "exitValue": 42028051,
       "pass": false
     },
     {
@@ -350,12 +350,12 @@
       "exitCapCase": "Exit cap tightens 50 bps",
       "rentShock": 0,
       "vacancyShock": 0,
-      "exitCapRate": 0.0625,
+      "exitCapRate": 0.050265625,
       "probability": 0.0625,
-      "irr": 0.1337,
-      "equityMultiple": 1.821,
+      "irr": 0.2302,
+      "equityMultiple": 2.721,
       "dscr": 1.082,
-      "exitValue": 41352600,
+      "exitValue": 51417594,
       "pass": false
     },
     {
@@ -365,12 +365,12 @@
       "exitCapCase": "Base exit cap",
       "rentShock": 0,
       "vacancyShock": 0,
-      "exitCapRate": 0.0675,
+      "exitCapRate": 0.055265625,
       "probability": 0.125,
-      "irr": 0.0963,
-      "equityMultiple": 1.547,
+      "irr": 0.1895,
+      "equityMultiple": 2.305,
       "dscr": 1.082,
-      "exitValue": 38289444,
+      "exitValue": 46765734,
       "pass": false
     },
     {
@@ -380,12 +380,12 @@
       "exitCapCase": "Exit cap widens 50 bps",
       "rentShock": 0,
       "vacancyShock": 0,
-      "exitCapRate": 0.07250000000000001,
+      "exitCapRate": 0.060265624999999996,
       "probability": 0.0625,
-      "irr": 0.0591,
-      "equityMultiple": 1.311,
+      "irr": 0.1507,
+      "equityMultiple": 1.958,
       "dscr": 1.082,
-      "exitValue": 35648793,
+      "exitValue": 42885766,
       "pass": false
     },
     {
@@ -395,13 +395,13 @@
       "exitCapCase": "Exit cap tightens 50 bps",
       "rentShock": 0,
       "vacancyShock": 0.02,
-      "exitCapRate": 0.0625,
+      "exitCapRate": 0.050265625,
       "probability": 0.03125,
-      "irr": 0.1463,
-      "equityMultiple": 1.915,
+      "irr": 0.2412,
+      "equityMultiple": 2.833,
       "dscr": 1.104,
-      "exitValue": 42179652,
-      "pass": false
+      "exitValue": 52445946,
+      "pass": true
     },
     {
       "scenario": "RENT_BASE_VACANCY_LOW_EXIT_BASE",
@@ -410,13 +410,13 @@
       "exitCapCase": "Base exit cap",
       "rentShock": 0,
       "vacancyShock": 0.02,
-      "exitCapRate": 0.0675,
+      "exitCapRate": 0.055265625,
       "probability": 0.0625,
-      "irr": 0.1096,
-      "equityMultiple": 1.636,
+      "irr": 0.2011,
+      "equityMultiple": 2.409,
       "dscr": 1.104,
-      "exitValue": 39055233,
-      "pass": false
+      "exitValue": 47701048,
+      "pass": true
     },
     {
       "scenario": "RENT_BASE_VACANCY_LOW_EXIT_WIDE",
@@ -425,13 +425,13 @@
       "exitCapCase": "Exit cap widens 50 bps",
       "rentShock": 0,
       "vacancyShock": 0.02,
-      "exitCapRate": 0.07250000000000001,
+      "exitCapRate": 0.060265624999999996,
       "probability": 0.03125,
-      "irr": 0.0734,
-      "equityMultiple": 1.395,
+      "irr": 0.1629,
+      "equityMultiple": 2.055,
       "dscr": 1.104,
-      "exitValue": 36361769,
-      "pass": false
+      "exitValue": 43743481,
+      "pass": true
     },
     {
       "scenario": "RENT_UP_VACANCY_HIGH_EXIT_TIGHT",
@@ -440,12 +440,12 @@
       "exitCapCase": "Exit cap tightens 50 bps",
       "rentShock": 0.02,
       "vacancyShock": -0.02,
-      "exitCapRate": 0.0625,
+      "exitCapRate": 0.050265625,
       "probability": 0.015625,
-      "irr": 0.1337,
-      "equityMultiple": 1.821,
+      "irr": 0.2302,
+      "equityMultiple": 2.721,
       "dscr": 1.082,
-      "exitValue": 41352600,
+      "exitValue": 51417594,
       "pass": false
     },
     {
@@ -455,12 +455,12 @@
       "exitCapCase": "Base exit cap",
       "rentShock": 0.02,
       "vacancyShock": -0.02,
-      "exitCapRate": 0.0675,
+      "exitCapRate": 0.055265625,
       "probability": 0.03125,
-      "irr": 0.0963,
-      "equityMultiple": 1.547,
+      "irr": 0.1895,
+      "equityMultiple": 2.305,
       "dscr": 1.082,
-      "exitValue": 38289444,
+      "exitValue": 46765734,
       "pass": false
     },
     {
@@ -470,12 +470,12 @@
       "exitCapCase": "Exit cap widens 50 bps",
       "rentShock": 0.02,
       "vacancyShock": -0.02,
-      "exitCapRate": 0.07250000000000001,
+      "exitCapRate": 0.060265624999999996,
       "probability": 0.015625,
-      "irr": 0.0591,
-      "equityMultiple": 1.311,
+      "irr": 0.1507,
+      "equityMultiple": 1.958,
       "dscr": 1.082,
-      "exitValue": 35648793,
+      "exitValue": 42885766,
       "pass": false
     },
     {
@@ -485,13 +485,13 @@
       "exitCapCase": "Exit cap tightens 50 bps",
       "rentShock": 0.02,
       "vacancyShock": 0,
-      "exitCapRate": 0.0625,
+      "exitCapRate": 0.050265625,
       "probability": 0.03125,
-      "irr": 0.1463,
-      "equityMultiple": 1.915,
+      "irr": 0.2412,
+      "equityMultiple": 2.833,
       "dscr": 1.104,
-      "exitValue": 42179652,
-      "pass": false
+      "exitValue": 52445946,
+      "pass": true
     },
     {
       "scenario": "RENT_UP_VACANCY_BASE_EXIT_BASE",
@@ -500,13 +500,13 @@
       "exitCapCase": "Base exit cap",
       "rentShock": 0.02,
       "vacancyShock": 0,
-      "exitCapRate": 0.0675,
+      "exitCapRate": 0.055265625,
       "probability": 0.0625,
-      "irr": 0.1096,
-      "equityMultiple": 1.636,
+      "irr": 0.2011,
+      "equityMultiple": 2.409,
       "dscr": 1.104,
-      "exitValue": 39055233,
-      "pass": false
+      "exitValue": 47701048,
+      "pass": true
     },
     {
       "scenario": "RENT_UP_VACANCY_BASE_EXIT_WIDE",
@@ -515,13 +515,13 @@
       "exitCapCase": "Exit cap widens 50 bps",
       "rentShock": 0.02,
       "vacancyShock": 0,
-      "exitCapRate": 0.07250000000000001,
+      "exitCapRate": 0.060265624999999996,
       "probability": 0.03125,
-      "irr": 0.0734,
-      "equityMultiple": 1.395,
+      "irr": 0.1629,
+      "equityMultiple": 2.055,
       "dscr": 1.104,
-      "exitValue": 36361769,
-      "pass": false
+      "exitValue": 43743481,
+      "pass": true
     },
     {
       "scenario": "RENT_UP_VACANCY_LOW_EXIT_TIGHT",
@@ -530,12 +530,12 @@
       "exitCapCase": "Exit cap tightens 50 bps",
       "rentShock": 0.02,
       "vacancyShock": 0.02,
-      "exitCapRate": 0.0625,
+      "exitCapRate": 0.050265625,
       "probability": 0.015625,
-      "irr": 0.1584,
-      "equityMultiple": 2.009,
+      "irr": 0.252,
+      "equityMultiple": 2.945,
       "dscr": 1.126,
-      "exitValue": 43006704,
+      "exitValue": 53474298,
       "pass": true
     },
     {
@@ -545,13 +545,13 @@
       "exitCapCase": "Base exit cap",
       "rentShock": 0.02,
       "vacancyShock": 0.02,
-      "exitCapRate": 0.0675,
+      "exitCapRate": 0.055265625,
       "probability": 0.03125,
-      "irr": 0.1225,
-      "equityMultiple": 1.724,
+      "irr": 0.2124,
+      "equityMultiple": 2.513,
       "dscr": 1.126,
-      "exitValue": 39821022,
-      "pass": false
+      "exitValue": 48636363,
+      "pass": true
     },
     {
       "scenario": "RENT_UP_VACANCY_LOW_EXIT_WIDE",
@@ -560,23 +560,23 @@
       "exitCapCase": "Exit cap widens 50 bps",
       "rentShock": 0.02,
       "vacancyShock": 0.02,
-      "exitCapRate": 0.07250000000000001,
+      "exitCapRate": 0.060265624999999996,
       "probability": 0.015625,
-      "irr": 0.0872,
-      "equityMultiple": 1.479,
+      "irr": 0.1748,
+      "equityMultiple": 2.152,
       "dscr": 1.126,
-      "exitValue": 37074745,
-      "pass": false
+      "exitValue": 44601197,
+      "pass": true
     }
   ],
   "icMemoPath": "data/reports/parkview-2026-001/ic-memo.md",
   "modelPath": "data/phase-outputs/parkview-2026-001/underwriting-output.json",
   "scenarioMatrixPath": "data/phase-outputs/parkview-2026-001/underwriting-scenarios.json",
-  "verdict": "FAIL",
+  "verdict": "CONDITIONAL",
   "conditions": [
     "Consider lower proceeds or add reserve cushion"
   ],
-  "riskScore": 76,
+  "riskScore": 79,
   "redFlagCount": 2,
   "dataGapCount": 1,
   "redFlags": [
@@ -588,17 +588,17 @@
       "impact": "Can reduce lender proceeds and increase risk",
       "owner": "financial-model-builder",
       "status": "OPEN",
-      "createdAt": "2026-05-19T20:23:14.089Z"
+      "createdAt": "2026-05-25T02:29:58.159Z"
     },
     {
       "id": "uw-pass-rate",
       "severity": "HIGH",
       "category": "SENSITIVITY",
-      "message": "Scenario pass-rate 3.7% below target",
+      "message": "Scenario pass-rate 33.3% below target",
       "impact": "Increases downside loss probability",
       "owner": "scenario-analyst",
       "status": "OPEN",
-      "createdAt": "2026-05-19T20:23:14.089Z"
+      "createdAt": "2026-05-25T02:29:58.159Z"
     }
   ],
   "dataGaps": [
@@ -610,7 +610,7 @@
       "impact": "Could reduce confidence in recommendation",
       "owner": "financial-model-builder",
       "status": "OPEN",
-      "createdAt": "2026-05-19T20:23:14.089Z"
+      "createdAt": "2026-05-25T02:29:58.159Z"
     }
   ],
   "agentFindings": {
@@ -620,7 +620,7 @@
     },
     "scenario-analyst": {
       "status": "COMPLETE",
-      "finding": "1/27 sensitivity scenarios pass constraints."
+      "finding": "9/27 sensitivity scenarios pass constraints."
     },
     "ic-memo-writer": {
       "status": "COMPLETE",

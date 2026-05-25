@@ -128,7 +128,13 @@ function buildScenarioMatrix(deal = {}) {
     { label: 'Exit cap widens 50 bps', key: 'EXIT_WIDE', shock: 0.005, probability: 0.25 }
   ];
   const holdYears = 5;
-  const exitCapBase = 0.0675;
+  // P-V2: exit cap is deal-specific, not a global constant. A hardcoded exit cap
+  // mis-prices reversion and produced a confidently-wrong leveraged IRR (and a
+  // spurious 0% scenario pass-rate) for every deal. Use an explicit deal exit-cap
+  // assumption when provided, else the going-in cap rate plus a documented 25 bps
+  // conservatism spread (aging asset / conservative reversion).
+  const goingInCap = inputs.purchasePrice > 0 ? inputs.currentNOI / inputs.purchasePrice : 0.06;
+  const exitCapBase = Math.max(0.045, safeNumber(deal.financials?.exitCapRate, goingInCap + 0.0025));
   const rows = [];
 
   rentCases.forEach((rentCase) => {

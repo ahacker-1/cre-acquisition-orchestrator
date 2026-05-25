@@ -319,6 +319,42 @@ try {
     'blocked package red flags should originate from the launch readiness gate',
   )
 
+  // P5: content-aware classification. A file NAMED like a T12 ("operating-statement.csv")
+  // whose CONTENT is a rent roll must be routed by content to rent_roll — not silently
+  // dropped into the T12 parser. Genuine T12 / offering-memo content must NOT be over-ridden.
+  const misnamedRentRoll = [
+    'Unit,Unit Type,SqFt,Market Rent,Current Rent,Status',
+    '101,1BR/1BA,720,1650,1575,Occupied',
+    '102,1BR/1BA,720,1650,0,Vacant',
+    '201,2BR/2BA,1050,2150,2025,Occupied',
+  ].join('\n')
+  const misnamed = saveSourceDocument(context, dealId, {
+    fileName: 'operating-statement.csv',
+    mime: 'text/csv',
+    contentBase64: Buffer.from(misnamedRentRoll, 'utf8').toString('base64'),
+  })
+  assert.equal(misnamed.document.type, 'rent_roll', 'rent-roll content must override a T12-ish filename')
+
+  const realT12 = [
+    'Line Item,T12 Total',
+    'Effective Gross Income,2360000',
+    'Total Operating Expenses,1210000',
+    'Net Operating Income,1150000',
+  ].join('\n')
+  const t12Doc = saveSourceDocument(context, dealId, {
+    fileName: 't12-2025.csv',
+    mime: 'text/csv',
+    contentBase64: Buffer.from(realT12, 'utf8').toString('base64'),
+  })
+  assert.equal(t12Doc.document.type, 't12', 'genuine T12 content must stay t12')
+
+  const omDoc = saveSourceDocument(context, dealId, {
+    fileName: 'offering-memo.md',
+    mime: 'text/markdown',
+    contentBase64: Buffer.from('# Offering Memorandum\nStabilized 200-unit asset. Asking price 28,000,000.', 'utf8').toString('base64'),
+  })
+  assert.equal(omDoc.document.type, 'offering_memo', 'offering memo must not be mis-overridden by the content sniff')
+
   console.log('[workspace-service-test] PASS')
 } finally {
   rmSync(tempRoot, { recursive: true, force: true })

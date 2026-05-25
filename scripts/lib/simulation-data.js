@@ -246,6 +246,16 @@ function generateDueDiligenceData(deal, scenario, rng) {
   };
 }
 
+const investmentThresholds = require('../../config/thresholds.json');
+
+const SCENARIO_TO_STRATEGY = {
+  core: 'core',
+  'core-plus': 'core-plus',
+  'value-add': 'value-add',
+  distressed: 'opportunistic',
+  opportunistic: 'opportunistic'
+};
+
 function generateUnderwritingData(deal, dd, scenario, rng) {
   const adj = scenarioAdjustments(scenario);
   const purchasePrice = safeNumber(deal?.financials?.askingPrice, 28000000);
@@ -313,6 +323,22 @@ function generateUnderwritingData(deal, dd, scenario, rng) {
       )
     );
   }
+  // P-V3: emit a determinable over-leverage flag so a real, detectable risk
+  // (high LTV / negative leverage) surfaces in the red-flag set instead of being
+  // silently absorbed into the verdict.
+  const maxConditionalLtv = safeNumber(investmentThresholds?.primaryCriteria?.ltv?.maxConditional, 0.8);
+  if (baseLTV >= maxConditionalLtv) {
+    redFlags.push(
+      buildFlag(
+        'uw-leverage',
+        'HIGH',
+        'FINANCING',
+        `Going-in leverage at ${round(baseLTV * 100, 1)}% LTV exceeds the ${round(maxConditionalLtv * 100, 0)}% conservative ceiling`,
+        'Elevated LTV reduces downside cushion and can signal negative leverage',
+        'financial-model-builder'
+      )
+    );
+  }
   if (randBetween(rng, 0, 1) > 0.7) {
     dataGaps.push(
       buildDataGap(
@@ -326,6 +352,44 @@ function generateUnderwritingData(deal, dd, scenario, rng) {
     45,
     Math.min(96, round(88 + passRate * 8 - redFlags.length * 7 + randBetween(rng, -3, 3), 0))
   );
+
+  // P-V1: Threshold-driven IC verdict. Key go/no-go off the DETERMINABLE,
+  // trustworthy metrics (DSCR, LTV, occupancy, going-in cap, risk score, HIGH
+  // red flags) and config/thresholds.json — NOT the model-dependent leveraged
+  // IRR (a wide-tolerance modeled estimate that must never be the sole gate).
+  const strategyKey =
+    SCENARIO_TO_STRATEGY[safeString(scenario?.name, 'value-add')] || 'value-add';
+  const strat =
+    investmentThresholds.strategyThresholds[strategyKey] ||
+    investmentThresholds.strategyThresholds['value-add'];
+  const goingInCapRate = year1NOI / Math.max(purchasePrice, 1);
+  const verdictOccupancy = Math.max(
+    0,
+    Math.min(1, safeNumber(deal?.financials?.inPlaceOccupancy, safeNumber(dd?.occupancy, 0.9)))
+  );
+  const hasBridgeStructure =
+    Boolean(deal?.financing?.bridge) ||
+    safeString(deal?.financing?.loanType, '').toLowerCase().includes('bridge');
+  const highRedFlagCount = redFlags.filter(
+    (flag) => flag && (flag.severity === 'HIGH' || flag.severity === 'CRITICAL')
+  ).length;
+  const hasDealbreaker =
+    dscr < 0.8 ||
+    baseLTV >= 1.0 ||
+    (verdictOccupancy < 0.7 && !hasBridgeStructure);
+  // A clean PASS requires DSCR clearing BOTH the strategy minimum and the global
+  // "strong DSCR" bar (primaryCriteria.dscr.pass). DSCR between the dealbreaker
+  // floor and this bar is marginal → CONDITIONAL, not a go.
+  const passDscr = Math.max(
+    safeNumber(strat.minDSCR, 1.2),
+    safeNumber(investmentThresholds?.primaryCriteria?.dscr?.pass, 1.25)
+  );
+  const meetsPass =
+    dscr >= passDscr &&
+    highRedFlagCount <= safeNumber(strat.maxHighRisks, 1) &&
+    goingInCapRate >= safeNumber(investmentThresholds?.secondaryCriteria?.capRate?.marginal, 0.045) &&
+    riskScore >= safeNumber(strat.minRiskScore, 60);
+  const verdict = hasDealbreaker ? 'FAIL' : meetsPass ? 'PASS' : 'CONDITIONAL';
 
   return {
     baseCase: {
@@ -416,12 +480,7 @@ function generateUnderwritingData(deal, dd, scenario, rng) {
     icMemoPath: `data/reports/${deal.dealId}/ic-memo.md`,
     modelPath: `data/phase-outputs/${deal.dealId}/underwriting-output.json`,
     scenarioMatrixPath: `data/phase-outputs/${deal.dealId}/underwriting-scenarios.json`,
-    verdict:
-      leveragedIRR >= safeNumber(deal?.targetIRR, 0.14) && dscr >= 1.2
-        ? 'PASS'
-        : leveragedIRR >= safeNumber(deal?.targetIRR, 0.14) * 0.85
-          ? 'CONDITIONAL'
-          : 'FAIL',
+    verdict,
     conditions:
       dscr < 1.25
         ? ['Consider lower proceeds or add reserve cushion']
