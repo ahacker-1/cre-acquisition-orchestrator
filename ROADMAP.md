@@ -56,7 +56,7 @@ Shipped on current main (completion pass):
 Shipped on the usability-hardening branch (real-world drop-flow pass):
 
 - A deliberately nasty "real-world pile" smoke set plus an automated test (`npm run test:pile`) that drives the pile through the real parser and asserts a typed per-file outcome (classified + stored; parseable files extracted with provenance; unparseable/irrelevant files flagged gracefully — no crashes or silent skips).
-- The evaluation benchmark is trimmed to 3 representative deals (one per archetype) for a fast, focused regression set, with an `npm run eval:offline` mode for the offline extraction + simulation layers; the remaining archetype specs stay defined in the generator for extension.
+- The open evaluation harness scores the orchestrator on a benchmark of 8 synthetic deals (core-plus / value-add / distressed, with both determinable and narrative document-buried planted risks), with an `npm run eval:offline` mode for the offline extraction + simulation layers and a live (Codex) layer that proves the agents catch narrative risks the deterministic fixture is blind to.
 - Parser robustness/honesty fixes surfaced by the pile: vacant `$0` rows no longer deflate in-place rent averages, content-aware rent-roll-vs-T12 classification, graceful `parse_failed` degradation for oversized/corrupt inputs, and a threshold-driven deterministic IC verdict.
 
 ### 2. Demo Journey and Public Proof

@@ -4,7 +4,7 @@
 // real operator drops in: valid-but-messy rent rolls / T12s / offering memos
 // alongside junk (a .docx, an image, a scanned PDF, a .zip, an empty file, a
 // 35 MB file, a mislabeled binary, a corrupt workbook, and a name/content
-// mismatch). The bar (DoD-B / DoD-D of docs/USABILITY-GOAL.md):
+// mismatch). The bar this test enforces:
 //   - every file returns a typed status — never throws past the parser boundary
 //   - parseable files are `extracted` with >=1 field; unparseable/irrelevant
 //     files degrade gracefully (`unsupported` / `parse_failed` / needs-OCR)

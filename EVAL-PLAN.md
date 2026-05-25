@@ -1,8 +1,7 @@
 # EVAL-PLAN — Prove It (Open Evaluation Harness + Honest Trust Report)
 
-> Authoritative ledger for the autonomous evaluation run defined in
-> [docs/EVAL-GOAL.md](docs/EVAL-GOAL.md). This file is the source of truth and survives
-> context resets. Resume from here — do not restart.
+> Authoritative ledger for the open evaluation harness: the methodology, fixed tolerances,
+> run history, and honest results. This file is the source of truth for how the eval is scored.
 
 **Run started:** 2026-05-21
 **North star:** A CRE professional runs ONE command (`npm run eval`), sees honest accuracy
@@ -313,7 +312,7 @@ scorecard + trust report committed under `eval/results/`. Completion report belo
 | C | Trust report shows REAL live-agent metrics (model + date) incl. failures, separated from sim | PASS (live scope = 1/8 by user direction) | TRUST-REPORT.md: live = Codex CLI 0.132.0, run 2026-05-21, `cp-insurance-understated` IC exact-match + 100% determinable fin + 100% red-flag recall; live clearly separated from the sim fixture; live coverage honestly labeled 1 of 8 (user scoped the costly live runs to one deal; harness runs all 8 via `npm run eval`) |
 | D | Worst baseline gaps fixed-and-re-measured OR documented as known limits | PASS | 4 contamination bugs fixed + re-measured via `--reparse` (wrong FAIL → correct CONDITIONAL); live IRR/EM gap documented as KNOWN-LIMIT |
 | E | README surfaces honest headline numbers + link; no inflated/fabricated figures | PASS | README "Honest Evaluation — Prove It" section: extraction 100% (8/8), sim fixture IC-match 3/8, live exact-match (1 deal), links to eval/README.md + TRUST-REPORT.md; explicit 1/8 live scope |
-| F | Full existing validation gate passes; no regressions; counts/docs consistent | PASS | npm test PASS; release:check all-green; validate:docs/guides/fixtures PASS; test:parsers/test:workspace PASS; npm audit 0 vulns; README counts 31/8/27/5/20/9 consistent |
+| F | Full existing validation gate passes; no regressions; counts/docs consistent | PASS | npm test PASS; release:check all-green; validate:docs/guides/fixtures PASS; test:parsers/test:workspace PASS; npm audit 0 vulns; README counts consistent (31/8/27/5/20/9 as of this 2026-05-21 run; fixtures/tests later grew to 36/10 with the drop-flow pass) |
 | G | EVAL-PLAN.md shows every item done with evidence (commands + real output) | PASS | this ledger |
 
 ---
@@ -348,5 +347,5 @@ scorecard + trust report committed under `eval/results/`. Completion report belo
   `generate_deals.py` again returns all eight archetype specs, and the deterministic layers (extraction +
   sim) run on **8 deals** (40 committed files). Live agents proven on the hard narrative-risk deals
   (tenant concentration / insurance-understatement / missing-Phase-I + OM-vs-T12 NOI conflict), whose
-  planted issues are buried in the documents rather than tripping a numeric threshold — see
-  docs/NARRATIVE-RISK-GOAL.md. The 2026-05-24 trim entry above is left intact as the historical record.
+  planted issues are buried in the documents rather than tripping a numeric threshold. The
+  2026-05-24 trim entry above is left intact as the historical record.
