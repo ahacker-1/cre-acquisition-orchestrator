@@ -4,6 +4,20 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [2.8.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.7.0...v2.8.0) (2026-05-25)
+
+
+### Features
+
+* harden real-world document drop flow; trim eval benchmark to 3 ([f5b4959](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/f5b495996399b1eae686b2947932e90b0e966329))
+* open evaluation harness + honest trust report (npm run eval) ([d686cf6](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/d686cf6a742ebca57d2f7be500dc234a321bf9e6))
+
+
+### Bug Fixes
+
+* **eval:** disambiguate going-in vs pro-forma metrics -&gt; live 100% determinable / 100% IC verdict ([11e0448](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/11e04486954da55fe7517bf8aab10a0ac69854c6))
+* **eval:** read EGI from opex-analyst + add metrics/threshold-verdict agent contract ([a446bf7](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/a446bf7f5332cf9da2e6db12c1bcd5a69df9d565))
+
 ## [Unreleased]
 
 ### Real-world drop-flow hardening
