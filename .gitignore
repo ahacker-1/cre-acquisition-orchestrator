@@ -54,3 +54,16 @@ desktop.ini
 # Oversized parser-cap test fixture — generated at test time, not committed
 # (see ensureOversizedCsv in scripts/real-world-pile.test.mjs / parser-service.test.mjs).
 fixtures/real-world-pile/huge-rent-roll.csv
+
+# Private legal / client work product — never publish (kept outside the public tree)
+docs/legal/
+
+# Internal working artifacts — agent goal prompts & execution ledgers (kept local, not published).
+# NOTE: EVAL-PLAN.md and docs/ISSUE-SEEDS.md are intentional PUBLIC docs and are deliberately NOT ignored.
+docs/*-GOAL.md
+/*-PLAN.md
+!/EVAL-PLAN.md
+.github/internal/
+
+# Local agent/editor working state (plans, session scratch — never published)
+.claude/
