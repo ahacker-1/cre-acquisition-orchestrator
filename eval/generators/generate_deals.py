@@ -1497,15 +1497,21 @@ def deal_8_dscr_below080() -> DealSpec:
 
 
 def all_specs() -> List[DealSpec]:
-    # Trimmed to 3 representative deals — one per archetype — for a fast, focused
-    # regression set (clean core-plus / value-add / distressed). The remaining
-    # archetype specs (insurance, concentration, sub-1.20 DSCR, missing Phase I,
-    # sub-0.80 DSCR) stay defined above and can be re-added here to extend the
-    # benchmark toward an open standard.
+    # Full 8-deal benchmark: the 3 determinable-risk deals (1/5/7) PLUS the 5
+    # narrative-risk / DSCR-boundary deals (2/3/4/6/8) whose planted issues are
+    # buried in the documents (insurance understatement, tenant concentration,
+    # sub-1.20 / sub-0.80 DSCR, missing Phase I + OM-vs-T12 NOI conflict). The
+    # offline layers run on all 8; the costly live layer is scored on a
+    # representative subset that still includes the narrative-risk deals.
     return [
-        deal_1_clean(),          # cp-stabilized-clean  (core-plus, expected PASS)
-        deal_5_overlevered(),    # va-overlevered-ltv   (value-add, expected CONDITIONAL)
-        deal_7_occupancy_collapse(),  # ds-occupancy-collapse (distressed, expected FAIL)
+        deal_1_clean(),               # cp-stabilized-clean   (core-plus, PASS, control)
+        deal_2_insurance(),           # cp-insurance-understated (CONDITIONAL, narrative)
+        deal_3_concentration(),       # cp-concentration-risk (CONDITIONAL, narrative)
+        deal_4_dscr_sub120(),         # va-sub120-dscr        (CONDITIONAL, DSCR boundary)
+        deal_5_overlevered(),         # va-overlevered-ltv    (CONDITIONAL)
+        deal_6_missing_phase1(),      # va-missing-phase1     (CONDITIONAL, narrative)
+        deal_7_occupancy_collapse(),  # ds-occupancy-collapse (FAIL, dealbreaker)
+        deal_8_dscr_below080(),       # ds-dscr-below-080     (FAIL, dealbreaker)
     ]
 
 

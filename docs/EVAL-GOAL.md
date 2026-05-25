@@ -44,7 +44,7 @@ detection, IC-recommendation match rate; (c) the scoring methodology and what "p
 ────────────────────────────────────────────────────────
 PHASE 1 — Build a synthetic, realistic benchmark dataset (with ground truth)
 ────────────────────────────────────────────────────────
-Generate a committed, deterministic set of N>=3 deals (trimmed from the original 8) spanning core-plus / value-add / distressed,
+Generate a committed, deterministic set of N>=8 deals spanning core-plus / value-add / distressed,
 with realistic messiness (merged cells, currency formatting, trailing notes, alternate headers,
 text PDFs, conflicting OM-vs-T12 NOI, occupancy quirks) AND planted issues (e.g. over-levered
 LTV, insurance understatement, missing Phase I, concentration risk, sub-1.20x DSCR). Each deal
@@ -85,7 +85,7 @@ headline numbers in the README with a link to the full report — including the 
 DEFINITION OF DONE (all true, with pasted evidence)
 ────────────────────────────────────────────────────────
 A. `npm run eval` reproducibly scores the benchmark and emits a schema-valid scorecard + trust report.
-B. 3 realistic synthetic deals with committed ground truth exist; generators are reproducible.
+B. 8 realistic synthetic deals with committed ground truth exist; generators are reproducible.
 C. The committed trust report shows REAL live-agent metrics (model + date), including failures,
    clearly separated from the simulation fixture.
 D. The worst gaps from the baseline are either fixed-and-re-measured or documented as known limits.

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-25T05:46:52.803Z",
-  "runId": "live-fix1-final",
+  "generatedAt": "2026-05-25T14:53:03.027Z",
+  "runId": "live-8deal",
   "model": null,
   "codexVersion": "codex-cli 0.132.0",
   "evalVersion": "1.0.0",
@@ -9,29 +9,239 @@
       "metrics": {
         "extractionPrecision": {
           "mean": 1,
-          "n": 3
+          "n": 8
         },
         "extractionRecall": {
           "mean": 1,
-          "n": 3
+          "n": 8
         },
         "extractionF1": {
           "mean": 1,
-          "n": 3
+          "n": 8
         },
         "extractionNumericWithinTolerance": {
           "mean": 1,
-          "n": 3
+          "n": 8
         }
       },
       "counts": {
-        "deals": 3,
+        "deals": 8,
         "byLayer": {
-          "extraction": 3
+          "extraction": 8
         },
         "partialFailures": 0
       },
       "deals": [
+        {
+          "dealId": "cp-concentration-risk",
+          "layer": "extraction",
+          "archetype": "core-plus",
+          "extraction": {
+            "precision": 1,
+            "recall": 1,
+            "f1": 1,
+            "numericWithinTolerance": 1,
+            "matched": 12,
+            "extractedCount": 14,
+            "groundTruthCount": 12,
+            "perField": [
+              {
+                "path": "rent_roll::property.totalUnits",
+                "expected": 120,
+                "actual": 120,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.inPlaceOccupancy",
+                "expected": 0.9417,
+                "actual": 0.9417,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.grossPotentialRentAnnual",
+                "expected": 2505600,
+                "actual": 2505600,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.inPlaceRentAnnual",
+                "expected": 2285460,
+                "actual": 2285460,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.trailingT12Revenue",
+                "expected": 1980000,
+                "actual": 1980000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.trailingT12Expenses",
+                "expected": 1020000,
+                "actual": 1020000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.currentNOI",
+                "expected": 960000,
+                "actual": 960000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.askingPrice",
+                "expected": 17000000,
+                "actual": 17000000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::property.totalUnits",
+                "expected": 120,
+                "actual": 120,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::property.yearBuilt",
+                "expected": 2011,
+                "actual": 2011,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.inPlaceOccupancy",
+                "expected": 0.94,
+                "actual": 0.94,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.currentNOI",
+                "expected": 960000,
+                "actual": 960000,
+                "matched": true,
+                "present": true
+              }
+            ]
+          },
+          "financials": null,
+          "redFlags": null,
+          "dealbreakers": null,
+          "verdict": null,
+          "partialFailure": null
+        },
+        {
+          "dealId": "cp-insurance-understated",
+          "layer": "extraction",
+          "archetype": "core-plus",
+          "extraction": {
+            "precision": 1,
+            "recall": 1,
+            "f1": 1,
+            "numericWithinTolerance": 1,
+            "matched": 12,
+            "extractedCount": 14,
+            "groundTruthCount": 12,
+            "perField": [
+              {
+                "path": "rent_roll::property.totalUnits",
+                "expected": 120,
+                "actual": 120,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.inPlaceOccupancy",
+                "expected": 0.9417,
+                "actual": 0.9417,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.grossPotentialRentAnnual",
+                "expected": 2779200,
+                "actual": 2779200,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.inPlaceRentAnnual",
+                "expected": 2532000,
+                "actual": 2532000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.trailingT12Revenue",
+                "expected": 2280000,
+                "actual": 2280000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.trailingT12Expenses",
+                "expected": 1132000,
+                "actual": 1132000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.currentNOI",
+                "expected": 1148000,
+                "actual": 1148000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.askingPrice",
+                "expected": 20000000,
+                "actual": 20000000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::property.totalUnits",
+                "expected": 120,
+                "actual": 120,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::property.yearBuilt",
+                "expected": 2005,
+                "actual": 2005,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.inPlaceOccupancy",
+                "expected": 0.94,
+                "actual": 0.94,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.currentNOI",
+                "expected": 1148000,
+                "actual": 1148000,
+                "matched": true,
+                "present": true
+              }
+            ]
+          },
+          "financials": null,
+          "redFlags": null,
+          "dealbreakers": null,
+          "verdict": null,
+          "partialFailure": null
+        },
         {
           "dealId": "cp-stabilized-clean",
           "layer": "extraction",
@@ -126,6 +336,111 @@
                 "path": "offering_memo::financials.currentNOI",
                 "expected": 1150000,
                 "actual": 1150000,
+                "matched": true,
+                "present": true
+              }
+            ]
+          },
+          "financials": null,
+          "redFlags": null,
+          "dealbreakers": null,
+          "verdict": null,
+          "partialFailure": null
+        },
+        {
+          "dealId": "ds-dscr-below-080",
+          "layer": "extraction",
+          "archetype": "distressed",
+          "extraction": {
+            "precision": 1,
+            "recall": 1,
+            "f1": 1,
+            "numericWithinTolerance": 1,
+            "matched": 12,
+            "extractedCount": 14,
+            "groundTruthCount": 12,
+            "perField": [
+              {
+                "path": "rent_roll::property.totalUnits",
+                "expected": 120,
+                "actual": 120,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.inPlaceOccupancy",
+                "expected": 0.7083,
+                "actual": 0.7083,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.grossPotentialRentAnnual",
+                "expected": 2192640,
+                "actual": 2192640,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.inPlaceRentAnnual",
+                "expected": 1441920,
+                "actual": 1441920,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.trailingT12Revenue",
+                "expected": 1240000,
+                "actual": 1240000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.trailingT12Expenses",
+                "expected": 920000,
+                "actual": 920000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.currentNOI",
+                "expected": 320000,
+                "actual": 320000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.askingPrice",
+                "expected": 9200000,
+                "actual": 9200000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::property.totalUnits",
+                "expected": 120,
+                "actual": 120,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::property.yearBuilt",
+                "expected": 1992,
+                "actual": 1992,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.inPlaceOccupancy",
+                "expected": 0.71,
+                "actual": 0.71,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.currentNOI",
+                "expected": 320000,
+                "actual": 320000,
                 "matched": true,
                 "present": true
               }
@@ -243,6 +558,111 @@
           "partialFailure": null
         },
         {
+          "dealId": "va-missing-phase1",
+          "layer": "extraction",
+          "archetype": "value-add",
+          "extraction": {
+            "precision": 1,
+            "recall": 1,
+            "f1": 1,
+            "numericWithinTolerance": 1,
+            "matched": 12,
+            "extractedCount": 14,
+            "groundTruthCount": 12,
+            "perField": [
+              {
+                "path": "rent_roll::property.totalUnits",
+                "expected": 128,
+                "actual": 128,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.inPlaceOccupancy",
+                "expected": 0.8984,
+                "actual": 0.8984,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.grossPotentialRentAnnual",
+                "expected": 2695920,
+                "actual": 2695920,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.inPlaceRentAnnual",
+                "expected": 2263320,
+                "actual": 2263320,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.trailingT12Revenue",
+                "expected": 2040000,
+                "actual": 2040000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.trailingT12Expenses",
+                "expected": 1097000,
+                "actual": 1097000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.currentNOI",
+                "expected": 943000,
+                "actual": 943000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.askingPrice",
+                "expected": 15800000,
+                "actual": 15800000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::property.totalUnits",
+                "expected": 128,
+                "actual": 128,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::property.yearBuilt",
+                "expected": 1996,
+                "actual": 1996,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.inPlaceOccupancy",
+                "expected": 0.9,
+                "actual": 0.9,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.currentNOI",
+                "expected": 1030000,
+                "actual": 1030000,
+                "matched": true,
+                "present": true
+              }
+            ]
+          },
+          "financials": null,
+          "redFlags": null,
+          "dealbreakers": null,
+          "verdict": null,
+          "partialFailure": null
+        },
+        {
           "dealId": "va-overlevered-ltv",
           "layer": "extraction",
           "archetype": "value-add",
@@ -346,6 +766,111 @@
           "dealbreakers": null,
           "verdict": null,
           "partialFailure": null
+        },
+        {
+          "dealId": "va-sub120-dscr",
+          "layer": "extraction",
+          "archetype": "value-add",
+          "extraction": {
+            "precision": 1,
+            "recall": 1,
+            "f1": 1,
+            "numericWithinTolerance": 1,
+            "matched": 12,
+            "extractedCount": 14,
+            "groundTruthCount": 12,
+            "perField": [
+              {
+                "path": "rent_roll::property.totalUnits",
+                "expected": 150,
+                "actual": 150,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.inPlaceOccupancy",
+                "expected": 0.8733,
+                "actual": 0.8733,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.grossPotentialRentAnnual",
+                "expected": 2958480,
+                "actual": 2958480,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "rent_roll::financials.inPlaceRentAnnual",
+                "expected": 2346720,
+                "actual": 2346720,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.trailingT12Revenue",
+                "expected": 2020000,
+                "actual": 2020000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.trailingT12Expenses",
+                "expected": 1062000,
+                "actual": 1062000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "t12::financials.currentNOI",
+                "expected": 958000,
+                "actual": 958000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.askingPrice",
+                "expected": 15500000,
+                "actual": 15500000,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::property.totalUnits",
+                "expected": 150,
+                "actual": 150,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::property.yearBuilt",
+                "expected": 1999,
+                "actual": 1999,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.inPlaceOccupancy",
+                "expected": 0.87,
+                "actual": 0.87,
+                "matched": true,
+                "present": true
+              },
+              {
+                "path": "offering_memo::financials.currentNOI",
+                "expected": 958000,
+                "actual": 958000,
+                "matched": true,
+                "present": true
+              }
+            ]
+          },
+          "financials": null,
+          "redFlags": null,
+          "dealbreakers": null,
+          "verdict": null,
+          "partialFailure": null
         }
       ]
     },
@@ -353,45 +878,423 @@
       "metrics": {
         "financialDeterminable": {
           "mean": 1,
-          "n": 3
+          "n": 8
         },
         "financialModelDependent": {
-          "mean": 0.3333333333333333,
-          "n": 3
+          "mean": 0.5,
+          "n": 8
         },
         "redFlagRecall": {
           "mean": 0.5,
-          "n": 2
+          "n": 6
         },
         "redFlagRequiredRecall": {
-          "mean": 1,
-          "n": 1
+          "mean": 0.6,
+          "n": 5
         },
         "redFlagPrecision": {
-          "mean": 0.1111111111111111,
-          "n": 3
+          "mean": 0.14166666666666666,
+          "n": 8
         },
         "dealbreakerRecall": {
           "mean": 1,
-          "n": 1
+          "n": 2
         },
         "icExactMatch": {
-          "mean": 1,
-          "n": 3
+          "mean": 0.75,
+          "n": 8
         },
         "icDirectionalMatch": {
           "mean": 1,
-          "n": 3
+          "n": 8
         }
       },
       "counts": {
-        "deals": 3,
+        "deals": 8,
         "byLayer": {
-          "sim": 3
+          "sim": 8
         },
         "partialFailures": 0
       },
       "deals": [
+        {
+          "dealId": "cp-concentration-risk",
+          "layer": "sim",
+          "archetype": "core-plus",
+          "extraction": null,
+          "financials": {
+            "determinable": {
+              "withinTolerance": 4,
+              "total": 4,
+              "ratio": 1,
+              "perMetric": [
+                {
+                  "key": "noi",
+                  "expected": 960000,
+                  "actual": 960000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "egi",
+                  "expected": 1980000,
+                  "actual": 1980000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "capRate",
+                  "expected": 0.0565,
+                  "actual": 0.0565,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.0015
+                  }
+                },
+                {
+                  "key": "dscr",
+                  "expected": 1.29,
+                  "actual": 1.322,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.08
+                  }
+                }
+              ]
+            },
+            "modelDependent": {
+              "withinTolerance": 2,
+              "total": 2,
+              "ratio": 1,
+              "perMetric": [
+                {
+                  "key": "irr",
+                  "expected": 0.0922,
+                  "actual": 0.0795,
+                  "class": "model-dependent",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.03
+                  }
+                },
+                {
+                  "key": "equityMultiple",
+                  "expected": 1.52,
+                  "actual": 1.436,
+                  "class": "model-dependent",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.2
+                  }
+                }
+              ]
+            },
+            "perMetric": [
+              {
+                "key": "noi",
+                "expected": 960000,
+                "actual": 960000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "egi",
+                "expected": 1980000,
+                "actual": 1980000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "capRate",
+                "expected": 0.0565,
+                "actual": 0.0565,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.0015
+                }
+              },
+              {
+                "key": "dscr",
+                "expected": 1.29,
+                "actual": 1.322,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.08
+                }
+              },
+              {
+                "key": "irr",
+                "expected": 0.0922,
+                "actual": 0.0795,
+                "class": "model-dependent",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.03
+                }
+              },
+              {
+                "key": "equityMultiple",
+                "expected": 1.52,
+                "actual": 1.436,
+                "class": "model-dependent",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.2
+                }
+              }
+            ]
+          },
+          "redFlags": {
+            "recall": 0,
+            "requiredRecall": 0,
+            "precision": 0,
+            "total": 1,
+            "detected": 0,
+            "requiredTotal": 1,
+            "requiredDetected": 0,
+            "falsePositiveCount": 3,
+            "perFlag": [
+              {
+                "id": "tenant-concentration",
+                "required": true,
+                "detected": false,
+                "matchedText": null
+              }
+            ]
+          },
+          "dealbreakers": {
+            "recall": null,
+            "total": 0,
+            "detected": 0,
+            "perDealbreaker": []
+          },
+          "verdict": {
+            "exactMatch": false,
+            "directionalMatch": true,
+            "expected": "CONDITIONAL",
+            "actual": "PASS",
+            "expectedDirection": "go",
+            "actualDirection": "go"
+          },
+          "partialFailure": null
+        },
+        {
+          "dealId": "cp-insurance-understated",
+          "layer": "sim",
+          "archetype": "core-plus",
+          "extraction": null,
+          "financials": {
+            "determinable": {
+              "withinTolerance": 4,
+              "total": 4,
+              "ratio": 1,
+              "perMetric": [
+                {
+                  "key": "noi",
+                  "expected": 1148000,
+                  "actual": 1148000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "egi",
+                  "expected": 2280000,
+                  "actual": 2280000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "capRate",
+                  "expected": 0.0574,
+                  "actual": 0.0574,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.0015
+                  }
+                },
+                {
+                  "key": "dscr",
+                  "expected": 1.23,
+                  "actual": 1.254,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.08
+                  }
+                }
+              ]
+            },
+            "modelDependent": {
+              "withinTolerance": 2,
+              "total": 2,
+              "ratio": 1,
+              "perMetric": [
+                {
+                  "key": "irr",
+                  "expected": 0.0998,
+                  "actual": 0.0858,
+                  "class": "model-dependent",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.03
+                  }
+                },
+                {
+                  "key": "equityMultiple",
+                  "expected": 1.57,
+                  "actual": 1.478,
+                  "class": "model-dependent",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.2
+                  }
+                }
+              ]
+            },
+            "perMetric": [
+              {
+                "key": "noi",
+                "expected": 1148000,
+                "actual": 1148000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "egi",
+                "expected": 2280000,
+                "actual": 2280000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "capRate",
+                "expected": 0.0574,
+                "actual": 0.0574,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.0015
+                }
+              },
+              {
+                "key": "dscr",
+                "expected": 1.23,
+                "actual": 1.254,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.08
+                }
+              },
+              {
+                "key": "irr",
+                "expected": 0.0998,
+                "actual": 0.0858,
+                "class": "model-dependent",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.03
+                }
+              },
+              {
+                "key": "equityMultiple",
+                "expected": 1.57,
+                "actual": 1.478,
+                "class": "model-dependent",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.2
+                }
+              }
+            ]
+          },
+          "redFlags": {
+            "recall": 0,
+            "requiredRecall": 0,
+            "precision": 0,
+            "total": 1,
+            "detected": 0,
+            "requiredTotal": 1,
+            "requiredDetected": 0,
+            "falsePositiveCount": 3,
+            "perFlag": [
+              {
+                "id": "insurance-understated",
+                "required": true,
+                "detected": false,
+                "matchedText": null
+              }
+            ]
+          },
+          "dealbreakers": {
+            "recall": null,
+            "total": 0,
+            "detected": 0,
+            "perDealbreaker": []
+          },
+          "verdict": {
+            "exactMatch": false,
+            "directionalMatch": true,
+            "expected": "CONDITIONAL",
+            "actual": "PASS",
+            "expectedDirection": "go",
+            "actualDirection": "go"
+          },
+          "partialFailure": null
+        },
         {
           "dealId": "cp-stabilized-clean",
           "layer": "sim",
@@ -571,6 +1474,195 @@
             "actual": "PASS",
             "expectedDirection": "go",
             "actualDirection": "go"
+          },
+          "partialFailure": null
+        },
+        {
+          "dealId": "ds-dscr-below-080",
+          "layer": "sim",
+          "archetype": "distressed",
+          "extraction": null,
+          "financials": {
+            "determinable": {
+              "withinTolerance": 4,
+              "total": 4,
+              "ratio": 1,
+              "perMetric": [
+                {
+                  "key": "noi",
+                  "expected": 320000,
+                  "actual": 320000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "egi",
+                  "expected": 1240000,
+                  "actual": 1240000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "capRate",
+                  "expected": 0.0348,
+                  "actual": 0.0348,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.0015
+                  }
+                },
+                {
+                  "key": "dscr",
+                  "expected": 0.57,
+                  "actual": 0.519,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.08
+                  }
+                }
+              ]
+            },
+            "modelDependent": {
+              "withinTolerance": 0,
+              "total": 2,
+              "ratio": 0,
+              "perMetric": [
+                {
+                  "key": "irr",
+                  "expected": -0.6269,
+                  "actual": 0.2864,
+                  "class": "model-dependent",
+                  "matched": false,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.03
+                  }
+                },
+                {
+                  "key": "equityMultiple",
+                  "expected": -0.29,
+                  "actual": 3.541,
+                  "class": "model-dependent",
+                  "matched": false,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.2
+                  }
+                }
+              ]
+            },
+            "perMetric": [
+              {
+                "key": "noi",
+                "expected": 320000,
+                "actual": 320000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "egi",
+                "expected": 1240000,
+                "actual": 1240000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "capRate",
+                "expected": 0.0348,
+                "actual": 0.0348,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.0015
+                }
+              },
+              {
+                "key": "dscr",
+                "expected": 0.57,
+                "actual": 0.519,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.08
+                }
+              },
+              {
+                "key": "irr",
+                "expected": -0.6269,
+                "actual": 0.2864,
+                "class": "model-dependent",
+                "matched": false,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.03
+                }
+              },
+              {
+                "key": "equityMultiple",
+                "expected": -0.29,
+                "actual": 3.541,
+                "class": "model-dependent",
+                "matched": false,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.2
+                }
+              }
+            ]
+          },
+          "redFlags": {
+            "recall": null,
+            "requiredRecall": null,
+            "precision": 0,
+            "total": 0,
+            "detected": 0,
+            "requiredTotal": 0,
+            "requiredDetected": 0,
+            "falsePositiveCount": 10,
+            "perFlag": []
+          },
+          "dealbreakers": {
+            "recall": 1,
+            "total": 1,
+            "detected": 1,
+            "perDealbreaker": [
+              {
+                "id": "dscr-sub-080",
+                "required": true,
+                "detected": true,
+                "matchedText": "HIGH | UNDERWRITING | Base DSCR 0.52x is below preferred cushion | Can reduce lender proceeds and increase risk"
+              }
+            ]
+          },
+          "verdict": {
+            "exactMatch": true,
+            "directionalMatch": true,
+            "expected": "FAIL",
+            "actual": "FAIL",
+            "expectedDirection": "no-go",
+            "actualDirection": "no-go"
           },
           "partialFailure": null
         },
@@ -771,6 +1863,201 @@
           "partialFailure": null
         },
         {
+          "dealId": "va-missing-phase1",
+          "layer": "sim",
+          "archetype": "value-add",
+          "extraction": null,
+          "financials": {
+            "determinable": {
+              "withinTolerance": 4,
+              "total": 4,
+              "ratio": 1,
+              "perMetric": [
+                {
+                  "key": "noi",
+                  "expected": 943000,
+                  "actual": 943000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "egi",
+                  "expected": 2040000,
+                  "actual": 2040000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "capRate",
+                  "expected": 0.0597,
+                  "actual": 0.0597,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.0015
+                  }
+                },
+                {
+                  "key": "dscr",
+                  "expected": 1.15,
+                  "actual": 1.113,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.08
+                  }
+                }
+              ]
+            },
+            "modelDependent": {
+              "withinTolerance": 2,
+              "total": 2,
+              "ratio": 1,
+              "perMetric": [
+                {
+                  "key": "irr",
+                  "expected": 0.1069,
+                  "actual": 0.1213,
+                  "class": "model-dependent",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.03
+                  }
+                },
+                {
+                  "key": "equityMultiple",
+                  "expected": 1.63,
+                  "actual": 1.725,
+                  "class": "model-dependent",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.2
+                  }
+                }
+              ]
+            },
+            "perMetric": [
+              {
+                "key": "noi",
+                "expected": 943000,
+                "actual": 943000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "egi",
+                "expected": 2040000,
+                "actual": 2040000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "capRate",
+                "expected": 0.0597,
+                "actual": 0.0597,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.0015
+                }
+              },
+              {
+                "key": "dscr",
+                "expected": 1.15,
+                "actual": 1.113,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.08
+                }
+              },
+              {
+                "key": "irr",
+                "expected": 0.1069,
+                "actual": 0.1213,
+                "class": "model-dependent",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.03
+                }
+              },
+              {
+                "key": "equityMultiple",
+                "expected": 1.63,
+                "actual": 1.725,
+                "class": "model-dependent",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.2
+                }
+              }
+            ]
+          },
+          "redFlags": {
+            "recall": 1,
+            "requiredRecall": 1,
+            "precision": 0.4,
+            "total": 2,
+            "detected": 2,
+            "requiredTotal": 2,
+            "requiredDetected": 2,
+            "falsePositiveCount": 3,
+            "perFlag": [
+              {
+                "id": "missing-phase-1-esa",
+                "required": true,
+                "detected": true,
+                "matchedText": "MEDIUM | DATA_GAP | Historical monthly rent trend missing for two periods | Could reduce confidence in recommendation"
+              },
+              {
+                "id": "om-t12-noi-conflict",
+                "required": true,
+                "detected": true,
+                "matchedText": "MEDIUM | DATA_GAP | Historical monthly rent trend missing for two periods | Could reduce confidence in recommendation"
+              }
+            ]
+          },
+          "dealbreakers": {
+            "recall": null,
+            "total": 0,
+            "detected": 0,
+            "perDealbreaker": []
+          },
+          "verdict": {
+            "exactMatch": true,
+            "directionalMatch": true,
+            "expected": "CONDITIONAL",
+            "actual": "CONDITIONAL",
+            "expectedDirection": "go",
+            "actualDirection": "go"
+          },
+          "partialFailure": null
+        },
+        {
           "dealId": "va-overlevered-ltv",
           "layer": "sim",
           "archetype": "value-add",
@@ -958,30 +2245,219 @@
             "actualDirection": "go"
           },
           "partialFailure": null
+        },
+        {
+          "dealId": "va-sub120-dscr",
+          "layer": "sim",
+          "archetype": "value-add",
+          "extraction": null,
+          "financials": {
+            "determinable": {
+              "withinTolerance": 4,
+              "total": 4,
+              "ratio": 1,
+              "perMetric": [
+                {
+                  "key": "noi",
+                  "expected": 958000,
+                  "actual": 958000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "egi",
+                  "expected": 2020000,
+                  "actual": 2020000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "capRate",
+                  "expected": 0.0618,
+                  "actual": 0.0618,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.0015
+                  }
+                },
+                {
+                  "key": "dscr",
+                  "expected": 1.13,
+                  "actual": 1.097,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.08
+                  }
+                }
+              ]
+            },
+            "modelDependent": {
+              "withinTolerance": 0,
+              "total": 2,
+              "ratio": 0,
+              "perMetric": [
+                {
+                  "key": "irr",
+                  "expected": 0.1124,
+                  "actual": 0.2214,
+                  "class": "model-dependent",
+                  "matched": false,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.03
+                  }
+                },
+                {
+                  "key": "equityMultiple",
+                  "expected": 1.67,
+                  "actual": 2.573,
+                  "class": "model-dependent",
+                  "matched": false,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.2
+                  }
+                }
+              ]
+            },
+            "perMetric": [
+              {
+                "key": "noi",
+                "expected": 958000,
+                "actual": 958000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "egi",
+                "expected": 2020000,
+                "actual": 2020000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "capRate",
+                "expected": 0.0618,
+                "actual": 0.0618,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.0015
+                }
+              },
+              {
+                "key": "dscr",
+                "expected": 1.13,
+                "actual": 1.097,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.08
+                }
+              },
+              {
+                "key": "irr",
+                "expected": 0.1124,
+                "actual": 0.2214,
+                "class": "model-dependent",
+                "matched": false,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.03
+                }
+              },
+              {
+                "key": "equityMultiple",
+                "expected": 1.67,
+                "actual": 2.573,
+                "class": "model-dependent",
+                "matched": false,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.2
+                }
+              }
+            ]
+          },
+          "redFlags": {
+            "recall": 1,
+            "requiredRecall": 1,
+            "precision": 0.4,
+            "total": 1,
+            "detected": 1,
+            "requiredTotal": 1,
+            "requiredDetected": 1,
+            "falsePositiveCount": 3,
+            "perFlag": [
+              {
+                "id": "dscr-sub-120",
+                "required": true,
+                "detected": true,
+                "matchedText": "HIGH | UNDERWRITING | Base DSCR 1.1x is below preferred cushion | Can reduce lender proceeds and increase risk"
+              }
+            ]
+          },
+          "dealbreakers": {
+            "recall": null,
+            "total": 0,
+            "detected": 0,
+            "perDealbreaker": []
+          },
+          "verdict": {
+            "exactMatch": true,
+            "directionalMatch": true,
+            "expected": "CONDITIONAL",
+            "actual": "CONDITIONAL",
+            "expectedDirection": "go",
+            "actualDirection": "go"
+          },
+          "partialFailure": null
         }
       ]
     },
     "live": {
       "metrics": {
         "financialDeterminable": {
-          "mean": 1,
-          "n": 3
+          "mean": 0.9583333333333334,
+          "n": 6
         },
         "financialModelDependent": {
-          "mean": 0.6666666666666666,
-          "n": 3
+          "mean": 0.5,
+          "n": 6
         },
         "redFlagRecall": {
           "mean": 1,
-          "n": 2
+          "n": 5
         },
         "redFlagRequiredRecall": {
           "mean": 1,
-          "n": 1
+          "n": 4
         },
         "redFlagPrecision": {
-          "mean": 0.10716860156309281,
-          "n": 3
+          "mean": 0.2613881604115593,
+          "n": 6
         },
         "dealbreakerRecall": {
           "mean": 1,
@@ -989,21 +2465,399 @@
         },
         "icExactMatch": {
           "mean": 1,
-          "n": 3
+          "n": 6
         },
         "icDirectionalMatch": {
           "mean": 1,
-          "n": 3
+          "n": 6
         }
       },
       "counts": {
-        "deals": 3,
+        "deals": 6,
         "byLayer": {
-          "live": 3
+          "live": 6
         },
         "partialFailures": 0
       },
       "deals": [
+        {
+          "dealId": "cp-concentration-risk",
+          "layer": "live",
+          "archetype": "core-plus",
+          "extraction": null,
+          "financials": {
+            "determinable": {
+              "withinTolerance": 4,
+              "total": 4,
+              "ratio": 1,
+              "perMetric": [
+                {
+                  "key": "noi",
+                  "expected": 960000,
+                  "actual": 960000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "egi",
+                  "expected": 1980000,
+                  "actual": 1980000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "capRate",
+                  "expected": 0.0565,
+                  "actual": 0.0565,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.0015
+                  }
+                },
+                {
+                  "key": "dscr",
+                  "expected": 1.29,
+                  "actual": 1.32,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.08
+                  }
+                }
+              ]
+            },
+            "modelDependent": {
+              "withinTolerance": 0,
+              "total": 2,
+              "ratio": 0,
+              "perMetric": [
+                {
+                  "key": "irr",
+                  "expected": 0.0922,
+                  "actual": 0.129,
+                  "class": "model-dependent",
+                  "matched": false,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.03
+                  }
+                },
+                {
+                  "key": "equityMultiple",
+                  "expected": 1.52,
+                  "actual": 1.77,
+                  "class": "model-dependent",
+                  "matched": false,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.2
+                  }
+                }
+              ]
+            },
+            "perMetric": [
+              {
+                "key": "noi",
+                "expected": 960000,
+                "actual": 960000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "egi",
+                "expected": 1980000,
+                "actual": 1980000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "capRate",
+                "expected": 0.0565,
+                "actual": 0.0565,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.0015
+                }
+              },
+              {
+                "key": "dscr",
+                "expected": 1.29,
+                "actual": 1.32,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.08
+                }
+              },
+              {
+                "key": "irr",
+                "expected": 0.0922,
+                "actual": 0.129,
+                "class": "model-dependent",
+                "matched": false,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.03
+                }
+              },
+              {
+                "key": "equityMultiple",
+                "expected": 1.52,
+                "actual": 1.77,
+                "class": "model-dependent",
+                "matched": false,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.2
+                }
+              }
+            ]
+          },
+          "redFlags": {
+            "recall": 1,
+            "requiredRecall": 1,
+            "precision": 0.2914285714285714,
+            "total": 1,
+            "detected": 1,
+            "requiredTotal": 1,
+            "requiredDetected": 1,
+            "falsePositiveCount": 124,
+            "perFlag": [
+              {
+                "id": "tenant-concentration",
+                "required": true,
+                "detected": true,
+                "matchedText": "CONDITIONAL. Foundry Yard clears the hard financial screens on T12 NOI: 60.0% LTV, 1.29x amortizing DSCR, and 9.41% debt yield, with no threshold dealbreaker. The rent roll also supports 94.17% physical occupancy and only modest 3.0% loss-to-lease. The condition is the revenue-quality risk: the OM says approximately 60% of residents work for Carolina Logistics, and current rent roll billing is $305k above T12 EGI, so the team needs employer-concentration and collections reconciliation before treating this as a clean core-plus proceed."
+              }
+            ]
+          },
+          "dealbreakers": {
+            "recall": null,
+            "total": 0,
+            "detected": 0,
+            "perDealbreaker": []
+          },
+          "verdict": {
+            "exactMatch": true,
+            "directionalMatch": true,
+            "expected": "CONDITIONAL",
+            "actual": "CONDITIONAL",
+            "expectedDirection": "go",
+            "actualDirection": "go"
+          },
+          "partialFailure": null
+        },
+        {
+          "dealId": "cp-insurance-understated",
+          "layer": "live",
+          "archetype": "core-plus",
+          "extraction": null,
+          "financials": {
+            "determinable": {
+              "withinTolerance": 3,
+              "total": 4,
+              "ratio": 0.75,
+              "perMetric": [
+                {
+                  "key": "noi",
+                  "expected": 1148000,
+                  "actual": 1148000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "egi",
+                  "expected": 2280000,
+                  "actual": 2280000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "capRate",
+                  "expected": 0.0574,
+                  "actual": 0.0535,
+                  "class": "determinable",
+                  "matched": false,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.0015
+                  }
+                },
+                {
+                  "key": "dscr",
+                  "expected": 1.23,
+                  "actual": 1.17,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.08
+                  }
+                }
+              ]
+            },
+            "modelDependent": {
+              "withinTolerance": 0,
+              "total": 2,
+              "ratio": 0,
+              "perMetric": [
+                {
+                  "key": "irr",
+                  "expected": 0.0998,
+                  "actual": null,
+                  "class": "model-dependent",
+                  "matched": false,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.03
+                  }
+                },
+                {
+                  "key": "equityMultiple",
+                  "expected": 1.57,
+                  "actual": null,
+                  "class": "model-dependent",
+                  "matched": false,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.2
+                  }
+                }
+              ]
+            },
+            "perMetric": [
+              {
+                "key": "noi",
+                "expected": 1148000,
+                "actual": 1148000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "egi",
+                "expected": 2280000,
+                "actual": 2280000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "capRate",
+                "expected": 0.0574,
+                "actual": 0.0535,
+                "class": "determinable",
+                "matched": false,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.0015
+                }
+              },
+              {
+                "key": "dscr",
+                "expected": 1.23,
+                "actual": 1.17,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.08
+                }
+              },
+              {
+                "key": "irr",
+                "expected": 0.0998,
+                "actual": null,
+                "class": "model-dependent",
+                "matched": false,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.03
+                }
+              },
+              {
+                "key": "equityMultiple",
+                "expected": 1.57,
+                "actual": null,
+                "class": "model-dependent",
+                "matched": false,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.2
+                }
+              }
+            ]
+          },
+          "redFlags": {
+            "recall": 1,
+            "requiredRecall": 1,
+            "precision": 0.3488372093023256,
+            "total": 1,
+            "detected": 1,
+            "requiredTotal": 1,
+            "requiredDetected": 1,
+            "falsePositiveCount": 112,
+            "perFlag": [
+              {
+                "id": "insurance-understated",
+                "required": true,
+                "detected": true,
+                "matchedText": "CONDITIONAL. The rent roll itself is mostly clean for a core-plus screen: 120 units, 94.17% physical occupancy, modest loss-to-lease, and going-in amortizing DSCR of about 1.25x using the scenario-adjusted 5.80% rate at 65% LTV. The condition is the planted T12 insurance issue: the $41K annual insurance line is materially below multifamily benchmark support for Dallas/North Texas, and normalizing it compresses NOI and DSCR into the conditional band. No rent-roll dealbreaker found."
+              }
+            ]
+          },
+          "dealbreakers": {
+            "recall": null,
+            "total": 0,
+            "detected": 0,
+            "perDealbreaker": []
+          },
+          "verdict": {
+            "exactMatch": true,
+            "directionalMatch": true,
+            "expected": "CONDITIONAL",
+            "actual": "CONDITIONAL",
+            "expectedDirection": "go",
+            "actualDirection": "go"
+          },
+          "partialFailure": null
+        },
         {
           "dealId": "cp-stabilized-clean",
           "layer": "live",
@@ -1383,6 +3237,201 @@
           "partialFailure": null
         },
         {
+          "dealId": "va-missing-phase1",
+          "layer": "live",
+          "archetype": "value-add",
+          "extraction": null,
+          "financials": {
+            "determinable": {
+              "withinTolerance": 4,
+              "total": 4,
+              "ratio": 1,
+              "perMetric": [
+                {
+                  "key": "noi",
+                  "expected": 943000,
+                  "actual": 943000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "egi",
+                  "expected": 2040000,
+                  "actual": 2040000,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "relative",
+                    "pct": 0.02
+                  }
+                },
+                {
+                  "key": "capRate",
+                  "expected": 0.0597,
+                  "actual": 0.059699999999999996,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.0015
+                  }
+                },
+                {
+                  "key": "dscr",
+                  "expected": 1.15,
+                  "actual": 1.11,
+                  "class": "determinable",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.08
+                  }
+                }
+              ]
+            },
+            "modelDependent": {
+              "withinTolerance": 2,
+              "total": 2,
+              "ratio": 1,
+              "perMetric": [
+                {
+                  "key": "irr",
+                  "expected": 0.1069,
+                  "actual": 0.106,
+                  "class": "model-dependent",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.03
+                  }
+                },
+                {
+                  "key": "equityMultiple",
+                  "expected": 1.63,
+                  "actual": 1.62,
+                  "class": "model-dependent",
+                  "matched": true,
+                  "tolerance": {
+                    "type": "absolute",
+                    "abs": 0.2
+                  }
+                }
+              ]
+            },
+            "perMetric": [
+              {
+                "key": "noi",
+                "expected": 943000,
+                "actual": 943000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "egi",
+                "expected": 2040000,
+                "actual": 2040000,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "relative",
+                  "pct": 0.02
+                }
+              },
+              {
+                "key": "capRate",
+                "expected": 0.0597,
+                "actual": 0.059699999999999996,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.0015
+                }
+              },
+              {
+                "key": "dscr",
+                "expected": 1.15,
+                "actual": 1.11,
+                "class": "determinable",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.08
+                }
+              },
+              {
+                "key": "irr",
+                "expected": 0.1069,
+                "actual": 0.106,
+                "class": "model-dependent",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.03
+                }
+              },
+              {
+                "key": "equityMultiple",
+                "expected": 1.63,
+                "actual": 1.62,
+                "class": "model-dependent",
+                "matched": true,
+                "tolerance": {
+                  "type": "absolute",
+                  "abs": 0.2
+                }
+              }
+            ]
+          },
+          "redFlags": {
+            "recall": 1,
+            "requiredRecall": 1,
+            "precision": 0.6065573770491803,
+            "total": 2,
+            "detected": 2,
+            "requiredTotal": 2,
+            "requiredDetected": 2,
+            "falsePositiveCount": 72,
+            "perFlag": [
+              {
+                "id": "missing-phase-1-esa",
+                "required": true,
+                "detected": true,
+                "matchedText": "Phase I ESA is missing per the deal context and no Phase I document was found in the deal documents."
+              },
+              {
+                "id": "om-t12-noi-conflict",
+                "required": true,
+                "detected": true,
+                "matchedText": "CONDITIONAL. Cedar Industrial Lofts is not a rent-roll dealbreaker: 89.84% occupancy is just below the 90% acceptable threshold but well above distress levels, LTV is clean at 70%, and going-in amortizing DSCR is 1.15x, inside the conditional band rather than fail territory. The value-add thesis is plausible because occupied rents are 6.58% below stated market rent, but the deal needs revenue reconciliation before proceeding because the current rent-roll run-rate is materially higher than T12 EGI."
+              }
+            ]
+          },
+          "dealbreakers": {
+            "recall": null,
+            "total": 0,
+            "detected": 0,
+            "perDealbreaker": []
+          },
+          "verdict": {
+            "exactMatch": true,
+            "directionalMatch": true,
+            "expected": "CONDITIONAL",
+            "actual": "CONDITIONAL",
+            "expectedDirection": "go",
+            "actualDirection": "go"
+          },
+          "partialFailure": null
+        },
+        {
           "dealId": "va-overlevered-ltv",
           "layer": "live",
           "archetype": "value-add",
@@ -1576,6 +3625,216 @@
   },
   "deals": [
     {
+      "dealId": "cp-concentration-risk",
+      "layer": "extraction",
+      "archetype": "core-plus",
+      "extraction": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "numericWithinTolerance": 1,
+        "matched": 12,
+        "extractedCount": 14,
+        "groundTruthCount": 12,
+        "perField": [
+          {
+            "path": "rent_roll::property.totalUnits",
+            "expected": 120,
+            "actual": 120,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.inPlaceOccupancy",
+            "expected": 0.9417,
+            "actual": 0.9417,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.grossPotentialRentAnnual",
+            "expected": 2505600,
+            "actual": 2505600,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.inPlaceRentAnnual",
+            "expected": 2285460,
+            "actual": 2285460,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.trailingT12Revenue",
+            "expected": 1980000,
+            "actual": 1980000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.trailingT12Expenses",
+            "expected": 1020000,
+            "actual": 1020000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.currentNOI",
+            "expected": 960000,
+            "actual": 960000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.askingPrice",
+            "expected": 17000000,
+            "actual": 17000000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::property.totalUnits",
+            "expected": 120,
+            "actual": 120,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::property.yearBuilt",
+            "expected": 2011,
+            "actual": 2011,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.inPlaceOccupancy",
+            "expected": 0.94,
+            "actual": 0.94,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.currentNOI",
+            "expected": 960000,
+            "actual": 960000,
+            "matched": true,
+            "present": true
+          }
+        ]
+      },
+      "financials": null,
+      "redFlags": null,
+      "dealbreakers": null,
+      "verdict": null,
+      "partialFailure": null
+    },
+    {
+      "dealId": "cp-insurance-understated",
+      "layer": "extraction",
+      "archetype": "core-plus",
+      "extraction": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "numericWithinTolerance": 1,
+        "matched": 12,
+        "extractedCount": 14,
+        "groundTruthCount": 12,
+        "perField": [
+          {
+            "path": "rent_roll::property.totalUnits",
+            "expected": 120,
+            "actual": 120,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.inPlaceOccupancy",
+            "expected": 0.9417,
+            "actual": 0.9417,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.grossPotentialRentAnnual",
+            "expected": 2779200,
+            "actual": 2779200,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.inPlaceRentAnnual",
+            "expected": 2532000,
+            "actual": 2532000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.trailingT12Revenue",
+            "expected": 2280000,
+            "actual": 2280000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.trailingT12Expenses",
+            "expected": 1132000,
+            "actual": 1132000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.currentNOI",
+            "expected": 1148000,
+            "actual": 1148000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.askingPrice",
+            "expected": 20000000,
+            "actual": 20000000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::property.totalUnits",
+            "expected": 120,
+            "actual": 120,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::property.yearBuilt",
+            "expected": 2005,
+            "actual": 2005,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.inPlaceOccupancy",
+            "expected": 0.94,
+            "actual": 0.94,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.currentNOI",
+            "expected": 1148000,
+            "actual": 1148000,
+            "matched": true,
+            "present": true
+          }
+        ]
+      },
+      "financials": null,
+      "redFlags": null,
+      "dealbreakers": null,
+      "verdict": null,
+      "partialFailure": null
+    },
+    {
       "dealId": "cp-stabilized-clean",
       "layer": "extraction",
       "archetype": "core-plus",
@@ -1669,6 +3928,111 @@
             "path": "offering_memo::financials.currentNOI",
             "expected": 1150000,
             "actual": 1150000,
+            "matched": true,
+            "present": true
+          }
+        ]
+      },
+      "financials": null,
+      "redFlags": null,
+      "dealbreakers": null,
+      "verdict": null,
+      "partialFailure": null
+    },
+    {
+      "dealId": "ds-dscr-below-080",
+      "layer": "extraction",
+      "archetype": "distressed",
+      "extraction": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "numericWithinTolerance": 1,
+        "matched": 12,
+        "extractedCount": 14,
+        "groundTruthCount": 12,
+        "perField": [
+          {
+            "path": "rent_roll::property.totalUnits",
+            "expected": 120,
+            "actual": 120,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.inPlaceOccupancy",
+            "expected": 0.7083,
+            "actual": 0.7083,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.grossPotentialRentAnnual",
+            "expected": 2192640,
+            "actual": 2192640,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.inPlaceRentAnnual",
+            "expected": 1441920,
+            "actual": 1441920,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.trailingT12Revenue",
+            "expected": 1240000,
+            "actual": 1240000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.trailingT12Expenses",
+            "expected": 920000,
+            "actual": 920000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.currentNOI",
+            "expected": 320000,
+            "actual": 320000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.askingPrice",
+            "expected": 9200000,
+            "actual": 9200000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::property.totalUnits",
+            "expected": 120,
+            "actual": 120,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::property.yearBuilt",
+            "expected": 1992,
+            "actual": 1992,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.inPlaceOccupancy",
+            "expected": 0.71,
+            "actual": 0.71,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.currentNOI",
+            "expected": 320000,
+            "actual": 320000,
             "matched": true,
             "present": true
           }
@@ -1786,6 +4150,111 @@
       "partialFailure": null
     },
     {
+      "dealId": "va-missing-phase1",
+      "layer": "extraction",
+      "archetype": "value-add",
+      "extraction": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "numericWithinTolerance": 1,
+        "matched": 12,
+        "extractedCount": 14,
+        "groundTruthCount": 12,
+        "perField": [
+          {
+            "path": "rent_roll::property.totalUnits",
+            "expected": 128,
+            "actual": 128,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.inPlaceOccupancy",
+            "expected": 0.8984,
+            "actual": 0.8984,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.grossPotentialRentAnnual",
+            "expected": 2695920,
+            "actual": 2695920,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.inPlaceRentAnnual",
+            "expected": 2263320,
+            "actual": 2263320,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.trailingT12Revenue",
+            "expected": 2040000,
+            "actual": 2040000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.trailingT12Expenses",
+            "expected": 1097000,
+            "actual": 1097000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.currentNOI",
+            "expected": 943000,
+            "actual": 943000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.askingPrice",
+            "expected": 15800000,
+            "actual": 15800000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::property.totalUnits",
+            "expected": 128,
+            "actual": 128,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::property.yearBuilt",
+            "expected": 1996,
+            "actual": 1996,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.inPlaceOccupancy",
+            "expected": 0.9,
+            "actual": 0.9,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.currentNOI",
+            "expected": 1030000,
+            "actual": 1030000,
+            "matched": true,
+            "present": true
+          }
+        ]
+      },
+      "financials": null,
+      "redFlags": null,
+      "dealbreakers": null,
+      "verdict": null,
+      "partialFailure": null
+    },
+    {
       "dealId": "va-overlevered-ltv",
       "layer": "extraction",
       "archetype": "value-add",
@@ -1888,6 +4357,489 @@
       "redFlags": null,
       "dealbreakers": null,
       "verdict": null,
+      "partialFailure": null
+    },
+    {
+      "dealId": "va-sub120-dscr",
+      "layer": "extraction",
+      "archetype": "value-add",
+      "extraction": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "numericWithinTolerance": 1,
+        "matched": 12,
+        "extractedCount": 14,
+        "groundTruthCount": 12,
+        "perField": [
+          {
+            "path": "rent_roll::property.totalUnits",
+            "expected": 150,
+            "actual": 150,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.inPlaceOccupancy",
+            "expected": 0.8733,
+            "actual": 0.8733,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.grossPotentialRentAnnual",
+            "expected": 2958480,
+            "actual": 2958480,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "rent_roll::financials.inPlaceRentAnnual",
+            "expected": 2346720,
+            "actual": 2346720,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.trailingT12Revenue",
+            "expected": 2020000,
+            "actual": 2020000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.trailingT12Expenses",
+            "expected": 1062000,
+            "actual": 1062000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "t12::financials.currentNOI",
+            "expected": 958000,
+            "actual": 958000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.askingPrice",
+            "expected": 15500000,
+            "actual": 15500000,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::property.totalUnits",
+            "expected": 150,
+            "actual": 150,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::property.yearBuilt",
+            "expected": 1999,
+            "actual": 1999,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.inPlaceOccupancy",
+            "expected": 0.87,
+            "actual": 0.87,
+            "matched": true,
+            "present": true
+          },
+          {
+            "path": "offering_memo::financials.currentNOI",
+            "expected": 958000,
+            "actual": 958000,
+            "matched": true,
+            "present": true
+          }
+        ]
+      },
+      "financials": null,
+      "redFlags": null,
+      "dealbreakers": null,
+      "verdict": null,
+      "partialFailure": null
+    },
+    {
+      "dealId": "cp-concentration-risk",
+      "layer": "sim",
+      "archetype": "core-plus",
+      "extraction": null,
+      "financials": {
+        "determinable": {
+          "withinTolerance": 4,
+          "total": 4,
+          "ratio": 1,
+          "perMetric": [
+            {
+              "key": "noi",
+              "expected": 960000,
+              "actual": 960000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "egi",
+              "expected": 1980000,
+              "actual": 1980000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "capRate",
+              "expected": 0.0565,
+              "actual": 0.0565,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.0015
+              }
+            },
+            {
+              "key": "dscr",
+              "expected": 1.29,
+              "actual": 1.322,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.08
+              }
+            }
+          ]
+        },
+        "modelDependent": {
+          "withinTolerance": 2,
+          "total": 2,
+          "ratio": 1,
+          "perMetric": [
+            {
+              "key": "irr",
+              "expected": 0.0922,
+              "actual": 0.0795,
+              "class": "model-dependent",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.03
+              }
+            },
+            {
+              "key": "equityMultiple",
+              "expected": 1.52,
+              "actual": 1.436,
+              "class": "model-dependent",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.2
+              }
+            }
+          ]
+        },
+        "perMetric": [
+          {
+            "key": "noi",
+            "expected": 960000,
+            "actual": 960000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "egi",
+            "expected": 1980000,
+            "actual": 1980000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "capRate",
+            "expected": 0.0565,
+            "actual": 0.0565,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.0015
+            }
+          },
+          {
+            "key": "dscr",
+            "expected": 1.29,
+            "actual": 1.322,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.08
+            }
+          },
+          {
+            "key": "irr",
+            "expected": 0.0922,
+            "actual": 0.0795,
+            "class": "model-dependent",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.03
+            }
+          },
+          {
+            "key": "equityMultiple",
+            "expected": 1.52,
+            "actual": 1.436,
+            "class": "model-dependent",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.2
+            }
+          }
+        ]
+      },
+      "redFlags": {
+        "recall": 0,
+        "requiredRecall": 0,
+        "precision": 0,
+        "total": 1,
+        "detected": 0,
+        "requiredTotal": 1,
+        "requiredDetected": 0,
+        "falsePositiveCount": 3,
+        "perFlag": [
+          {
+            "id": "tenant-concentration",
+            "required": true,
+            "detected": false,
+            "matchedText": null
+          }
+        ]
+      },
+      "dealbreakers": {
+        "recall": null,
+        "total": 0,
+        "detected": 0,
+        "perDealbreaker": []
+      },
+      "verdict": {
+        "exactMatch": false,
+        "directionalMatch": true,
+        "expected": "CONDITIONAL",
+        "actual": "PASS",
+        "expectedDirection": "go",
+        "actualDirection": "go"
+      },
+      "partialFailure": null
+    },
+    {
+      "dealId": "cp-insurance-understated",
+      "layer": "sim",
+      "archetype": "core-plus",
+      "extraction": null,
+      "financials": {
+        "determinable": {
+          "withinTolerance": 4,
+          "total": 4,
+          "ratio": 1,
+          "perMetric": [
+            {
+              "key": "noi",
+              "expected": 1148000,
+              "actual": 1148000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "egi",
+              "expected": 2280000,
+              "actual": 2280000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "capRate",
+              "expected": 0.0574,
+              "actual": 0.0574,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.0015
+              }
+            },
+            {
+              "key": "dscr",
+              "expected": 1.23,
+              "actual": 1.254,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.08
+              }
+            }
+          ]
+        },
+        "modelDependent": {
+          "withinTolerance": 2,
+          "total": 2,
+          "ratio": 1,
+          "perMetric": [
+            {
+              "key": "irr",
+              "expected": 0.0998,
+              "actual": 0.0858,
+              "class": "model-dependent",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.03
+              }
+            },
+            {
+              "key": "equityMultiple",
+              "expected": 1.57,
+              "actual": 1.478,
+              "class": "model-dependent",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.2
+              }
+            }
+          ]
+        },
+        "perMetric": [
+          {
+            "key": "noi",
+            "expected": 1148000,
+            "actual": 1148000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "egi",
+            "expected": 2280000,
+            "actual": 2280000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "capRate",
+            "expected": 0.0574,
+            "actual": 0.0574,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.0015
+            }
+          },
+          {
+            "key": "dscr",
+            "expected": 1.23,
+            "actual": 1.254,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.08
+            }
+          },
+          {
+            "key": "irr",
+            "expected": 0.0998,
+            "actual": 0.0858,
+            "class": "model-dependent",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.03
+            }
+          },
+          {
+            "key": "equityMultiple",
+            "expected": 1.57,
+            "actual": 1.478,
+            "class": "model-dependent",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.2
+            }
+          }
+        ]
+      },
+      "redFlags": {
+        "recall": 0,
+        "requiredRecall": 0,
+        "precision": 0,
+        "total": 1,
+        "detected": 0,
+        "requiredTotal": 1,
+        "requiredDetected": 0,
+        "falsePositiveCount": 3,
+        "perFlag": [
+          {
+            "id": "insurance-understated",
+            "required": true,
+            "detected": false,
+            "matchedText": null
+          }
+        ]
+      },
+      "dealbreakers": {
+        "recall": null,
+        "total": 0,
+        "detected": 0,
+        "perDealbreaker": []
+      },
+      "verdict": {
+        "exactMatch": false,
+        "directionalMatch": true,
+        "expected": "CONDITIONAL",
+        "actual": "PASS",
+        "expectedDirection": "go",
+        "actualDirection": "go"
+      },
       "partialFailure": null
     },
     {
@@ -2069,6 +5021,195 @@
         "actual": "PASS",
         "expectedDirection": "go",
         "actualDirection": "go"
+      },
+      "partialFailure": null
+    },
+    {
+      "dealId": "ds-dscr-below-080",
+      "layer": "sim",
+      "archetype": "distressed",
+      "extraction": null,
+      "financials": {
+        "determinable": {
+          "withinTolerance": 4,
+          "total": 4,
+          "ratio": 1,
+          "perMetric": [
+            {
+              "key": "noi",
+              "expected": 320000,
+              "actual": 320000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "egi",
+              "expected": 1240000,
+              "actual": 1240000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "capRate",
+              "expected": 0.0348,
+              "actual": 0.0348,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.0015
+              }
+            },
+            {
+              "key": "dscr",
+              "expected": 0.57,
+              "actual": 0.519,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.08
+              }
+            }
+          ]
+        },
+        "modelDependent": {
+          "withinTolerance": 0,
+          "total": 2,
+          "ratio": 0,
+          "perMetric": [
+            {
+              "key": "irr",
+              "expected": -0.6269,
+              "actual": 0.2864,
+              "class": "model-dependent",
+              "matched": false,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.03
+              }
+            },
+            {
+              "key": "equityMultiple",
+              "expected": -0.29,
+              "actual": 3.541,
+              "class": "model-dependent",
+              "matched": false,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.2
+              }
+            }
+          ]
+        },
+        "perMetric": [
+          {
+            "key": "noi",
+            "expected": 320000,
+            "actual": 320000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "egi",
+            "expected": 1240000,
+            "actual": 1240000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "capRate",
+            "expected": 0.0348,
+            "actual": 0.0348,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.0015
+            }
+          },
+          {
+            "key": "dscr",
+            "expected": 0.57,
+            "actual": 0.519,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.08
+            }
+          },
+          {
+            "key": "irr",
+            "expected": -0.6269,
+            "actual": 0.2864,
+            "class": "model-dependent",
+            "matched": false,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.03
+            }
+          },
+          {
+            "key": "equityMultiple",
+            "expected": -0.29,
+            "actual": 3.541,
+            "class": "model-dependent",
+            "matched": false,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.2
+            }
+          }
+        ]
+      },
+      "redFlags": {
+        "recall": null,
+        "requiredRecall": null,
+        "precision": 0,
+        "total": 0,
+        "detected": 0,
+        "requiredTotal": 0,
+        "requiredDetected": 0,
+        "falsePositiveCount": 10,
+        "perFlag": []
+      },
+      "dealbreakers": {
+        "recall": 1,
+        "total": 1,
+        "detected": 1,
+        "perDealbreaker": [
+          {
+            "id": "dscr-sub-080",
+            "required": true,
+            "detected": true,
+            "matchedText": "HIGH | UNDERWRITING | Base DSCR 0.52x is below preferred cushion | Can reduce lender proceeds and increase risk"
+          }
+        ]
+      },
+      "verdict": {
+        "exactMatch": true,
+        "directionalMatch": true,
+        "expected": "FAIL",
+        "actual": "FAIL",
+        "expectedDirection": "no-go",
+        "actualDirection": "no-go"
       },
       "partialFailure": null
     },
@@ -2269,6 +5410,201 @@
       "partialFailure": null
     },
     {
+      "dealId": "va-missing-phase1",
+      "layer": "sim",
+      "archetype": "value-add",
+      "extraction": null,
+      "financials": {
+        "determinable": {
+          "withinTolerance": 4,
+          "total": 4,
+          "ratio": 1,
+          "perMetric": [
+            {
+              "key": "noi",
+              "expected": 943000,
+              "actual": 943000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "egi",
+              "expected": 2040000,
+              "actual": 2040000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "capRate",
+              "expected": 0.0597,
+              "actual": 0.0597,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.0015
+              }
+            },
+            {
+              "key": "dscr",
+              "expected": 1.15,
+              "actual": 1.113,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.08
+              }
+            }
+          ]
+        },
+        "modelDependent": {
+          "withinTolerance": 2,
+          "total": 2,
+          "ratio": 1,
+          "perMetric": [
+            {
+              "key": "irr",
+              "expected": 0.1069,
+              "actual": 0.1213,
+              "class": "model-dependent",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.03
+              }
+            },
+            {
+              "key": "equityMultiple",
+              "expected": 1.63,
+              "actual": 1.725,
+              "class": "model-dependent",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.2
+              }
+            }
+          ]
+        },
+        "perMetric": [
+          {
+            "key": "noi",
+            "expected": 943000,
+            "actual": 943000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "egi",
+            "expected": 2040000,
+            "actual": 2040000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "capRate",
+            "expected": 0.0597,
+            "actual": 0.0597,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.0015
+            }
+          },
+          {
+            "key": "dscr",
+            "expected": 1.15,
+            "actual": 1.113,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.08
+            }
+          },
+          {
+            "key": "irr",
+            "expected": 0.1069,
+            "actual": 0.1213,
+            "class": "model-dependent",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.03
+            }
+          },
+          {
+            "key": "equityMultiple",
+            "expected": 1.63,
+            "actual": 1.725,
+            "class": "model-dependent",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.2
+            }
+          }
+        ]
+      },
+      "redFlags": {
+        "recall": 1,
+        "requiredRecall": 1,
+        "precision": 0.4,
+        "total": 2,
+        "detected": 2,
+        "requiredTotal": 2,
+        "requiredDetected": 2,
+        "falsePositiveCount": 3,
+        "perFlag": [
+          {
+            "id": "missing-phase-1-esa",
+            "required": true,
+            "detected": true,
+            "matchedText": "MEDIUM | DATA_GAP | Historical monthly rent trend missing for two periods | Could reduce confidence in recommendation"
+          },
+          {
+            "id": "om-t12-noi-conflict",
+            "required": true,
+            "detected": true,
+            "matchedText": "MEDIUM | DATA_GAP | Historical monthly rent trend missing for two periods | Could reduce confidence in recommendation"
+          }
+        ]
+      },
+      "dealbreakers": {
+        "recall": null,
+        "total": 0,
+        "detected": 0,
+        "perDealbreaker": []
+      },
+      "verdict": {
+        "exactMatch": true,
+        "directionalMatch": true,
+        "expected": "CONDITIONAL",
+        "actual": "CONDITIONAL",
+        "expectedDirection": "go",
+        "actualDirection": "go"
+      },
+      "partialFailure": null
+    },
+    {
       "dealId": "va-overlevered-ltv",
       "layer": "sim",
       "archetype": "value-add",
@@ -2438,6 +5774,573 @@
             "required": true,
             "detected": true,
             "matchedText": "HIGH | UNDERWRITING | Base DSCR 0.82x is below preferred cushion | Can reduce lender proceeds and increase risk"
+          }
+        ]
+      },
+      "dealbreakers": {
+        "recall": null,
+        "total": 0,
+        "detected": 0,
+        "perDealbreaker": []
+      },
+      "verdict": {
+        "exactMatch": true,
+        "directionalMatch": true,
+        "expected": "CONDITIONAL",
+        "actual": "CONDITIONAL",
+        "expectedDirection": "go",
+        "actualDirection": "go"
+      },
+      "partialFailure": null
+    },
+    {
+      "dealId": "va-sub120-dscr",
+      "layer": "sim",
+      "archetype": "value-add",
+      "extraction": null,
+      "financials": {
+        "determinable": {
+          "withinTolerance": 4,
+          "total": 4,
+          "ratio": 1,
+          "perMetric": [
+            {
+              "key": "noi",
+              "expected": 958000,
+              "actual": 958000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "egi",
+              "expected": 2020000,
+              "actual": 2020000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "capRate",
+              "expected": 0.0618,
+              "actual": 0.0618,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.0015
+              }
+            },
+            {
+              "key": "dscr",
+              "expected": 1.13,
+              "actual": 1.097,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.08
+              }
+            }
+          ]
+        },
+        "modelDependent": {
+          "withinTolerance": 0,
+          "total": 2,
+          "ratio": 0,
+          "perMetric": [
+            {
+              "key": "irr",
+              "expected": 0.1124,
+              "actual": 0.2214,
+              "class": "model-dependent",
+              "matched": false,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.03
+              }
+            },
+            {
+              "key": "equityMultiple",
+              "expected": 1.67,
+              "actual": 2.573,
+              "class": "model-dependent",
+              "matched": false,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.2
+              }
+            }
+          ]
+        },
+        "perMetric": [
+          {
+            "key": "noi",
+            "expected": 958000,
+            "actual": 958000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "egi",
+            "expected": 2020000,
+            "actual": 2020000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "capRate",
+            "expected": 0.0618,
+            "actual": 0.0618,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.0015
+            }
+          },
+          {
+            "key": "dscr",
+            "expected": 1.13,
+            "actual": 1.097,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.08
+            }
+          },
+          {
+            "key": "irr",
+            "expected": 0.1124,
+            "actual": 0.2214,
+            "class": "model-dependent",
+            "matched": false,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.03
+            }
+          },
+          {
+            "key": "equityMultiple",
+            "expected": 1.67,
+            "actual": 2.573,
+            "class": "model-dependent",
+            "matched": false,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.2
+            }
+          }
+        ]
+      },
+      "redFlags": {
+        "recall": 1,
+        "requiredRecall": 1,
+        "precision": 0.4,
+        "total": 1,
+        "detected": 1,
+        "requiredTotal": 1,
+        "requiredDetected": 1,
+        "falsePositiveCount": 3,
+        "perFlag": [
+          {
+            "id": "dscr-sub-120",
+            "required": true,
+            "detected": true,
+            "matchedText": "HIGH | UNDERWRITING | Base DSCR 1.1x is below preferred cushion | Can reduce lender proceeds and increase risk"
+          }
+        ]
+      },
+      "dealbreakers": {
+        "recall": null,
+        "total": 0,
+        "detected": 0,
+        "perDealbreaker": []
+      },
+      "verdict": {
+        "exactMatch": true,
+        "directionalMatch": true,
+        "expected": "CONDITIONAL",
+        "actual": "CONDITIONAL",
+        "expectedDirection": "go",
+        "actualDirection": "go"
+      },
+      "partialFailure": null
+    },
+    {
+      "dealId": "cp-concentration-risk",
+      "layer": "live",
+      "archetype": "core-plus",
+      "extraction": null,
+      "financials": {
+        "determinable": {
+          "withinTolerance": 4,
+          "total": 4,
+          "ratio": 1,
+          "perMetric": [
+            {
+              "key": "noi",
+              "expected": 960000,
+              "actual": 960000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "egi",
+              "expected": 1980000,
+              "actual": 1980000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "capRate",
+              "expected": 0.0565,
+              "actual": 0.0565,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.0015
+              }
+            },
+            {
+              "key": "dscr",
+              "expected": 1.29,
+              "actual": 1.32,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.08
+              }
+            }
+          ]
+        },
+        "modelDependent": {
+          "withinTolerance": 0,
+          "total": 2,
+          "ratio": 0,
+          "perMetric": [
+            {
+              "key": "irr",
+              "expected": 0.0922,
+              "actual": 0.129,
+              "class": "model-dependent",
+              "matched": false,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.03
+              }
+            },
+            {
+              "key": "equityMultiple",
+              "expected": 1.52,
+              "actual": 1.77,
+              "class": "model-dependent",
+              "matched": false,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.2
+              }
+            }
+          ]
+        },
+        "perMetric": [
+          {
+            "key": "noi",
+            "expected": 960000,
+            "actual": 960000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "egi",
+            "expected": 1980000,
+            "actual": 1980000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "capRate",
+            "expected": 0.0565,
+            "actual": 0.0565,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.0015
+            }
+          },
+          {
+            "key": "dscr",
+            "expected": 1.29,
+            "actual": 1.32,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.08
+            }
+          },
+          {
+            "key": "irr",
+            "expected": 0.0922,
+            "actual": 0.129,
+            "class": "model-dependent",
+            "matched": false,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.03
+            }
+          },
+          {
+            "key": "equityMultiple",
+            "expected": 1.52,
+            "actual": 1.77,
+            "class": "model-dependent",
+            "matched": false,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.2
+            }
+          }
+        ]
+      },
+      "redFlags": {
+        "recall": 1,
+        "requiredRecall": 1,
+        "precision": 0.2914285714285714,
+        "total": 1,
+        "detected": 1,
+        "requiredTotal": 1,
+        "requiredDetected": 1,
+        "falsePositiveCount": 124,
+        "perFlag": [
+          {
+            "id": "tenant-concentration",
+            "required": true,
+            "detected": true,
+            "matchedText": "CONDITIONAL. Foundry Yard clears the hard financial screens on T12 NOI: 60.0% LTV, 1.29x amortizing DSCR, and 9.41% debt yield, with no threshold dealbreaker. The rent roll also supports 94.17% physical occupancy and only modest 3.0% loss-to-lease. The condition is the revenue-quality risk: the OM says approximately 60% of residents work for Carolina Logistics, and current rent roll billing is $305k above T12 EGI, so the team needs employer-concentration and collections reconciliation before treating this as a clean core-plus proceed."
+          }
+        ]
+      },
+      "dealbreakers": {
+        "recall": null,
+        "total": 0,
+        "detected": 0,
+        "perDealbreaker": []
+      },
+      "verdict": {
+        "exactMatch": true,
+        "directionalMatch": true,
+        "expected": "CONDITIONAL",
+        "actual": "CONDITIONAL",
+        "expectedDirection": "go",
+        "actualDirection": "go"
+      },
+      "partialFailure": null
+    },
+    {
+      "dealId": "cp-insurance-understated",
+      "layer": "live",
+      "archetype": "core-plus",
+      "extraction": null,
+      "financials": {
+        "determinable": {
+          "withinTolerance": 3,
+          "total": 4,
+          "ratio": 0.75,
+          "perMetric": [
+            {
+              "key": "noi",
+              "expected": 1148000,
+              "actual": 1148000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "egi",
+              "expected": 2280000,
+              "actual": 2280000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "capRate",
+              "expected": 0.0574,
+              "actual": 0.0535,
+              "class": "determinable",
+              "matched": false,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.0015
+              }
+            },
+            {
+              "key": "dscr",
+              "expected": 1.23,
+              "actual": 1.17,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.08
+              }
+            }
+          ]
+        },
+        "modelDependent": {
+          "withinTolerance": 0,
+          "total": 2,
+          "ratio": 0,
+          "perMetric": [
+            {
+              "key": "irr",
+              "expected": 0.0998,
+              "actual": null,
+              "class": "model-dependent",
+              "matched": false,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.03
+              }
+            },
+            {
+              "key": "equityMultiple",
+              "expected": 1.57,
+              "actual": null,
+              "class": "model-dependent",
+              "matched": false,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.2
+              }
+            }
+          ]
+        },
+        "perMetric": [
+          {
+            "key": "noi",
+            "expected": 1148000,
+            "actual": 1148000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "egi",
+            "expected": 2280000,
+            "actual": 2280000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "capRate",
+            "expected": 0.0574,
+            "actual": 0.0535,
+            "class": "determinable",
+            "matched": false,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.0015
+            }
+          },
+          {
+            "key": "dscr",
+            "expected": 1.23,
+            "actual": 1.17,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.08
+            }
+          },
+          {
+            "key": "irr",
+            "expected": 0.0998,
+            "actual": null,
+            "class": "model-dependent",
+            "matched": false,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.03
+            }
+          },
+          {
+            "key": "equityMultiple",
+            "expected": 1.57,
+            "actual": null,
+            "class": "model-dependent",
+            "matched": false,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.2
+            }
+          }
+        ]
+      },
+      "redFlags": {
+        "recall": 1,
+        "requiredRecall": 1,
+        "precision": 0.3488372093023256,
+        "total": 1,
+        "detected": 1,
+        "requiredTotal": 1,
+        "requiredDetected": 1,
+        "falsePositiveCount": 112,
+        "perFlag": [
+          {
+            "id": "insurance-understated",
+            "required": true,
+            "detected": true,
+            "matchedText": "CONDITIONAL. The rent roll itself is mostly clean for a core-plus screen: 120 units, 94.17% physical occupancy, modest loss-to-lease, and going-in amortizing DSCR of about 1.25x using the scenario-adjusted 5.80% rate at 65% LTV. The condition is the planted T12 insurance issue: the $41K annual insurance line is materially below multifamily benchmark support for Dallas/North Texas, and normalizing it compresses NOI and DSCR into the conditional band. No rent-roll dealbreaker found."
           }
         ]
       },
@@ -2836,6 +6739,201 @@
       "partialFailure": null
     },
     {
+      "dealId": "va-missing-phase1",
+      "layer": "live",
+      "archetype": "value-add",
+      "extraction": null,
+      "financials": {
+        "determinable": {
+          "withinTolerance": 4,
+          "total": 4,
+          "ratio": 1,
+          "perMetric": [
+            {
+              "key": "noi",
+              "expected": 943000,
+              "actual": 943000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "egi",
+              "expected": 2040000,
+              "actual": 2040000,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "relative",
+                "pct": 0.02
+              }
+            },
+            {
+              "key": "capRate",
+              "expected": 0.0597,
+              "actual": 0.059699999999999996,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.0015
+              }
+            },
+            {
+              "key": "dscr",
+              "expected": 1.15,
+              "actual": 1.11,
+              "class": "determinable",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.08
+              }
+            }
+          ]
+        },
+        "modelDependent": {
+          "withinTolerance": 2,
+          "total": 2,
+          "ratio": 1,
+          "perMetric": [
+            {
+              "key": "irr",
+              "expected": 0.1069,
+              "actual": 0.106,
+              "class": "model-dependent",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.03
+              }
+            },
+            {
+              "key": "equityMultiple",
+              "expected": 1.63,
+              "actual": 1.62,
+              "class": "model-dependent",
+              "matched": true,
+              "tolerance": {
+                "type": "absolute",
+                "abs": 0.2
+              }
+            }
+          ]
+        },
+        "perMetric": [
+          {
+            "key": "noi",
+            "expected": 943000,
+            "actual": 943000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "egi",
+            "expected": 2040000,
+            "actual": 2040000,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "relative",
+              "pct": 0.02
+            }
+          },
+          {
+            "key": "capRate",
+            "expected": 0.0597,
+            "actual": 0.059699999999999996,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.0015
+            }
+          },
+          {
+            "key": "dscr",
+            "expected": 1.15,
+            "actual": 1.11,
+            "class": "determinable",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.08
+            }
+          },
+          {
+            "key": "irr",
+            "expected": 0.1069,
+            "actual": 0.106,
+            "class": "model-dependent",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.03
+            }
+          },
+          {
+            "key": "equityMultiple",
+            "expected": 1.63,
+            "actual": 1.62,
+            "class": "model-dependent",
+            "matched": true,
+            "tolerance": {
+              "type": "absolute",
+              "abs": 0.2
+            }
+          }
+        ]
+      },
+      "redFlags": {
+        "recall": 1,
+        "requiredRecall": 1,
+        "precision": 0.6065573770491803,
+        "total": 2,
+        "detected": 2,
+        "requiredTotal": 2,
+        "requiredDetected": 2,
+        "falsePositiveCount": 72,
+        "perFlag": [
+          {
+            "id": "missing-phase-1-esa",
+            "required": true,
+            "detected": true,
+            "matchedText": "Phase I ESA is missing per the deal context and no Phase I document was found in the deal documents."
+          },
+          {
+            "id": "om-t12-noi-conflict",
+            "required": true,
+            "detected": true,
+            "matchedText": "CONDITIONAL. Cedar Industrial Lofts is not a rent-roll dealbreaker: 89.84% occupancy is just below the 90% acceptable threshold but well above distress levels, LTV is clean at 70%, and going-in amortizing DSCR is 1.15x, inside the conditional band rather than fail territory. The value-add thesis is plausible because occupied rents are 6.58% below stated market rent, but the deal needs revenue reconciliation before proceeding because the current rent-roll run-rate is materially higher than T12 EGI."
+          }
+        ]
+      },
+      "dealbreakers": {
+        "recall": null,
+        "total": 0,
+        "detected": 0,
+        "perDealbreaker": []
+      },
+      "verdict": {
+        "exactMatch": true,
+        "directionalMatch": true,
+        "expected": "CONDITIONAL",
+        "actual": "CONDITIONAL",
+        "expectedDirection": "go",
+        "actualDirection": "go"
+      },
+      "partialFailure": null
+    },
+    {
       "dealId": "va-overlevered-ltv",
       "layer": "live",
       "archetype": "value-add",
@@ -3026,6 +7124,6 @@
     }
   ],
   "notes": [
-    "Live path: Codex codex-cli 0.132.0 (Logged in using ChatGPT); workflow quick-deal-screen; runs 2026-05-25T04:50:39.096Z .. 2026-05-25T05:32:19.543Z."
+    "Live path: Codex codex-cli 0.132.0 (Logged in using ChatGPT); workflow quick-deal-screen; runs 2026-05-25T13:51:08.798Z .. 2026-05-25T05:32:19.543Z."
   ]
 }

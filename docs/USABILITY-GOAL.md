@@ -30,7 +30,7 @@ SCOPE (locked by the operator — do not expand)
   approve/apply/waive → launch workflow → export IC package). The offline/deterministic path and
   the deterministic parsers are what must be bug-free. NO API cost is required to pass.
 - REGRESSION SET: exactly 2–3 deals spanning archetypes (one clean core-plus, one value-add,
-  one messy/distressed). EIGHT deals is too many — trim the existing benchmark down to 2–3. (done: trimmed to 3)
+  one messy/distressed). EIGHT deals is too many — trim the existing benchmark down to 2–3. (trimmed to 3, later re-expanded to 8 for the narrative-risk goal — see docs/NARRATIVE-RISK-GOAL.md)
 - LIVE AGENT REASONING (Codex/LLM) is OPTIONAL and is a bonus only. It is NOT required to satisfy
   any Definition-of-Done item. Do not spend the run chasing live-agent scores.
 
