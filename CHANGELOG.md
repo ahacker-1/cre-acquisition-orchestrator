@@ -4,6 +4,13 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [2.8.1](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.8.0...v2.8.1) (2026-05-25)
+
+
+### Bug Fixes
+
+* **eval:** preserve negative sign when extracting IRR / equity multiple ([5780460](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/5780460d9e396c90b659b29c545ddccba4ca7ebc))
+
 ## [2.8.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.7.0...v2.8.0) (2026-05-25)
 
 Two themes: hardening the real-world document-drop journey, and shipping an honest open
