@@ -50,6 +50,10 @@ export interface StartRunRequest {
   codexSandbox?: string | null
   codexModel?: string | null
   codexSearch?: boolean
+  // Phase 3 / A1 (single-agent dispatch): restrict a codex run to a specific named agent (or a
+  // small subset) via repeatable `--agent` flags. Codex-only; the simulation runner has no
+  // per-agent flag, so this is ignored for simulation runs. Additive + backward-compatible.
+  codexAgents?: string[]
   // W70: per-agent retry/backoff configuration (optional, backward-compatible).
   codexMaxRetries?: number | null
   codexRetryBaseMs?: number | null
@@ -148,6 +152,22 @@ function sanitizeNonNegativeInteger(value: unknown, fallback: number): number {
 function sanitizeOptionalString(value: unknown): string | null {
   if (typeof value !== 'string' || value.trim().length === 0) return null
   return value.trim()
+}
+
+// A1: a list of agent ids for single-agent (or subset) codex dispatch. Drops blanks/dupes and
+// keeps only safe slug-shaped ids (the codex runner matches these against the workflow plan).
+function sanitizeAgentList(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const entry of value) {
+    if (typeof entry !== 'string') continue
+    const trimmed = entry.trim()
+    if (!trimmed || !/^[a-z0-9][a-z0-9-]*$/i.test(trimmed) || seen.has(trimmed)) continue
+    seen.add(trimmed)
+    out.push(trimmed)
+  }
+  return out
 }
 
 function commandOutput(result: ReturnType<typeof spawnSync>): string {
@@ -279,6 +299,8 @@ export class RunManager {
     const codexSandbox = sanitizeOptionalString(request.codexSandbox) || 'read-only'
     const codexModel = sanitizeOptionalString(request.codexModel)
     const codexSearch = request.codexSearch === true
+    // A1: single-agent (or subset) dispatch — codex only.
+    const codexAgents = sanitizeAgentList(request.codexAgents)
     // W70: retries default to small (2) when omitted; 0 is an explicit valid choice.
     const codexMaxRetries = sanitizeNonNegativeInteger(request.codexMaxRetries, 2)
     const codexRetryBaseMs = sanitizeNonNegativeInteger(request.codexRetryBaseMs, 1000)
@@ -364,6 +386,7 @@ export class RunManager {
             String(codexRetryBaseMs),
             ...(inputSnapshotPath ? ['--input-snapshot', inputSnapshotPath] : []),
             ...(codexMaxAgents ? ['--max-agents', String(codexMaxAgents)] : []),
+            ...(codexAgents.length ? codexAgents.flatMap((agent) => ['--agent', agent]) : []),
             ...(codexModel ? ['--model', codexModel] : []),
             ...(codexSearch ? ['--search'] : []),
             ...(codexRerunFailed ? ['--rerun-failed'] : []),
@@ -517,6 +540,7 @@ export class RunManager {
             codexSandbox,
             codexSearch,
             codexModel,
+            codexAgents,
             codexMaxRetries,
             codexRetryBaseMs,
             codexRerunFailed,

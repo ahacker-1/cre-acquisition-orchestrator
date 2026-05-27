@@ -1341,6 +1341,9 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         codexSandbox: asOptionalString(body.codexSandbox),
         codexModel: asOptionalString(body.codexModel),
         codexSearch: body.codexSearch === true,
+        // A1: single-agent dispatch — forwarded to the codex runner as `--agent` flags
+        // (run-manager re-sanitizes the list; ignored for simulation runs).
+        codexAgents: Array.isArray(body.codexAgents) ? (body.codexAgents as string[]) : undefined,
       };
 
       const inputSnapshot = createRunInputSnapshotFile(dealId, workflow.id, {

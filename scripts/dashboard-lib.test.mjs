@@ -20,6 +20,14 @@ import {
   formatFieldValue,
   coerceEditValue,
 } from '../dashboard/src/lib/dealRecordModel.ts'
+import {
+  buildAgentPanelView,
+  checkpointStatusToRunStatus,
+  inferStatusFromEvents,
+} from '../dashboard/src/lib/agentView.ts'
+import { routeIntent } from '../dashboard/src/lib/intentRouting.ts'
+import { suggestionsForStage as suggestionsForStageRouting } from '../dashboard/src/lib/commandModel.ts'
+import { requestAgentDispatch, DISPATCH_WORKFLOW_ID } from '../dashboard/src/hooks/useAgentDispatch.ts'
 
 let passed = 0
 function check(name, fn) {
@@ -367,5 +375,345 @@ check('buildDealRecordGroups excludes non-applyable (not source-backed) fields â
   assert.ok(!fields.some((f) => /not approved for source-backed apply/i.test(f.flagReason ?? '')), 'no internal string leaks')
   assert.equal(countNeedsEye(groups), 0)
 })
+
+console.log('agentView:')
+
+// Minimal StoryEvent factory (only the fields the selector reads).
+function storyEvent(overrides = {}) {
+  return {
+    runId: overrides.runId ?? 'run-1',
+    dealId: overrides.dealId ?? 'parkview-2026-001',
+    seq: overrides.seq ?? 1,
+    ts: overrides.ts ?? `2026-05-27T00:00:0${overrides.seq ?? 1}.000Z`,
+    kind: overrides.kind ?? 'agent_progress',
+    agent: 'agent' in overrides ? overrides.agent : undefined,
+    fromAgent: overrides.fromAgent,
+    title: overrides.title,
+    summary: overrides.summary,
+  }
+}
+
+// Minimal AgentCheckpoint factory.
+function agentCheckpoint(overrides = {}) {
+  return {
+    agentName: overrides.agentName ?? 'financial-model-builder',
+    phase: overrides.phase ?? 'underwriting',
+    dealId: 'parkview-2026-001',
+    status: overrides.status ?? 'complete',
+    progress: overrides.progress ?? 1,
+    startedAt: null,
+    completedAt: null,
+    lastUpdatedAt: null,
+    resumePoint: null,
+    outputs: overrides.outputs ?? { summary: '', findings: [], metrics: {}, verdict: null },
+    dataGaps: overrides.dataGaps ?? [],
+    errors: [],
+    redFlags: overrides.redFlags ?? [],
+    childAgents: [],
+  }
+}
+
+function documentArtifact(overrides = {}) {
+  return {
+    docId: overrides.docId ?? 'underwriting:financial-model-builder:workpaper-v1',
+    runId: 'run-1',
+    dealId: 'parkview-2026-001',
+    phase: overrides.phase ?? 'underwriting',
+    agent: overrides.agent ?? 'financial-model-builder',
+    docType: overrides.docType ?? 'workpaper',
+    title: overrides.title ?? 'financial-model-builder Workpaper',
+    path: overrides.path ?? 'data/reports/parkview-2026-001/underwriting/financial-model-builder-workpaper-v1.md',
+    mime: 'text/markdown',
+    version: overrides.version ?? 1,
+    summary: overrides.summary ?? 'Base-case model calibrated.',
+  }
+}
+
+check('checkpointStatusToRunStatus maps normalized checkpoint statuses to panel run statuses', () => {
+  assert.equal(checkpointStatusToRunStatus('running'), 'working')
+  assert.equal(checkpointStatusToRunStatus('complete'), 'done')
+  assert.equal(checkpointStatusToRunStatus('failed'), 'failed')
+  assert.equal(checkpointStatusToRunStatus('pending'), 'queued')
+  assert.equal(checkpointStatusToRunStatus('skipped'), 'queued')
+  assert.equal(checkpointStatusToRunStatus(undefined), 'queued') // no checkpoint -> queued
+})
+
+check('buildAgentPanelView replays a completed agent: stream sorted by seq, output from workpaper', () => {
+  const agentName = 'financial-model-builder'
+  const checkpoints = new Map([
+    [agentName, agentCheckpoint({
+      status: 'complete',
+      outputs: { summary: 'Base-case model calibrated and validated.', findings: ['Base-case model calibrated and validated.', 'Exit cap held at 5.5%.'], metrics: {}, verdict: 'PASS' },
+    })],
+  ])
+  // Out-of-order seqs to prove sorting; a foreign agent's event must be excluded.
+  const events = [
+    storyEvent({ seq: 12, kind: 'agent_completed', agent: agentName, title: 'financial-model-builder completed' }),
+    storyEvent({ seq: 7, kind: 'agent_started', agent: agentName, title: 'financial-model-builder started' }),
+    storyEvent({ seq: 9, kind: 'agent_progress', agent: agentName, summary: 'Calibrating base case' }),
+    storyEvent({ seq: 8, kind: 'agent_progress', agent: 'rent-roll-analyst', title: 'someone else' }),
+  ]
+  const artifacts = [documentArtifact({ agent: agentName })]
+  let openedPath = null
+  const view = buildAgentPanelView(agentName, {
+    agentCheckpoints: checkpoints,
+    storyEvents: events,
+    documentArtifacts: artifacts,
+    onOpenWorkpaper: (path) => { openedPath = path },
+  })
+
+  assert.equal(view.status, 'done')
+  // Three of the four events belong to this agent, sorted by seq ascending.
+  assert.equal(view.streamLines.length, 3)
+  assert.deepEqual(view.streamLines.map((l) => l.text), [
+    'financial-model-builder started',
+    'Calibrating base case',
+    'financial-model-builder completed',
+  ])
+  // The completion line is toned 'done'.
+  assert.equal(view.streamLines[2].tone, 'done')
+  // Output renders from the workpaper + checkpoint outputs.
+  assert.ok(view.output)
+  assert.equal(view.output.title, 'financial-model-builder Workpaper')
+  const labels = view.output.rows.map((r) => r.label)
+  assert.ok(labels.includes('Summary'))
+  assert.ok(labels.includes('Verdict'))
+  const verdictRow = view.output.rows.find((r) => r.label === 'Verdict')
+  assert.equal(verdictRow.value, 'PASS')
+  assert.equal(verdictRow.impact, true)
+  // "open full workpaper" calls back with the workpaper path.
+  assert.equal(typeof view.output.onOpenFull, 'function')
+  view.output.onOpenFull()
+  assert.match(openedPath, /financial-model-builder-workpaper-v1\.md$/)
+})
+
+check('buildAgentPanelView for a running agent: latest line is current, no workpaper => null output', () => {
+  const agentName = 'scenario-analyst'
+  const checkpoints = new Map([[agentName, agentCheckpoint({ agentName, status: 'running' })]])
+  const events = [
+    storyEvent({ seq: 3, kind: 'agent_started', agent: agentName, title: 'scenario-analyst started' }),
+    storyEvent({ seq: 4, kind: 'agent_progress', agent: agentName, summary: 'Running downside case' }),
+  ]
+  const view = buildAgentPanelView(agentName, {
+    agentCheckpoints: checkpoints,
+    storyEvents: events,
+    documentArtifacts: [], // no filed workpaper yet
+  })
+  assert.equal(view.status, 'working')
+  assert.equal(view.streamLines.length, 2)
+  assert.equal(view.streamLines[1].tone, 'current') // latest line, still working
+  assert.equal(view.output, null) // no workpaper => no output card
+})
+
+check('inferStatusFromEvents falls back to recorded events when no checkpoint is present', () => {
+  const agentName = 'financial-model-builder'
+  // No events at all -> undefined (caller defaults to queued).
+  assert.equal(inferStatusFromEvents(agentName, []), undefined)
+  // A completion event -> done.
+  assert.equal(
+    inferStatusFromEvents(agentName, [storyEvent({ seq: 2, kind: 'agent_completed', agent: agentName })]),
+    'done',
+  )
+  // A document_created (workpaper filed) also reads as done.
+  assert.equal(
+    inferStatusFromEvents(agentName, [storyEvent({ seq: 3, kind: 'document_created', agent: agentName })]),
+    'done',
+  )
+  // A failure event wins.
+  assert.equal(
+    inferStatusFromEvents(agentName, [
+      storyEvent({ seq: 2, kind: 'agent_completed', agent: agentName }),
+      storyEvent({ seq: 3, kind: 'agent_failed', agent: agentName }),
+    ]),
+    'failed',
+  )
+  // Only a start -> still working.
+  assert.equal(
+    inferStatusFromEvents(agentName, [storyEvent({ seq: 1, kind: 'agent_started', agent: agentName })]),
+    'working',
+  )
+})
+
+check('buildAgentPanelView replays from events alone (no checkpoint): status done + workpaper output', () => {
+  // Mirrors the manually-opened-saved-deal path where the dashboard supplies story events +
+  // artifacts but an EMPTY agentCheckpoints map.
+  const agentName = 'financial-model-builder'
+  const view = buildAgentPanelView(agentName, {
+    agentCheckpoints: new Map(), // no checkpoint
+    storyEvents: [
+      storyEvent({ seq: 1, kind: 'agent_started', agent: agentName, title: 'started' }),
+      storyEvent({ seq: 2, kind: 'agent_completed', agent: agentName, title: 'completed' }),
+    ],
+    documentArtifacts: [documentArtifact({ agent: agentName })],
+  })
+  assert.equal(view.status, 'done') // inferred from the completion event
+  assert.equal(view.streamLines.length, 2)
+  assert.ok(view.output) // workpaper output still renders from the artifact
+  assert.equal(view.output.title, 'financial-model-builder Workpaper')
+})
+
+check('buildAgentPanelView: unknown agent yields queued status, empty stream, null output', () => {
+  const view = buildAgentPanelView('nobody', {
+    agentCheckpoints: new Map(),
+    storyEvents: [storyEvent({ seq: 1, agent: 'someone-else' })],
+    documentArtifacts: [documentArtifact({ agent: 'someone-else' })],
+  })
+  assert.equal(view.status, 'queued')
+  assert.deepEqual(view.streamLines, [])
+  assert.equal(view.output, null)
+})
+
+check('buildAgentPanelView: fromAgent handoffs are included in the stream', () => {
+  const agentName = 'rent-roll-analyst'
+  const view = buildAgentPanelView(agentName, {
+    agentCheckpoints: new Map([[agentName, agentCheckpoint({ agentName, status: 'complete' })]]),
+    storyEvents: [
+      storyEvent({ seq: 2, kind: 'agent_started', agent: agentName, title: 'started' }),
+      storyEvent({ seq: 5, kind: 'agent_message', fromAgent: agentName, title: 'handoff to underwriting' }),
+    ],
+    documentArtifacts: [],
+  })
+  assert.equal(view.streamLines.length, 2)
+  assert.equal(view.streamLines[1].text, 'handoff to underwriting')
+})
+
+check('buildAgentPanelView: red flags + data gaps surface as an impact-weighted Caveats row', () => {
+  const agentName = 'tenant-credit'
+  const view = buildAgentPanelView(agentName, {
+    agentCheckpoints: new Map([[agentName, agentCheckpoint({
+      agentName,
+      status: 'complete',
+      outputs: { summary: 'Tenant base concentrated.', findings: [], metrics: {}, verdict: 'CONDITIONAL' },
+      redFlags: [{ description: 'Top tenant 40% of NOI', severity: 'HIGH', category: 'concentration' }],
+      dataGaps: [{ description: 'Missing two estoppels' }],
+    })]],
+    ),
+    storyEvents: [],
+    documentArtifacts: [documentArtifact({ agent: agentName, title: 'tenant-credit Workpaper', phase: 'due-diligence' })],
+  })
+  assert.ok(view.output)
+  const caveats = view.output.rows.find((r) => r.label === 'Caveats')
+  assert.ok(caveats, 'caveats row present')
+  assert.match(caveats.value, /1 red flag/)
+  assert.match(caveats.value, /1 data gap/)
+  assert.equal(caveats.impact, true)
+})
+
+console.log('intentRouting:')
+
+check('routeIntent resolves explicit agent: and workflow: intents directly', () => {
+  assert.deepEqual(routeIntent('agent:financial-model-builder', 'underwriting'), { kind: 'agent', agentId: 'financial-model-builder' })
+  assert.deepEqual(routeIntent('workflow:legal-psa-review', 'legal'), { kind: 'workflow', workflowId: 'legal-psa-review' })
+  // A plain action intent (not agent/workflow) falls back to the advanced drawer.
+  assert.deepEqual(routeIntent('assemble-package', 'ic'), { kind: 'advanced' })
+})
+
+check('routeIntent maps documented free-text keywords to agents/workflows', () => {
+  assert.deepEqual(routeIntent('refresh the model', 'underwriting'), { kind: 'agent', agentId: 'financial-model-builder' })
+  assert.deepEqual(routeIntent('build the pro forma', 'underwriting'), { kind: 'agent', agentId: 'financial-model-builder' })
+  assert.deepEqual(routeIntent('draft the IC memo', 'underwriting'), { kind: 'agent', agentId: 'ic-memo-writer' })
+  assert.deepEqual(routeIntent('take this to committee', 'underwriting'), { kind: 'agent', agentId: 'ic-memo-writer' })
+  assert.deepEqual(routeIntent('review the PSA for blockers', 'legal'), { kind: 'workflow', workflowId: 'legal-psa-review' })
+  assert.deepEqual(routeIntent('compare lender quotes', 'financing'), { kind: 'workflow', workflowId: 'financing-package' })
+  assert.deepEqual(routeIntent('check tenant concentration', 'diligence'), { kind: 'agent', agentId: 'tenant-credit' })
+  assert.deepEqual(routeIntent('stress-test the exit cap', 'underwriting'), { kind: 'agent', agentId: 'scenario-analyst' })
+})
+
+check('routeIntent returns advanced for unrecognized free text', () => {
+  assert.deepEqual(routeIntent('do something inscrutable', 'intake'), { kind: 'advanced' })
+  assert.deepEqual(routeIntent('', 'intake'), { kind: 'advanced' })
+  assert.deepEqual(routeIntent('   ', 'underwriting'), { kind: 'advanced' })
+})
+
+check('routeIntent matches a stage suggestion label to its chip intent', () => {
+  const underwriting = suggestionsForStageRouting('underwriting')
+  // "Stress-test the exit cap" is an underwriting chip -> agent:scenario-analyst.
+  const result = routeIntent('Stress-test the exit cap', 'underwriting', { suggestions: underwriting })
+  assert.deepEqual(result, { kind: 'agent', agentId: 'scenario-analyst' })
+  // A plain-action chip label ("Assemble the IC package" -> assemble-package) routes to advanced.
+  const ic = suggestionsForStageRouting('ic')
+  assert.deepEqual(routeIntent('Assemble the IC package', 'ic', { suggestions: ic }), { kind: 'advanced' })
+})
+
+check('routeIntent is deterministic â€” first matching keyword rule wins', () => {
+  // "legal" appears before "financing" only when legal keywords match; ensure a legal phrase
+  // does not accidentally resolve to financing and vice-versa.
+  assert.equal(routeIntent('legal review', 'legal').kind, 'workflow')
+  assert.equal(routeIntent('legal review', 'legal').workflowId, 'legal-psa-review')
+  assert.equal(routeIntent('financing package', 'financing').workflowId, 'financing-package')
+  // Same input -> same output, twice.
+  assert.deepEqual(routeIntent('refresh the model', 'underwriting'), routeIntent('refresh the model', 'underwriting'))
+})
+
+console.log('useAgentDispatch:')
+
+// A tiny fetch double recording the last call, returning a configurable JSON response.
+function mockFetch({ ok = true, body = {} } = {}) {
+  const calls = []
+  const impl = async (url, init) => {
+    calls.push({ url, init })
+    return {
+      ok,
+      json: async () => body,
+    }
+  }
+  impl.calls = calls
+  return impl
+}
+
+await (async () => {
+  // Offline (simulation) dispatch is a no-op that never calls fetch, returns the switch-to-Codex notice.
+  await (async function offlineNoop() {
+    const fetchImpl = mockFetch()
+    const result = await requestAgentDispatch('financial-model-builder', undefined, {
+      dealId: 'parkview-2026-001',
+      runtimeProvider: 'simulation',
+      fetchImpl,
+    })
+    assert.equal(result.status, 'offline-noop')
+    assert.match(result.notice, /Codex/i)
+    assert.equal(fetchImpl.calls.length, 0, 'simulation must not start a run')
+    passed += 1
+    console.log('  ok - simulation dispatch is a no-op (no run started) with a switch-to-Codex notice')
+  })()
+
+  // Codex dispatch POSTs a one-agent launch with the right shape.
+  await (async function codexDispatch() {
+    const fetchImpl = mockFetch({ ok: true, body: { runId: 'run_codex_1', status: 'started' } })
+    const result = await requestAgentDispatch('ic-memo-writer', 'Draft the recommendation', {
+      dealId: 'parkview-2026-001',
+      runtimeProvider: 'codex',
+      fetchImpl,
+    })
+    assert.equal(result.status, 'dispatched')
+    assert.equal(result.runId, 'run_codex_1')
+    assert.equal(fetchImpl.calls.length, 1)
+    const { url, init } = fetchImpl.calls[0]
+    assert.ok(url.endsWith(`/api/workflows/${DISPATCH_WORKFLOW_ID}/launch`), `launch url: ${url}`)
+    assert.equal(init.method, 'POST')
+    const sent = JSON.parse(init.body)
+    assert.equal(sent.runtimeProvider, 'codex')
+    assert.deepEqual(sent.codexAgents, ['ic-memo-writer'])
+    assert.equal(sent.codexMaxAgents, 1)
+    assert.equal(sent.reset, false)
+    assert.equal(sent.notes, 'Draft the recommendation')
+    passed += 1
+    console.log('  ok - codex dispatch POSTs a one-agent launch (codexAgents:[name], codexMaxAgents:1, reset:false)')
+  })()
+
+  // A failed codex launch surfaces the server error as a notice (no throw).
+  await (async function codexError() {
+    const fetchImpl = mockFetch({ ok: false, body: { error: 'A run is already active' } })
+    const result = await requestAgentDispatch('scenario-analyst', undefined, {
+      dealId: 'parkview-2026-001',
+      runtimeProvider: 'codex',
+      fetchImpl,
+    })
+    assert.equal(result.status, 'error')
+    assert.match(result.notice, /already active/)
+    passed += 1
+    console.log('  ok - codex dispatch surfaces a server error as a notice')
+  })()
+})()
 
 console.log(`dashboard-lib: ${passed} checks passed`)

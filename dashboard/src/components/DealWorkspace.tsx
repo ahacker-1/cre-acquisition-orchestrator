@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import AgentTree from './AgentTree'
 import DecisionLog from './DecisionLog'
 import DocumentWall from './DocumentWall'
@@ -15,7 +15,11 @@ import { useWorkflows } from '../hooks/useWorkflows'
 import { collectFailedAgents, recoveryRunId, retryFailedAgents } from '../lib/runRecovery'
 import WorkspaceFrame from './workspace/WorkspaceFrame'
 import IntakeStage from './workspace/stages/IntakeStage'
+import AgentPanel from './workspace/AgentPanel'
 import { buildDealRecordGroups, coerceEditValue, countNeedsEye } from '../lib/dealRecordModel'
+import { buildAgentPanelView } from '../lib/agentView'
+import { routeIntent } from '../lib/intentRouting'
+import { useAgentDispatch } from '../hooks/useAgentDispatch'
 import { API_URL } from '../config'
 import type { TeamAgentView } from './workspace/TeamRail'
 import {
@@ -1186,6 +1190,7 @@ function PhaseWorkspaceView({
   onCodexMaxAgentsChange,
   codexConcurrency,
   onCodexConcurrencyChange,
+  onOpenAgent,
 }: {
   dealCheckpoint: DealCheckpoint
   agentCheckpoints: Map<string, AgentCheckpoint>
@@ -1200,6 +1205,8 @@ function PhaseWorkspaceView({
   onCodexMaxAgentsChange: (maxAgents: number | null) => void
   codexConcurrency: number
   onCodexConcurrencyChange: (concurrency: number) => void
+  // Phase 3 (A5): clicking an agent opens its panel (summon → watch → read → re-task).
+  onOpenAgent?: (agentId: string) => void
 }) {
   const runtimePhase = phaseFromCheckpoint(dealCheckpoint, phase)
   const phaseDocs = documents.filter((doc) => doc.phase === phase.phaseSlug)
@@ -1352,7 +1359,26 @@ function PhaseWorkspaceView({
           <p className="portal-kicker">Agents</p>
           <div className="mt-3 space-y-2">
             {phase.agents.map((agent) => (
-              <article key={agent.agentId} className="border border-white/10 bg-black p-3">
+              <article
+                key={agent.agentId}
+                className={`border border-white/10 bg-black p-3 ${
+                  onOpenAgent ? 'cursor-pointer transition-colors hover:border-white/40' : ''
+                }`}
+                data-testid={`phase-agent-${agent.agentId}`}
+                {...(onOpenAgent
+                  ? {
+                      role: 'button',
+                      tabIndex: 0,
+                      onClick: () => onOpenAgent(agent.agentId),
+                      onKeyDown: (event: ReactKeyboardEvent) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          onOpenAgent(agent.agentId)
+                        }
+                      },
+                    }
+                  : {})}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-white">{agent.name}</p>
@@ -1867,6 +1893,14 @@ export default function DealWorkspace({
   // Owned here (not in IntakeStage) so the intake detailed-review disclosure survives the stage
   // body re-mounting whenever a workspace refresh flips `loading` (extract / apply / field edit).
   const [intakeReviewOpen, setIntakeReviewOpen] = useState(false)
+  // Phase 3: the agent whose panel is open (summon → watch → read → re-task). Holds the kebab
+  // agent id (matches agentCheckpoints / storyEvents.agent / documentArtifacts.agent).
+  const [agentPanelName, setAgentPanelName] = useState<string | null>(null)
+  // Single-agent dispatch (codex live) / offline replay no-op. Uses the LIVE checkpoint's runtime
+  // when a run is in flight, else the operator's phase runtime selection.
+  const dispatchRuntimeProvider: RuntimeProvider =
+    (liveDealCheckpoint?.runtimeProvider as RuntimeProvider | undefined) ?? phaseRuntimeProvider
+  const { dispatchAgent } = useAgentDispatch(dealCheckpoint.dealId, dispatchRuntimeProvider)
 
   useEffect(() => {
     setActiveTab(initialTab ?? (
@@ -2074,17 +2108,71 @@ export default function DealWorkspace({
     status: agentStatusToStageStatus(agentCheckpoints.get(agent.name)?.status),
   }))
 
-  // Phase 1 stubs: the command bar + agent summon route to the Advanced drawer (where the
-  // workflow launcher + agent tree live). Phase 3 replaces these with single-agent dispatch.
-  function handleCommandSuggestion(_suggestion: CommandSuggestion): void {
+  // Agent roster across all phases: kebab agentId -> { display name, role }. Lets the command bar
+  // open a panel for ANY agent (not just the focused stage's team). agentId === the checkpoint /
+  // story-event / artifact key, so the panel's data feed matches on the same id.
+  const agentRoster = useMemo(() => {
+    const roster = new Map<string, { name: string; role: string }>()
+    for (const phase of phaseTabs) {
+      for (const agent of phase.agents) {
+        if (roster.has(agent.agentId)) continue
+        roster.set(agent.agentId, {
+          name: agent.name,
+          role: `${phase.label} · ${agent.critical ? 'Critical Path' : 'Specialist'}`,
+        })
+      }
+    }
+    return roster
+  }, [phaseTabs])
+
+  // Phase 3: summon paths. Rail click + command-bar (free text or chip intent) all land on the
+  // same agent panel; a workflow intent launches that workflow; anything unrecognized opens the
+  // Advanced drawer (the power-user fallback).
+  function openAgentPanel(agentId: string): void {
+    setAgentPanelName(agentId)
+  }
+  function routeAndAct(text: string): void {
+    const result = routeIntent(text, activeStage, { suggestions: suggestionsForStage(activeStage) })
+    if (result.kind === 'agent') {
+      openAgentPanel(result.agentId)
+      return
+    }
+    if (result.kind === 'workflow') {
+      // Reuse the existing phase-launch plumbing by resolving the workflow's owning phase slug;
+      // if it isn't a per-phase workflow, fall back to the Advanced workflow launcher.
+      const phaseSlug = Object.keys(PHASE_WORKFLOW).find((slug) => PHASE_WORKFLOW[slug] === result.workflowId)
+      if (phaseSlug) {
+        void handlePhaseLaunch(phaseSlug)
+      } else {
+        focusWorkflowLauncher()
+      }
+      return
+    }
     setAdvancedOpen(true)
   }
-  function handleCommandSubmit(_text: string): void {
-    setAdvancedOpen(true)
+  function handleCommandSuggestion(suggestion: CommandSuggestion): void {
+    // A chip carries an explicit intent string ("agent:<id>" / "workflow:<id>" / action).
+    routeAndAct(suggestion.intent)
   }
-  function openAgentFromRail(_agentId: string): void {
-    setAdvancedOpen(true)
+  function handleCommandSubmit(text: string): void {
+    routeAndAct(text)
   }
+
+  // The agent panel's data feed (Hook 3): a pure selector over the existing checkpoint / story /
+  // artifact data. Offline = replay of recorded work; codex live = the same selector over the
+  // live WS feed. "Open full workpaper" opens the workpaper's file path.
+  const agentPanelMeta = agentPanelName ? agentRoster.get(agentPanelName) : undefined
+  const agentPanelView = agentPanelName
+    ? buildAgentPanelView(agentPanelName, {
+        agentCheckpoints,
+        storyEvents,
+        documentArtifacts,
+        onOpenWorkpaper: (path) => {
+          if (path) window.open(`${API_URL}/${path.replace(/^\/+/, '')}`, '_blank', 'noopener')
+        },
+      })
+    : null
+  const liveDispatch = dispatchRuntimeProvider === 'codex'
 
   function renderStageBody(): ReactNode {
     const recovery = (
@@ -2177,6 +2265,7 @@ export default function DealWorkspace({
             onCodexMaxAgentsChange={setPhaseCodexMaxAgents}
             codexConcurrency={phaseCodexConcurrency}
             onCodexConcurrencyChange={setPhaseCodexConcurrency}
+            onOpenAgent={openAgentPanel}
           />
         </div>
       )
@@ -2209,7 +2298,7 @@ export default function DealWorkspace({
         suggestions={suggestionsForStage(activeStage)}
         onCommandSubmit={handleCommandSubmit}
         onCommandSuggestion={handleCommandSuggestion}
-        onOpenAgent={openAgentFromRail}
+        onOpenAgent={openAgentPanel}
         onSummon={() => setAdvancedOpen(true)}
         onOpenAdvanced={() => setAdvancedOpen(true)}
       >
@@ -2223,6 +2312,34 @@ export default function DealWorkspace({
           renderStageBody()
         )}
       </WorkspaceFrame>
+
+      {agentPanelName && agentPanelView && (
+        <AgentPanel
+          open
+          agentName={agentPanelMeta?.name ?? agentPanelName}
+          agentRole={agentPanelMeta?.role}
+          status={agentPanelView.status}
+          streamLines={agentPanelView.streamLines}
+          output={agentPanelView.output}
+          elapsedLabel={agentPanelView.elapsedLabel}
+          liveDispatch={liveDispatch}
+          followUpSuggestions={
+            // Only agent-targeted chips make sense as a same-agent follow-up; offline the panel
+            // disables them anyway (replay), so this is purely the live-codex affordance.
+            liveDispatch
+              ? suggestionsForStage(activeStage)
+                  .filter((suggestion) => suggestion.intent.startsWith('agent:'))
+                  .map((suggestion) => suggestion.label)
+              : []
+          }
+          onFollowUp={(text) => {
+            void dispatchAgent(agentPanelName, text).then((result) => {
+              if (result.status === 'dispatched') void refreshWorkspace()
+            })
+          }}
+          onClose={() => setAgentPanelName(null)}
+        />
+      )}
 
       {(error || launchMessage) && (
         <div className="mt-4 border border-white/10 bg-black px-4 py-3 text-sm text-gray-300" data-testid="workspace-message">

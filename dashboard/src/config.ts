@@ -8,5 +8,9 @@ function defaultWsUrl(): string {
   return `${protocol}//${window.location.host}/ws`
 }
 
-export const API_URL = stripTrailingSlash(import.meta.env.VITE_API_URL || '')
-export const WS_URL = import.meta.env.VITE_WS_URL || defaultWsUrl()
+// `import.meta.env` is injected by Vite at build time. Guard the access so this module can also
+// be imported under a plain Node/tsx runner (e.g. unit tests), where `import.meta.env` is absent.
+const viteEnv = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {}
+
+export const API_URL = stripTrailingSlash(viteEnv.VITE_API_URL || '')
+export const WS_URL = viteEnv.VITE_WS_URL || defaultWsUrl()
