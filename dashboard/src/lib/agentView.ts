@@ -179,6 +179,25 @@ export function buildAgentOutput(
   }
 }
 
+// Compact elapsed label (e.g. "47s", "3m 12s") from the span of an agent's recorded story events.
+// Deterministic (min->max event ts) so buildAgentPanelView stays pure: for a completed / replayed
+// agent this is the true run duration; while live it reflects elapsed across recorded activity so
+// far. Returns undefined when there's nothing meaningful to show (fewer than two timestamps, or a
+// sub-second span — better to show no timer than a misleading "0s").
+export function buildElapsedLabel(agentName: string, storyEvents: StoryEvent[]): string | undefined {
+  const times = storyEvents
+    .filter((event) => event.agent === agentName || event.fromAgent === agentName)
+    .map((event) => Date.parse(event.ts))
+    .filter((ms) => Number.isFinite(ms))
+  if (times.length < 2) return undefined
+  const seconds = Math.round((Math.max(...times) - Math.min(...times)) / 1000)
+  if (seconds < 1) return undefined
+  if (seconds < 60) return `${seconds}s`
+  const minutes = Math.floor(seconds / 60)
+  const remainder = seconds % 60
+  return remainder === 0 ? `${minutes}m` : `${minutes}m ${remainder}s`
+}
+
 /**
  * Assemble the full AgentPanel data feed for one agent from the existing checkpoint/event/artifact
  * data. Pure: same inputs -> same view. Used by both offline replay (recorded work) and the live
@@ -199,5 +218,5 @@ export function buildAgentPanelView(
     onOpenWorkpaper: sources.onOpenWorkpaper,
     onFile: sources.onFile,
   })
-  return { status, streamLines, output }
+  return { status, streamLines, output, elapsedLabel: buildElapsedLabel(agentName, sources.storyEvents) }
 }

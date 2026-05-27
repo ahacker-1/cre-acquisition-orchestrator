@@ -158,6 +158,25 @@ export function deriveSpineStages(
   ]
 }
 
+// Intake's "team" is the ingestion crew (Document Orchestrator + the three parsers). Unlike the
+// five orchestrated phases, intake is NOT a runtime checkpoint phase, so it never appears in the
+// server's workspace.phases (which lists runtime phases only) — leaving the Intake stage's "Your
+// Team" rail empty on the default landing. This fixed roster mirrors the registry's `ingestion`
+// group so the rail is staffed; the ids are the kebab agent ids that checkpoints / story events
+// are keyed by, so each member's live status resolves through the same agentCheckpoints map.
+export interface StageTeamMember {
+  agentId: string
+  name: string
+  critical: boolean
+}
+
+export const INGESTION_TEAM: StageTeamMember[] = [
+  { agentId: 'document-orchestrator', name: 'Document Orchestrator', critical: false },
+  { agentId: 'rent-roll-parser', name: 'Rent Roll Parser', critical: false },
+  { agentId: 'financials-parser', name: 'Financials Parser', critical: false },
+  { agentId: 'offering-memo-parser', name: 'Offering Memo Parser', critical: false },
+]
+
 // Convenience for the frame: summarize source documents into an IntakeSummary.
 export function intakeSummaryFromDocuments(documents: SourceDocument[]): IntakeSummary {
   let appliedCount = 0

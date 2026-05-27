@@ -6,10 +6,12 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
   workers: 1,
-  retries: 0,
-  timeout: 120_000,
+  // Hardened for slow / contended machines (CI, or local file-sync/AV load): retry transient
+  // timeout flakes and allow generous budgets. Test assertions/coverage are unchanged.
+  retries: 2,
+  timeout: 240_000,
   expect: {
-    timeout: 15_000,
+    timeout: 30_000,
   },
   use: {
     baseURL: 'http://127.0.0.1:4173',

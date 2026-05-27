@@ -70,8 +70,22 @@ export async function requestAgentDispatch(
         }),
       },
     )
-    const payload = (await response.json()) as WorkflowLaunchResponse & { error?: string }
+    const payload = (await response.json()) as WorkflowLaunchResponse & {
+      error?: string
+      readiness?: { blockers?: string[] }
+    }
     if (!response.ok) {
+      // The most common (and otherwise cryptic) failure: the deal's critical fields aren't yet
+      // source-backed, so a live review is gated. Turn the terse server error into a clear next
+      // step — drop the source docs so intake auto-fills them, then summon again.
+      if (payload.error === 'Workflow launch readiness blocked') {
+        const blockers = Array.isArray(payload.readiness?.blockers) ? payload.readiness.blockers : []
+        const detail = blockers.length > 0 ? ` (${blockers.join('; ')})` : ''
+        return {
+          status: 'error',
+          notice: `${agentName} needs source-backed deal inputs before a live run${detail}. Drop the rent roll, T-12, or offering memo so the team can auto-fill them, then summon again.`,
+        }
+      }
       return { status: 'error', notice: payload.error || 'Failed to dispatch agent' }
     }
     return {

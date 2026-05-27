@@ -70,6 +70,26 @@ test('focuses a stage when its spine step is clicked', async ({ page, request })
   await expect(underwriting).toHaveAttribute('data-status', /done|live|blocked|idle/)
 })
 
+test('staffs the Intake stage Your Team rail with the ingestion crew', async ({ page, request }) => {
+  await saveLaunchReadyDeal(request, FRAME_DEAL_ID, FRAME_DEAL_NAME)
+  await openWorkspaceFromRecentDeals(page, FRAME_DEAL_ID, FRAME_DEAL_NAME)
+
+  // A freshly opened deal lands on Intake (the default stage). Its "Your Team" rail must show the
+  // ingestion crew — intake is NOT a runtime checkpoint phase, so its team comes from the fixed
+  // ingestion roster rather than workspace.phases. Regression guard for the empty-rail bug that
+  // left the default landing reading "No agents staffed on this stage yet."
+  await expect(page.getByTestId('spine-step-intake')).toHaveAttribute('aria-current', 'step')
+  const teamRail = page.getByTestId('team-rail')
+  await expect(teamRail).toBeVisible()
+  await expect(teamRail.getByTestId('team-agent-document-orchestrator')).toBeVisible()
+  await expect(teamRail.getByTestId('team-agent-rent-roll-parser')).toBeVisible()
+  await expect(teamRail).not.toContainText('No agents staffed')
+
+  // A runtime phase (underwriting) still staffs its own specialists from workspace.phases.
+  await page.getByTestId('spine-step-underwriting').click()
+  await expect(teamRail.getByTestId('team-agent-financial-model-builder')).toBeVisible()
+})
+
 test('opens and closes the advanced drawer', async ({ page, request }) => {
   await saveLaunchReadyDeal(request, FRAME_DEAL_ID, FRAME_DEAL_NAME)
   await openWorkspaceFromRecentDeals(page, FRAME_DEAL_ID, FRAME_DEAL_NAME)

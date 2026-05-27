@@ -71,7 +71,7 @@ export default function DropZoneHero({
         </h2>
         <p className="mt-5 max-w-3xl text-sm leading-6 text-gray-400 md:text-base">
           Drop your rent roll, T12, and offering memo. The team reads them, fills in the deal record for you,
-          and flags anything that needs your eye — no forms, no manual entry to get started.
+          and flags anything that needs your eye — the numbers come from your documents, not a data-entry form.
         </p>
         <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
           Source-backed extraction is local-first. CSV, TXT, Markdown, and supported XLSX rent rolls or T12s

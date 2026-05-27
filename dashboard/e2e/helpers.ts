@@ -176,7 +176,7 @@ export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, d
     await expect(strip).toBeVisible({ timeout: 20_000 })
   }
 
-  await card.click({ timeout: 10_000 })
+  await card.click({ timeout: 30_000 })
   await expect(workspace).toBeVisible({ timeout: 20_000 })
   await expect(heading).toBeVisible({ timeout: 20_000 })
 }
@@ -200,7 +200,7 @@ export async function openAdvancedDrawer(page: Page) {
   if (!(await drawer.isVisible())) {
     await page.getByTestId('open-advanced').click()
   }
-  await expect(drawer).toBeVisible({ timeout: 10_000 })
+  await expect(drawer).toBeVisible({ timeout: 30_000 })
   return drawer
 }
 

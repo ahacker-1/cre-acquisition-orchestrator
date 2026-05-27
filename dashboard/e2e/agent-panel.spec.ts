@@ -195,6 +195,8 @@ test('a command-bar chip opens the right agent panel', async ({ page, request })
   await expect(panel).toBeVisible()
   await expect(panel.getByRole('heading', { name: PANEL_AGENT_NAME })).toBeVisible()
   await expect(page.getByTestId('agent-panel-stream')).toBeVisible()
+  // Fix C: a chip summon echoes what was asked — the panel shows the task + its source.
+  await expect(panel).toContainText('Your command')
 
   await page.getByTestId('agent-panel-close').click()
   await expect(panel).toBeHidden()
@@ -210,6 +212,8 @@ test('a command-bar free-text intent routes to the matching agent', async ({ pag
   const panel = page.getByTestId('agent-panel')
   await expect(panel).toBeVisible()
   await expect(panel.getByRole('heading', { name: PANEL_AGENT_NAME })).toBeVisible()
+  // Fix C: the panel echoes the exact typed command as its task.
+  await expect(panel).toContainText('refresh the model')
 
   await page.getByTestId('agent-panel-close').click()
   await expect(panel).toBeHidden()

@@ -24,6 +24,7 @@ import { API_URL } from '../config'
 import type { TeamAgentView } from './workspace/TeamRail'
 import {
   deriveSpineStages,
+  INGESTION_TEAM,
   intakeSummaryFromDocuments,
   type StageId,
   type StageStatus,
@@ -1805,6 +1806,20 @@ const STAGE_TO_TAB: Record<StageId, WorkspaceTab> = {
   ic: 'package',
 }
 
+// The deal's own phase slug per lifecycle stage. DISTINCT from STAGE_TO_TAB: the tab map drives the
+// retained `activeTab` selector (intake -> 'documents', ic -> 'package'), but team/agent resolution
+// must key on the workspace phase slug (intake -> 'intake'). Keying the team lookup off STAGE_TO_TAB
+// left Intake (the default landing) searching for a non-existent 'documents' phase -> empty rail.
+const STAGE_TO_PHASE_SLUG: Record<StageId, string> = {
+  intake: 'intake',
+  diligence: 'due-diligence',
+  underwriting: 'underwriting',
+  financing: 'financing',
+  legal: 'legal',
+  closing: 'closing',
+  ic: 'package',
+}
+
 function tabToStage(tab: WorkspaceTab): StageId {
   switch (tab) {
     case 'due-diligence':
@@ -1896,6 +1911,9 @@ export default function DealWorkspace({
   // Phase 3: the agent whose panel is open (summon → watch → read → re-task). Holds the kebab
   // agent id (matches agentCheckpoints / storyEvents.agent / documentArtifacts.agent).
   const [agentPanelName, setAgentPanelName] = useState<string | null>(null)
+  // The task the agent was summoned with (chip label or typed command), echoed in the panel header
+  // so a summon visibly reflects what was asked. Null for a bare rail click (no specific task).
+  const [agentPanelTask, setAgentPanelTask] = useState<string | null>(null)
   // Single-agent dispatch (codex live) / offline replay no-op. Uses the LIVE checkpoint's runtime
   // when a run is in flight, else the operator's phase runtime selection.
   const dispatchRuntimeProvider: RuntimeProvider =
@@ -2115,12 +2133,18 @@ export default function DealWorkspace({
   const packageLabel =
     packageStatus === 'idle' ? 'IC Package — not started' : `IC Package ${icStage?.progress ?? 0}%`
 
-  const activePhaseForStage = phaseTabs.find((phase) => phase.phaseSlug === STAGE_TO_TAB[activeStage])
-  const team: TeamAgentView[] = (activePhaseForStage?.agents ?? []).map((agent) => ({
+  const activePhaseForStage = phaseTabs.find((phase) => phase.phaseSlug === STAGE_TO_PHASE_SLUG[activeStage])
+  // Intake's crew (the ingestion agents) isn't a runtime checkpoint phase, so it never appears in
+  // workspace.phases — source it from the fixed ingestion roster so the default-landing rail is
+  // staffed. All other stages come from the resolved phase (ic/package has no agents by design).
+  // Status keys on the agent's kebab id (how agentCheckpoints / story events are keyed), NOT the
+  // display name — the previous `.get(agent.name)` never matched, so every dot read as idle.
+  const stageTeamAgents = activeStage === 'intake' ? INGESTION_TEAM : activePhaseForStage?.agents ?? []
+  const team: TeamAgentView[] = stageTeamAgents.map((agent) => ({
     agentId: agent.agentId,
     name: agent.name,
     critical: agent.critical,
-    status: agentStatusToStageStatus(agentCheckpoints.get(agent.name)?.status),
+    status: agentStatusToStageStatus(agentCheckpoints.get(agent.agentId)?.status),
   }))
 
   // Agent roster across all phases: kebab agentId -> { display name, role }. Lets the command bar
@@ -2128,6 +2152,11 @@ export default function DealWorkspace({
   // story-event / artifact key, so the panel's data feed matches on the same id.
   const agentRoster = useMemo(() => {
     const roster = new Map<string, { name: string; role: string }>()
+    // Seed the intake crew first (not a runtime phase, so absent from phaseTabs) so summoning a
+    // parser from the Intake team rail opens a properly-titled panel instead of a bare kebab id.
+    for (const agent of INGESTION_TEAM) {
+      roster.set(agent.agentId, { name: agent.name, role: 'Intake · Ingestion' })
+    }
     for (const phase of phaseTabs) {
       for (const agent of phase.agents) {
         if (roster.has(agent.agentId)) continue
@@ -2143,13 +2172,17 @@ export default function DealWorkspace({
   // Phase 3: summon paths. Rail click + command-bar (free text or chip intent) all land on the
   // same agent panel; a workflow intent launches that workflow; anything unrecognized opens the
   // Advanced drawer (the power-user fallback).
-  function openAgentPanel(agentId: string): void {
+  function openAgentPanel(agentId: string, task?: string): void {
     setAgentPanelName(agentId)
+    const trimmed = task?.trim()
+    setAgentPanelTask(trimmed ? trimmed : null)
   }
-  function routeAndAct(text: string): void {
+  // `text` drives intent routing (a chip passes its "agent:<id>" intent string); `displayTask` is
+  // the human-readable task echoed in the panel (a chip's label, or the operator's typed command).
+  function routeAndAct(text: string, displayTask?: string): void {
     const result = routeIntent(text, activeStage, { suggestions: suggestionsForStage(activeStage) })
     if (result.kind === 'agent') {
-      openAgentPanel(result.agentId)
+      openAgentPanel(result.agentId, displayTask)
       return
     }
     if (result.kind === 'workflow') {
@@ -2166,11 +2199,12 @@ export default function DealWorkspace({
     setAdvancedOpen(true)
   }
   function handleCommandSuggestion(suggestion: CommandSuggestion): void {
-    // A chip carries an explicit intent string ("agent:<id>" / "workflow:<id>" / action).
-    routeAndAct(suggestion.intent)
+    // A chip carries an explicit intent string ("agent:<id>" / "workflow:<id>" / action); its label
+    // is the readable task to echo in the panel.
+    routeAndAct(suggestion.intent, suggestion.label)
   }
   function handleCommandSubmit(text: string): void {
-    routeAndAct(text)
+    routeAndAct(text, text)
   }
 
   // The agent panel's data feed (Hook 3): a pure selector over the existing checkpoint / story /
@@ -2333,6 +2367,8 @@ export default function DealWorkspace({
           open
           agentName={agentPanelMeta?.name ?? agentPanelName}
           agentRole={agentPanelMeta?.role}
+          task={agentPanelTask ?? undefined}
+          taskSource={agentPanelTask ? 'Your command' : undefined}
           status={agentPanelView.status}
           streamLines={agentPanelView.streamLines}
           output={agentPanelView.output}
@@ -2348,11 +2384,16 @@ export default function DealWorkspace({
               : []
           }
           onFollowUp={(text) => {
+            // Echo the latest follow-up as the panel's task so re-tasking is visible.
+            setAgentPanelTask(text)
             void dispatchAgent(agentPanelName, text).then((result) => {
               if (result.status === 'dispatched') void refreshWorkspace()
             })
           }}
-          onClose={() => setAgentPanelName(null)}
+          onClose={() => {
+            setAgentPanelName(null)
+            setAgentPanelTask(null)
+          }}
         />
       )}
 

@@ -8,6 +8,7 @@ import {
   phaseStatusToStageStatus,
   normalizeProgress,
   intakeSummaryFromDocuments,
+  INGESTION_TEAM,
   SPINE_STAGE_IDS,
 } from '../dashboard/src/lib/stageModel.ts'
 import { suggestionsForStage } from '../dashboard/src/lib/commandModel.ts'
@@ -22,6 +23,7 @@ import {
 } from '../dashboard/src/lib/dealRecordModel.ts'
 import {
   buildAgentPanelView,
+  buildElapsedLabel,
   checkpointStatusToRunStatus,
   inferStatusFromEvents,
 } from '../dashboard/src/lib/agentView.ts'
@@ -138,6 +140,22 @@ check('intakeSummaryFromDocuments tallies applied vs pending', () => {
   assert.equal(summary.documentCount, 5)
   assert.equal(summary.appliedCount, 2)
   assert.equal(summary.reviewPendingCount, 2)
+})
+
+check('INGESTION_TEAM: Intake stage team is the 4 ingestion agents, keyed by kebab id (Fix A)', () => {
+  const ids = INGESTION_TEAM.map((agent) => agent.agentId)
+  assert.deepEqual(ids, [
+    'document-orchestrator',
+    'rent-roll-parser',
+    'financials-parser',
+    'offering-memo-parser',
+  ])
+  // Display-cased names; none critical-path; ids are kebab so they match checkpoint/story keys.
+  for (const agent of INGESTION_TEAM) {
+    assert.ok(typeof agent.name === 'string' && /[A-Z]/.test(agent.name), `${agent.agentId} has a display name`)
+    assert.equal(agent.critical, false)
+    assert.match(agent.agentId, /^[a-z]+(-[a-z]+)*$/)
+  }
 })
 
 console.log('commandModel:')
@@ -503,6 +521,59 @@ check('buildAgentPanelView for a running agent: latest line is current, no workp
   assert.equal(view.streamLines.length, 2)
   assert.equal(view.streamLines[1].tone, 'current') // latest line, still working
   assert.equal(view.output, null) // no workpaper => no output card
+})
+
+check('buildElapsedLabel: event span -> compact label; <2 timestamps or <1s -> undefined', () => {
+  const agentName = 'scenario-analyst'
+  // Fewer than two timestamps -> no label.
+  assert.equal(buildElapsedLabel(agentName, []), undefined)
+  assert.equal(
+    buildElapsedLabel(agentName, [storyEvent({ seq: 1, agent: agentName, ts: '2026-05-27T00:00:00.000Z' })]),
+    undefined,
+  )
+  // Sub-second span -> no label (avoid a misleading "0s").
+  assert.equal(
+    buildElapsedLabel(agentName, [
+      storyEvent({ seq: 1, agent: agentName, ts: '2026-05-27T00:00:00.000Z' }),
+      storyEvent({ seq: 2, agent: agentName, ts: '2026-05-27T00:00:00.400Z' }),
+    ]),
+    undefined,
+  )
+  // 47-second span -> "47s".
+  assert.equal(
+    buildElapsedLabel(agentName, [
+      storyEvent({ seq: 1, agent: agentName, ts: '2026-05-27T00:00:00.000Z' }),
+      storyEvent({ seq: 2, agent: agentName, ts: '2026-05-27T00:00:47.000Z' }),
+    ]),
+    '47s',
+  )
+  // Minutes + seconds; a foreign agent's events are excluded from the span.
+  assert.equal(
+    buildElapsedLabel(agentName, [
+      storyEvent({ seq: 1, agent: agentName, ts: '2026-05-27T00:00:00.000Z' }),
+      storyEvent({ seq: 2, agent: 'someone-else', ts: '2026-05-27T09:00:00.000Z' }),
+      storyEvent({ seq: 3, agent: agentName, ts: '2026-05-27T00:03:12.000Z' }),
+    ]),
+    '3m 12s',
+  )
+  // Exact minute -> "Nm" (no trailing 0s).
+  assert.equal(
+    buildElapsedLabel(agentName, [
+      storyEvent({ seq: 1, agent: agentName, ts: '2026-05-27T00:00:00.000Z' }),
+      storyEvent({ seq: 2, agent: agentName, ts: '2026-05-27T00:02:00.000Z' }),
+    ]),
+    '2m',
+  )
+  // buildAgentPanelView surfaces the label (Fix B: was previously always undefined).
+  const view = buildAgentPanelView(agentName, {
+    agentCheckpoints: new Map(),
+    storyEvents: [
+      storyEvent({ seq: 1, agent: agentName, ts: '2026-05-27T00:00:00.000Z' }),
+      storyEvent({ seq: 2, kind: 'agent_completed', agent: agentName, ts: '2026-05-27T00:00:30.000Z' }),
+    ],
+    documentArtifacts: [],
+  })
+  assert.equal(view.elapsedLabel, '30s')
 })
 
 check('inferStatusFromEvents falls back to recorded events when no checkpoint is present', () => {
