@@ -1914,6 +1914,9 @@ export default function DealWorkspace({
   // The task the agent was summoned with (chip label or typed command), echoed in the panel header
   // so a summon visibly reflects what was asked. Null for a bare rail click (no specific task).
   const [agentPanelTask, setAgentPanelTask] = useState<string | null>(null)
+  // A declined/failed LIVE follow-up dispatch (offline no-op, readiness-blocked, Codex error) puts
+  // its notice here so the panel says why nothing happened instead of sitting silently idle.
+  const [agentPanelNotice, setAgentPanelNotice] = useState<string | null>(null)
   // Single-agent dispatch (codex live) / offline replay no-op. Uses the LIVE checkpoint's runtime
   // when a run is in flight, else the operator's phase runtime selection.
   const dispatchRuntimeProvider: RuntimeProvider =
@@ -2369,6 +2372,7 @@ export default function DealWorkspace({
           agentRole={agentPanelMeta?.role}
           task={agentPanelTask ?? undefined}
           taskSource={agentPanelTask ? 'Your command' : undefined}
+          notice={agentPanelNotice ?? undefined}
           status={agentPanelView.status}
           streamLines={agentPanelView.streamLines}
           output={agentPanelView.output}
@@ -2386,13 +2390,20 @@ export default function DealWorkspace({
           onFollowUp={(text) => {
             // Echo the latest follow-up as the panel's task so re-tasking is visible.
             setAgentPanelTask(text)
+            setAgentPanelNotice(null)
             void dispatchAgent(agentPanelName, text).then((result) => {
-              if (result.status === 'dispatched') void refreshWorkspace()
+              if (result.status === 'dispatched') {
+                void refreshWorkspace()
+              } else {
+                // Surface a declined/failed live dispatch instead of leaving the panel idle.
+                setAgentPanelNotice(result.notice)
+              }
             })
           }}
           onClose={() => {
             setAgentPanelName(null)
             setAgentPanelTask(null)
+            setAgentPanelNotice(null)
           }}
         />
       )}

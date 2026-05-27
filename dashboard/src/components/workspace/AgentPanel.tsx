@@ -49,6 +49,8 @@ interface AgentPanelProps {
   onFollowUp?: (text: string) => void
   /** Live (Codex) allows on-demand follow-up dispatch; offline is a read/replay of recorded work. */
   liveDispatch?: boolean
+  /** A declined/failed live follow-up dispatch notice, surfaced in the follow-up area. */
+  notice?: string
   onClose: () => void
 }
 
@@ -70,6 +72,7 @@ export default function AgentPanel({
   followUpSuggestions = [],
   onFollowUp,
   liveDispatch = false,
+  notice,
   onClose,
 }: AgentPanelProps) {
   const [followUp, setFollowUp] = useState('')
@@ -211,6 +214,15 @@ export default function AgentPanel({
           {!liveDispatch && (
             <p className="mt-1 text-[10px] leading-4 text-gray-600">
               Offline replay — switch to the Codex runtime (Advanced) to dispatch this agent live.
+            </p>
+          )}
+          {notice && (
+            <p
+              className="mt-1 text-[10px] leading-4 text-cre-warning"
+              role="status"
+              data-testid="agent-followup-notice"
+            >
+              {notice}
             </p>
           )}
           {followUpSuggestions.length > 0 && (
