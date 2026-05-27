@@ -780,11 +780,24 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await expect(page.getByTestId('source-document-t12')).toContainText('T12')
   await expect(page.getByTestId('source-document-offering_memo')).toContainText('offering-memo-messy-realistic.md')
 
-  // Cockpit "Environmental" required-doc slot + "Run extraction" next action now live in the
-  // Advanced drawer (progression guide required-doc badges + operator briefing next action).
+  // Auto-extract (DealWorkspace I2b effect): dropping the docs kicks off extraction of every
+  // freshly-uploaded file, one at a time, with no manual "Preview Extraction" click. The T12's
+  // trailing revenue/expenses have no seeded value so they auto-apply (the doc reaches "applied");
+  // the rent roll's and offering memo's reads all CONFLICT with the launch-ready seed
+  // (totalUnits 12, NOI 230k, asking price 3.6M, year 2008), so those stay candidates for manual
+  // conflict resolution and their docs settle at "review_ready". Wait for that steady state before
+  // asserting the post-upload drawer, otherwise we race the in-flight auto-extraction.
+  await expect(page.getByTestId('source-document-t12')).toContainText('applied', { timeout: 30_000 })
+  await expect(page.getByTestId('extract-document-rent_roll')).toContainText('Review Fields', { timeout: 30_000 })
+  await expect(page.getByTestId('extract-document-offering_memo')).toContainText('Review Fields', { timeout: 30_000 })
+
+  // Cockpit "Environmental" required-doc slot + the extraction-queue next action now live in the
+  // Advanced drawer (progression guide required-doc badges + operator briefing next action). With
+  // the documents already auto-extracted, the briefing's next move is to review the extracted
+  // fields (conflicting reads still need an operator decision) rather than to run extraction.
   const docsDrawer = await openAdvancedDrawer(page)
   await expect(docsDrawer.getByTestId('guide-section-due-diligence')).toContainText('Environmental')
-  await expect(docsDrawer.getByTestId('operator-next-action')).toContainText('Run or resolve the extraction queue')
+  await expect(docsDrawer.getByTestId('operator-next-action')).toContainText('Review extracted fields before launch')
   await closeAdvancedDrawer(page)
 
   // Phase bodies are reached by focusing their lifecycle stage on the spine.
@@ -795,15 +808,25 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await openIntakeDetailedReview(page)
 
   const extractionPreview = page.getByTestId('extraction-preview')
+  const recordPanel = page.getByTestId('deal-record')
 
+  // The rent roll auto-extracted; its button now reads "Review Fields" (the doc is review_ready,
+  // not freshly uploaded) and clicking it loads the stored extraction. Its reads (total units,
+  // unit mix, occupancy) all DISAGREE with the launch-ready seed, so none auto-applied — they are
+  // candidates the operator confirms. Apply the rent-roll-unique reads (total units + unit mix)
+  // with conflict review; occupancy is shared with the offering memo (a cross-document conflict)
+  // and is resolved separately below via the inline record override.
+  await expect(page.getByTestId('extract-document-rent_roll')).toContainText('Review Fields')
   await page.getByTestId('extract-document-rent_roll').click()
   await expect(extractionPreview).toContainText('Fields Found')
   await expect(extractionPreview).toContainText('Mapped')
   await expect(extractionPreview).toContainText('Ambiguous occupancy status')
   await expect(extractionPreview).toContainText('Total Units')
   await expect(extractionPreview).toContainText('In-Place Occupancy')
-  await extractionPreview.getByTestId('select-all-safe-fields').click()
+  await extractionPreview.locator('[data-field-path="property.totalUnits"]').check()
+  await extractionPreview.locator('[data-field-path="property.unitMix.types"]').check()
   await expect(extractionPreview.getByTestId('selected-field-change-summary')).toContainText('Deal data changes')
+  await expect(extractionPreview.getByTestId('selected-field-change-summary')).toContainText('Total Units')
   await extractionPreview.getByTestId('confirm-conflict-review').check()
   await page.getByTestId('apply-extraction').click()
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('applied')
@@ -820,6 +843,35 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await expect(appliedTotalUnits.getByTestId(/^source-drilldown-file-/)).toContainText('rent-roll-messy-realistic.xlsx')
   await expect(appliedTotalUnits.getByTestId(/^source-drilldown-location-/)).toContainText(/Sheet|Row/)
 
+  // Source conflict: the offering memo's NOI ($96,000) and the T12's NOI ($95,400) both auto-
+  // extracted as candidates and disagree, so the record already surfaces Current NOI as a flagged
+  // field needing the operator's eye (neither side auto-applied over the other). The operator
+  // resolves it in favour of the T12: waive the offering memo's NOI candidate first, which clears
+  // the cross-document conflict that would otherwise block applying the T12's NOI.
+  await expect(recordPanel.getByTestId('record-field-flag-financials.currentNOI')).toBeVisible()
+  await expect(recordPanel.getByTestId('record-field-financials.currentNOI')).toHaveAttribute('data-flagged', 'true')
+  await expect(recordPanel.getByTestId('needs-eye-count')).toContainText('need your eye')
+
+  await page.getByTestId('extract-document-offering_memo').click()
+  await expect(extractionPreview).toContainText('Asking Price')
+  await extractionPreview.locator('[data-field-path="financials.currentNOI"]').check()
+  await extractionPreview.getByTestId('extraction-review-note').fill('T12 controls NOI for this package.')
+  const waiverResponsePromise = page.waitForResponse((response) => {
+    const pathname = new URL(response.url()).pathname
+    return (
+      response.request().method() === 'POST' &&
+      pathname.startsWith(`/api/deals/${WORKSPACE_DEAL_ID}/documents/`) &&
+      pathname.endsWith('/review-extraction')
+    )
+  })
+  await page.getByTestId('waive-extraction-fields').click()
+  await expectApiOk(await waiverResponsePromise)
+  await expect(extractionPreview).toContainText('waived')
+
+  // With the competing offering-memo NOI candidate waived, apply the T12's Current NOI ($95,400).
+  // The T12's trailing revenue/expenses already auto-applied on extraction (no seeded value, so no
+  // conflict) — they show as locked "applied" rows here, so Select Apply-Ready Fields targets only
+  // the remaining conflicting Current NOI candidate.
   await page.getByTestId('extract-document-t12').click()
   await expect(extractionPreview).toContainText('3 Fields Found')
   await expect(extractionPreview).toContainText('Trailing T12 Revenue')
@@ -829,22 +881,35 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await extractionPreview.getByTestId('confirm-conflict-review').check()
   await page.getByTestId('apply-extraction').click()
   await expect(page.getByTestId('source-document-t12')).toContainText('applied')
-  // Source-backed input progress (was cockpit-launch-readiness) now reads from the operator
-  // briefing's source-backed-input-score in the Advanced drawer.
-  const readiness3of4Drawer = await openAdvancedDrawer(page)
-  await expect(readiness3of4Drawer.getByTestId('source-backed-input-score')).toContainText('3/4')
-  await closeAdvancedDrawer(page)
 
-  // Auto-applied source-backed reads flow into the lead deal record (nothing typed by hand).
-  // The T12's Current NOI ($95,400) is now live there, grouped under Operations.
-  const recordPanel = page.getByTestId('deal-record')
+  // The applied T12 NOI ($95,400) is now live in the lead deal record, grouped under Operations.
   await expect(recordPanel).toBeVisible()
   const recordNoi = recordPanel.getByTestId('record-field-financials.currentNOI')
   await expect(recordNoi).toContainText('Current NOI')
   await expect(recordNoi).toContainText('$95,400')
 
-  // Inline override (I1): edit an auto-populated value directly in the record. Occupancy was
-  // read from the rent roll; correcting it persists with provenance + audit via field-edit.
+  // Apply the offering memo's remaining unique reads (asking price + year built) with conflict
+  // review, taking the document to "applied". That brings three of the four required source-backed
+  // inputs (total units, asking price, current NOI) under approved evidence — occupancy is the
+  // last, resolved by the inline override below.
+  await page.getByTestId('extract-document-offering_memo').click()
+  await expect(extractionPreview).toContainText('Asking Price')
+  await extractionPreview.locator('[data-field-path="financials.askingPrice"]').check()
+  await extractionPreview.locator('[data-field-path="property.yearBuilt"]').check()
+  await extractionPreview.getByTestId('confirm-conflict-review').check()
+  await page.getByTestId('apply-extraction').click()
+  await expect(page.getByTestId('source-document-offering_memo')).toContainText('applied')
+
+  // Source-backed input progress (was cockpit-launch-readiness) now reads from the operator
+  // briefing's source-backed-input-score in the Advanced drawer. Three parser-applied required
+  // inputs are now approved (occupancy still pending the inline override).
+  const readiness3of4Drawer = await openAdvancedDrawer(page)
+  await expect(readiness3of4Drawer.getByTestId('source-backed-input-score')).toContainText('3/4')
+  await closeAdvancedDrawer(page)
+
+  // Inline override (I1): edit a value directly in the record. Occupancy was read from the rent
+  // roll / offering memo (the cross-document conflict left unapplied above); correcting it persists
+  // with provenance + audit via field-edit and source-backs the fourth required input.
   const recordOccupancy = recordPanel.getByTestId('record-field-financials.inPlaceOccupancy')
   await expect(recordOccupancy).toBeVisible()
   const fieldEditResponse = page.waitForResponse(
@@ -865,44 +930,19 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
     }, { timeout: 10_000 })
     .toBe(0.95)
 
-  await page.getByTestId('extract-document-offering_memo').click()
-  await expect(extractionPreview).toContainText('Asking Price')
-
-  // The offering memo's NOI ($96,000) disagrees with the already-applied T12 NOI ($95,400):
-  // a source conflict. The record surfaces it as a flagged field needing the operator's eye.
-  await expect(recordPanel.getByTestId('record-field-flag-financials.currentNOI')).toBeVisible()
-  await expect(recordPanel.getByTestId('record-field-financials.currentNOI')).toHaveAttribute('data-flagged', 'true')
-  await expect(recordPanel.getByTestId('needs-eye-count')).toContainText('need your eye')
-
-  await extractionPreview.locator('[data-field-path="financials.currentNOI"]').check()
-  await extractionPreview.getByTestId('extraction-review-note').fill('T12 controls NOI for this package.')
-  const waiverResponsePromise = page.waitForResponse((response) => {
-    const pathname = new URL(response.url()).pathname
-    return (
-      response.request().method() === 'POST' &&
-      pathname.startsWith(`/api/deals/${WORKSPACE_DEAL_ID}/documents/`) &&
-      pathname.endsWith('/review-extraction')
-    )
-  })
-  await page.getByTestId('waive-extraction-fields').click()
-  await expectApiOk(await waiverResponsePromise)
-  await expect(extractionPreview).toContainText('waived')
-  await extractionPreview.locator('[data-field-path="financials.askingPrice"]').check()
-  await extractionPreview.locator('[data-field-path="property.yearBuilt"]').check()
-  await extractionPreview.getByTestId('confirm-conflict-review').check()
-  await page.getByTestId('apply-extraction').click()
-  await expect(page.getByTestId('source-document-offering_memo')).toContainText('applied')
-
   // The command bar persists across stages (it is part of the frame, not a stage body).
   await expect(page.getByTestId('command-bar')).toBeVisible()
   // 4/4 source-backed inputs + the progression-guide checklist both live in the Advanced
-  // drawer now (was the cockpit launch-readiness panel + the advanced tab).
+  // drawer now (was the cockpit launch-readiness panel + the advanced tab). Complete the
+  // underwriting checklist item first: saving it refreshes the workspace, which is what surfaces
+  // the inline occupancy override as the fourth approved source-backed input in the briefing
+  // score. Then assert 4/4 against that refreshed readiness.
   const guideDrawer = await openAdvancedDrawer(page)
-  await expect(guideDrawer.getByTestId('source-backed-input-score')).toContainText('4/4')
   await expect(guideDrawer.getByTestId('guide-section-underwriting')).toContainText('Run underwriting refresh')
   await guideDrawer.getByTestId('guide-note-underwriting-run-workflow').fill('Reviewed by Playwright before phase launch.')
   await guideDrawer.getByTestId('guide-complete-underwriting-run-workflow').click()
   await expect(guideDrawer.getByTestId('guide-checklist-underwriting-run-workflow')).toContainText('complete')
+  await expect(guideDrawer.getByTestId('source-backed-input-score')).toContainText('4/4')
   await closeAdvancedDrawer(page)
 
   const checklistWorkspaceResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
@@ -1000,11 +1040,20 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
   await expect(page.getByTestId('source-document-title')).toContainText('playwright-title.pdf')
   await expect(page.getByTestId('source-document-title')).toContainText('Extraction Pending')
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-rent-roll.xlsx')
-  await expect(page.getByTestId('source-document-rent_roll')).toContainText('Preview Extraction')
+  // The PDF is parser-pending-only (no OCR) so the auto-extract effect skips it and it stays
+  // "Extraction Pending". The XLSX uploads as not-started, so the auto-extract effect runs it
+  // immediately — and because this fixture is deliberately not a real workbook, the parser fails
+  // honestly rather than fabricating fields. The status stays truthful (parse_failed), and the
+  // doc offers a "Re-run Extraction" action; it is never silently marked extracted/applied.
+  await expect(page.getByTestId('source-document-rent_roll')).toContainText('Re-run Extraction', { timeout: 30_000 })
   // The cockpit's "PDF and Excel stay honest" caption is gone; the equivalent honest-status
-  // messaging now lives in the intake stage's extraction preview panel (the empty-state copy
-  // explains that PDF evidence is stored for pending review rather than auto-extracted).
-  await expect(page.getByTestId('stage-outlet')).toContainText('PDF evidence is stored for pending review')
+  // messaging now lives in the intake stage's extraction preview panel. The auto-extract effect
+  // loads the XLSX's failed extraction there, and it reports the failure plainly (parse_failed +
+  // the "could not safely interpret" note) instead of fabricating fields — the honest-status
+  // guarantee for an unreadable source document.
+  const honestPreview = page.getByTestId('extraction-preview')
+  await expect(honestPreview).toContainText('parse_failed')
+  await expect(honestPreview).toContainText('could not safely interpret this document')
 
   const workspaceResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
   await expectApiOk(workspaceResponse)
@@ -1012,7 +1061,7 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
     documents: Array<{ fileName?: string; extractionStatus?: string }>
   }
   expect(workspace.documents.find((doc) => doc.fileName === 'playwright-title.pdf')?.extractionStatus).toBe('extraction-pending')
-  expect(workspace.documents.find((doc) => doc.fileName === 'playwright-rent-roll.xlsx')?.extractionStatus).toBe('not-started')
+  expect(workspace.documents.find((doc) => doc.fileName === 'playwright-rent-roll.xlsx')?.extractionStatus).toBe('parse_failed')
 
   expect(consoleErrors).toEqual([])
 })

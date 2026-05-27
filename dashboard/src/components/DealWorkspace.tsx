@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import AgentTree from './AgentTree'
 import DecisionLog from './DecisionLog'
 import DocumentWall from './DocumentWall'
@@ -1950,6 +1950,21 @@ export default function DealWorkspace({
     () => deriveIntakeAgentsLine(documents),
     [documents],
   )
+
+  // I2b end-to-end: auto-extract freshly uploaded, still-unextracted documents so DROPPING docs
+  // auto-fills the record (drop → extract → auto-apply on the server) with no manual "Preview
+  // Extraction" click. One doc at a time (guarded by `working` so extracts don't overlap), once
+  // each (the ref), so re-renders never re-trigger and parse_failed/unsupported docs aren't retried.
+  const autoExtractedRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    if (working) return
+    const pending = documents.find(
+      (doc) => doc.extractionStatus === 'not-started' && !autoExtractedRef.current.has(doc.documentId),
+    )
+    if (!pending) return
+    autoExtractedRef.current.add(pending.documentId)
+    void extractDocument(pending.documentId)
+  }, [documents, working, extractDocument])
 
   async function handlePhaseLaunch(phaseSlug: string): Promise<void> {
     const workflowId = PHASE_WORKFLOW[phaseSlug] ?? 'full-acquisition-review'

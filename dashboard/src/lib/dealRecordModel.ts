@@ -68,6 +68,18 @@ export function confidenceTier(confidence: number): FieldConfidence {
   return 'low'
 }
 
+// The server stamps this validation issue on extraction fields whose path is NOT an approved
+// source-backed deal field (e.g. some XLSX-only rent metrics: grossPotentialRentAnnual,
+// inPlaceRentAnnual, lossToLeaseAnnual). Such fields can't be applied OR edited (the field-edit
+// endpoint rejects them), so surfacing them in the auto-filled record would be a permanently
+// unresolvable row leaking an internal diagnostic string and inflating the needs-eye count.
+// They remain visible in the detailed extraction-review panel. Exclude them from the record.
+const NON_APPLYABLE_ISSUE = /not approved for source-backed apply/i
+
+export function isRecordEligible(field: ExtractionField): boolean {
+  return !(field.validationIssues ?? []).some((issue) => NON_APPLYABLE_ISSUE.test(issue))
+}
+
 // A field needs the operator's eye when sources disagree, the read is low-confidence, or it
 // failed validation. Mirrors the backend's "trusted" inverse (no conflict, conf >= 0.7, no
 // validationIssues) so auto-applied fields render clean.
@@ -235,6 +247,8 @@ export function buildDealRecordGroups(extractions: ExtractionPreview[], _deal?: 
   for (const extraction of extractions) {
     for (const field of extraction.fields ?? []) {
       if (!field || typeof field.path !== 'string') continue
+      // Skip fields the operator can't act on (not an approved source-backed deal field).
+      if (!isRecordEligible(field)) continue
       if (field.conflict === true) conflictPaths.add(field.path)
       const existing = byPath.get(field.path)
       byPath.set(field.path, existing ? preferField(existing, field) : field)

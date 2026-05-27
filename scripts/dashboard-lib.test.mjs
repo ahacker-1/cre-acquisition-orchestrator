@@ -347,4 +347,25 @@ check('coerceEditValue turns display strings into the typed values the deal sche
   assert.equal(coerceEditValue('property.totalUnits', '  '), '')
 })
 
+check('buildDealRecordGroups excludes non-applyable (not source-backed) fields — no dev string leak', () => {
+  const groups = buildDealRecordGroups([
+    preview([
+      extractionField({ path: 'financials.currentNOI', label: 'In-place NOI', value: 95400, confidence: 0.95 }),
+      extractionField({
+        path: 'financials.grossPotentialRentAnnual',
+        label: 'Gross Potential Rent',
+        value: 120000,
+        confidence: 0.95,
+        validationIssues: ['Field path is not approved for source-backed apply.'],
+      }),
+    ]),
+  ])
+  const fields = groups.flatMap((g) => g.fields)
+  const paths = fields.map((f) => f.path)
+  assert.ok(paths.includes('financials.currentNOI'), 'applyable field is shown')
+  assert.ok(!paths.includes('financials.grossPotentialRentAnnual'), 'non-applyable field is excluded')
+  assert.ok(!fields.some((f) => /not approved for source-backed apply/i.test(f.flagReason ?? '')), 'no internal string leaks')
+  assert.equal(countNeedsEye(groups), 0)
+})
+
 console.log(`dashboard-lib: ${passed} checks passed`)
