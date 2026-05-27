@@ -10,6 +10,7 @@ import {
   intakeSummaryFromDocuments,
   SPINE_STAGE_IDS,
 } from '../dashboard/src/lib/stageModel.ts'
+import { suggestionsForStage } from '../dashboard/src/lib/commandModel.ts'
 
 let passed = 0
 function check(name, fn) {
@@ -122,4 +123,17 @@ check('intakeSummaryFromDocuments tallies applied vs pending', () => {
   assert.equal(summary.reviewPendingCount, 2)
 })
 
-console.log(`stageModel: ${passed} checks passed`)
+console.log('commandModel:')
+
+check('suggestionsForStage returns well-formed suggestions for every stage', () => {
+  for (const id of SPINE_STAGE_IDS) {
+    const items = suggestionsForStage(id)
+    assert.ok(Array.isArray(items) && items.length > 0, `stage ${id} should have suggestions`)
+    for (const item of items) {
+      assert.ok(typeof item.label === 'string' && item.label.length > 0, `${id} label`)
+      assert.ok(typeof item.intent === 'string' && item.intent.length > 0, `${id} intent`)
+    }
+  }
+})
+
+console.log(`dashboard-lib: ${passed} checks passed`)
