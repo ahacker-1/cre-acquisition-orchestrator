@@ -145,7 +145,17 @@ export interface ExtractionPreview {
   sourceHash?: string
   reviewStatus?: ExtractionReviewStatus
   error?: string
+  // I2b: paths auto-applied into the deal during this extraction (trusted fields). Present on
+  // the extractSourceDocument response so the UI can show "applied automatically" vs flagged.
+  autoAppliedPaths?: string[]
 }
+
+// I1: how an approved field's value got into the deal record.
+//  - 'parser'         : extracted from a source document (manual apply or I2b auto-apply);
+//                       always carries a full parser sourceRef.
+//  - 'operator-edited': an operator's direct inline override (applyOperatorFieldEdit);
+//                       no parser sourceRef — provenance is the operator action + audit entry.
+export type ApprovedFieldProvenance = 'parser' | 'operator-edited'
 
 export interface ApprovedField {
   fieldId: string
@@ -158,8 +168,11 @@ export interface ApprovedField {
   approvedAt: string
   appliedAt?: string
   documentId: string
-  sourceRef: SourceReference
+  // Parser provenance — present for parser-sourced fields, absent for operator edits.
+  sourceRef?: SourceReference
   confidence: number
+  // Defaults to 'parser' when omitted (back-compat with pre-I1 manifests).
+  provenance?: ApprovedFieldProvenance
 }
 
 export interface ApprovedFieldManifest {
@@ -326,7 +339,8 @@ export interface IcStarterPackageApprovedInput {
   confidence: number
   approvedAt: string
   appliedAt?: string
-  sourceRef: SourceReference
+  // Optional: absent for operator-edited inputs (no parser sourceRef). I1.
+  sourceRef?: SourceReference
 }
 
 export interface IcStarterPackageSourceDocument {
@@ -382,7 +396,16 @@ export interface IcStarterPackageExport {
 }
 
 // W41: Source-field decision audit trail.
-export type FieldDecisionAction = 'approve' | 'reject' | 'waive' | 'needs-review' | 'apply'
+// I2b adds `auto-apply` (a trusted parser field promoted into the deal automatically on
+// extraction); I1 adds `operator-edit` (an operator's direct inline override of a value).
+export type FieldDecisionAction =
+  | 'approve'
+  | 'reject'
+  | 'waive'
+  | 'needs-review'
+  | 'apply'
+  | 'auto-apply'
+  | 'operator-edit'
 
 export interface FieldDecisionEntry {
   decisionId: string
@@ -654,6 +677,14 @@ const DOCUMENT_TYPES: Record<string, { label: string; phaseSlug: string }> = {
   other: { label: 'Other Source Document', phaseSlug: 'underwriting' },
 }
 
+// I2b: minimum parser confidence for a field to AUTO-APPLY on extraction. config/thresholds.json
+// holds only investment-decision thresholds (DSCR, cap rate, etc.) — there is no extraction-
+// confidence key there — so this is a named local constant. A field auto-applies only when it is
+// fully TRUSTED: confidence >= this value AND no source conflict AND no validation issues AND a
+// valid parser sourceRef. Conflicting / low-confidence / invalid reads stay candidates for the
+// operator to resolve (the credibility gate is concentrated on those, not removed).
+export const AUTO_APPLY_MIN_CONFIDENCE = 0.7
+
 const SOURCE_BACKED_FIELD_PATHS = new Set([
   'property.totalUnits',
   'property.unitMix.types',
@@ -873,6 +904,17 @@ function asString(value: unknown, fallback = ''): string {
 
 function asNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+// I1: classify an operator-supplied value into the ExtractionValueType vocabulary (mirrors the
+// parser's own value-type derivation so operator-edited fields are typed consistently).
+function extractionValueType(value: unknown): ExtractionValueType {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return 'array'
+  if (typeof value === 'number') return Number.isInteger(value) ? 'integer' : 'number'
+  if (typeof value === 'boolean') return 'boolean'
+  if (typeof value === 'string') return 'string'
+  return 'object'
 }
 
 function ensureDir(dirPath: string): void {
@@ -1697,6 +1739,10 @@ function approvedFieldEvidenceIsCurrent(
   documentsById: Map<string, SourceDocument>,
 ): boolean {
   const sourceRef = field.sourceRef
+  // I1: operator-edited fields carry no parser sourceRef — the operator's direct override
+  // is its own authority, so there is no source document whose hash could go stale. Treat
+  // these as always-current (they were never excluded from launch readiness on staleness).
+  if (!sourceRef) return field.provenance === 'operator-edited'
   const document = documentsById.get(field.documentId) ?? documentsById.get(sourceRef.documentId)
   if (!document) return false
   if (sourceRef.documentId !== document.documentId) return false
@@ -1788,7 +1834,8 @@ function markdownCell(value: unknown): string {
   return displayValue(value).replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').trim()
 }
 
-function sourceLocationLabel(sourceRef: SourceReference): string {
+function sourceLocationLabel(sourceRef: SourceReference | undefined): string {
+  if (!sourceRef) return 'Operator edit'
   const location = sourceRef.location
   if (!location) return sourceRef.fileName
   const parts = [
@@ -2383,7 +2430,22 @@ export function extractSourceDocument(
     lifecycleReason: extraction.error,
     summary: extraction.notes[0] || current.summary,
   }))
-  return { document: updated, extraction }
+  // I2b: auto-apply the trusted subset by default. Conflicting / low-confidence / invalid reads
+  // are left as candidates for the operator (the credibility gate is concentrated, not removed).
+  const autoAppliedPaths = autoApplyTrustedExtraction(context, dealId, documentId)
+  if (autoAppliedPaths.length === 0) {
+    return { document: updated, extraction: { ...extraction, autoAppliedPaths: [] } }
+  }
+  // Re-read so the response reflects the applied statuses + document state after auto-apply.
+  const refreshedManifest = readManifest(context, dealId)
+  const refreshedDocument =
+    refreshedManifest.documents.find((doc) => doc.documentId === documentId) ?? updated
+  const refreshedExtraction =
+    readJson<ExtractionPreview | null>(extractionPath(context, dealId, documentId), null) ?? extraction
+  return {
+    document: refreshedDocument,
+    extraction: { ...refreshedExtraction, autoAppliedPaths },
+  }
 }
 
 export function getSourceExtraction(
@@ -2480,6 +2542,246 @@ export function reviewSourceExtraction(
   }
 }
 
+// Shared result shape for applying parser-sourced fields into a deal (manual apply + I2b
+// auto-apply both produce this).
+interface FieldApplyResult {
+  document: SourceDocument
+  extraction: ExtractionPreview
+  deal: DealRecord
+  approvedFields: ApprovedFieldManifest
+  validation: { valid: boolean; launchReady: boolean; errors: string[]; warnings: string[] }
+}
+
+/**
+ * I2b: shared commit core for applying parser-sourced extraction fields into the deal record.
+ * Both manual apply (applySourceExtraction) and auto-apply (during extractSourceDocument) call
+ * this AFTER they have selected + validated the field set. It performs the identical persistence
+ * the manual path always did: build the next deal, run the draft/launch validateDealConfig gates,
+ * upsert the approved-fields manifest (full provenance retained), write a rollback snapshot, commit
+ * all files atomically, and append one audit decision per field. The only behavioural difference
+ * between manual and auto is the recorded `action` ('apply' vs 'auto-apply'); the trust model
+ * (provenance + audit + validation) is byte-for-byte the same. Selection/conflict gating is the
+ * CALLER's responsibility so each path can keep its own rules (manual allows confirmConflictReview;
+ * auto applies trusted fields only and never bypasses a conflict).
+ */
+function commitFieldApply(
+  context: ServiceContext,
+  dealId: string,
+  args: {
+    documentId: string
+    manifest: { documents: SourceDocument[] }
+    sourceDocument: SourceDocument
+    enrichedExtraction: ExtractionPreview
+    localDeal: Record<string, unknown>
+    selectedFields: ExtractionField[]
+    action: Extract<FieldDecisionAction, 'apply' | 'auto-apply'>
+    note?: string
+  },
+): FieldApplyResult {
+  const { documentId, manifest, sourceDocument, enrichedExtraction, localDeal, selectedFields, action, note } = args
+  const nextDeal = JSON.parse(JSON.stringify(localDeal)) as Record<string, unknown>
+  for (const field of selectedFields) {
+    setDeepValue(nextDeal, field.path, field.value)
+  }
+  const draftValidation = validateDealConfig(nextDeal, {
+    projectRoot: context.projectRoot,
+    mode: 'draft',
+    existingIds: [],
+    currentDealId: dealId,
+  })
+  const launchValidation = validateDealConfig(nextDeal, {
+    projectRoot: context.projectRoot,
+    mode: 'launch',
+    existingIds: [],
+    currentDealId: dealId,
+  })
+  const draftMessages = validationMessages(draftValidation)
+  const launchMessages = validationMessages(launchValidation)
+  if (draftValidation.blockingIssues.length > 0) {
+    throw new Error(`Applied extraction would make the deal invalid: ${draftMessages.errors.join('; ')}`)
+  }
+  const now = new Date().toISOString()
+  const rollbackPath = join(rollbackDir(context, dealId), `${safeSegment(documentId)}-${Date.now()}.json`)
+  const approved = selectedFields.map<ApprovedField>((field) => ({
+    fieldId: field.fieldId,
+    path: field.path,
+    label: field.label,
+    value: field.value,
+    previousValue: field.currentValue,
+    valueType: field.valueType,
+    unit: field.unit,
+    approvedAt: now,
+    appliedAt: now,
+    documentId,
+    sourceRef: field.sourceRef,
+    confidence: field.confidence,
+    provenance: 'parser',
+  }))
+  const currentApproved = readApprovedFields(context, dealId)
+  const nextApprovedFields = upsertApprovedFields(currentApproved.fields, approved)
+  const approvedFields: ApprovedFieldManifest = {
+    version: 1,
+    dealId,
+    updatedAt: now,
+    fields: nextApprovedFields,
+  }
+  const updatedExtraction: ExtractionPreview = {
+    ...enrichedExtraction,
+    reviewStatus: 'applied',
+    fields: enrichedExtraction.fields.map((field) => ({
+      ...field,
+      reviewStatus: selectedFields.some((selected) => selected.fieldId === field.fieldId) ? 'applied' : field.reviewStatus ?? 'candidate',
+    })),
+  }
+  const nextDocument: SourceDocument = {
+    ...sourceDocument,
+    status: 'applied',
+    reviewedAt: now,
+    appliedAt: now,
+  }
+  const nextDocuments = manifest.documents.map((doc) => (doc.documentId === documentId ? nextDocument : doc))
+  const previousMeta = asObject(readJson<Record<string, unknown>>(metaPath(context, dealId), {}))
+  const nextMeta = {
+    dealId,
+    saveState: launchValidation.launchReady ? 'ready' : 'draft',
+    createdAt: asString(previousMeta.createdAt, now),
+    updatedAt: now,
+  }
+
+  writeJsonAtomic(rollbackPath, {
+    createdAt: now,
+    reason: action === 'auto-apply' ? 'pre-extraction-auto-apply' : 'pre-extraction-apply',
+    documentId,
+    deal: localDeal,
+    extraction: enrichedExtraction,
+  })
+  const stagedWrites: StagedJsonWrite[] = []
+  try {
+    stagedWrites.push(stageJsonWrite(userDealPath(context, dealId), nextDeal))
+    stagedWrites.push(stageJsonWrite(extractionPath(context, dealId, documentId), updatedExtraction))
+    stagedWrites.push(stageJsonWrite(approvedFieldsPath(context, dealId), approvedFields))
+    stagedWrites.push(stageJsonWrite(manifestPath(context, dealId), { version: 1, dealId, documents: nextDocuments }))
+    stagedWrites.push(stageJsonWrite(metaPath(context, dealId), nextMeta))
+    commitStagedWrites(stagedWrites)
+  } catch (error) {
+    cleanupStagedWrites(stagedWrites)
+    throw error
+  }
+  // W41 / I2b: record one decision-history entry per applied field, tagged with the action.
+  appendDecisionEntries(
+    context,
+    dealId,
+    selectedFields.map((field) => ({
+      fieldId: field.fieldId,
+      path: field.path,
+      label: field.label,
+      action,
+      reviewStatus: 'applied',
+      documentId,
+      decidedAt: now,
+      note: note || undefined,
+      value: field.value,
+      previousValue: field.currentValue,
+      conflict: Boolean(field.conflict),
+    })),
+  )
+  const refreshed = getDealRecord(context, dealId)
+  if (!refreshed) throw new Error(`Deal not found after extraction apply: ${dealId}`)
+  return {
+    document: nextDocument,
+    extraction: updatedExtraction,
+    deal: refreshed,
+    approvedFields,
+    validation: {
+      valid: draftValidation.valid,
+      launchReady: launchValidation.launchReady,
+      errors: launchMessages.errors,
+      warnings: [...draftMessages.warnings, ...launchMessages.warnings],
+    },
+  }
+}
+
+/**
+ * I2b: a field is TRUSTED (eligible for auto-apply) only when every credibility signal is clean:
+ * an approved source-backed path, a parser fieldId, no source conflict, confidence at/above the
+ * threshold, no validation issues, and a sourceRef that matches this extraction. Anything else
+ * (conflict, low confidence, validation issue) stays a candidate for the operator. Exported so the
+ * trust gate can be unit-tested directly across every exclusion branch.
+ */
+export function isAutoApplyTrusted(field: ExtractionField, extraction: ExtractionPreview, documentId: string): boolean {
+  if (!field.fieldId) return false
+  if (!SOURCE_BACKED_FIELD_PATHS.has(field.path)) return false
+  if (field.conflict) return false
+  if (typeof field.confidence !== 'number' || field.confidence < AUTO_APPLY_MIN_CONFIDENCE) return false
+  if (Array.isArray(field.validationIssues) && field.validationIssues.length > 0) return false
+  const sourceRef = field.sourceRef
+  if (
+    !sourceRef ||
+    sourceRef.documentId !== documentId ||
+    sourceRef.parserId !== extraction.parserId ||
+    sourceRef.parserVersion !== extraction.parserVersion ||
+    sourceRef.fileHash !== extraction.sourceHash
+  ) {
+    return false
+  }
+  return true
+}
+
+/**
+ * I2b: auto-apply the trusted subset of a freshly-persisted extraction. Mirrors the cross-document
+ * conflict guard the manual path enforces (a trusted field whose path still has an unresolved,
+ * disagreeing candidate in another document is held back, not auto-applied). Returns the paths that
+ * were auto-applied (empty when none qualify). Safe to call right after extraction is written.
+ */
+function autoApplyTrustedExtraction(
+  context: ServiceContext,
+  dealId: string,
+  documentId: string,
+): string[] {
+  const record = getDealRecord(context, dealId)
+  if (!record) return []
+  const extraction = readJson<ExtractionPreview | null>(extractionPath(context, dealId, documentId), null)
+  if (!extraction || extraction.status !== 'extracted' || extraction.fields.length === 0) return []
+  const manifest = readManifest(context, dealId)
+  const sourceDocument = manifest.documents.find((doc) => doc.documentId === documentId)
+  if (!sourceDocument) return []
+  // Only auto-apply when the on-disk source still matches the extraction hash (same guard as apply).
+  let currentHash: string
+  try {
+    currentHash = fileHash(sourceDocument.path)
+  } catch {
+    return []
+  }
+  if (
+    !extraction.sourceHash ||
+    extraction.sourceHash !== currentHash ||
+    !sourceDocument.sourceHash ||
+    sourceDocument.sourceHash !== currentHash
+  ) {
+    return []
+  }
+  const localDeal = JSON.parse(JSON.stringify(record.deal)) as Record<string, unknown>
+  const enrichedExtraction = enrichExtractionFields(extraction, localDeal)
+  const trusted = enrichedExtraction.fields.filter((field) => isAutoApplyTrusted(field, extraction, documentId))
+  // Respect the cross-document conflict guard: hold back any trusted field whose path still has an
+  // unresolved, disagreeing candidate elsewhere. The operator resolves those before they apply.
+  const selectedFields = trusted.filter(
+    (field) => !findUnresolvedCandidateConflict(context, dealId, documentId, [field]),
+  )
+  if (selectedFields.length === 0) return []
+  commitFieldApply(context, dealId, {
+    documentId,
+    manifest,
+    sourceDocument,
+    enrichedExtraction,
+    localDeal,
+    selectedFields,
+    action: 'auto-apply',
+    note: 'Auto-applied trusted field on extraction (no conflict, confidence above threshold).',
+  })
+  return selectedFields.map((field) => field.path)
+}
+
 export function applySourceExtraction(
   context: ServiceContext,
   dealId: string,
@@ -2561,10 +2863,56 @@ export function applySourceExtraction(
         'Resolve the conflicting candidate (approve, reject, or waive it) before applying this field.',
     )
   }
-  const nextDeal = JSON.parse(JSON.stringify(localDeal)) as Record<string, unknown>
-  for (const field of selectedFields) {
-    setDeepValue(nextDeal, field.path, field.value)
+  // Persist via the shared commit core (also used by I2b auto-apply). Manual apply records the
+  // `apply` action; gating above (conflict bypass, source-ref validation) already ran.
+  return commitFieldApply(context, dealId, {
+    documentId,
+    manifest,
+    sourceDocument,
+    enrichedExtraction,
+    localDeal,
+    selectedFields,
+    action: 'apply',
+    note: asString(payload.note) || undefined,
+  })
+}
+
+/**
+ * I1: inline operator override. Writes an operator-supplied value directly into a deal field,
+ * mirroring applySourceExtraction's persistence guarantees: the prior value is captured as
+ * previousValue, the path is validated against the source-backed allow-list, the deal is re-run
+ * through the draft + launch validateDealConfig gates (rejecting edits that would break the deal),
+ * all files are committed atomically with a rollback snapshot, an `operator-edit` audit entry is
+ * recorded, and the approved field is marked operator-originated (provenance 'operator-edited', no
+ * parser sourceRef). This is the direct-edit affordance behind the Intake inline edit; it does NOT
+ * require a source document.
+ */
+export function applyOperatorFieldEdit(
+  context: ServiceContext,
+  dealId: string,
+  payload: Record<string, unknown>,
+): {
+  deal: DealRecord
+  approvedFields: ApprovedFieldManifest
+  field: ApprovedField
+  validation: { valid: boolean; launchReady: boolean; errors: string[]; warnings: string[] }
+} {
+  const record = getDealRecord(context, dealId)
+  if (!record) throw new Error(`Deal not found: ${dealId}`)
+  const path = asString(payload.path)
+  if (!path) throw new Error('Missing required field: path')
+  if (!SOURCE_BACKED_FIELD_PATHS.has(path)) {
+    throw new Error(`Field is not editable: ${path}`)
   }
+  if (!('value' in payload)) {
+    throw new Error('Missing required field: value')
+  }
+  const value = payload.value
+  const localDeal = JSON.parse(JSON.stringify(record.deal)) as Record<string, unknown>
+  const previousValue = getDeepValue(localDeal, path)
+  const label = asString(payload.label) || path
+  const nextDeal = JSON.parse(JSON.stringify(localDeal)) as Record<string, unknown>
+  setDeepValue(nextDeal, path, value)
   const draftValidation = validateDealConfig(nextDeal, {
     projectRoot: context.projectRoot,
     mode: 'draft',
@@ -2580,47 +2928,32 @@ export function applySourceExtraction(
   const draftMessages = validationMessages(draftValidation)
   const launchMessages = validationMessages(launchValidation)
   if (draftValidation.blockingIssues.length > 0) {
-    throw new Error(`Applied extraction would make the deal invalid: ${draftMessages.errors.join('; ')}`)
+    throw new Error(`Operator edit would make the deal invalid: ${draftMessages.errors.join('; ')}`)
   }
   const now = new Date().toISOString()
-  const rollbackPath = join(rollbackDir(context, dealId), `${safeSegment(documentId)}-${Date.now()}.json`)
-  const approved = selectedFields.map<ApprovedField>((field) => ({
-    fieldId: field.fieldId,
-    path: field.path,
-    label: field.label,
-    value: field.value,
-    previousValue: field.currentValue,
-    valueType: field.valueType,
-    unit: field.unit,
+  const valueType = extractionValueType(value)
+  const editedField: ApprovedField = {
+    fieldId: `operator-edit:${path}`,
+    path,
+    label,
+    value,
+    previousValue,
+    valueType,
+    unit: asString(payload.unit) || undefined,
     approvedAt: now,
     appliedAt: now,
-    documentId,
-    sourceRef: field.sourceRef,
-    confidence: field.confidence,
-  }))
+    documentId: 'operator-edit',
+    confidence: 1,
+    provenance: 'operator-edited',
+  }
   const currentApproved = readApprovedFields(context, dealId)
-  const nextApprovedFields = upsertApprovedFields(currentApproved.fields, approved)
+  const nextApprovedFields = upsertApprovedFields(currentApproved.fields, [editedField])
   const approvedFields: ApprovedFieldManifest = {
     version: 1,
     dealId,
     updatedAt: now,
     fields: nextApprovedFields,
   }
-  const updatedExtraction: ExtractionPreview = {
-    ...enrichedExtraction,
-    reviewStatus: 'applied',
-    fields: enrichedExtraction.fields.map((field) => ({
-      ...field,
-      reviewStatus: selectedFields.some((selected) => selected.fieldId === field.fieldId) ? 'applied' : field.reviewStatus ?? 'candidate',
-    })),
-  }
-  const nextDocument: SourceDocument = {
-    ...sourceDocument,
-    status: 'applied',
-    reviewedAt: now,
-    appliedAt: now,
-  }
-  const nextDocuments = manifest.documents.map((doc) => (doc.documentId === documentId ? nextDocument : doc))
   const previousMeta = asObject(readJson<Record<string, unknown>>(metaPath(context, dealId), {}))
   const nextMeta = {
     dealId,
@@ -2628,51 +2961,46 @@ export function applySourceExtraction(
     createdAt: asString(previousMeta.createdAt, now),
     updatedAt: now,
   }
-
+  const rollbackPath = join(rollbackDir(context, dealId), `operator-edit-${safeSegment(path)}-${Date.now()}.json`)
   writeJsonAtomic(rollbackPath, {
     createdAt: now,
-    reason: 'pre-extraction-apply',
-    documentId,
+    reason: 'pre-operator-edit',
+    path,
+    previousValue,
     deal: localDeal,
-    extraction: enrichedExtraction,
   })
   const stagedWrites: StagedJsonWrite[] = []
   try {
     stagedWrites.push(stageJsonWrite(userDealPath(context, dealId), nextDeal))
-    stagedWrites.push(stageJsonWrite(extractionPath(context, dealId, documentId), updatedExtraction))
     stagedWrites.push(stageJsonWrite(approvedFieldsPath(context, dealId), approvedFields))
-    stagedWrites.push(stageJsonWrite(manifestPath(context, dealId), { version: 1, dealId, documents: nextDocuments }))
     stagedWrites.push(stageJsonWrite(metaPath(context, dealId), nextMeta))
     commitStagedWrites(stagedWrites)
   } catch (error) {
     cleanupStagedWrites(stagedWrites)
     throw error
   }
-  // W41: record an apply decision-history entry per applied field.
-  appendDecisionEntries(
-    context,
-    dealId,
-    selectedFields.map((field) => ({
-      fieldId: field.fieldId,
-      path: field.path,
-      label: field.label,
-      action: 'apply',
+  // I1: record the operator-edit decision in the same audit trail as parser decisions.
+  appendDecisionEntries(context, dealId, [
+    {
+      fieldId: editedField.fieldId,
+      path,
+      label,
+      action: 'operator-edit',
       reviewStatus: 'applied',
-      documentId,
+      documentId: 'operator-edit',
       decidedAt: now,
       note: asString(payload.note) || undefined,
-      value: field.value,
-      previousValue: field.currentValue,
-      conflict: Boolean(field.conflict),
-    })),
-  )
+      value,
+      previousValue,
+      conflict: false,
+    },
+  ])
   const refreshed = getDealRecord(context, dealId)
-  if (!refreshed) throw new Error(`Deal not found after extraction apply: ${dealId}`)
+  if (!refreshed) throw new Error(`Deal not found after operator edit: ${dealId}`)
   return {
-    document: nextDocument,
-    extraction: updatedExtraction,
     deal: refreshed,
     approvedFields,
+    field: editedField,
     validation: {
       valid: draftValidation.valid,
       launchReady: launchValidation.launchReady,
@@ -2712,18 +3040,35 @@ export function exportIcStarterPackage(
   const reviewerSignoff = normalizeReviewerSignoff(payload.reviewerSignoff, generatedAt)
 
   // W63: per-field source drilldown references.
-  const sourceDrilldown: IcStarterPackageSourceDrilldown[] = approvedFields.fields.map((field) => ({
-    fieldId: field.fieldId,
-    path: field.path,
-    label: field.label,
-    documentId: field.sourceRef.documentId,
-    fileName: field.sourceRef.fileName,
-    fileHash: field.sourceRef.fileHash,
-    parserId: field.sourceRef.parserId,
-    parserVersion: field.sourceRef.parserVersion,
-    location: field.sourceRef.location,
-    raw: field.sourceRef.raw,
-  }))
+  // I1: operator-edited fields have no parser sourceRef — surface the operator origin
+  // explicitly so the drilldown stays honest about how the value got there.
+  const sourceDrilldown: IcStarterPackageSourceDrilldown[] = approvedFields.fields.map((field) => {
+    const sourceRef = field.sourceRef
+    if (!sourceRef) {
+      return {
+        fieldId: field.fieldId,
+        path: field.path,
+        label: field.label,
+        documentId: field.documentId,
+        fileName: 'Operator edit',
+        parserId: 'operator',
+        parserVersion: 'operator-edit',
+        raw: typeof field.value === 'string' ? field.value : JSON.stringify(field.value),
+      }
+    }
+    return {
+      fieldId: field.fieldId,
+      path: field.path,
+      label: field.label,
+      documentId: sourceRef.documentId,
+      fileName: sourceRef.fileName,
+      fileHash: sourceRef.fileHash,
+      parserId: sourceRef.parserId,
+      parserVersion: sourceRef.parserVersion,
+      location: sourceRef.location,
+      raw: sourceRef.raw,
+    }
+  })
 
   // W61: per-phase evidence completeness scoring.
   const approvedPathSet = new Set(approvedFields.fields.map((field) => field.path))

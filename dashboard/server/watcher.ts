@@ -21,6 +21,7 @@ import {
   saveWorkflowPreset,
 } from './workflow-service';
 import {
+  applyOperatorFieldEdit,
   applySourceExtraction,
   buildRunInputSnapshot,
   evaluateLaunchReadiness,
@@ -1410,6 +1411,30 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         sendJson(res, 200, saveDealCriteria({ ...dealServiceContext, projectRoot }, dealId, body));
       } catch (err) {
         sendJson(res, 400, { error: err instanceof Error ? err.message : 'Failed to save criteria' });
+      }
+      return;
+    }
+
+    // I1: POST /api/deals/:dealId/field-edit - inline operator override of a deal field
+    // (value + previousValue + operator-edit audit + provenance), mirroring apply-extraction.
+    if (method === 'POST' && /^\/api\/deals\/[^/]+\/field-edit$/.test(url)) {
+      const dealId = parseDealWorkspaceId(url, 'field-edit');
+      if (!dealId) {
+        sendJson(res, 400, { error: 'Invalid deal ID' });
+        return;
+      }
+      const rawBody = await readBody(req);
+      let body: Record<string, unknown>;
+      try {
+        body = rawBody.trim() ? JSON.parse(rawBody) : {};
+      } catch {
+        sendJson(res, 400, { error: 'Invalid JSON body' });
+        return;
+      }
+      try {
+        sendJson(res, 200, applyOperatorFieldEdit({ ...dealServiceContext, projectRoot }, dealId, body));
+      } catch (err) {
+        sendJson(res, 400, { error: err instanceof Error ? err.message : 'Failed to apply field edit' });
       }
       return;
     }

@@ -126,7 +126,13 @@ export interface ExtractionPreview {
   sourceHash?: string
   reviewStatus?: ExtractionReviewStatus
   error?: string
+  // I2b: paths auto-applied into the deal during this extraction (trusted fields).
+  autoAppliedPaths?: string[]
 }
+
+// I1: how an approved field's value got into the deal record. 'parser' = extracted from a
+// source document (manual apply or I2b auto-apply); 'operator-edited' = direct inline override.
+export type ApprovedFieldProvenance = 'parser' | 'operator-edited'
 
 export interface ApprovedField {
   fieldId: string
@@ -139,8 +145,11 @@ export interface ApprovedField {
   approvedAt: string
   appliedAt?: string
   documentId: string
-  sourceRef: SourceReference
+  // Optional: absent for operator-edited fields (no parser sourceRef). I1.
+  sourceRef?: SourceReference
   confidence: number
+  // Defaults to 'parser' when omitted (back-compat with pre-I1 manifests).
+  provenance?: ApprovedFieldProvenance
 }
 
 export interface ApprovedFieldManifest {
@@ -166,6 +175,19 @@ export interface ApplyExtractionResult {
 export interface ReviewExtractionResult {
   document: SourceDocument
   extraction: ExtractionPreview
+}
+
+// I1: result of an inline operator override (POST /api/deals/:dealId/field-edit).
+export interface ApplyOperatorFieldEditResult {
+  deal: DealRecordResponse
+  approvedFields: ApprovedFieldManifest
+  field: ApprovedField
+  validation: {
+    valid: boolean
+    launchReady: boolean
+    errors: string[]
+    warnings: string[]
+  }
 }
 
 // W62: red-flag drilldown linkage back to originating workpaper + source snippet.

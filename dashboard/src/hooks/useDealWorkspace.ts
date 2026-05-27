@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { API_URL } from '../config'
 import type {
+  ApplyOperatorFieldEditResult,
   DealCriteria,
   DealWorkspace,
   ExtractionPreview,
@@ -188,6 +189,30 @@ export function useDealWorkspace(dealId: string | null | undefined) {
     }
   }
 
+  // I1: inline operator override — edit an auto-populated deal field directly. Persists the
+  // value with provenance + audit (server side), then refreshes the workspace.
+  async function editField(path: string, value: unknown, label?: string): Promise<ApplyOperatorFieldEditResult> {
+    if (!dealId) throw new Error('Choose a deal before editing fields.')
+    setWorking(true)
+    try {
+      const response = await fetch(`${API_URL}/api/deals/${encodeURIComponent(dealId)}/field-edit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, value, label }),
+      })
+      const payload = await parseJson<ApplyOperatorFieldEditResult & { error?: string }>(response)
+      if (!response.ok || !payload.field) throw new Error(payload.error || 'Failed to apply field edit')
+      await refreshWorkspace()
+      setError(null)
+      return payload
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      throw err
+    } finally {
+      setWorking(false)
+    }
+  }
+
   async function exportPackage(workflowId = 'full-acquisition-review'): Promise<IcStarterPackageExport> {
     if (!dealId) throw new Error('Choose a deal before exporting the IC package.')
     setWorking(true)
@@ -250,6 +275,7 @@ export function useDealWorkspace(dealId: string | null | undefined) {
     loadExtraction,
     applyExtraction,
     reviewExtraction,
+    editField,
     exportPackage,
     savePhaseChecklist,
   }

@@ -5,12 +5,15 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { saveUserDeal } from '../dashboard/server/deal-service.ts'
 import {
+  AUTO_APPLY_MIN_CONFIDENCE,
+  applyOperatorFieldEdit,
   applySourceExtraction,
   evaluateLaunchReadiness,
   exportIcStarterPackage,
   extractSourceDocument,
   getFieldDecisionHistory,
   getSourceExtraction,
+  isAutoApplyTrusted,
   reviewSourceExtraction,
   saveSourceDocument,
 } from '../dashboard/server/workspace-service.ts'
@@ -61,12 +64,27 @@ try {
   assert.equal(extraction.status, 'extracted')
   assert.ok(extraction.fields.some((field) => field.path === 'property.totalUnits'))
 
+  // I2b: extraction auto-applies only TRUSTED fields. This deal is the fully-populated
+  // Parkview base with operator-seeded values (totalUnits=1, occupancy/NOI/revenue/
+  // expenses=1), so EVERY source-backed field the rent roll reads disagrees with the
+  // current value — i.e. they all `conflict`. Conflicting reads are never auto-applied
+  // (the gate is preserved), so nothing auto-applies here and the operator resolves each
+  // one manually below. The dedicated "fresh deal" auto-apply case is exercised in the
+  // I2b block further down.
+  assert.ok(Array.isArray(extraction.autoAppliedPaths), 'extraction should report auto-applied paths')
+  assert.deepEqual(
+    extraction.autoAppliedPaths,
+    [],
+    'a fully-seeded deal where every read conflicts must auto-apply nothing',
+  )
+
   const persisted = getSourceExtraction(context, dealId, document.documentId)
   assert.equal(persisted.documentId, document.documentId)
   assert.equal(persisted.status, 'extracted')
 
   const totalUnits = persisted.fields.find((field) => field.path === 'property.totalUnits')
   assert.ok(totalUnits, 'expected total units field from persisted extraction')
+  // Still a candidate: conflicting reads are not auto-applied — the gate is preserved.
   assert.equal(totalUnits.reviewStatus, 'candidate')
   assert.equal(totalUnits.currentValue, 1)
   assert.equal(totalUnits.conflict, true)
@@ -354,6 +372,234 @@ try {
     contentBase64: Buffer.from('# Offering Memorandum\nStabilized 200-unit asset. Asking price 28,000,000.', 'utf8').toString('base64'),
   })
   assert.equal(omDoc.document.type, 'offering_memo', 'offering memo must not be mis-overridden by the content sniff')
+
+  // =====================================================================================
+  // I2b: auto-apply trusted fields by default (the default flip).
+  // A "fresh" deal whose source-backed fields are unset (so extracted values do NOT
+  // conflict). On extraction, trusted reads (no conflict, confidence >= threshold, no
+  // validation issues, valid sourceRef, source-backed path) AUTO-APPLY into the deal with
+  // full provenance + an `auto-apply` audit entry. Reads with validation issues (non-
+  // source-backed paths) stay candidates. A separately-seeded CONFLICTING field stays a
+  // candidate too — proving the credibility gate is concentrated on flagged values, not
+  // removed.
+  // =====================================================================================
+  const autoDealId = 'test-auto-apply'
+  const autoProperty = { ...baseDeal.property }
+  // Leave unitMix + occupancy unset so the rent roll's reads land cleanly (no conflict),
+  // but SEED totalUnits to a different value so that one read conflicts and is held back.
+  delete autoProperty.unitMix
+  autoProperty.totalUnits = 7
+  const autoFinancials = { ...baseDeal.financials }
+  delete autoFinancials.inPlaceOccupancy
+  const autoDeal = {
+    ...baseDeal,
+    dealId: autoDealId,
+    dealName: 'Auto Apply Test',
+    property: autoProperty,
+    financials: autoFinancials,
+  }
+  saveUserDeal(context, { deal: autoDeal, mode: 'draft' })
+  const autoDoc = saveSourceDocument(context, autoDealId, fixturePayload('rent-roll-basic.xlsx')).document
+  const autoResult = extractSourceDocument(context, autoDealId, autoDoc.documentId)
+
+  // Trusted, non-conflicting fields auto-applied; the seeded conflict + validation-issue
+  // fields did NOT.
+  assert.ok(Array.isArray(autoResult.extraction.autoAppliedPaths))
+  assert.ok(
+    autoResult.extraction.autoAppliedPaths.includes('property.unitMix.types'),
+    'trusted unit-mix read (conf 0.84, no conflict) should auto-apply',
+  )
+  assert.ok(
+    autoResult.extraction.autoAppliedPaths.includes('financials.inPlaceOccupancy'),
+    'trusted occupancy read (conf 0.78, no conflict) should auto-apply',
+  )
+  assert.ok(
+    !autoResult.extraction.autoAppliedPaths.includes('property.totalUnits'),
+    'conflicting total-units read must NOT auto-apply (seeded 7 vs extracted 3)',
+  )
+  assert.ok(
+    !autoResult.extraction.autoAppliedPaths.includes('financials.grossPotentialRentAnnual'),
+    'a read with validation issues (non source-backed path) must NOT auto-apply',
+  )
+  // Document flips to applied because at least one field was auto-applied.
+  assert.equal(autoResult.document.status, 'applied')
+
+  // The auto-applied value is actually written into the deal record: getSourceExtraction
+  // recomputes currentValue against the live deal, so a non-conflicting applied field means
+  // the deal now holds the extracted value.
+  const autoWorkspaceExtraction = getSourceExtraction(context, autoDealId, autoDoc.documentId)
+  const autoOccupancy = autoWorkspaceExtraction.fields.find((field) => field.path === 'financials.inPlaceOccupancy')
+  assert.equal(autoOccupancy.reviewStatus, 'applied', 'auto-applied occupancy is marked applied')
+  assert.equal(autoOccupancy.currentValue, autoOccupancy.value, 'deal now holds the auto-applied value')
+  // currentValue now equals the applied value (so it no longer registers as a conflict).
+  assert.equal(autoOccupancy.conflict, false)
+
+  // Conflicting field stays a resolvable candidate, and the existing manual apply path
+  // still works on it (gate preserved): apply it with conflict confirmation.
+  const autoTotalUnits = autoWorkspaceExtraction.fields.find((field) => field.path === 'property.totalUnits')
+  assert.equal(autoTotalUnits.reviewStatus, 'candidate', 'conflicting field remains a candidate')
+  assert.equal(autoTotalUnits.conflict, true)
+  const autoManual = applySourceExtraction(context, autoDealId, autoDoc.documentId, {
+    fieldIds: [autoTotalUnits.fieldId],
+    confirmConflictReview: true,
+  })
+  assert.equal(autoManual.deal.deal.property.totalUnits, 3, 'manual apply still resolves the flagged conflict')
+
+  // Provenance + audit retained for the auto-applied fields.
+  const autoApproved = autoManual.approvedFields.fields
+  const approvedOccupancy = autoApproved.find((field) => field.path === 'financials.inPlaceOccupancy')
+  assert.ok(approvedOccupancy, 'auto-applied occupancy is persisted in the approved-fields manifest')
+  assert.ok(approvedOccupancy.sourceRef, 'auto-applied field retains its parser sourceRef (provenance)')
+  assert.equal(approvedOccupancy.sourceRef.documentId, autoDoc.documentId)
+  assert.equal(approvedOccupancy.provenance, 'parser', 'auto-applied field is parser-originated')
+  const occupancyHistory = getFieldDecisionHistory(context, autoDealId, 'financials.inPlaceOccupancy')
+  const occupancyAutoDecision = occupancyHistory.find((entry) => entry.action === 'auto-apply')
+  assert.ok(occupancyAutoDecision, 'auto-apply decision recorded in the audit trail')
+  assert.equal(occupancyAutoDecision.reviewStatus, 'applied')
+  assert.ok(typeof occupancyAutoDecision.decisionId === 'string' && occupancyAutoDecision.decisionId.length > 0)
+  // The conflicting field's manual resolution recorded a separate `apply` (not auto-apply).
+  const autoUnitsHistory = getFieldDecisionHistory(context, autoDealId, 'property.totalUnits')
+  assert.ok(
+    autoUnitsHistory.some((entry) => entry.action === 'apply'),
+    'conflicting field resolved via manual apply records an apply decision',
+  )
+  assert.ok(
+    !autoUnitsHistory.some((entry) => entry.action === 'auto-apply'),
+    'conflicting field never received an auto-apply decision',
+  )
+
+  // I2b: unit-level coverage of the trust gate across every exclusion branch (deterministic,
+  // no parser dependency). Build a fully-trusted base field, then flip one signal at a time.
+  const trustDocId = 'doc-trust'
+  const trustExtraction = {
+    documentId: trustDocId,
+    status: 'extracted',
+    extractedAt: new Date().toISOString(),
+    parserId: 'p1',
+    parserVersion: 'v1',
+    sourceHash: 'hash1',
+    fields: [],
+    metrics: {},
+    notes: [],
+  }
+  const goodSourceRef = { documentId: trustDocId, fileName: 'f.xlsx', parserId: 'p1', parserVersion: 'v1', fileHash: 'hash1' }
+  const trustedField = {
+    fieldId: 'fid1',
+    path: 'property.totalUnits',
+    label: 'Total Units',
+    value: 100,
+    valueType: 'integer',
+    confidence: AUTO_APPLY_MIN_CONFIDENCE,
+    source: 'rent_roll',
+    sourceRef: goodSourceRef,
+    conflict: false,
+    validationIssues: [],
+  }
+  assert.equal(isAutoApplyTrusted(trustedField, trustExtraction, trustDocId), true, 'clean field at the threshold is trusted')
+  assert.equal(
+    isAutoApplyTrusted({ ...trustedField, conflict: true }, trustExtraction, trustDocId),
+    false,
+    'conflicting field is not trusted',
+  )
+  assert.equal(
+    isAutoApplyTrusted({ ...trustedField, confidence: AUTO_APPLY_MIN_CONFIDENCE - 0.01 }, trustExtraction, trustDocId),
+    false,
+    'below-threshold confidence is not trusted',
+  )
+  assert.equal(
+    isAutoApplyTrusted({ ...trustedField, validationIssues: ['bad path'] }, trustExtraction, trustDocId),
+    false,
+    'field with validation issues is not trusted',
+  )
+  assert.equal(
+    isAutoApplyTrusted({ ...trustedField, path: 'financials.grossPotentialRentAnnual' }, trustExtraction, trustDocId),
+    false,
+    'non source-backed path is not trusted',
+  )
+  assert.equal(
+    isAutoApplyTrusted({ ...trustedField, fieldId: '' }, trustExtraction, trustDocId),
+    false,
+    'field without a parser fieldId is not trusted',
+  )
+  assert.equal(
+    isAutoApplyTrusted({ ...trustedField, sourceRef: { ...goodSourceRef, fileHash: 'other' } }, trustExtraction, trustDocId),
+    false,
+    'mismatched sourceRef hash is not trusted',
+  )
+
+  // =====================================================================================
+  // I1: inline operator override (applyOperatorFieldEdit).
+  // Edits a deal field directly with full persistence: previousValue captured, value
+  // written, operator-edit audit recorded, provenance marked operator-edited, deal still
+  // validates. Invalid (non source-backed) paths are rejected.
+  // =====================================================================================
+  const editDealId = 'test-operator-edit'
+  const editDeal = {
+    ...baseDeal,
+    dealId: editDealId,
+    dealName: 'Operator Edit Test',
+    property: { ...baseDeal.property, totalUnits: 200 },
+  }
+  saveUserDeal(context, { deal: editDeal, mode: 'draft' })
+
+  const edit = applyOperatorFieldEdit(context, editDealId, {
+    path: 'property.totalUnits',
+    value: 184,
+    label: 'Total Units',
+  })
+  // Value persisted into the deal record.
+  assert.equal(edit.deal.deal.property.totalUnits, 184, 'operator edit writes the new value into the deal')
+  // previousValue captured from the prior deal state.
+  assert.equal(edit.field.previousValue, 200, 'operator edit captures the prior value as previousValue')
+  assert.equal(edit.field.value, 184)
+  assert.equal(edit.field.provenance, 'operator-edited', 'edited field is marked operator-originated')
+  assert.equal(edit.field.sourceRef, undefined, 'operator edit carries no parser sourceRef')
+  // Deal still validates (draft did not block).
+  assert.equal(edit.validation.valid, true, 'operator edit keeps the deal valid')
+
+  // Edit is persisted in the approved-fields manifest, keyed by path.
+  const editApproved = edit.approvedFields.fields.find((field) => field.path === 'property.totalUnits')
+  assert.ok(editApproved, 'operator edit is recorded in the approved-fields manifest')
+  assert.equal(editApproved.value, 184)
+  assert.equal(editApproved.provenance, 'operator-edited')
+
+  // operator-edit audit entry recorded in the same decision history as parser actions.
+  const editHistory = getFieldDecisionHistory(context, editDealId, 'property.totalUnits')
+  const editDecision = editHistory.find((entry) => entry.action === 'operator-edit')
+  assert.ok(editDecision, 'operator-edit decision recorded in the audit trail')
+  assert.equal(editDecision.value, 184)
+  assert.equal(editDecision.previousValue, 200)
+  assert.equal(editDecision.reviewStatus, 'applied')
+  assert.ok(typeof editDecision.decisionId === 'string' && editDecision.decisionId.length > 0)
+
+  // The persisted workspace reflects the edited value (round-trips through getDealRecord).
+  const reEdit = applyOperatorFieldEdit(context, editDealId, {
+    path: 'property.totalUnits',
+    value: 190,
+  })
+  assert.equal(reEdit.field.previousValue, 184, 're-edit captures the previously-edited value')
+  assert.equal(reEdit.deal.deal.property.totalUnits, 190)
+
+  // Invalid (non source-backed) path is rejected and does not mutate the deal.
+  assert.throws(
+    () => applyOperatorFieldEdit(context, editDealId, { path: 'property.notARealField', value: 1 }),
+    /not editable/i,
+    'operator edit must reject paths outside the source-backed allow-list',
+  )
+  const afterReject = getFieldDecisionHistory(context, editDealId, 'property.notARealField')
+  assert.equal(afterReject.length, 0, 'rejected edit records no audit entry')
+
+  // Missing value / missing path are rejected.
+  assert.throws(
+    () => applyOperatorFieldEdit(context, editDealId, { path: 'property.totalUnits' }),
+    /Missing required field: value/i,
+    'operator edit requires a value',
+  )
+  assert.throws(
+    () => applyOperatorFieldEdit(context, editDealId, { value: 1 }),
+    /Missing required field: path/i,
+    'operator edit requires a path',
+  )
 
   console.log('[workspace-service-test] PASS')
 } finally {
