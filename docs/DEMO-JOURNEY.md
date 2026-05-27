@@ -4,11 +4,11 @@ Use this as the public demo path for current `main`. It is optimized for a first
 
 ## Current Reality
 
-The demo reflects the post-v2.5.1 codebase: document-first intake, source-backed extraction previews, deterministic offline orchestration, generated workpapers, and an optional local Codex/ChatGPT live-agent path. v2.5.1 is the most recent packaged release line in the repo, while current `main` may include unreleased hardening and documentation updates.
+The demo reflects the redesigned deal-workspace UI: a single persistent **deal space** (deal header + an always-visible lifecycle spine + a context-sensitive center stage + a Live Feed / Your Team rail + a command bar), document-first **Intake** that auto-extracts and auto-fills the deal record, deterministic offline orchestration, generated workpapers, and an optional local Codex/ChatGPT live-agent path. Power-user controls live in an Advanced drawer. Current `main` may include unreleased hardening and documentation updates on top of the most recent packaged release line.
 
 ## Promise
 
-**Drop the deal. State the mission. Watch the agentic deal team coordinate. Review the workpapers and IC package.**
+**Drop the deal. Watch your team go to work across the lifecycle. Summon a specialist, read its workpaper, and review the IC package.**
 
 The safe default demo runs locally with deterministic data and does not require API keys. The optional live-agent path uses the user's local Codex CLI / ChatGPT login and should be introduced only after the offline journey is clear.
 
@@ -38,113 +38,101 @@ npm run dashboard
 npm run screenshots
 ```
 
-`npm run screenshots` updates the current public gallery under `docs/assets/` for the front door, quick-create modal, Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
+`npm run screenshots` updates the current public gallery under `docs/assets/` for the front door, the Intake auto-fill, the deal space (lifecycle spine + center stage + rail), the agent panel, and the IC package.
 
 ## Guided Demo Mode
 
-For a no-video first impression, run the dashboard and click **Start Guided Demo** on the front door. If a workspace is already open, click **Parkview Demo** in the header to reopen the deterministic sample. The app presents an in-product tour through Acquisition Command, Swarm Goal Console, Deal Team, Workpapers & Evidence, and IC Package.
+For a no-video first impression, run the dashboard and click **Start Guided Demo** on the front door. If a workspace is already open, click **Parkview Demo** in the header to reopen the deterministic sample. The app presents an in-product tour through five steps — **The Deal Space**, **Command Your Team**, **Your Team**, **Watch It Work**, and **IC Package** — each spotlighting a part of the persistent frame (the lifecycle spine, the command bar, the Your Team rail, the live feed, and the completion package).
 
 Use this when you want a first-time visitor to understand the product without uploads, API keys, or a recorded walkthrough.
 
 ## Operator Storyboard
 
-### 1. Front Door — Document-First Intake
+The storyboard tracks the five guided-tour steps and the persistent frame. Each step is anchored to a stable testid so the capture script and the in-product tour stay aligned.
+
+### 1. Front Door — Drop Your Deal
 
 What to show:
 
-- The homepage lead message: source documents are the starting point, not a blank form.
+- The lead message: drop your deal and watch your team go to work — source documents are the starting point, not a blank form.
 - The drop zone for rent rolls, T12s, offering memoranda, LOIs, legal files, PDFs, and XLSX files.
-- The quick-create path that turns uploaded files into a deal workspace.
+- Recent deals and the **Try the Parkview demo** (deterministic, no-upload) entry.
 
 Why it matters:
 
 - A CRE operator recognizes the workflow immediately: every acquisition starts with source files.
 - The dashboard positions the project as a workspace, not just a script runner.
 
-Current screenshot assets:
+Anchor testids: `drop-zone-hero`, `drop-zone-input`.
+
+Current screenshot asset:
 
 - `docs/assets/dashboard-front-door.png`
-- `docs/assets/quick-deal-create.png`
 
-### 2. Acquisition Command — Executive State of the Deal
+### 2. Intake — Drop Documents, the Record Auto-Fills
 
 What to show:
 
-- Package readiness, team pulse, active stage, latest material movement, and decision-package status.
-- The fact that the Command surface explains what changed and what needs operator attention.
+- The dropped document package being read by the ingestion agents (Document Orchestrator → Rent Roll / Financials / Offering Memo parsers).
+- The auto-filled **deal record** — grouped Property / Operations / Deal Terms, each value tagged with its source and a confidence dot — with nothing typed by hand.
+- Only **flagged** values (source conflicts / low-confidence reads) highlighted for inline edit, full provenance one tap away, and the single forward action: **"Looks right → start Diligence."**
 
 Why it matters:
 
-- This is the current product center: it makes the agentic workspace legible before the user studies the underlying orchestration engine.
-- It is the best first screenshot to refresh before the next public release.
+- This is the redesign's opening beat: the operator never types a number to begin, and human review concentrates on what the agents flag while the full approve/reject/waive audit trail stays available behind a disclosure.
+
+Anchor testids: `intake-stage`, `deal-record`, `start-diligence`.
+
+Current screenshot asset:
+
+- `docs/assets/source-extraction-review.png`
+
+### 3. The Deal Space — One Frame, the Whole Lifecycle
+
+What to show:
+
+- The persistent frame: the deal header with IC-package readiness, the always-visible **lifecycle spine** (Intake → Diligence → Underwriting → Financing → Legal → Closing → IC) with status dots, the focused center stage, and the right rail.
+- The **command bar** ("Tell your team what to do…" + suggestion chips) along the bottom, and the **Advanced** entry in the header for power-user controls.
+
+Why it matters:
+
+- It makes the whole deal lifecycle legible at a glance and shows the single console an operator drives, before they study the underlying orchestration engine.
+
+Anchor testids: `workspace-frame`, `lifecycle-spine`, `spine-step-<stage>`, `command-bar`.
 
 Current screenshot asset:
 
 - `docs/assets/acquisition-command.png`
 
-### 3. Mission — Intent Before Execution
+### 4. Watch It Work — Summon a Specialist, Read Its Workpaper
 
 What to show:
 
-- The stated acquisition goal/outcome intent.
-- The Swarm Goal Console after `Plan Swarm` converts a plain-English goal into a recommended workflow.
-- The specialist roster, data gaps, handoff path, and `Launch This Swarm` action.
-- How mission metadata persists with the deal instead of living only in a launch modal.
+- **Your Team** rail for the focused stage and the "summon any of 31 agents" picker.
+- The **agent panel** sliding in over the dimmed workspace: one specialist's live (or replayed) reasoning with an elapsed timer, the workpaper it filed (cited inputs → finding → impact → caveats), and a follow-up box to re-task it.
+- The **Live Feed** in the rail continuing to run behind the panel so the rest of the desk visibly carries on.
 
 Why it matters:
 
-- It communicates that the agents are working toward an investment objective, not simply running generic analyses.
-- It proves the core product loop: state an outcome, inspect the selected specialist team, then launch the swarm.
+- This is the "watch the team work" moment, and it proves auditability: every agent's output is a reviewable, source-backed workpaper, not an opaque answer.
 
-Current screenshot assets:
-
-- `docs/assets/swarm-goal-console.png`
-- `docs/assets/mission-control.png`
-
-### 4. Deal Team — Visible Agent Coordination
-
-What to show:
-
-- Specialist rows in human-readable language.
-- Active/filed/queued status.
-- Agent messages, handoffs, dependencies, reviews, and phase handoffs.
-
-Why it matters:
-
-- This proves the system is not just a progress bar. It exposes the coordination layer between CRE specialists.
+Anchor testids: `team-rail`, `team-summon`, `live-feed`, `agent-panel`.
 
 Current screenshot asset:
 
 - `docs/assets/deal-team-handoffs.png`
 
-### 5. Workpapers — Evidence and Agent Outputs
+### 5. IC Package — Reviewable Decision Output
 
 What to show:
 
-- Filed specialist workpapers.
-- Source-backed materials and evidence state.
-- Links between workpapers, originating agents, and package assembly.
+- Final recommendation, phase outcomes, priority red flags and data gaps, document manifest, decision log, and workpaper links — assembled at the **IC** stage of the spine.
 
 Why it matters:
 
-- Serious CRE users need auditability. Workpapers turn the demo from a flashy dashboard into a reviewable diligence workspace.
+- This is the payoff: a human operator can review the committee package instead of trusting an opaque AI answer.
 
-Current screenshot asset:
-
-- `docs/assets/workpapers-evidence.png`
-
-### 6. IC Package — Reviewable Decision Output
-
-What to show:
-
-- Final recommendation.
-- Phase outcomes.
-- Priority red flags and data gaps.
-- Document manifest, decision log, and workpaper links.
-
-Why it matters:
-
-- This is the payoff: a human operator can review the package instead of trusting an opaque AI answer.
+Anchor testids: `spine-step-ic`, `completion-package-view`.
 
 Current screenshot asset:
 
@@ -156,10 +144,10 @@ Before the next public release:
 
 - [ ] Run `npm run demo` to regenerate sample artifacts.
 - [ ] Run `npm run dashboard` and click **Start Guided Demo**.
-- [ ] Confirm the guided tour advances through Acquisition Command, Swarm Goal Console, Deal Team, Workpapers & Evidence, and IC Package.
+- [ ] Confirm the guided tour advances through The Deal Space, Command Your Team, Your Team, Watch It Work, and IC Package.
 - [ ] Run `npm run screenshots` while the dashboard is available at `http://localhost:5173`.
-- [x] Capture current public surfaces for the front door, quick-create modal, Acquisition Command, Swarm Goal Console, Mission, Deal Team, Workpapers, and IC Package.
+- [ ] Capture current public surfaces for the front door, the Intake auto-fill, the deal space, the agent panel, and the IC package.
 - [x] Add a current screenshot gallery in `docs/assets/`.
-- [x] Update README image alt text so each screenshot explains the operator value.
+- [ ] Update README image alt text so each screenshot explains the operator value.
 - [ ] Run `git diff --check`.
 - [ ] Run `npm --prefix dashboard run build`.

@@ -28,7 +28,7 @@ Let's bring this industry into the future.
 ## First-Time Visitor Path
 
 - **Run a first real deal in 10 minutes:** follow the [First Deal Guide](docs/FIRST-DEAL-GUIDE.md), start the dashboard, drop local rent roll/T12/offering memo files, review source-backed fields, and export the IC starter package.
-- **Use Parkview as the deterministic fallback:** click **Start Guided Demo** when you want a no-upload sample tour through Command, Swarm Goal Console, Deal Team, Workpapers, and IC Package.
+- **Use Parkview as the deterministic fallback:** click **Start Guided Demo** when you want a no-upload sample tour through the deal space - the lifecycle spine, the command bar, Your Team, the live feed, and the IC package.
 - **Install from scratch:** follow [Quick Start](#quick-start). The dashboard path is local-first and the sample demo remains deterministic after dependencies are installed.
 - **Choose the right runtime:** read [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md) before sending any real deal context through the optional live-agent path.
 - **Understand the system:** read [Architecture](docs/ARCHITECTURE.md), [Agent Catalog](docs/AGENT-CATALOG.md), [API Reference](docs/API-REFERENCE.md), and [WebSocket Events](docs/WEBSOCKET-EVENTS.md).
@@ -148,41 +148,25 @@ This project has grown from agent architecture into a local-first acquisition wo
 
 ## Visual Demo Tour
 
-The public demo is intentionally visual: a first-time visitor should understand the workspace before they read the architecture. The path below starts with local document intake, then uses the deterministic Parkview sample to show populated artifacts with no API keys.
+The public demo is intentionally visual: a first-time visitor should understand the workspace before they read the architecture. The path below starts at the front door, drops a document package into **Intake**, then moves through the persistent deal space - the lifecycle spine, the agents at work, and the IC package - using the deterministic Parkview sample so it populates with no API keys.
 
-### 1. Front Door - document-first acquisition intake
+### 1. Front Door - drop your deal, watch your team go to work
 
-![Dashboard front door showing the local source-package upload path, acquisition mission goal, and guided demo option](docs/assets/dashboard-front-door.png)
+![Dashboard front door showing the drop-your-deal upload path, recent deals, and the Parkview guided-demo option](docs/assets/dashboard-front-door.png)
 
-### 2. Quick Create - turn files into a workspace
+### 2. Intake - drop documents, the record auto-fills
 
-![Quick deal creation modal showing a queued rent roll file, requested outcome, recommended workflow, and create workspace action](docs/assets/quick-deal-create.png)
+![Intake stage showing dropped source documents auto-extracted by the ingestion agents into an auto-filled deal record, with source tags, confidence dots, flagged values to review inline, and the "start Diligence" action](docs/assets/source-extraction-review.png)
 
-### 3. Evidence - source-backed extraction review
+### 3. The Deal Space - one frame, the whole lifecycle
 
-![Evidence view showing local source-document intake and an extraction preview with source-backed candidate fields, confidence, file/sheet/row provenance, and the drill-into-source-row action](docs/assets/source-extraction-review.png)
+![The persistent deal space showing the deal header with IC-package readiness, the always-visible lifecycle spine (Intake to IC) with status dots, the focused center stage, and the right rail with the Live Feed and Your Team](docs/assets/acquisition-command.png)
 
-### 4. Acquisition Command - executive state of the deal
+### 4. Watch It Work - summon an agent, read its workpaper
 
-![Acquisition Command showing package readiness, active stage, team pulse, and latest agent movement](docs/assets/acquisition-command.png)
+![An agent panel slid in over the dimmed deal space, streaming one specialist's work with an elapsed timer and its filed workpaper, while the Live Feed keeps running in the right rail](docs/assets/deal-team-handoffs.png)
 
-### 5. Mission - turn operator intent into a specialist swarm
-
-![Swarm Goal Console translating an acquisition goal into recommended workflow, specialists, blockers, and handoff path](docs/assets/swarm-goal-console.png)
-
-### 6. Mission Control - preserve goals, readiness, and next action
-
-![Mission Control showing acquisition goal, source coverage, phase readiness, and operator next action](docs/assets/mission-control.png)
-
-### 7. Deal Team - visible specialist coordination
-
-![Deal Team view showing agent messages, handoffs, dependencies, reviews, and phase movement](docs/assets/deal-team-handoffs.png)
-
-### 8. Workpapers - reviewable evidence and outputs
-
-![Workpapers view showing filed specialist outputs, evidence state, and package-linked diligence artifacts](docs/assets/workpapers-evidence.png)
-
-### 9. IC Package - decision-ready acquisition package
+### 5. IC Package - decision-ready acquisition package
 
 ![IC Package view showing recommendation, phase outcomes, red flags, data gaps, manifest, and review trail](docs/assets/ic-package.png)
 
@@ -402,18 +386,16 @@ Schema validation is part of the public credibility story: extra fields fail, le
 
 ## Operator Dashboard
 
-A persistent **Acquisition Command** header bar sits above the workspace tabs, showing package readiness, active stage, team pulse, source freshness, and latest agent movement. Below it, the workspace has six navigation tabs:
+The dashboard is a single **persistent deal space**, not a set of tabs. One frame stays in place; only the focused stage's body swaps. The frame has four fixed regions:
 
-| Nav Tab | What It Shows |
-|---------|---------------|
-| Command | Mission Control: acquisition goal capture, source coverage, phase readiness, and operator next action. |
-| Evidence | Source-document coverage, extracted candidates, confidence, warnings, and approve/apply controls. |
-| Deal Team | Specialist state, handoffs, messages, dependencies, reviews, and phase progress. |
-| Workpapers | Phase and agent workpapers, evidence status, and output completeness. |
-| IC Package | Recommendation, phase outcomes, red flags, data gaps, manifest, review trail, and export actions. |
-| Controls | Advanced operator controls: deal criteria, pipeline view, and the workflow launcher for starting simulation or live Codex runs. |
+- **Deal header** - the deal name, key facts (units, price, location), and live IC-package readiness.
+- **Lifecycle spine** - an always-visible row of the seven deal stages: **Intake → Diligence → Underwriting → Financing → Legal → Closing → IC**. Each stage carries a status dot (live, done, needs-your-eye, blocked, idle); clicking a stage focuses the center stage on it. The spine replaces the old six-tab nav.
+- **Center stage** - the focused stage's body: its agents at work and the outputs they file. **Intake** is the opener - drop the document package, ingestion agents auto-extract, and the deal record auto-fills (trusted fields apply on read; you edit only flagged values inline, with full source provenance one tap away). The five orchestrated phases each show their specialists, streaming progress, and workpapers. **IC** assembles the committee package (recommendation, phase outcomes, red flags, data gaps, manifest, export).
+- **Right rail + command bar** - a **Live Feed** (a chronological war-room stream of every agent's activity) and **Your Team** (the specialists staffed on the focused stage, with a "summon any of 31 agents" picker) sit in the rail; a persistent **command bar** ("Tell your team what to do…" plus context-aware suggestion chips) runs along the bottom. Clicking an agent - from the rail, a chip, or the command bar - opens a side **AgentPanel** that streams that one agent's work and shows its workpaper.
 
-The dashboard is intentionally not a landing page. It is the actual workspace: a local operator can start from documents, see what changed, decide what to trust, and export a package.
+Power-user controls move off the primary path into an **Advanced drawer** (deal criteria/target overrides, the workflow launcher for simulation or live Codex runs, mission control, the deal-team tree, workpapers, pipeline view, story/timeline, and the partial-failure "retry failed agents" recovery panel).
+
+The dashboard is intentionally not a landing page. It is the actual workspace: a local operator can drop documents, watch the team work the lifecycle, decide what to trust, and export a package.
 
 ---
 
@@ -462,7 +444,7 @@ Run the first real-deal workspace:
 npm run dashboard
 ```
 
-Inside the workspace, open **Evidence**, preview extraction for each source file, approve/apply trusted fields, and export the **IC Package** as Markdown or JSON.
+Inside the workspace, drop your source files into **Intake** - the ingestion agents extract them and the deal record auto-fills, so you only correct flagged values - then advance through the lifecycle spine and export the **IC** package as Markdown or JSON.
 
 Run the deterministic Parkview demo:
 
@@ -501,7 +483,7 @@ npm run codex:smoke
 | **Strict schema contracts** | Phase outputs, agent findings, checkpoints, document manifests, and events validate against JSON Schema with shared enums and closed objects. |
 | **Deterministic Parkview demo** | A complete Austin/Travis County sample run produces populated reports and workpapers with no API keys. |
 | **Optional live Codex runtime** | Teams that want live AI execution can use a ChatGPT-authenticated Codex CLI path without making that the default public demo dependency. |
-| **Operator dashboard** | The React workspace shows source evidence, mission intent, active agents, handoffs, workpapers, and IC package assembly in one place. |
+| **Operator dashboard** | The React workspace is one persistent deal space: a lifecycle spine from Intake to IC, the agents at work on the focused stage, a live feed, a command bar to dispatch the team, and IC package assembly - all in one frame. |
 | **Public validation harness** | Demo verification, parser tests, workspace tests, schema tests, security assertions, docs drift checks, and browser E2E coverage are part of the repo. |
 | **Open, inspectable domain layer** | CRE assumptions live in Markdown skill files and JSON config, so operators can see and change the policy rather than trusting hidden code. |
 
@@ -560,7 +542,7 @@ cre-acquisition-orchestrator/
 |
 |-- dashboard/
 |   |-- src/
-|   |   |-- components/            # Acquisition Command, Evidence, Deal Team, IC Package
+|   |   |-- components/            # WorkspaceFrame, LifecycleSpine, stages, AgentPanel, IC Package
 |   |   |-- hooks/                 # Deal, checkpoint, workspace, and workflow data hooks
 |   |   |-- lib/                   # Client-side upload and form utilities
 |   |   |-- types/                 # Dashboard TypeScript contracts

@@ -156,30 +156,53 @@ route.
 | `useDealLibrary.ts` | REST CRUD against `/api/deals*`: list, load, validate, save, launch. |
 | `useDealWorkspace.ts` | REST against `/api/deals/:id/*`: workspace, criteria, document extract/extraction/apply/review, IC-starter-package, phase-state. |
 | `useWorkflows.ts` | REST against `/api/workflows` and `/api/workflow-presets`, plus `/api/workflows/:id/launch`. |
+| `useAgentDispatch.ts` | Dispatches a single named agent on demand (live Codex path) so the `AgentPanel` can summon → watch → re-task one specialist; offline it is a read/replay of recorded work. |
 
 ### Components — views
 
-- **`DealWorkspace.tsx`** is the primary view once a deal is open. It is tabbed;
-  the tabs (`WorkspaceTab` union) are:
+- **`DealWorkspace.tsx`** is the primary view once a deal is open. It is **not
+  tabbed**: it renders the persistent **`WorkspaceFrame`** (`workspace/WorkspaceFrame.tsx`)
+  and swaps only the center stage. The seven lifecycle stages come from
+  `src/lib/stageModel.ts` (`StageId` = `intake | diligence | underwriting |
+  financing | legal | closing | ic`); `deriveSpineStages()` computes each stage's
+  status/progress from the deal checkpoint plus dashboard-layer intake/IC
+  summaries. Internally `DealWorkspace` still keeps a `WorkspaceTab` union and maps
+  it to/from a `StageId` (`STAGE_TO_TAB` / `tabToStage`), so the spine, the command
+  bar, and the Advanced drawer all drive the one piece of `activeTab` state.
 
-  | Tab id | Label in UI | Shows |
-  |--------|-------------|-------|
-  | `mission` | Command | Mission control / pipeline overview and guided-demo entry. |
-  | `documents` | Evidence | Source documents and the extraction review/apply loop. |
-  | `agents` | Deal Team | Agent tree / per-agent cards and findings. |
-  | `workpapers` | Workpapers | Generated phase report / workpaper output. |
-  | `package` | IC Package | Completion package and IC-starter export. |
-  | `advanced` | Controls | Advanced orchestration controls (workflow launcher, presets). |
+  | Stage id | Label on spine | Center stage shows |
+  |----------|----------------|--------------------|
+  | `intake` | Intake | `stages/IntakeStage` — dropped documents auto-extracted into an auto-filled `stages/DealRecord` (inline edit, source tags, flagged values), with the deep approve/reject/waive + provenance flow tucked behind a disclosure. |
+  | `diligence` | Diligence | The DD phase's specialists at work + filed workpapers (`PhaseWorkspaceView`). |
+  | `underwriting` | Underwriting | The UW phase's specialists + workpapers. |
+  | `financing` | Financing | The financing phase's specialists + workpapers. |
+  | `legal` | Legal | The legal phase's specialists + workpapers. |
+  | `closing` | Closing | The closing phase's specialists + workpapers. |
+  | `ic` | IC | `CompletionPackage` assembly + IC-starter export, findings, decision log. |
 
-  It also synthesizes per-phase tabs from the checkpoint and renders a guided
-  demo tour. The initial tab is chosen from the `initialTab` prop App passes in.
+  The frame's fixed regions are: a **deal header** (name, key facts, IC-package
+  readiness), the always-visible **`LifecycleSpine`** (`workspace/LifecycleSpine.tsx`,
+  `spine-step-<stage>` controls), the **center stage** (the table above), a right
+  rail with **`LiveFeed`** + **`TeamRail`** (`workspace/LiveFeed.tsx` /
+  `workspace/TeamRail.tsx`), and the bottom **`CommandBar`** (`workspace/CommandBar.tsx`,
+  "tell your team…" + suggestion chips from `src/lib/commandModel.ts`, routed by
+  `src/lib/intentRouting.ts`). Clicking an agent (rail, chip, or command bar) opens
+  the slide-in **`AgentPanel`** (`workspace/AgentPanel.tsx`), fed by
+  `src/lib/agentView.ts` and dispatched via `hooks/useAgentDispatch.ts`.
+  `DealWorkspace` also renders a guided demo tour (`GuidedDemoTour`).
 
-- Supporting components include `MissionControl`, `PipelineView`, `AgentTree` /
-  `AgentCard`, `FindingsPanel`, `DocumentWall`, `WorkflowLauncher`,
-  `CompletionPackage`, `DealIntakeWizard`, `QuickDealCreate`, `SavedDealsPanel`,
-  `StoryNarrative`, `TimelineView`, `LogStream`, and the `components/report/*`
-  set that renders the structured deal report (executive summary, pro forma,
-  sensitivity, risk, financing, legal/closing, etc.).
+- Power-user surfaces live in the **Advanced drawer** (`open-advanced` →
+  `advanced-drawer`), a modal that hosts the relocated controls: `MissionControl`,
+  the `CriteriaPanel` (deal criteria / target overrides), `PipelineView`,
+  `WorkflowLauncher` + presets, `AgentTree` / `AgentCard`, `DocumentWall`, the deal
+  progression guide, `StoryNarrative`, `TimelineView`, `LogStream`, and the
+  partial-failure `PartialFailureRecovery` ("retry failed agents") panel.
+
+- Other supporting components: `DropZoneHero` / `QuickDealCreate` / `SavedDealsPanel`
+  (front door), `FindingsPanel`, `DecisionLog`, `CompletionPackage`, `FinalReport`,
+  `PhaseDetail`, and the `components/report/*` set that renders the structured deal
+  report (executive summary, pro forma, sensitivity, risk, financing,
+  legal/closing, etc.).
 
 ### `src/lib`, `src/types`, `src/config.ts`
 
@@ -227,7 +250,9 @@ route.
 | Change the source-doc review/readiness loop | `dashboard/server/workspace-service.ts`. |
 | Change document parsing | `dashboard/server/parser-service.ts` + `scripts/parse_excel.py` / `scripts/parse_pdf.py`. |
 | Change run spawning/lifecycle | `dashboard/server/run-manager.ts`. |
-| Add a workspace tab or view | `dashboard/src/components/DealWorkspace.tsx` (+ a new component). |
+| Add or change a lifecycle stage | `dashboard/src/lib/stageModel.ts` (the `StageId` union + `deriveSpineStages`), then the center-stage switch in `dashboard/src/components/DealWorkspace.tsx` (+ a stage component under `dashboard/src/components/workspace/stages/`). The spine (`LifecycleSpine`) renders whatever stages it is handed. |
+| Change the frame, rail, command bar, or agent panel | the components under `dashboard/src/components/workspace/` (`WorkspaceFrame`, `LifecycleSpine`, `LiveFeed`, `TeamRail`, `CommandBar`, `AgentPanel`); command suggestions live in `src/lib/commandModel.ts` and routing in `src/lib/intentRouting.ts`. |
+| Move a power-user control in/out of the Advanced drawer | the `advanced-drawer` block in `dashboard/src/components/DealWorkspace.tsx`. |
 | Change client API/WS endpoints | `dashboard/src/config.ts` and the `src/hooks/*`. |
 
 ---

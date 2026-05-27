@@ -58,6 +58,9 @@ async function waitForRunDocuments() {
   }, 40_000)
 }
 
+// Land in the persistent deal space (the redesigned "workspace-frame", which replaced the old
+// "operator-deal-hub"). From the front door we capture the door, then run the deterministic
+// Parkview demo so the spine, rail, and stages populate with no API keys.
 async function waitForWorkspace(page) {
   await page.goto(baseURL, { waitUntil: 'networkidle' })
   await page.getByText('Connected').waitFor({ timeout: 20_000 })
@@ -65,24 +68,19 @@ async function waitForWorkspace(page) {
 
   if (await page.getByTestId('drop-zone-hero').isVisible().catch(() => false)) {
     await capture(page, 'dashboard-front-door.png')
-    await page.getByTestId('drop-zone-input').setInputFiles(sampleUploadPath)
-    await page.getByTestId('quick-deal-modal').waitFor({ timeout: 20_000 })
-    await capture(page, 'quick-deal-create.png')
-    await page.getByTestId('quick-deal-cancel').click()
-    await page.getByTestId('quick-deal-modal').waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {})
   }
 
-  if (!(await page.getByTestId('operator-deal-hub').isVisible().catch(() => false))) {
+  if (!(await page.getByTestId('workspace-frame').isVisible().catch(() => false))) {
     await page.getByRole('button', { name: /^Run Demo$/ }).click()
     await waitForRunStartedOrCompleted()
-    await page.getByTestId('operator-deal-hub').waitFor({ timeout: 30_000 })
+    await page.getByTestId('workspace-frame').waitFor({ timeout: 30_000 })
   }
 
   await waitForRunIdle()
   await waitForRunDocuments()
   await page.getByText('Completed').first().waitFor({ timeout: 30_000 })
   await page.waitForTimeout(500)
-  await page.getByTestId('operator-deal-hub').waitFor({ timeout: 30_000 })
+  await page.getByTestId('workspace-frame').waitFor({ timeout: 30_000 })
 }
 
 async function capture(page, name) {
@@ -91,28 +89,31 @@ async function capture(page, name) {
   console.log(`captured docs/assets/${name}`)
 }
 
-async function clickTab(page, id) {
-  await page.getByTestId(`workspace-tab-${id}`).click({ force: true })
+// Focus a lifecycle stage by clicking its spine step. Stage ids: intake | diligence |
+// underwriting | financing | legal | closing | ic. The center stage swaps to the focused stage;
+// the frame (header, spine, rail, command bar) stays put.
+async function focusStage(page, stageId) {
+  await page.getByTestId(`spine-step-${stageId}`).click({ force: true })
   await page.waitForTimeout(350)
 }
 
-// W50: capture the source-backed extraction review panel. Runs in an isolated page so it
-// does not disturb the deterministic demo gallery captured on the main page. Creates a deal
-// from the document-first front door, opens Evidence, previews extraction, and captures the
-// candidate-field review panel. Skips gracefully if the front door is not the landing view.
-async function captureSourceExtractionReview(browser) {
-  const reviewPage = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1 })
+// W50 (redesigned): capture the Intake auto-fill moment in an isolated page so it does not
+// disturb the deterministic demo gallery captured on the main page. Creates a deal from the
+// document-first front door, lands in Intake, extracts the rent roll so the auto-filled deal
+// record populates, and captures it. Skips gracefully if the front door is not reachable.
+async function captureIntakeAutoFill(browser) {
+  const intakePage = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1 })
   try {
-    await reviewPage.goto(baseURL, { waitUntil: 'networkidle' })
-    await reviewPage.getByText('Connected').waitFor({ timeout: 20_000 })
-    await reviewPage.addStyleTag({
+    await intakePage.goto(baseURL, { waitUntil: 'networkidle' })
+    await intakePage.getByText('Connected').waitFor({ timeout: 20_000 })
+    await intakePage.addStyleTag({
       content: `*, *::before, *::after { animation-duration: 0.001s !important; transition-duration: 0.001s !important; scroll-behavior: auto !important; }`,
     })
-    const hero = reviewPage.getByTestId('drop-zone-hero')
+    const hero = intakePage.getByTestId('drop-zone-hero')
     if (!(await hero.isVisible().catch(() => false))) {
       // A deal is already open (e.g. the demo run captured on the main page); return to the
       // document-first upload front door via the header affordance.
-      const uploadButton = reviewPage.getByTestId('header-upload-package-button')
+      const uploadButton = intakePage.getByTestId('header-upload-package-button')
       if (await uploadButton.isVisible().catch(() => false)) {
         await uploadButton.click()
         await hero.waitFor({ timeout: 10_000 }).catch(() => {})
@@ -122,21 +123,27 @@ async function captureSourceExtractionReview(browser) {
       console.warn('skip source-extraction-review.png: document-first front door not reachable')
       return
     }
-    await reviewPage.getByTestId('drop-zone-input').setInputFiles(sampleUploadPath)
-    await reviewPage.getByTestId('quick-deal-modal').waitFor({ timeout: 20_000 })
-    await reviewPage.getByTestId('quick-deal-create').click()
-    await reviewPage.getByTestId('operator-deal-hub').waitFor({ timeout: 30_000 })
-    await reviewPage.getByTestId('workspace-tab-documents').click()
-    const extractButton = reviewPage.getByTestId('extract-document-rent_roll')
-    await extractButton.waitFor({ timeout: 20_000 })
-    await extractButton.click()
-    const preview = reviewPage.getByTestId('extraction-preview')
-    await preview.waitFor({ timeout: 30_000 })
-    await preview.getByText('Fields Found').first().waitFor({ timeout: 30_000 })
-    await reviewPage.waitForTimeout(400)
-    await capture(reviewPage, 'source-extraction-review.png')
+    await intakePage.getByTestId('drop-zone-input').setInputFiles(sampleUploadPath)
+    await intakePage.getByTestId('quick-deal-modal').waitFor({ timeout: 20_000 })
+    await intakePage.getByTestId('quick-deal-create').click()
+    await intakePage.getByTestId('workspace-frame').waitFor({ timeout: 30_000 })
+    // The deal opens on the Intake stage; make sure it is focused, then surface the auto-filled
+    // record. Open the detailed-review disclosure to extract if the record has not auto-filled yet.
+    await focusStage(intakePage, 'intake')
+    await intakePage.getByTestId('intake-stage').waitFor({ timeout: 20_000 })
+    const detailedReview = intakePage.getByTestId('intake-detailed-review')
+    if (await detailedReview.isVisible().catch(() => false)) {
+      const extractButton = intakePage.getByTestId('extract-document-rent_roll')
+      if (await extractButton.isVisible().catch(() => false)) {
+        await extractButton.click()
+      }
+    }
+    // The auto-filled deal record is the headline of Intake.
+    await intakePage.getByTestId('deal-record').waitFor({ timeout: 30_000 })
+    await intakePage.waitForTimeout(500)
+    await capture(intakePage, 'source-extraction-review.png')
   } finally {
-    await reviewPage.close()
+    await intakePage.close()
   }
 }
 
@@ -162,45 +169,40 @@ if (await guidedTourClose.isVisible().catch(() => false)) {
   await page.getByTestId('guided-demo-overlay').waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {})
 }
 
-await clickTab(page, 'mission')
-await page.getByTestId('mission-control').waitFor({ timeout: 20_000 })
+// The deal space: the whole frame — header + lifecycle spine + center stage + Live Feed / Your
+// Team rail + command bar. Focus Underwriting so the center stage shows a phase mid-lifecycle.
+await focusStage(page, 'underwriting')
+await page.getByTestId('lifecycle-spine').waitFor({ timeout: 20_000 })
+await page.getByTestId('live-feed').waitFor({ timeout: 20_000 })
+await page.getByTestId('command-bar').waitFor({ timeout: 20_000 })
+await page.evaluate(() => window.scrollTo(0, 0))
+await page.waitForTimeout(200)
 await capture(page, 'acquisition-command.png')
 
-const swarmConsole = page.getByTestId('swarm-goal-console')
-if (await swarmConsole.isVisible().catch(() => false)) {
-  await swarmConsole
-    .getByTestId('swarm-goal-input')
-    .fill('Build an IC-ready go/no-go package and show me which specialists should work the deal')
-  await swarmConsole.getByTestId('swarm-plan-button').click()
-  await swarmConsole.getByTestId('swarm-recommended-workflow').waitFor({ timeout: 20_000 })
-  await page.waitForTimeout(250)
+// Watch it work: summon a specialist into the slide-in agent panel (streaming work + workpaper),
+// with the Live Feed still running in the rail. Open it from the Your Team rail on a stage that
+// has staffed agents.
+await focusStage(page, 'diligence')
+await page.getByTestId('team-rail').waitFor({ timeout: 20_000 })
+const rentRollAgent = page.getByTestId('team-agent-rent-roll-analyst')
+const anyTeamAgent = page.locator('[data-testid^="team-agent-"]').first()
+const agentButton = (await rentRollAgent.isVisible().catch(() => false)) ? rentRollAgent : anyTeamAgent
+if (await agentButton.isVisible().catch(() => false)) {
+  await agentButton.click({ force: true })
+  await page.getByTestId('agent-panel').waitFor({ timeout: 20_000 })
+  await page.waitForTimeout(400)
+  await capture(page, 'deal-team-handoffs.png')
+  await page.getByTestId('agent-panel-close').click().catch(() => {})
+  await page.getByTestId('agent-panel').waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {})
+} else {
+  console.warn('skip deal-team-handoffs.png: no staffed agent in the Your Team rail to summon')
 }
-await page.evaluate(() => window.scrollTo(0, Math.floor(window.innerHeight * 0.45)))
-await page.waitForTimeout(200)
-await capture(page, 'swarm-goal-console.png')
 
-await page.evaluate(() => window.scrollTo(0, Math.floor(window.innerHeight * 0.75)))
-await page.waitForTimeout(200)
-await capture(page, 'mission-control.png')
-await page.evaluate(() => window.scrollTo(0, 0))
-
-await clickTab(page, 'agents')
-await page.getByTestId('agent-tree').waitFor({ timeout: 20_000 })
-const rentRollAgent = page.getByTestId('agent-row-rent-roll-analyst')
-if (await rentRollAgent.isVisible().catch(() => false)) {
-  await rentRollAgent.click({ force: true })
-  await page.waitForTimeout(200)
-}
-await capture(page, 'deal-team-handoffs.png')
-
-await clickTab(page, 'workpapers')
-await page.getByText('Workpapers').first().waitFor({ timeout: 20_000 })
-await capture(page, 'workpapers-evidence.png')
-
-await clickTab(page, 'package')
+// IC package: the committee-ready output assembled at the IC stage.
+await focusStage(page, 'ic')
 await page.getByTestId('completion-package-view').waitFor({ timeout: 20_000 })
 await capture(page, 'ic-package.png')
 
-await captureSourceExtractionReview(browser)
+await captureIntakeAutoFill(browser)
 
 await browser.close()
