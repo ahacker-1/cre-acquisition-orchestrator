@@ -44,7 +44,7 @@
     "eval:sim": "node eval/run-eval.mjs --mode sim",
     "eval:live": "node eval/run-eval.mjs --mode live",
     "eval:reparse": "node eval/run-eval.mjs --mode reparse",
-    "test": "node scripts/check-legacy-enums.js && node scripts/validate-fixtures.js && node scripts/verify-doc-counts.js && node scripts/runtime-core-lock.test.js && node scripts/goal-helper.test.js && cd dashboard && npm exec tsx ../scripts/security-hardening.test.mjs && npm exec tsx ../scripts/real-world-pile.test.mjs && cd .. && node scripts/system-test.js && node scripts/codex-runtime.test.mjs && node scripts/eval-scoring.test.mjs",
+    "test": "node scripts/check-legacy-enums.js && node scripts/validate-fixtures.js && node scripts/verify-doc-counts.js && node scripts/runtime-core-lock.test.js && node scripts/goal-helper.test.js && cd dashboard && npm exec tsx ../scripts/security-hardening.test.mjs && npm exec tsx ../scripts/real-world-pile.test.mjs && npm exec tsx ../scripts/dashboard-lib.test.mjs && cd .. && node scripts/system-test.js && node scripts/codex-runtime.test.mjs && node scripts/eval-scoring.test.mjs",
     "screenshots": "node dashboard/scripts/capture-release-screenshots.mjs",
     "serve": "node scripts/serve-prod.mjs",
     "release:check": "node scripts/release-check.js",
