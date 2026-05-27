@@ -5,11 +5,17 @@
 @layer base {
   :root {
     color-scheme: dark;
+    /* Functional status palette. The UI is ~90% monochrome; these appear ONLY on
+       state markers (spine dots, the live stream, tags, the package meter). */
+    --cre-live: #3B82F6;
+    --cre-done: #2DB87A;
+    --cre-review: #D9B56C;
+    --cre-blocked: #EF4444;
+    --cre-idle: #A3A5B3;
   }
 
   * {
     box-sizing: border-box;
-    letter-spacing: 0 !important;
   }
 
   body {
@@ -42,7 +48,7 @@
   .status-badge {
     @apply inline-flex items-center border px-2 py-0.5 text-xs font-semibold uppercase;
     border-radius: 0;
-    letter-spacing: 0;
+    letter-spacing: 0.1em;
   }
   .status-complete { @apply border-cre-success/30 bg-cre-success/10 text-cre-success; }
   .status-running { @apply border-white/20 bg-white/10 text-gray-100; }
@@ -50,6 +56,28 @@
   .status-failed { @apply border-cre-danger/30 bg-cre-danger/10 text-cre-danger; }
   .status-skipped { @apply border-white/10 bg-white/[0.02] text-gray-600; }
   .status-blocked { @apply border-cre-warning/30 bg-cre-warning/10 text-cre-warning; }
+
+  /* Status dots — the new frame's state markers (spine, team rail, live feed, deal record). */
+  .cre-dot {
+    @apply inline-block h-2 w-2 shrink-0 align-middle;
+    border-radius: 999px;
+    background: var(--cre-idle);
+  }
+  .cre-dot-live { background: var(--cre-live); }
+  .cre-dot-done { background: var(--cre-done); }
+  .cre-dot-review { background: var(--cre-review); }
+  .cre-dot-blocked { background: var(--cre-blocked); }
+  .cre-dot-idle { background: var(--cre-idle); }
+  .cre-dot-pulse { animation: agentPulse 1.6s ease-in-out infinite; }
+
+  /* Functional status text/border helpers for the new frame (used sparingly, on markers only). */
+  .cre-text-live { color: var(--cre-live); }
+  .cre-text-done { color: var(--cre-done); }
+  .cre-text-review { color: var(--cre-review); }
+  .cre-text-blocked { color: var(--cre-blocked); }
+
+  /* Hairline divider — the new frame builds structure from hairlines, not boxed panels. */
+  .cre-hairline { border-color: rgba(255,255,255,0.12); }
 
   .progress-bar {
     @apply h-2 bg-white/10 overflow-hidden;
@@ -68,7 +96,7 @@
   .tab {
     @apply px-4 py-2 text-sm font-semibold uppercase cursor-pointer transition-colors;
     border-radius: 0;
-    letter-spacing: 0;
+    letter-spacing: 0.08em;
   }
   .tab-active {
     @apply bg-white text-black border-b-2 border-white;
@@ -107,7 +135,7 @@
 
   .portal-hero h1 {
     @apply mt-3 max-w-5xl font-serif text-4xl font-semibold leading-none text-white md:text-6xl;
-    letter-spacing: 0;
+    letter-spacing: -0.03em;
   }
 
   .portal-hero p:not(.portal-kicker) {
@@ -121,7 +149,7 @@
 
   .portal-hero-meta span {
     @apply border border-white/10 bg-white/[0.03] px-3 py-2 font-mono uppercase;
-    letter-spacing: 0;
+    letter-spacing: 0.08em;
   }
 
   .portal-nav {
@@ -131,7 +159,7 @@
   .portal-nav button {
     @apply min-h-11 shrink-0 px-4 py-2 text-xs font-semibold uppercase text-gray-500 transition-colors;
     border-radius: 0;
-    letter-spacing: 0;
+    letter-spacing: 0.1em;
   }
 
   .portal-nav button:hover {
@@ -145,7 +173,7 @@
   .portal-panel {
     @apply border border-white/10 bg-cre-surface p-4 md:p-5;
     border-radius: 0;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
   }
 
   .portal-section-header {
@@ -154,18 +182,18 @@
 
   .portal-kicker {
     @apply text-xs font-bold uppercase text-gray-500;
-    letter-spacing: 0;
+    letter-spacing: 0.14em;
   }
 
   .portal-title {
     @apply mt-1 font-serif text-2xl font-semibold leading-tight text-white;
-    letter-spacing: 0;
+    letter-spacing: -0.02em;
   }
 
   .portal-button {
     @apply inline-flex min-h-11 items-center justify-center border px-4 py-2 text-xs font-bold uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-50;
     border-radius: 0;
-    letter-spacing: 0;
+    letter-spacing: 0.08em;
   }
 
   .portal-button-primary {
@@ -178,7 +206,7 @@
 
   .portal-field {
     @apply block text-xs font-semibold uppercase text-gray-500;
-    letter-spacing: 0;
+    letter-spacing: 0.1em;
   }
 
   .portal-field span {
@@ -206,12 +234,12 @@
 
   .portal-stat strong {
     @apply block font-serif text-2xl font-semibold leading-none text-white;
-    letter-spacing: 0;
+    letter-spacing: -0.01em;
   }
 
   .portal-stat span {
     @apply mt-2 block text-xs font-semibold uppercase text-gray-500;
-    letter-spacing: 0;
+    letter-spacing: 0.1em;
   }
 
   .portal-stat-large {
@@ -229,7 +257,7 @@
 
   .portal-metric span {
     @apply block text-xs font-semibold uppercase text-gray-500;
-    letter-spacing: 0;
+    letter-spacing: 0.1em;
   }
 
   .portal-metric strong {
@@ -276,7 +304,7 @@
 
   .mission-command-title {
     @apply mt-3 max-w-5xl font-serif text-3xl font-semibold leading-tight text-white md:text-5xl;
-    letter-spacing: 0;
+    letter-spacing: -0.02em;
   }
 
   .mission-command-copy {

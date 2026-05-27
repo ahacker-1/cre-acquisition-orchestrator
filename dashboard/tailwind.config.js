@@ -13,6 +13,7 @@ export default {
         'cre-danger': '#EF4444',
         'cre-warning': '#D9B56C',
         'cre-info': '#A3A5B3',
+        'cre-live': '#3B82F6',
         'cre-bg': '#000000',
         'cre-surface': '#050505',
         'cre-elevated': '#0A0A0A',
