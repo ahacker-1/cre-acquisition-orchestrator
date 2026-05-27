@@ -1,11 +1,10 @@
 import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from 'react'
 import AgentTree from './AgentTree'
-import DealCockpitSidebar from './DealCockpitSidebar'
 import DecisionLog from './DecisionLog'
 import DocumentWall from './DocumentWall'
 import FinalReport from './FinalReport'
 import FindingsPanel from './FindingsPanel'
-import GuidedDemoTour, { type GuidedDemoTab } from './GuidedDemoTour'
+import GuidedDemoTour from './GuidedDemoTour'
 import LogStream from './LogStream'
 import PhaseDetail from './PhaseDetail'
 import PipelineView from './PipelineView'
@@ -14,6 +13,15 @@ import TimelineView from './TimelineView'
 import { useDealWorkspace } from '../hooks/useDealWorkspace'
 import { useWorkflows } from '../hooks/useWorkflows'
 import { collectFailedAgents, recoveryRunId, retryFailedAgents } from '../lib/runRecovery'
+import WorkspaceFrame from './workspace/WorkspaceFrame'
+import type { TeamAgentView } from './workspace/TeamRail'
+import {
+  deriveSpineStages,
+  intakeSummaryFromDocuments,
+  type StageId,
+  type StageStatus,
+} from '../lib/stageModel'
+import { suggestionsForStage, type CommandSuggestion } from '../lib/commandModel'
 import type {
   AgentCheckpoint,
   DealCheckpoint,
@@ -32,7 +40,6 @@ import type {
   ExtractionReviewStatus,
   GuideChecklistStatus,
   LaunchReadinessResult,
-  OperatorCommand,
   OperatorGuideAction,
   PhaseWorkspaceStatus,
   SourceDocument,
@@ -936,100 +943,6 @@ function DocumentIntakePanel({
   )
 }
 
-function OperatorCommandBar({
-  command,
-  onAction,
-  hasRuntimeEvidence = false,
-  isCompleteRun = false,
-}: {
-  command: OperatorCommand | null | undefined
-  onAction: (action: OperatorGuideAction) => void
-  hasRuntimeEvidence?: boolean
-  isCompleteRun?: boolean
-}) {
-  if (!command) {
-    return (
-      <section className="portal-panel" data-testid="operator-command-bar">
-        <p className="text-sm text-gray-500">Loading operator command...</p>
-      </section>
-    )
-  }
-
-  const isSampleEvidence = (hasRuntimeEvidence || isCompleteRun) && command.recommendedAction.title.toLowerCase().includes('upload')
-  const progressLabel = isSampleEvidence ? 'sample run' : `${command.completedChecklistCount}/${command.totalChecklistCount}`
-  const sourceLabel = isSampleEvidence && command.sourceCoverage.requiredApprovedFieldCount > 0
-    ? 'sample'
-    : command.sourceCoverage.requiredApprovedFieldCount > 0
-      ? `${Math.max(0, command.sourceCoverage.requiredApprovedFieldCount - command.sourceCoverage.missingApprovedFieldCount)}/${command.sourceCoverage.requiredApprovedFieldCount}`
-      : '--'
-  const displayedReadiness = isSampleEvidence && isCompleteRun
-    ? 'complete'
-    : isSampleEvidence && command.readiness === 'blocked'
-      ? 'running'
-      : command.readiness
-  const displayedPhaseLabel = isSampleEvidence && isCompleteRun ? 'Simulation complete' : command.activePhaseLabel
-  const displayedTitle = isSampleEvidence && isCompleteRun
-    ? 'Sample evidence produced a committee-ready package.'
-    : isSampleEvidence
-      ? 'Sample evidence is driving the active run.'
-      : command.recommendedAction.title
-  const displayedDetail = isSampleEvidence && isCompleteRun
-    ? 'The completed simulation used the sample evidence bundle. Upload live source documents when you want to replace it with a real deal package.'
-    : isSampleEvidence
-      ? 'The demo team is already coordinating from the sample evidence bundle. Upload documents when you want to swap in a real source package.'
-      : command.recommendedAction.detail
-  const displayedCta = isSampleEvidence ? 'Review Outputs' : command.recommendedAction.cta
-  const displayedBlockingCount = isSampleEvidence && isCompleteRun ? 0 : command.blockingCount
-
-  return (
-    <section className="portal-panel" data-testid="operator-command-bar">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="portal-kicker">Operator Command</p>
-            <span className={`status-badge ${statusClass(displayedReadiness)}`}>{displayedReadiness}</span>
-            <span className="status-badge status-pending">{displayedPhaseLabel}</span>
-          </div>
-          <h2 className="mt-2 font-serif text-2xl font-semibold leading-tight text-white">
-            {displayedTitle}
-          </h2>
-          <p className="mt-2 max-w-4xl text-sm leading-6 text-gray-400">{displayedDetail}</p>
-        </div>
-        <button
-          type="button"
-          className="portal-button portal-button-primary w-full xl:w-auto"
-          data-testid="operator-command-primary-action"
-          onClick={() => onAction(command.recommendedAction.action)}
-        >
-          {displayedCta}
-        </button>
-      </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-5">
-        <div className="portal-metric">
-          <span>Checklist</span>
-          <strong>{progressLabel}</strong>
-        </div>
-        <div className="portal-metric">
-          <span>Blockers</span>
-          <strong>{displayedBlockingCount}</strong>
-        </div>
-        <div className="portal-metric">
-          <span>Warnings</span>
-          <strong>{command.warningCount}</strong>
-        </div>
-        <div className="portal-metric">
-          <span>Source inputs</span>
-          <strong>{sourceLabel}</strong>
-        </div>
-        <div className="portal-metric">
-          <span>Review queue</span>
-          <strong>{command.sourceCoverage.reviewQueueCount}</strong>
-        </div>
-      </div>
-    </section>
-  )
-}
-
 function GuideChecklistItem({
   section,
   item,
@@ -1828,6 +1741,52 @@ function PartialFailureRecovery({
   )
 }
 
+// Maps between the new lifecycle stages and the retained internal `activeTab` selector.
+const STAGE_TO_TAB: Record<StageId, WorkspaceTab> = {
+  intake: 'documents',
+  diligence: 'due-diligence',
+  underwriting: 'underwriting',
+  financing: 'financing',
+  legal: 'legal',
+  closing: 'closing',
+  ic: 'package',
+}
+
+function tabToStage(tab: WorkspaceTab): StageId {
+  switch (tab) {
+    case 'due-diligence':
+      return 'diligence'
+    case 'underwriting':
+      return 'underwriting'
+    case 'financing':
+      return 'financing'
+    case 'legal':
+      return 'legal'
+    case 'closing':
+      return 'closing'
+    case 'package':
+      return 'ic'
+    default:
+      // documents + the non-stage tabs (mission/agents/workpapers/advanced) fall back to intake
+      return 'intake'
+  }
+}
+
+function agentStatusToStageStatus(status: string | undefined): StageStatus {
+  switch (status) {
+    case 'running':
+      return 'live'
+    case 'complete':
+      return 'done'
+    case 'failed':
+      return 'blocked'
+    default:
+      return 'idle'
+  }
+}
+
+const TOTAL_AGENT_COUNT = 31
+
 export default function DealWorkspace({
   dealCheckpoint,
   agentCheckpoints,
@@ -1876,6 +1835,7 @@ export default function DealWorkspace({
   const [guidedDemoActive, setGuidedDemoActive] = useState(false)
   const [guidedDemoStep, setGuidedDemoStep] = useState(0)
   const [packageExportMessage, setPackageExportMessage] = useState<string | null>(null)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
 
   useEffect(() => {
     setActiveTab(initialTab ?? (
@@ -1896,21 +1856,8 @@ export default function DealWorkspace({
   }, [onGuidedDemoConsumed, startGuidedDemo])
 
   const phaseTabs = workspace?.phases ?? []
-  const activePhase = phaseTabs.find((phase) => phase.phaseSlug === activeTab)
   const criteria = workspace?.criteria ?? null
   const documents = workspace?.documents ?? []
-
-  const navItems = useMemo(
-    () => [
-      { id: 'mission', label: 'Command' },
-      { id: 'documents', label: 'Evidence' },
-      { id: 'agents', label: 'Deal Team' },
-      { id: 'workpapers', label: 'Workpapers' },
-      { id: 'package', label: 'IC Package' },
-      { id: 'advanced', label: 'Controls' },
-    ] as { id: WorkspaceTab; label: string }[],
-    [],
-  )
 
   async function handlePhaseLaunch(phaseSlug: string): Promise<void> {
     const workflowId = PHASE_WORKFLOW[phaseSlug] ?? 'full-acquisition-review'
@@ -1944,18 +1891,6 @@ export default function DealWorkspace({
     onLaunchStarted?.(response)
   }
 
-  async function handleUploadFiles(files: File[]): Promise<void> {
-    for (const file of files) {
-      await uploadDocument(file)
-    }
-  }
-
-  async function handleExtractDocuments(targetDocuments: SourceDocument[]): Promise<void> {
-    for (const document of targetDocuments) {
-      await extractDocument(document.documentId)
-    }
-  }
-
   async function handlePackageExport(format: 'markdown' | 'json'): Promise<void> {
     const exported = await exportPackage('full-acquisition-review')
     const baseName = `${downloadSafeName(dealCheckpoint.dealName)}-ic-starter-package`
@@ -1969,23 +1904,13 @@ export default function DealWorkspace({
   }
 
   function focusWorkflowLauncher(): void {
-    setActiveTab('advanced')
+    setAdvancedOpen(true)
     window.requestAnimationFrame(() => {
       document.getElementById('workspace-workflow-launcher')?.scrollIntoView({
         behavior: 'smooth',
         block: 'start',
       })
     })
-  }
-
-  function openGuidedTour(): void {
-    setGuidedDemoStep(0)
-    setGuidedDemoActive(true)
-    setActiveTab('mission')
-  }
-
-  function setGuidedTab(tab: GuidedDemoTab): void {
-    setActiveTab(tab)
   }
 
   function handleGuideAction(action: OperatorGuideAction): void {
@@ -2022,56 +1947,40 @@ export default function DealWorkspace({
     }
   }
 
-  return (
-    <div className="portal-shell" data-testid="operator-deal-hub">
-      <section className="portal-hero">
-        <div>
-          <p className="portal-kicker">Agentic Acquisition Workspace</p>
-          <h1>{dealCheckpoint.dealName}</h1>
-          <p>
-            Source documents, specialist workpapers, diligence blockers, financing paths, and committee-ready
-            outputs in one controlled acquisition record.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              type="button"
-              data-testid="hub-upload-docs-button"
-              className="portal-button portal-button-primary"
-              onClick={() => setActiveTab('documents')}
-            >
-              Add Source Material
-            </button>
-            <button
-              type="button"
-              data-testid="guided-demo-workspace-cta"
-              className="portal-button portal-button-secondary"
-              onClick={openGuidedTour}
-            >
-              Start Guided Tour
-            </button>
-            <button
-              type="button"
-              className="portal-button portal-button-secondary"
-              onClick={() => setActiveTab('mission')}
-            >
-              Open Command
-            </button>
-          </div>
-        </div>
-        <div className="portal-hero-meta">
-          <span>{dealCheckpoint.dealId}</span>
-          <span>{dealCheckpoint.workflowName || 'Workflow Ready'}</span>
-          <span>{dealCheckpoint.status}</span>
-        </div>
-      </section>
+  const activeStage = tabToStage(activeTab)
+  const stages = deriveSpineStages(
+    dealCheckpoint,
+    intakeSummaryFromDocuments(documents),
+    { complete: isCompleteStatus(dealCheckpoint.status), hasContent: documentArtifacts.length > 0 },
+  )
+  const activeStageMeta = stages.find((stage) => stage.id === activeStage)
+  const icStage = stages.find((stage) => stage.id === 'ic')
+  const packageStatus: StageStatus = icStage?.status ?? 'idle'
+  const packageLabel =
+    packageStatus === 'idle' ? 'IC Package — not started' : `IC Package ${icStage?.progress ?? 0}%`
 
-      <OperatorCommandBar
-        command={workspace?.operatorCommand}
-        onAction={handleGuideAction}
-        hasRuntimeEvidence={dealCheckpoint.status !== 'pending' && (storyEvents.length > 0 || documentArtifacts.length > 0)}
-        isCompleteRun={isCompleteStatus(dealCheckpoint.status)}
-      />
+  const activePhaseForStage = phaseTabs.find((phase) => phase.phaseSlug === STAGE_TO_TAB[activeStage])
+  const team: TeamAgentView[] = (activePhaseForStage?.agents ?? []).map((agent) => ({
+    agentId: agent.agentId,
+    name: agent.name,
+    critical: agent.critical,
+    status: agentStatusToStageStatus(agentCheckpoints.get(agent.name)?.status),
+  }))
 
+  // Phase 1 stubs: the command bar + agent summon route to the Advanced drawer (where the
+  // workflow launcher + agent tree live). Phase 3 replaces these with single-agent dispatch.
+  function handleCommandSuggestion(_suggestion: CommandSuggestion): void {
+    setAdvancedOpen(true)
+  }
+  function handleCommandSubmit(_text: string): void {
+    setAdvancedOpen(true)
+  }
+  function openAgentFromRail(_agentId: string): void {
+    setAdvancedOpen(true)
+  }
+
+  function renderStageBody(): ReactNode {
+    const recovery = (
       <PartialFailureRecovery
         dealCheckpoint={liveDealCheckpoint ?? dealCheckpoint}
         agentCheckpoints={liveAgentCheckpoints ?? agentCheckpoints}
@@ -2079,117 +1988,161 @@ export default function DealWorkspace({
         dealPath={deals.find((entry) => entry.dealId === (liveDealCheckpoint ?? dealCheckpoint).dealId)?.dealPath ?? null}
         runActive={launchingWorkflowId !== null || isRunActive(liveDealCheckpoint ?? dealCheckpoint)}
       />
+    )
+
+    if (activeStage === 'intake') {
+      return (
+        <div className="space-y-4">
+          {recovery}
+          <DocumentIntakePanel
+            documents={documents}
+            extraction={lastExtraction}
+            working={working}
+            onUpload={uploadDocument}
+            onExtract={extractDocument}
+            onLoadExtraction={loadExtraction}
+            onApply={applyExtraction}
+            onReview={(documentId, fieldIds, reviewStatus, note) =>
+              reviewExtraction(documentId, fieldIds, reviewStatus, note).then(() => undefined)
+            }
+          />
+        </div>
+      )
+    }
+
+    if (activeStage === 'ic') {
+      return (
+        <div className="space-y-4">
+          {recovery}
+          <Suspense fallback={<WorkspacePanelSkeleton label="Loading IC package..." />}>
+            <CompletionPackage
+              dealCheckpoint={dealCheckpoint}
+              storyEvents={storyEvents}
+              documentArtifacts={documentArtifacts}
+              onExportPackage={handlePackageExport}
+              exportingPackage={working}
+              exportMessage={packageExportMessage}
+            />
+          </Suspense>
+          <div className="grid gap-4 xl:grid-cols-2">
+            <FindingsPanel dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
+            <DecisionLog storyEvents={storyEvents} />
+          </div>
+          {/^complete$/i.test(dealCheckpoint.status) && <FinalReport dealCheckpoint={dealCheckpoint} />}
+        </div>
+      )
+    }
+
+    if (activePhaseForStage) {
+      return (
+        <div className="space-y-4">
+          {recovery}
+          <PhaseWorkspaceView
+            dealCheckpoint={dealCheckpoint}
+            agentCheckpoints={agentCheckpoints}
+            phase={activePhaseForStage}
+            documents={documents}
+            onChecklist={savePhaseChecklist}
+            onLaunch={handlePhaseLaunch}
+            launching={launchingWorkflowId !== null}
+            runtimeProvider={phaseRuntimeProvider}
+            onRuntimeProviderChange={setPhaseRuntimeProvider}
+            codexMaxAgents={phaseCodexMaxAgents}
+            onCodexMaxAgentsChange={setPhaseCodexMaxAgents}
+            codexConcurrency={phaseCodexConcurrency}
+            onCodexConcurrencyChange={setPhaseCodexConcurrency}
+          />
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-4">
+        {recovery}
+        <div className="portal-panel text-sm text-gray-500">
+          {activeStageMeta?.label ?? 'This stage'} has no staffed workflow yet. Upload source documents
+          and run the deal team to populate it.
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <WorkspaceFrame
+        deal={dealCheckpoint}
+        stages={stages}
+        activeStage={activeStage}
+        onFocusStage={(stage) => setActiveTab(STAGE_TO_TAB[stage])}
+        storyEvents={storyEvents}
+        team={team}
+        totalAgentCount={TOTAL_AGENT_COUNT}
+        stageLabel={activeStageMeta?.label ?? 'Stage'}
+        packageLabel={packageLabel}
+        packageStatus={packageStatus}
+        suggestions={suggestionsForStage(activeStage)}
+        onCommandSubmit={handleCommandSubmit}
+        onCommandSuggestion={handleCommandSuggestion}
+        onOpenAgent={openAgentFromRail}
+        onSummon={() => setAdvancedOpen(true)}
+        onOpenAdvanced={() => setAdvancedOpen(true)}
+      >
+        {loading ? (
+          <div className="portal-panel text-sm text-gray-500">Loading workspace...</div>
+        ) : (
+          renderStageBody()
+        )}
+      </WorkspaceFrame>
 
       {(error || launchMessage) && (
-        <div className="border border-white/10 bg-black px-4 py-3 text-sm text-gray-300">
+        <div className="mt-4 border border-white/10 bg-black px-4 py-3 text-sm text-gray-300" data-testid="workspace-message">
           {error || launchMessage}
         </div>
       )}
 
-      <nav className="portal-nav" aria-label="Deal workspace sections">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            data-testid={`workspace-tab-${item.id}`}
-            onClick={() => setActiveTab(item.id as WorkspaceTab)}
-            className={activeTab === item.id ? 'active' : ''}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
-
-      {loading && <div className="portal-panel text-sm text-gray-500">Loading workspace...</div>}
-
-      {!loading && (
-        <section className={`grid gap-5 ${activeTab === 'mission' ? '' : 'xl:grid-cols-[minmax(0,1fr)_320px]'}`}>
-          <div className="min-w-0 space-y-4">
-            {activeTab === 'mission' && (
-              <Suspense fallback={<WorkspacePanelSkeleton label="Loading mission control..." />}>
-                <MissionControl
-                  dealCheckpoint={dealCheckpoint}
-                  agentCheckpoints={agentCheckpoints}
-                  storyEvents={storyEvents}
-                  documentArtifacts={documentArtifacts}
-                  documents={documents}
-                  workspace={workspace}
-                  onOpenDocuments={() => setActiveTab('documents')}
-                  onOpenAgents={() => setActiveTab('agents')}
-                  onOpenWorkpapers={() => setActiveTab('workpapers')}
-                  onOpenPackage={() => setActiveTab('package')}
-                  onOpenAdvanced={focusWorkflowLauncher}
-                />
-              </Suspense>
-            )}
-
-            {activeTab === 'documents' && (
-              <div className="space-y-4">
-                <DocumentIntakePanel
-                  documents={documents}
-                  extraction={lastExtraction}
-                  working={working}
-                  onUpload={uploadDocument}
-                  onExtract={extractDocument}
-                  onLoadExtraction={loadExtraction}
-                  onApply={applyExtraction}
-                  onReview={(documentId, fieldIds, reviewStatus, note) =>
-                    reviewExtraction(documentId, fieldIds, reviewStatus, note).then(() => undefined)
-                  }
-                />
+      {advancedOpen && (
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-black/70 backdrop-blur-sm" data-testid="advanced-drawer">
+          <div className="min-h-full p-4 sm:p-6 lg:p-10">
+            <div className="mx-auto w-full max-w-6xl border border-white/10 bg-cre-surface">
+              <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+                <p className="portal-kicker">Advanced · Controls, Team &amp; Workpapers</p>
+                <button
+                  type="button"
+                  data-testid="advanced-drawer-close"
+                  className="portal-button portal-button-secondary min-h-9 px-3 py-1"
+                  onClick={() => setAdvancedOpen(false)}
+                >
+                  Close
+                </button>
               </div>
-            )}
-
-            {activeTab === 'agents' && (
-              <AgentTree
-                dealCheckpoint={dealCheckpoint}
-                agentCheckpoints={agentCheckpoints}
-                plannedPhases={workspace?.phases}
-              />
-            )}
-
-            {activeTab === 'workpapers' && (
-              <DocumentWall documentArtifacts={documentArtifacts} />
-            )}
-
-            {activeTab === 'package' && (
-              <div className="space-y-4">
-                <Suspense fallback={<WorkspacePanelSkeleton label="Loading IC package..." />}>
-                  <CompletionPackage
+              <div className="space-y-4 p-5">
+                <Suspense fallback={<WorkspacePanelSkeleton label="Loading mission control..." />}>
+                  <MissionControl
                     dealCheckpoint={dealCheckpoint}
+                    agentCheckpoints={agentCheckpoints}
                     storyEvents={storyEvents}
                     documentArtifacts={documentArtifacts}
-                    onExportPackage={handlePackageExport}
-                    exportingPackage={working}
-                    exportMessage={packageExportMessage}
+                    documents={documents}
+                    workspace={workspace}
+                    onOpenDocuments={() => { setAdvancedOpen(false); setActiveTab('documents') }}
+                    onOpenAgents={() => undefined}
+                    onOpenWorkpapers={() => undefined}
+                    onOpenPackage={() => { setAdvancedOpen(false); setActiveTab('package') }}
+                    onOpenAdvanced={() => undefined}
                   />
                 </Suspense>
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <FindingsPanel dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
-                  <DecisionLog storyEvents={storyEvents} />
-                </div>
-                {/^complete$/i.test(dealCheckpoint.status) && <FinalReport dealCheckpoint={dealCheckpoint} />}
-              </div>
-            )}
-
-            {activeTab === 'advanced' && (
-              <div className="space-y-4">
                 <Overview
                   dealCheckpoint={dealCheckpoint}
                   workspace={workspace}
                   criteria={criteria}
                   documents={documents}
-                  onOpenDocuments={() => setActiveTab('documents')}
+                  onOpenDocuments={() => { setAdvancedOpen(false); setActiveTab('documents') }}
                   onFocusWorkflowLauncher={focusWorkflowLauncher}
-                  onOpenPhase={(phaseSlug) => setActiveTab(phaseSlug as WorkspaceTab)}
+                  onOpenPhase={(phaseSlug) => { setActiveTab(phaseSlug as WorkspaceTab); setAdvancedOpen(false) }}
                   onOpenEditDetails={() => onOpenEditDetails?.(dealCheckpoint.dealId)}
                 >
                   {criteria && (
-                    <CriteriaPanel
-                      criteria={criteria}
-                      working={working}
-                      onSave={saveCriteria}
-                    />
+                    <CriteriaPanel criteria={criteria} working={working} onSave={saveCriteria} />
                   )}
                   <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,0.72fr)]">
                     <PipelineView dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
@@ -2209,10 +2162,16 @@ export default function DealWorkspace({
                     </div>
                   </section>
                 </Overview>
+                <AgentTree
+                  dealCheckpoint={dealCheckpoint}
+                  agentCheckpoints={agentCheckpoints}
+                  plannedPhases={workspace?.phases}
+                />
+                <DocumentWall documentArtifacts={documentArtifacts} />
                 <DealProgressionGuideView
                   guide={workspace?.progressionGuide}
                   activeTab={activeTab}
-                  onOpenSection={(phaseSlug) => setActiveTab(phaseSlug as WorkspaceTab)}
+                  onOpenSection={(phaseSlug) => { setActiveTab(phaseSlug as WorkspaceTab); setAdvancedOpen(false) }}
                   onAction={handleGuideAction}
                   onChecklist={savePhaseChecklist}
                 />
@@ -2220,49 +2179,18 @@ export default function DealWorkspace({
                 <TimelineView dealCheckpoint={dealCheckpoint} agentCheckpoints={agentCheckpoints} />
                 {logEntries.length > 0 && <LogStream logEntries={logEntries} />}
               </div>
-            )}
-
-            {activePhase && (
-              <PhaseWorkspaceView
-                dealCheckpoint={dealCheckpoint}
-                agentCheckpoints={agentCheckpoints}
-                phase={activePhase}
-                documents={documents}
-                onChecklist={savePhaseChecklist}
-                onLaunch={handlePhaseLaunch}
-                launching={launchingWorkflowId !== null}
-                runtimeProvider={phaseRuntimeProvider}
-                onRuntimeProviderChange={setPhaseRuntimeProvider}
-                codexMaxAgents={phaseCodexMaxAgents}
-                onCodexMaxAgentsChange={setPhaseCodexMaxAgents}
-                codexConcurrency={phaseCodexConcurrency}
-                onCodexConcurrencyChange={setPhaseCodexConcurrency}
-              />
-            )}
+            </div>
           </div>
-
-          {activeTab !== 'mission' && (
-            <DealCockpitSidebar
-              workspace={workspace}
-              documents={documents}
-              dealCheckpoint={dealCheckpoint}
-              activeTab={activeTab}
-              onTabChange={(tab) => setActiveTab(tab === 'overview' || tab === 'guide' ? 'advanced' : tab as WorkspaceTab)}
-              onUploadFiles={(files) => void handleUploadFiles(files)}
-              onExtractDocuments={(targetDocuments) => void handleExtractDocuments(targetDocuments)}
-              onOpenEditDetails={() => onOpenEditDetails?.(dealCheckpoint.dealId)}
-            />
-          )}
-        </section>
+        </div>
       )}
 
       <GuidedDemoTour
         active={guidedDemoActive}
         stepIndex={guidedDemoStep}
         onStepIndexChange={setGuidedDemoStep}
-        onTabChange={setGuidedTab}
+        onFocusStage={(stage) => setActiveTab(STAGE_TO_TAB[stage])}
         onClose={() => setGuidedDemoActive(false)}
       />
-    </div>
+    </>
   )
 }

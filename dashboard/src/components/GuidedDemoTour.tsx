@@ -1,13 +1,12 @@
 import { useEffect } from 'react'
-
-export type GuidedDemoTab = 'mission' | 'agents' | 'workpapers' | 'package'
+import type { StageId } from '../lib/stageModel'
 
 interface GuidedDemoStep {
   id: string
   title: string
   eyebrow: string
   body: string
-  tab: GuidedDemoTab
+  stage: StageId
   targetTestId: string
 }
 
@@ -15,52 +14,52 @@ interface GuidedDemoTourProps {
   active: boolean
   stepIndex: number
   onStepIndexChange: (stepIndex: number) => void
-  onTabChange: (tab: GuidedDemoTab) => void
+  onFocusStage: (stage: StageId) => void
   onClose: () => void
 }
 
 const GUIDED_DEMO_STEPS: GuidedDemoStep[] = [
   {
-    id: 'acquisition-command',
-    title: 'Acquisition Command',
-    eyebrow: '1 / 5 · Executive state',
-    tab: 'mission',
-    targetTestId: 'mission-control',
+    id: 'deal-space',
+    title: 'The Deal Space',
+    eyebrow: '1 / 5 · The whole lifecycle',
+    stage: 'intake',
+    targetTestId: 'lifecycle-spine',
     body:
-      'Start with the command surface: deal stage, readiness, blockers, package state, and the latest material movement in one operator view.',
+      'Every stage of the deal — Intake through IC — lives on one spine that is always visible. Click any stage to focus the workspace on it; the colored dots tell you what is done, live, or waiting on you.',
   },
   {
-    id: 'swarm-goal-console',
-    title: 'Swarm Goal Console',
-    eyebrow: '2 / 5 · Goal to specialist team',
-    tab: 'mission',
-    targetTestId: 'swarm-goal-console',
+    id: 'command-console',
+    title: 'Command Your Team',
+    eyebrow: '2 / 5 · Tell them what to do',
+    stage: 'intake',
+    targetTestId: 'command-bar',
     body:
-      'The operator states the outcome. The swarm turns that goal into a recommended workflow, specialist roster, data gaps, handoff path, and next action.',
+      'Drive the deal from one prompt. Tell the team what you want — or tap a suggestion — and the right specialists go to work. No menus, no forms.',
   },
   {
-    id: 'deal-team',
-    title: 'Deal Team',
-    eyebrow: '3 / 5 · Visible coordination',
-    tab: 'agents',
-    targetTestId: 'agent-tree',
+    id: 'your-team',
+    title: 'Your Team',
+    eyebrow: '3 / 5 · Summon a specialist',
+    stage: 'diligence',
+    targetTestId: 'team-rail',
     body:
-      'Specialist agents are organized by workstream so a reviewer can see who is queued, who filed work, and how diligence context moves across the team.',
+      'Each stage shows the specialists staffed on it, with live status. Click one to put it to work and watch it run; summon any of the 31 agents on demand.',
   },
   {
-    id: 'workpapers-evidence',
-    title: 'Workpapers & Evidence',
-    eyebrow: '4 / 5 · Audit trail',
-    tab: 'workpapers',
-    targetTestId: 'workpapers-evidence-view',
+    id: 'watch-it-work',
+    title: 'Watch It Work',
+    eyebrow: '4 / 5 · The live feed',
+    stage: 'underwriting',
+    targetTestId: 'live-feed',
     body:
-      'Agent outputs become reviewable workpapers and evidence-oriented artifacts instead of disappearing into a chat transcript.',
+      'The live feed is the heartbeat: a running, chronological view of every agent’s activity as the team works the deal — the moment you can watch the whole desk move.',
   },
   {
     id: 'ic-package',
     title: 'IC Package',
     eyebrow: '5 / 5 · Committee-ready output',
-    tab: 'package',
+    stage: 'ic',
     targetTestId: 'completion-package-view',
     body:
       'The payoff is an investment committee package: recommendation, phase outcomes, risks, data gaps, decision log, source-backed inputs, and workpaper links.',
@@ -80,7 +79,7 @@ export default function GuidedDemoTour({
   active,
   stepIndex,
   onStepIndexChange,
-  onTabChange,
+  onFocusStage,
   onClose,
 }: GuidedDemoTourProps) {
   const safeStepIndex = Math.min(Math.max(stepIndex, 0), GUIDED_DEMO_STEPS.length - 1)
@@ -90,9 +89,9 @@ export default function GuidedDemoTour({
 
   useEffect(() => {
     if (!active) return
-    onTabChange(step.tab)
+    onFocusStage(step.stage)
     scrollTargetIntoView(step.targetTestId)
-  }, [active, onTabChange, step.tab, step.targetTestId])
+  }, [active, onFocusStage, step.stage, step.targetTestId])
 
   if (!active) return null
 
@@ -114,7 +113,7 @@ export default function GuidedDemoTour({
         <button
           type="button"
           data-testid="guided-demo-close"
-          className="rounded-full border border-white/10 px-2 py-1 text-xs text-gray-400 hover:bg-white/10 hover:text-white"
+          className="border border-white/10 px-2 py-1 text-xs text-gray-400 hover:bg-white/10 hover:text-white"
           onClick={onClose}
           aria-label="Close guided demo"
         >
