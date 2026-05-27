@@ -2000,6 +2000,21 @@ export default function DealWorkspace({
     void extractDocument(pending.documentId)
   }, [documents, working, extractDocument])
 
+  // Advanced-drawer a11y (Phase-1 gate finding): lock body scroll + close on Escape while open.
+  useEffect(() => {
+    if (!advancedOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') setAdvancedOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [advancedOpen])
+
   async function handlePhaseLaunch(phaseSlug: string): Promise<void> {
     const workflowId = PHASE_WORKFLOW[phaseSlug] ?? 'full-acquisition-review'
     try {
@@ -2348,7 +2363,13 @@ export default function DealWorkspace({
       )}
 
       {advancedOpen && (
-        <div className="fixed inset-0 z-40 overflow-y-auto bg-black/70 backdrop-blur-sm" data-testid="advanced-drawer">
+        <div
+          className="fixed inset-0 z-40 overflow-y-auto bg-black/70 backdrop-blur-sm"
+          data-testid="advanced-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Advanced controls, team, and workpapers"
+        >
           <div className="min-h-full p-4 sm:p-6 lg:p-10">
             <div className="mx-auto w-full max-w-6xl border border-white/10 bg-cre-surface">
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
