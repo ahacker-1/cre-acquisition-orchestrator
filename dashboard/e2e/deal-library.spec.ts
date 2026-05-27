@@ -1,15 +1,24 @@
-import { expect, test, type APIRequestContext, type APIResponse, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs'
-import { dirname, join, resolve } from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const dashboardRoot = resolve(__dirname, '..')
-const repoRoot = resolve(dashboardRoot, '..')
-const dataRoot = join(repoRoot, 'data')
-const parserFixturesRoot = join(repoRoot, 'fixtures', 'parsers')
-const firstRealDealRoot = join(repoRoot, 'fixtures', 'first-real-deal')
+import { dirname, join } from 'path'
+import {
+  API_URL,
+  cleanupDealArtifacts,
+  cleanupGeneratedRuntimeArtifacts,
+  closeAdvancedDrawer,
+  dataRoot,
+  expectApiOk,
+  firstRealDealRoot,
+  focusStage,
+  isApiResponse,
+  launchWorkflowForDeal,
+  openAdvancedDrawer,
+  openWorkspaceFromRecentDeals,
+  parserFixturesRoot,
+  saveLaunchReadyDeal,
+  stopActiveRun,
+  waitForDashboardReady,
+} from './helpers'
 
 const DRAFT_DEAL_ID = 'DEAL-2099-901'
 const DRAFT_DEAL_NAME = 'Playwright Draft Deal'
@@ -26,40 +35,10 @@ const PARTIAL_RUN_ID = 'codex-playwright-partial-001'
 const RED_FLAG_DEAL_ID = 'DEAL-2099-906'
 const RED_FLAG_DEAL_NAME = 'Playwright Red Flag Deal'
 
-const API_URL = 'http://127.0.0.1:8081'
-
-function cleanupDealArtifacts(dealId: string): void {
-  const targets = [
-    join(dataRoot, 'deals', dealId),
-    join(dataRoot, 'status', `${dealId}.json`),
-    join(dataRoot, 'status', dealId),
-    join(dataRoot, 'logs', dealId),
-  ]
-
-  for (const target of targets) {
-    if (existsSync(target)) {
-      rmSync(target, { recursive: true, force: true })
-    }
-  }
-}
-
 function cleanupWorkflowPresets(): void {
   const target = join(dataRoot, 'workflow-presets')
   if (existsSync(target)) {
     rmSync(target, { recursive: true, force: true })
-  }
-}
-
-function cleanupGeneratedRuntimeArtifacts(dealId: string): void {
-  const targets = [
-    join(dataRoot, 'phase-outputs', dealId),
-    join(dataRoot, 'reports', dealId),
-  ]
-
-  for (const target of targets) {
-    if (existsSync(target)) {
-      rmSync(target, { recursive: true, force: true })
-    }
   }
 }
 
@@ -194,27 +173,6 @@ function writeRedFlagRun(dealId: string, dealName: string): void {
   writeFileSync(dealStatusFile, JSON.stringify(checkpoint, null, 2))
 }
 
-async function expectApiOk(response: APIResponse): Promise<void> {
-  if (response.ok()) return
-  throw new Error(`API request failed (${response.status()} ${response.statusText()}): ${await response.text()}`)
-}
-
-function isApiResponse(response: APIResponse, method: string, path: string): boolean {
-  return new URL(response.url()).pathname === path && response.request().method() === method
-}
-
-async function stopActiveRun(request: APIRequestContext): Promise<void> {
-  await request.post(`${API_URL}/api/run/stop`)
-
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    const response = await request.get(`${API_URL}/api/run/status`)
-    const payload = (await response.json()) as { active?: boolean }
-    if (!payload.active) return
-    await new Promise((resolvePromise) => setTimeout(resolvePromise, 500))
-  }
-}
-
-
 async function waitForRunIdle(request: APIRequestContext): Promise<void> {
   for (let attempt = 0; attempt < 90; attempt += 1) {
     const response = await request.get(`${API_URL}/api/run/status`)
@@ -223,11 +181,6 @@ async function waitForRunIdle(request: APIRequestContext): Promise<void> {
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 500))
   }
   throw new Error('Timed out waiting for active run to finish')
-}
-
-async function waitForDashboardReady(page: Page): Promise<void> {
-  await page.goto('/')
-  await expect(page.getByText('Connected')).toBeVisible({ timeout: 20_000 })
 }
 
 async function expectViewportAtTop(page: Page): Promise<void> {
@@ -305,126 +258,6 @@ async function fillLaunchReadyDeal(page: Page, dealId: string, dealName: string)
   await wizard.getByRole('textbox', { name: 'Closing Date' }).fill('2026-05-15')
   await wizard.getByRole('combobox', { name: 'Speed' }).selectOption('fast')
   await page.getByTestId('deal-wizard-next').click()
-}
-
-function buildLaunchReadyDeal(dealId: string, dealName: string): Record<string, unknown> {
-  return {
-    dealId,
-    dealName,
-    property: {
-      address: '500 Operator Way',
-      city: 'Austin',
-      state: 'TX',
-      zip: '78701',
-      propertyType: 'multifamily',
-      yearBuilt: 2008,
-      totalUnits: 12,
-      unitMix: {
-        types: [
-          { type: '1BR/1BA', count: 12, avgSqFt: 725, marketRent: 1700, inPlaceRent: 1600 },
-        ],
-      },
-    },
-    financials: {
-      askingPrice: 3_600_000,
-      currentNOI: 230_000,
-      inPlaceOccupancy: 0.94,
-    },
-    financing: {
-      targetLTV: 0.7,
-      estimatedRate: 0.061,
-      loanTerm: 10,
-      amortization: 30,
-      loanType: 'Agency',
-    },
-    investmentStrategy: 'core-plus',
-    targetHoldPeriod: 5,
-    targetIRR: 0.15,
-    targetEquityMultiple: 1.9,
-    targetCashOnCash: 0.08,
-    seller: {
-      entity: 'Playwright Seller LLC',
-    },
-    timeline: {
-      psaExecutionDate: '2026-04-01',
-      ddStartDate: '2026-04-02',
-      ddExpirationDate: '2026-04-20',
-      closingDate: '2026-05-15',
-    },
-    notes: 'Operator hub E2E fixture.',
-  }
-}
-
-async function saveLaunchReadyDeal(
-  request: APIRequestContext,
-  dealId: string,
-  dealName: string,
-): Promise<void> {
-  const response = await request.post(`${API_URL}/api/deals`, {
-    data: {
-      deal: buildLaunchReadyDeal(dealId, dealName),
-      mode: 'launch',
-    },
-  })
-  await expectApiOk(response)
-}
-
-async function launchWorkflowForDeal(
-  request: APIRequestContext,
-  workflowId: string,
-  dealId: string,
-): Promise<void> {
-  const response = await request.post(`${API_URL}/api/workflows/${workflowId}/launch`, {
-    data: {
-      dealId,
-      scenario: 'core-plus',
-      speed: 'fast',
-      reset: false,
-    },
-  })
-  await expectApiOk(response)
-}
-
-async function waitForOperatorDealHub(page: Page, dealName: string): Promise<void> {
-  await openWorkspaceFromRecentDeals(page, WORKSPACE_DEAL_ID, dealName)
-}
-
-async function openWorkspaceFromRecentDeals(page: Page, dealId: string, dealName: string): Promise<void> {
-  await waitForDashboardReady(page)
-  const workspace = page.getByTestId('operator-deal-hub')
-  const heading = page.getByRole('main').getByRole('heading', { name: dealName })
-  const strip = page.getByTestId('recent-deals-strip')
-  const card = strip.getByTestId(`deal-card-${dealId}`)
-
-  const visibleTarget = await Promise.race([
-    workspace.waitFor({ state: 'visible', timeout: 20_000 }).then(() => 'workspace' as const).catch(() => null),
-    card.waitFor({ state: 'visible', timeout: 20_000 }).then(() => 'card' as const).catch(() => null),
-  ])
-
-  if (visibleTarget === 'workspace' || (await workspace.isVisible())) {
-    await expect(heading).toBeVisible({ timeout: 20_000 })
-    return
-  }
-
-  if (visibleTarget !== 'card') {
-    await expect(card).toBeVisible({ timeout: 1_000 })
-  }
-
-  try {
-    await strip.getByTestId(`workspace-docs-${dealId}`).click({ timeout: 5_000 })
-  } catch (error) {
-    if (!(await workspace.isVisible())) {
-      throw error
-    }
-  }
-
-  if (await workspace.isVisible()) {
-    await expect(heading).toBeVisible({ timeout: 20_000 })
-    return
-  }
-
-  await expect(workspace).toBeVisible({ timeout: 20_000 })
-  await expect(heading).toBeVisible({ timeout: 20_000 })
 }
 
 function documentCoverageStat(page: Page) {
@@ -557,10 +390,12 @@ test('creates a draft from the document-first homepage and uploads the dropped f
   const savePayload = (await saveResponse.json()) as { item: { dealId: string } }
   const quickDealId = savePayload.item.dealId
 
-  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByTestId('workspace-tab-documents')).toHaveClass(/active/)
-  await expect(page.getByTestId('operator-command-bar')).toContainText('Upload the first source package')
-  await page.getByTestId('workspace-tab-documents').click()
+  await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
+  // A freshly created deal opens focused on the Intake stage (the old "documents" tab body),
+  // and the always-present command bar replaces the removed OperatorCommandBar surface that
+  // used to read "Upload the first source package".
+  await expect(page.getByTestId('spine-step-intake')).toHaveAttribute('aria-current', 'step')
+  await expect(page.getByTestId('command-bar')).toBeVisible()
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-hero-rent-roll.csv')
 
   const extractionPreview = page.getByTestId('extraction-preview')
@@ -605,9 +440,9 @@ test('shows compact recent deals without changing the full deal library modal', 
   await expect(strip.getByTestId(`deal-card-${RECENT_DEAL_ID}`)).toContainText(RECENT_DEAL_NAME)
 
   await strip.getByTestId(`workspace-docs-${RECENT_DEAL_ID}`).click()
-  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
   await expectViewportAtTop(page)
-  await expect(page.getByTestId('workspace-tab-documents')).toHaveClass(/active/)
+  await expect(page.getByTestId('spine-step-intake')).toHaveAttribute('aria-current', 'step')
 
   await page.getByTestId('header-deals-button').click()
   const modal = page.getByTestId('deal-library-modal')
@@ -641,36 +476,38 @@ test('guided demo mode opens the sample deal, advances through major sections, a
   await waitForDashboardReady(page)
   await page.getByTestId('guided-demo-front-door-cta').click()
 
-  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
   await expect(page.getByRole('main').getByRole('heading', { name: 'Parkview Apartments' })).toBeVisible({ timeout: 20_000 })
 
+  // The redesigned 5-step tour drives lifecycle stages (not the removed tabs): each step
+  // focuses a stage on the spine and points at the persistent frame surface it describes.
   const tour = page.getByTestId('guided-demo-overlay')
   await expect(tour).toBeVisible()
-  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('Acquisition Command')
-  await expect(page.getByTestId('workspace-tab-mission')).toHaveClass(/active/)
-  await expect(page.getByTestId('mission-control')).toBeVisible()
+  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('The Deal Space')
+  await expect(page.getByTestId('spine-step-intake')).toHaveAttribute('aria-current', 'step')
+  await expect(page.getByTestId('lifecycle-spine')).toBeVisible()
 
   await tour.getByTestId('guided-demo-next').click()
-  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('Swarm Goal Console')
-  await expect(page.getByTestId('workspace-tab-mission')).toHaveClass(/active/)
-  await expect(page.getByTestId('swarm-goal-console')).toBeVisible()
+  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('Command Your Team')
+  await expect(page.getByTestId('spine-step-intake')).toHaveAttribute('aria-current', 'step')
+  await expect(page.getByTestId('command-bar')).toBeVisible()
 
   await tour.getByTestId('guided-demo-next').click()
-  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('Deal Team')
-  await expect(page.getByTestId('workspace-tab-agents')).toHaveClass(/active/)
-  await expect(page.getByTestId('agent-tree')).toBeVisible()
+  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('Your Team')
+  await expect(page.getByTestId('spine-step-diligence')).toHaveAttribute('aria-current', 'step')
+  await expect(page.getByTestId('team-rail')).toBeVisible()
 
   await tour.getByTestId('guided-demo-next').click()
-  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('Workpapers & Evidence')
-  await expect(page.getByTestId('workspace-tab-workpapers')).toHaveClass(/active/)
-  await expect(page.getByTestId('workpapers-evidence-view')).toBeVisible()
+  await expect(tour.getByTestId('guided-demo-step-title')).toContainText('Watch It Work')
+  await expect(page.getByTestId('spine-step-underwriting')).toHaveAttribute('aria-current', 'step')
+  await expect(page.getByTestId('live-feed')).toBeVisible()
 
   await tour.getByTestId('guided-demo-next').click()
   await expect(tour.getByTestId('guided-demo-step-title')).toContainText('IC Package')
-  await expect(page.getByTestId('workspace-tab-package')).toHaveClass(/active/)
+  await expect(page.getByTestId('spine-step-ic')).toHaveAttribute('aria-current', 'step')
   await expect(page.getByTestId('completion-package-view')).toBeVisible()
 
-  await tour.getByTestId('guided-demo-close').click()
+  await tour.getByTestId('guided-demo-finish').click()
   await expect(tour).toBeHidden()
 
   expect(consoleErrors).toEqual([])
@@ -683,15 +520,19 @@ test('mobile guided workspace smoke @mobile', async ({ page, request }) => {
   await waitForDashboardReady(page)
 
   await page.getByTestId(`workspace-docs-${WORKSPACE_DEAL_ID}`).click()
-  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByTestId('operator-command-bar')).toBeVisible()
-  await page.getByTestId('workspace-tab-mission').scrollIntoViewIfNeeded()
-  await expect(page.getByTestId('workspace-tab-advanced')).toBeInViewport()
-  await page.getByTestId('workspace-tab-mission').click()
-  await expect(page.getByTestId('mission-control')).toContainText('Acquisition Command')
-  await page.getByTestId('workspace-tab-advanced').click()
-  await expect(page.getByTestId('deal-progression-guide')).toContainText('What is needed next')
-  await page.getByTestId('workspace-tab-package').click()
+  await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByTestId('command-bar')).toBeVisible()
+  // The lifecycle spine + Advanced control replace the old tab strip on mobile.
+  await expect(page.getByTestId('lifecycle-spine')).toBeVisible()
+  await page.getByTestId('open-advanced').scrollIntoViewIfNeeded()
+  await expect(page.getByTestId('open-advanced')).toBeInViewport()
+  // Mission Control + the progression guide now live in the Advanced drawer.
+  const drawer = await openAdvancedDrawer(page)
+  await expect(drawer.getByTestId('mission-control')).toContainText('Acquisition Command')
+  await expect(drawer.getByTestId('deal-progression-guide')).toContainText('What is needed next')
+  await closeAdvancedDrawer(page)
+  // The IC package body is the IC stage of the spine.
+  await focusStage(page, 'ic')
   await expect(page.getByTestId('completion-package-view')).toBeVisible()
 
   expect(consoleErrors).toEqual([])
@@ -715,8 +556,8 @@ test('keeps the embedded workflow launcher scoped to the open deal', async ({ pa
 
   await waitForDashboardReady(page)
   await page.getByTestId(`workspace-docs-${WORKSPACE_DEAL_ID}`).click()
-  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
-  await page.getByTestId('workspace-tab-advanced').click()
+  await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
+  await openAdvancedDrawer(page)
 
   const launcher = page.getByTestId('workspace-workflow-launcher')
   await launcher.getByTestId('workflow-step-review').click()
@@ -856,30 +697,37 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
 
   await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
   await launchWorkflowForDeal(request, 'quick-deal-screen', WORKSPACE_DEAL_ID)
-  await waitForOperatorDealHub(page, WORKSPACE_DEAL_NAME)
+  // Stop the seed run before opening so the workspace is opened durably from the deal record
+  // (a stopped run's live checkpoint would otherwise collapse the auto-revealed view).
   await stopActiveRun(request)
+  await openWorkspaceFromRecentDeals(page, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
 
-  await expect(page.getByTestId('workspace-tab-documents')).toHaveClass(/active/)
-  await expect(page.getByTestId('operator-command-bar')).toContainText('Sample evidence is driving the active run')
-  await page.getByTestId('workspace-tab-mission').click()
-  await expect(page.getByTestId('mission-control')).toContainText('Acquisition Command')
-  await page.getByTestId('workspace-tab-advanced').click()
-  await expect(page.getByTestId('deal-progression-guide')).toContainText('What is needed next')
-  await expect(page.getByTestId('guide-section-underwriting')).toContainText('Checklist and help guide')
-  const briefing = page.getByTestId('operator-briefing')
+  // The deal opens focused on Intake; the persistent command bar replaces the removed
+  // OperatorCommandBar (which used to read "Sample evidence is driving the active run").
+  await expect(page.getByTestId('spine-step-intake')).toHaveAttribute('aria-current', 'step')
+  await expect(page.getByTestId('command-bar')).toBeVisible()
+
+  // Mission Control, the progression guide, the operator briefing, and the criteria editor
+  // all moved into the Advanced drawer. The cockpit's "launch readiness N/4" is now the
+  // operator briefing's source-backed-input-score (same approved/required field count).
+  const drawer = await openAdvancedDrawer(page)
+  await expect(drawer.getByTestId('mission-control')).toContainText('Acquisition Command')
+  await expect(drawer.getByTestId('deal-progression-guide')).toContainText('What is needed next')
+  await expect(drawer.getByTestId('guide-section-underwriting')).toContainText('Checklist and help guide')
+  const briefing = drawer.getByTestId('operator-briefing')
   await expect(briefing).toContainText('Launch Readiness')
   await expect(briefing.getByTestId('operator-next-action')).toContainText('Upload the first source package')
   await expect(briefing.getByTestId('source-backed-input-score')).toContainText('0/4')
   await expect(briefing.getByTestId('workflow-readiness-full-acquisition-review')).toContainText('warning')
-  await expect(page.getByTestId('cockpit-launch-readiness')).toContainText('0/4')
 
-  await page.getByTestId('criteria-scenario').selectOption('value-add')
-  await page.getByTestId('criteria-target-irr').fill('0.185')
+  await drawer.getByTestId('criteria-scenario').selectOption('value-add')
+  await drawer.getByTestId('criteria-target-irr').fill('0.185')
   const criteriaSaveResponse = page.waitForResponse(
     (response) => isApiResponse(response, 'POST', `/api/deals/${WORKSPACE_DEAL_ID}/criteria`),
   )
-  await page.getByTestId('criteria-save').click()
+  await drawer.getByTestId('criteria-save').click()
   expect((await criteriaSaveResponse).ok()).toBe(true)
+  await closeAdvancedDrawer(page)
 
   const workspaceResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
   await expectApiOk(workspaceResponse)
@@ -889,23 +737,32 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   expect(workspace.criteria.scenario).toBe('value-add')
   expect(workspace.criteria.targetIRR).toBe(0.185)
 
-  await page.getByTestId('workspace-tab-documents').click()
+  await focusStage(page, 'intake')
   await page.getByTestId('source-document-upload').setInputFiles([
     join(parserFixturesRoot, 'rent-roll-messy-realistic.xlsx'),
     join(parserFixturesRoot, 't12-messy-realistic.xlsx'),
     join(firstRealDealRoot, 'offering-memo-messy-realistic.md'),
   ])
 
+  // The intake source panel is the new "documents you have" surface; each uploaded doc
+  // renders its type label (Rent Roll, T12 Financials) — replacing the removed cockpit list.
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('rent-roll-messy-realistic.xlsx')
+  await expect(page.getByTestId('source-document-rent_roll')).toContainText('Rent Roll')
   await expect(page.getByTestId('source-document-t12')).toContainText('t12-messy-realistic.xlsx')
+  await expect(page.getByTestId('source-document-t12')).toContainText('T12')
   await expect(page.getByTestId('source-document-offering_memo')).toContainText('offering-memo-messy-realistic.md')
-  await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('Rent Roll')
-  await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('T12')
-  await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('Environmental')
-  await expect(page.getByTestId('cockpit-next-action')).toContainText('Run extraction')
-  await page.getByTestId('cockpit-phase-underwriting').click()
+
+  // Cockpit "Environmental" required-doc slot + "Run extraction" next action now live in the
+  // Advanced drawer (progression guide required-doc badges + operator briefing next action).
+  const docsDrawer = await openAdvancedDrawer(page)
+  await expect(docsDrawer.getByTestId('guide-section-due-diligence')).toContainText('Environmental')
+  await expect(docsDrawer.getByTestId('operator-next-action')).toContainText('Run or resolve the extraction queue')
+  await closeAdvancedDrawer(page)
+
+  // Phase bodies are reached by focusing their lifecycle stage on the spine.
+  await focusStage(page, 'underwriting')
   await expect(page.getByRole('heading', { name: 'Underwriting' })).toBeVisible()
-  await page.getByTestId('workspace-tab-documents').click()
+  await focusStage(page, 'intake')
 
   const extractionPreview = page.getByTestId('extraction-preview')
 
@@ -942,7 +799,11 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await extractionPreview.getByTestId('confirm-conflict-review').check()
   await page.getByTestId('apply-extraction').click()
   await expect(page.getByTestId('source-document-t12')).toContainText('applied')
-  await expect(page.getByTestId('cockpit-launch-readiness')).toContainText('3/4')
+  // Source-backed input progress (was cockpit-launch-readiness) now reads from the operator
+  // briefing's source-backed-input-score in the Advanced drawer.
+  const readiness3of4Drawer = await openAdvancedDrawer(page)
+  await expect(readiness3of4Drawer.getByTestId('source-backed-input-score')).toContainText('3/4')
+  await closeAdvancedDrawer(page)
 
   await page.getByTestId('extract-document-offering_memo').click()
   await expect(extractionPreview).toContainText('Asking Price')
@@ -964,14 +825,18 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await extractionPreview.getByTestId('confirm-conflict-review').check()
   await page.getByTestId('apply-extraction').click()
   await expect(page.getByTestId('source-document-offering_memo')).toContainText('applied')
-  await expect(page.getByTestId('cockpit-launch-readiness')).toContainText('4/4')
 
-  await page.getByTestId('workspace-tab-advanced').click()
-  await expect(page.getByTestId('operator-command-bar')).toBeVisible()
-  await expect(page.getByTestId('guide-section-underwriting')).toContainText('Run underwriting refresh')
-  await page.getByTestId('guide-note-underwriting-run-workflow').fill('Reviewed by Playwright before phase launch.')
-  await page.getByTestId('guide-complete-underwriting-run-workflow').click()
-  await expect(page.getByTestId('guide-checklist-underwriting-run-workflow')).toContainText('complete')
+  // The command bar persists across stages (it is part of the frame, not a stage body).
+  await expect(page.getByTestId('command-bar')).toBeVisible()
+  // 4/4 source-backed inputs + the progression-guide checklist both live in the Advanced
+  // drawer now (was the cockpit launch-readiness panel + the advanced tab).
+  const guideDrawer = await openAdvancedDrawer(page)
+  await expect(guideDrawer.getByTestId('source-backed-input-score')).toContainText('4/4')
+  await expect(guideDrawer.getByTestId('guide-section-underwriting')).toContainText('Run underwriting refresh')
+  await guideDrawer.getByTestId('guide-note-underwriting-run-workflow').fill('Reviewed by Playwright before phase launch.')
+  await guideDrawer.getByTestId('guide-complete-underwriting-run-workflow').click()
+  await expect(guideDrawer.getByTestId('guide-checklist-underwriting-run-workflow')).toContainText('complete')
+  await closeAdvancedDrawer(page)
 
   const checklistWorkspaceResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
   await expectApiOk(checklistWorkspaceResponse)
@@ -995,7 +860,8 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   expect(dealRecord.deal.financials?.currentNOI).toBe(95_400)
   expect(dealRecord.deal.financials?.trailingT12Revenue).toBe(156_600)
 
-  await page.getByTestId('workspace-tab-package').click()
+  // The IC package body is the IC stage of the spine (was the "package" tab).
+  await focusStage(page, 'ic')
   const markdownExportResponse = page.waitForResponse(
     (response) => isApiResponse(response, 'POST', `/api/deals/${WORKSPACE_DEAL_ID}/ic-starter-package`),
   )
@@ -1014,22 +880,22 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   expect((await jsonDownload).suggestedFilename()).toContain('ic-starter-package.json')
   await expect(page.getByTestId('package-export-status')).toContainText('JSON exported')
 
-  await page.getByTestId('cockpit-phase-underwriting').click()
+  // Per-phase document coverage is reached by focusing each lifecycle stage on the spine
+  // (was the cockpit phase buttons). The diligence spine step maps to the due-diligence phase.
+  await focusStage(page, 'underwriting')
   await expect(page.getByRole('heading', { name: 'Agent Playbook' })).toBeVisible()
   await expect(documentCoverageStat(page)).toContainText('100%')
   await expect(page.getByText('Required Documents').locator('..')).toContainText('Offering Memo')
-  await page.getByTestId('cockpit-phase-due-diligence').click()
-  await expect(page.getByRole('heading', { name: 'Due Diligence' })).toBeVisible()
 
-  await page.getByTestId('cockpit-phase-due-diligence').click()
+  await focusStage(page, 'diligence')
   await expect(page.getByRole('heading', { name: 'Due Diligence' })).toBeVisible()
   await expect(documentCoverageStat(page)).toContainText('20%')
 
-  await page.getByTestId('cockpit-phase-financing').click()
+  await focusStage(page, 'financing')
   await expect(page.getByRole('heading', { name: 'Financing' })).toBeVisible()
   await expect(documentCoverageStat(page)).toContainText('67%')
 
-  await page.getByTestId('cockpit-phase-underwriting').click()
+  await focusStage(page, 'underwriting')
   await stopActiveRun(request)
   await page.getByTestId('phase-launch-underwriting').click()
   await expect(page.getByText(/Run: (Starting|Running|Completed)/)).toBeVisible({ timeout: 15_000 })
@@ -1048,8 +914,9 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
   await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
   await waitForDashboardReady(page)
   await page.getByTestId(`workspace-docs-${WORKSPACE_DEAL_ID}`).click()
-  await expect(page.getByTestId('operator-deal-hub')).toBeVisible({ timeout: 20_000 })
-  await page.getByTestId('workspace-tab-documents').click()
+  await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
+  // The Intake stage body is the document intake surface (was the "documents" tab).
+  await focusStage(page, 'intake')
   await page.getByTestId('source-document-upload').setInputFiles([
     {
       name: 'playwright-title.pdf',
@@ -1067,7 +934,10 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
   await expect(page.getByTestId('source-document-title')).toContainText('Extraction Pending')
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-rent-roll.xlsx')
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('Preview Extraction')
-  await expect(page.getByTestId('deal-cockpit-sidebar')).toContainText('PDF and Excel stay honest')
+  // The cockpit's "PDF and Excel stay honest" caption is gone; the equivalent honest-status
+  // messaging now lives in the intake stage's extraction preview panel (the empty-state copy
+  // explains that PDF evidence is stored for pending review rather than auto-extracted).
+  await expect(page.getByTestId('stage-outlet')).toContainText('PDF evidence is stored for pending review')
 
   const workspaceResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
   await expectApiOk(workspaceResponse)
@@ -1129,10 +999,11 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   }
 
   await expect(page.getByText('Run: Completed')).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByTestId('operator-deal-hub')).toBeVisible()
+  await expect(page.getByTestId('workspace-frame')).toBeVisible()
 
-  await page.getByTestId('workspace-tab-mission').click()
-  const mission = page.getByTestId('mission-control')
+  // Mission Control + the Swarm Goal Console moved into the Advanced drawer.
+  const drawer = await openAdvancedDrawer(page)
+  const mission = drawer.getByTestId('mission-control')
   await expect(mission).toContainText('Acquisition Command')
   await expect(mission).toContainText('Decision package is ready for committee review')
   const swarmConsole = mission.getByTestId('swarm-goal-console')
@@ -1150,29 +1021,32 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   // The launch itself is verified by the run-status poll above. Keep the post-launch assertions on
   // stable workspace surfaces so this test does not race the live WebSocket refresh after relaunch.
 
-  // Re-assert the agents tab until it settles; after a relaunch the workspace can reset
-  // the active tab when the live checkpoint flips to complete.
-  const agentTree = page.getByTestId('agent-tree')
+  // Deal Team (agent tree) + the skipped-phase status badges also live in the Advanced drawer.
+  // Re-open it in a poll loop in case a late checkpoint refresh re-renders the drawer contents.
+  const agentTree = drawer.getByTestId('agent-tree')
   await expect(async () => {
-    await page.getByTestId('workspace-tab-agents').click()
+    await openAdvancedDrawer(page)
     await expect(agentTree).toBeVisible({ timeout: 5_000 })
   }).toPass({ timeout: 20_000 })
   await expect(agentTree).toContainText('Deal Team Lead')
-  await expect(page.getByTestId('agent-phase-row-due-diligence')).toContainText(/Complete|Running|Skipped/)
-  await expect(page.getByTestId('agent-row-rent-roll-analyst')).toContainText(/Filed|Working now|Queued/)
-  await expect(page.getByTestId('agent-row-financial-model-builder')).toContainText(/Stress-testing returns|Filed/)
+  await expect(drawer.getByTestId('agent-phase-row-due-diligence')).toContainText(/Complete|Running|Skipped/)
+  await expect(drawer.getByTestId('agent-row-rent-roll-analyst')).toContainText(/Filed|Working now|Queued/)
+  await expect(drawer.getByTestId('agent-row-financial-model-builder')).toContainText(/Stress-testing returns|Filed/)
 
+  // Skipped phases surface in the drawer (pipeline + agent tree). Some skipped markers live
+  // inside collapsed regions, so assert on the first *visible* one rather than DOM-first.
   await expect(async () => {
-    await page.getByTestId('workspace-tab-advanced').click()
-    await expect(page.getByText('skipped').first()).toBeVisible({ timeout: 5_000 })
+    await openAdvancedDrawer(page)
+    await expect(drawer.getByText('skipped').locator('visible=true').first()).toBeVisible({ timeout: 5_000 })
   }).toPass({ timeout: 20_000 })
+  await closeAdvancedDrawer(page)
 
-  // After a relaunch the workspace can reset the active tab when the live checkpoint
-  // flips to complete; re-assert the package tab until the package view settles so this
-  // navigation does not race the post-relaunch WebSocket refresh.
+  // After a relaunch the workspace can reset the active stage when the live checkpoint flips
+  // to complete; re-focus the IC stage until the package view settles so this navigation does
+  // not race the post-relaunch WebSocket refresh.
   const packageView = page.getByTestId('completion-package-view')
   await expect(async () => {
-    await page.getByTestId('workspace-tab-package').click()
+    await page.getByTestId('spine-step-ic').click()
     await expect(packageView).toBeVisible({ timeout: 5_000 })
   }).toPass({ timeout: 20_000 })
   await expect(packageView).toContainText('Completion Package')
@@ -1193,24 +1067,50 @@ test('drills a red flag back to its originating specialist workpaper in the IC p
   const consoleErrors = collectConsoleErrors(page)
 
   await saveLaunchReadyDeal(request, RED_FLAG_DEAL_ID, RED_FLAG_DEAL_NAME)
-  // Write the completed-with-red-flag checkpoint before connecting so it arrives in the
-  // initial WebSocket payload and becomes the live checkpoint for this deal.
-  writeRedFlagRun(RED_FLAG_DEAL_ID, RED_FLAG_DEAL_NAME)
-  await stopActiveRun(request)
-  await openWorkspaceFromRecentDeals(page, RED_FLAG_DEAL_ID, RED_FLAG_DEAL_NAME)
+  await waitForDashboardReady(page)
 
-  // Re-assert the package tab until the live checkpoint settles so this navigation does
-  // not race a late WebSocket checkpoint refresh that can reset the active tab.
+  // The IC package renders from the *visible* deal checkpoint. Opening a deal from the
+  // recent-deals card pins a deal-record checkpoint (empty pending phases) as the visible
+  // workspace, which would shadow the seeded live checkpoint and hide its red flags. So
+  // instead drive the workspace from the LIVE checkpoint: run a fast workflow to completion
+  // (the dashboard auto-reveals the live workspace, leaving the manual deal-record checkpoint
+  // unset), then overwrite the status checkpoint with the completed-with-red-flag fixture so
+  // the watcher broadcasts it as the live checkpoint for this already-open deal.
+  await launchWorkflowForDeal(request, 'quick-deal-screen', RED_FLAG_DEAL_ID)
+  await expect
+    .poll(
+      async () => {
+        const response = await request.get(`${API_URL}/api/run/status`)
+        if (!response.ok()) return null
+        const payload = (await response.json()) as { state?: string }
+        return payload.state ?? null
+      },
+      { timeout: 60_000 },
+    )
+    .toBe('COMPLETED')
+  await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
+  // Stop the completed run before seeding so a trailing run broadcast does not re-clobber the
+  // red-flag checkpoint we are about to write.
+  await stopActiveRun(request)
+  writeRedFlagRun(RED_FLAG_DEAL_ID, RED_FLAG_DEAL_NAME)
+
+  // Re-focus the IC stage until the live checkpoint settles so this navigation does not
+  // race a late WebSocket checkpoint refresh that can reset the active stage.
   const drilldowns = page.getByTestId('red-flag-drilldowns')
   await expect(async () => {
-    await page.getByTestId('workspace-tab-package').click()
+    await page.getByTestId('spine-step-ic').click()
     await expect(drilldowns).toBeVisible({ timeout: 5_000 })
   }).toPass({ timeout: 25_000 })
   await expect(drilldowns).toContainText('Projected DSCR of 1.05x is below the 1.25x lender minimum.')
 
   const firstFlag = drilldowns.getByTestId(/^red-flag-drilldown-underwriting-/).first()
   await firstFlag.getByTestId(/^red-flag-drilldown-toggle-/).click()
-  await expect(firstFlag.getByTestId(/^red-flag-origin-workpaper-/)).toContainText(/Underwriting/i)
+  // The expanded origin block ties the flag back to its originating Underwriting workpaper.
+  // The completed run files a real underwriting workpaper, so the origin names the phase as
+  // "...in Underwriting" (and falls back to "Underwriting specialist workpaper" if no artifact
+  // is filed) — assert on the origin block, which carries the phase either way.
+  await expect(firstFlag.getByTestId(/^red-flag-origin-underwriting-/)).toContainText(/Underwriting/i)
+  await expect(firstFlag.getByTestId(/^red-flag-origin-workpaper-/)).toBeVisible()
   await expect(firstFlag).toContainText('Originating workpaper')
   await expect(firstFlag).toContainText('Financial Model Builder')
 

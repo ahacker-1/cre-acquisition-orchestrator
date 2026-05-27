@@ -1,0 +1,210 @@
+import { expect, type APIRequestContext, type APIResponse, type Page } from '@playwright/test'
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs'
+import { dirname, join, resolve } from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+export const dashboardRoot = resolve(__dirname, '..')
+export const repoRoot = resolve(dashboardRoot, '..')
+export const dataRoot = join(repoRoot, 'data')
+export const parserFixturesRoot = join(repoRoot, 'fixtures', 'parsers')
+export const firstRealDealRoot = join(repoRoot, 'fixtures', 'first-real-deal')
+
+export const API_URL = 'http://127.0.0.1:8081'
+
+export function cleanupDealArtifacts(dealId: string): void {
+  const targets = [
+    join(dataRoot, 'deals', dealId),
+    join(dataRoot, 'status', `${dealId}.json`),
+    join(dataRoot, 'status', dealId),
+    join(dataRoot, 'logs', dealId),
+  ]
+
+  for (const target of targets) {
+    if (existsSync(target)) {
+      rmSync(target, { recursive: true, force: true })
+    }
+  }
+}
+
+export function cleanupGeneratedRuntimeArtifacts(dealId: string): void {
+  const targets = [
+    join(dataRoot, 'phase-outputs', dealId),
+    join(dataRoot, 'reports', dealId),
+  ]
+
+  for (const target of targets) {
+    if (existsSync(target)) {
+      rmSync(target, { recursive: true, force: true })
+    }
+  }
+}
+
+export async function expectApiOk(response: APIResponse): Promise<void> {
+  if (response.ok()) return
+  throw new Error(`API request failed (${response.status()} ${response.statusText()}): ${await response.text()}`)
+}
+
+export function isApiResponse(response: APIResponse, method: string, path: string): boolean {
+  return new URL(response.url()).pathname === path && response.request().method() === method
+}
+
+export async function stopActiveRun(request: APIRequestContext): Promise<void> {
+  await request.post(`${API_URL}/api/run/stop`)
+
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const response = await request.get(`${API_URL}/api/run/status`)
+    const payload = (await response.json()) as { active?: boolean }
+    if (!payload.active) return
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 500))
+  }
+}
+
+export async function waitForDashboardReady(page: Page): Promise<void> {
+  await page.goto('/')
+  await expect(page.getByText('Connected')).toBeVisible({ timeout: 20_000 })
+}
+
+export function buildLaunchReadyDeal(dealId: string, dealName: string): Record<string, unknown> {
+  return {
+    dealId,
+    dealName,
+    property: {
+      address: '500 Operator Way',
+      city: 'Austin',
+      state: 'TX',
+      zip: '78701',
+      propertyType: 'multifamily',
+      yearBuilt: 2008,
+      totalUnits: 12,
+      unitMix: {
+        types: [
+          { type: '1BR/1BA', count: 12, avgSqFt: 725, marketRent: 1700, inPlaceRent: 1600 },
+        ],
+      },
+    },
+    financials: {
+      askingPrice: 3_600_000,
+      currentNOI: 230_000,
+      inPlaceOccupancy: 0.94,
+    },
+    financing: {
+      targetLTV: 0.7,
+      estimatedRate: 0.061,
+      loanTerm: 10,
+      amortization: 30,
+      loanType: 'Agency',
+    },
+    investmentStrategy: 'core-plus',
+    targetHoldPeriod: 5,
+    targetIRR: 0.15,
+    targetEquityMultiple: 1.9,
+    targetCashOnCash: 0.08,
+    seller: {
+      entity: 'Playwright Seller LLC',
+    },
+    timeline: {
+      psaExecutionDate: '2026-04-01',
+      ddStartDate: '2026-04-02',
+      ddExpirationDate: '2026-04-20',
+      closingDate: '2026-05-15',
+    },
+    notes: 'Operator hub E2E fixture.',
+  }
+}
+
+export async function saveLaunchReadyDeal(
+  request: APIRequestContext,
+  dealId: string,
+  dealName: string,
+): Promise<void> {
+  const response = await request.post(`${API_URL}/api/deals`, {
+    data: {
+      deal: buildLaunchReadyDeal(dealId, dealName),
+      mode: 'launch',
+    },
+  })
+  await expectApiOk(response)
+}
+
+export async function launchWorkflowForDeal(
+  request: APIRequestContext,
+  workflowId: string,
+  dealId: string,
+): Promise<void> {
+  const response = await request.post(`${API_URL}/api/workflows/${workflowId}/launch`, {
+    data: {
+      dealId,
+      scenario: 'core-plus',
+      speed: 'fast',
+      reset: false,
+    },
+  })
+  await expectApiOk(response)
+}
+
+/**
+ * Open a seeded deal from the recent-deals strip into the persistent workspace frame.
+ *
+ * The redesigned workspace renders `workspace-frame` (the old `operator-deal-hub` tab hub
+ * is gone). A deal opens by clicking its `workspace-docs-<id>` button in the
+ * `recent-deals-strip`; the frame then mounts with the deal name as the main heading.
+ *
+ * The dashboard auto-reveals a completed run's workspace on load, so a leftover deal from a
+ * prior test can already be on screen. This helper is robust to that: if the frame is showing
+ * a *different* deal, it returns to the front door (Upload Package) before clicking the card.
+ */
+export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, dealName: string): Promise<void> {
+  await waitForDashboardReady(page)
+  const workspace = page.getByTestId('workspace-frame')
+  // The frame's own H1 — distinct from the recent-deals card's H3 of the same name, which
+  // also lives inside <main>, so we must scope the heading to the frame to avoid matching it.
+  const heading = workspace.getByRole('heading', { name: dealName, level: 1 })
+  const strip = page.getByTestId('recent-deals-strip')
+  const card = strip.getByTestId(`workspace-docs-${dealId}`)
+
+  // Fast path: the target deal's workspace is already on screen (its run auto-revealed it).
+  if ((await workspace.isVisible().catch(() => false)) && (await heading.isVisible().catch(() => false))) {
+    return
+  }
+
+  // A leftover completed-run workspace can auto-open and obscure the recent-deals strip; if
+  // the strip is not already showing, return to the front door via Upload Package to reveal it.
+  if (!(await strip.isVisible().catch(() => false))) {
+    await page.getByTestId('header-upload-package-button').click()
+    await expect(strip).toBeVisible({ timeout: 20_000 })
+  }
+
+  await card.click({ timeout: 10_000 })
+  await expect(workspace).toBeVisible({ timeout: 20_000 })
+  await expect(heading).toBeVisible({ timeout: 20_000 })
+}
+
+/**
+ * Focus a lifecycle stage by clicking its spine step, then assert it became the active
+ * step (aria-current). Replaces the old `workspace-tab-*` click + `.active` class checks.
+ */
+export async function focusStage(page: Page, stageId: string): Promise<void> {
+  const step = page.getByTestId(`spine-step-${stageId}`)
+  await step.click()
+  await expect(step).toHaveAttribute('aria-current', 'step')
+}
+
+/**
+ * Open the advanced drawer (Mission / Deal Team / Workpapers / Controls now live here,
+ * behind the header `open-advanced` button) and return its locator.
+ */
+export async function openAdvancedDrawer(page: Page) {
+  const drawer = page.getByTestId('advanced-drawer')
+  if (!(await drawer.isVisible())) {
+    await page.getByTestId('open-advanced').click()
+  }
+  await expect(drawer).toBeVisible({ timeout: 10_000 })
+  return drawer
+}
+
+export async function closeAdvancedDrawer(page: Page): Promise<void> {
+  await page.getByTestId('advanced-drawer-close').click()
+  await expect(page.getByTestId('advanced-drawer')).toBeHidden()
+}
