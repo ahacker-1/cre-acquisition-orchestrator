@@ -264,6 +264,20 @@ function documentCoverageStat(page: Page) {
   return page.getByText('Doc Coverage').locator('..')
 }
 
+// Intake now leads with the auto-filled deal record; the per-field extraction approve/reject/
+// waive + provenance flow lives behind the "Source documents & detailed review" disclosure.
+// Open it (idempotently) before driving any of that detailed-review machinery. The disclosure's
+// open-state is owned by the workspace so it survives the stage body re-mounting on refresh; this
+// helper just opens it the first time and is a no-op once it is already open.
+async function openIntakeDetailedReview(page: Page): Promise<void> {
+  const details = page.getByTestId('intake-detailed-review')
+  await expect(details).toBeVisible()
+  if (!(await details.evaluate((el) => (el as HTMLDetailsElement).open))) {
+    await details.locator('summary').click()
+  }
+  await expect.poll(() => details.evaluate((el) => (el as HTMLDetailsElement).open)).toBe(true)
+}
+
 test.describe.configure({ mode: 'serial' })
 
 test.beforeEach(async ({ request }) => {
@@ -396,16 +410,26 @@ test('creates a draft from the document-first homepage and uploads the dropped f
   // used to read "Upload the first source package".
   await expect(page.getByTestId('spine-step-intake')).toHaveAttribute('aria-current', 'step')
   await expect(page.getByTestId('command-bar')).toBeVisible()
+
+  // The auto-filled deal record is the lead surface of Intake; uploading + per-field review now
+  // live behind the "Source documents & detailed review" disclosure. Open it to drive extraction.
+  await expect(page.getByTestId('deal-record')).toBeVisible()
+  await openIntakeDetailedReview(page)
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('playwright-hero-rent-roll.csv')
 
   const extractionPreview = page.getByTestId('extraction-preview')
   await page.getByTestId('extract-document-rent_roll').click()
   await expect(extractionPreview).toContainText('3 Fields Found')
-  await extractionPreview.locator('[data-field-path="property.totalUnits"]').check()
-  await extractionPreview.locator('[data-field-path="property.unitMix.types"]').check()
-  await extractionPreview.locator('[data-field-path="financials.inPlaceOccupancy"]').check()
-  await page.getByTestId('apply-extraction').click()
+  // Auto-apply default (backend I2b): the rent roll's trusted reads (total units, unit mix,
+  // occupancy — all high-confidence, no conflict on a fresh deal) apply themselves the moment
+  // they're read, so the document goes straight to "applied" without manual field selection.
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('applied')
+
+  // Those auto-applied reads flow into the lead deal record (nothing typed by hand): the record
+  // shows the rent roll's Total Units (2) under the Property group, read cleanly.
+  const recordPanel = page.getByTestId('deal-record')
+  await expect(recordPanel.getByTestId('record-field-property.totalUnits')).toContainText('Total Units')
+  await expect(recordPanel.getByTestId('record-field-property.totalUnits')).toContainText('2')
 
   const workspaceResponse = await request.get(`${API_URL}/api/deals/${quickDealId}/workspace`)
   await expectApiOk(workspaceResponse)
@@ -738,6 +762,10 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   expect(workspace.criteria.targetIRR).toBe(0.185)
 
   await focusStage(page, 'intake')
+  // The auto-filled deal record leads Intake; uploads + per-field review live behind the
+  // "Source documents & detailed review" disclosure. Open it to drive the extraction flow.
+  await expect(page.getByTestId('deal-record')).toBeVisible()
+  await openIntakeDetailedReview(page)
   await page.getByTestId('source-document-upload').setInputFiles([
     join(parserFixturesRoot, 'rent-roll-messy-realistic.xlsx'),
     join(parserFixturesRoot, 't12-messy-realistic.xlsx'),
@@ -763,6 +791,8 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await focusStage(page, 'underwriting')
   await expect(page.getByRole('heading', { name: 'Underwriting' })).toBeVisible()
   await focusStage(page, 'intake')
+  // Leaving + returning to Intake re-mounts the disclosure closed; re-open it to continue.
+  await openIntakeDetailedReview(page)
 
   const extractionPreview = page.getByTestId('extraction-preview')
 
@@ -805,8 +835,45 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await expect(readiness3of4Drawer.getByTestId('source-backed-input-score')).toContainText('3/4')
   await closeAdvancedDrawer(page)
 
+  // Auto-applied source-backed reads flow into the lead deal record (nothing typed by hand).
+  // The T12's Current NOI ($95,400) is now live there, grouped under Operations.
+  const recordPanel = page.getByTestId('deal-record')
+  await expect(recordPanel).toBeVisible()
+  const recordNoi = recordPanel.getByTestId('record-field-financials.currentNOI')
+  await expect(recordNoi).toContainText('Current NOI')
+  await expect(recordNoi).toContainText('$95,400')
+
+  // Inline override (I1): edit an auto-populated value directly in the record. Occupancy was
+  // read from the rent roll; correcting it persists with provenance + audit via field-edit.
+  const recordOccupancy = recordPanel.getByTestId('record-field-financials.inPlaceOccupancy')
+  await expect(recordOccupancy).toBeVisible()
+  const fieldEditResponse = page.waitForResponse(
+    (response) => isApiResponse(response, 'POST', `/api/deals/${WORKSPACE_DEAL_ID}/field-edit`),
+  )
+  await recordOccupancy.getByTestId('record-field-edit-financials.inPlaceOccupancy').click()
+  const occupancyInput = recordOccupancy.getByTestId('record-field-input-financials.inPlaceOccupancy')
+  await occupancyInput.fill('95%')
+  await occupancyInput.press('Enter')
+  await expectApiOk(await fieldEditResponse)
+  // The edited value round-trips into the saved deal record (stored as the 0.95 ratio).
+  await expect
+    .poll(async () => {
+      const response = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}`)
+      if (!response.ok()) return null
+      const payload = (await response.json()) as { deal: { financials?: Record<string, unknown> } }
+      return payload.deal.financials?.inPlaceOccupancy ?? null
+    }, { timeout: 10_000 })
+    .toBe(0.95)
+
   await page.getByTestId('extract-document-offering_memo').click()
   await expect(extractionPreview).toContainText('Asking Price')
+
+  // The offering memo's NOI ($96,000) disagrees with the already-applied T12 NOI ($95,400):
+  // a source conflict. The record surfaces it as a flagged field needing the operator's eye.
+  await expect(recordPanel.getByTestId('record-field-flag-financials.currentNOI')).toBeVisible()
+  await expect(recordPanel.getByTestId('record-field-financials.currentNOI')).toHaveAttribute('data-flagged', 'true')
+  await expect(recordPanel.getByTestId('needs-eye-count')).toContainText('need your eye')
+
   await extractionPreview.locator('[data-field-path="financials.currentNOI"]').check()
   await extractionPreview.getByTestId('extraction-review-note').fill('T12 controls NOI for this package.')
   const waiverResponsePromise = page.waitForResponse((response) => {

@@ -14,6 +14,9 @@ import { useDealWorkspace } from '../hooks/useDealWorkspace'
 import { useWorkflows } from '../hooks/useWorkflows'
 import { collectFailedAgents, recoveryRunId, retryFailedAgents } from '../lib/runRecovery'
 import WorkspaceFrame from './workspace/WorkspaceFrame'
+import IntakeStage from './workspace/stages/IntakeStage'
+import { buildDealRecordGroups, coerceEditValue, countNeedsEye } from '../lib/dealRecordModel'
+import { API_URL } from '../config'
 import type { TeamAgentView } from './workspace/TeamRail'
 import {
   deriveSpineStages,
@@ -103,6 +106,30 @@ const DOCUMENT_LABELS: Record<string, string> = {
   loan_documents: 'Loan Docs',
   closing_statement: 'Closing Statement',
   other: 'Other',
+}
+
+// One-line status of the ingestion agents for the Intake stage. Derived from document
+// extraction state (no live agent run is required to read documents): pending parses read as
+// "working", applied/review-ready docs as "filed", failures surface for the operator.
+function deriveIntakeAgentsLine(documents: SourceDocument[]): string {
+  if (documents.length === 0) {
+    return 'Document Orchestrator is standing by. Drop a rent roll, T12, or offering memo to put the parsers to work.'
+  }
+  const pending = documents.filter(
+    (doc) => doc.extractionStatus === 'extraction-pending' || doc.status === 'uploaded' || doc.status === 'parsed',
+  ).length
+  const readable = documents.filter((doc) => doc.status === 'review_ready' || doc.status === 'applied').length
+  const failed = documents.filter(
+    (doc) => doc.extractionStatus === 'parse_failed' || doc.extractionStatus === 'parser-unavailable' || doc.status === 'rejected',
+  ).length
+  const parts: string[] = []
+  if (readable > 0) parts.push(`${readable} document${readable === 1 ? '' : 's'} read into the record`)
+  if (pending > 0) parts.push(`${pending} still parsing`)
+  if (failed > 0) parts.push(`${failed} need a closer look`)
+  if (parts.length === 0) {
+    return `Document Orchestrator routed ${documents.length} file${documents.length === 1 ? '' : 's'} to its parsers.`
+  }
+  return `Document Orchestrator + parsers: ${parts.join(', ')}.`
 }
 
 function WorkspacePanelSkeleton({ label }: { label: string }) {
@@ -1823,6 +1850,7 @@ export default function DealWorkspace({
     loadExtraction,
     applyExtraction,
     reviewExtraction,
+    editField,
     exportPackage,
     savePhaseChecklist,
     refreshWorkspace,
@@ -1836,6 +1864,9 @@ export default function DealWorkspace({
   const [guidedDemoStep, setGuidedDemoStep] = useState(0)
   const [packageExportMessage, setPackageExportMessage] = useState<string | null>(null)
   const [advancedOpen, setAdvancedOpen] = useState(false)
+  // Owned here (not in IntakeStage) so the intake detailed-review disclosure survives the stage
+  // body re-mounting whenever a workspace refresh flips `loading` (extract / apply / field edit).
+  const [intakeReviewOpen, setIntakeReviewOpen] = useState(false)
 
   useEffect(() => {
     setActiveTab(initialTab ?? (
@@ -1858,6 +1889,67 @@ export default function DealWorkspace({
   const phaseTabs = workspace?.phases ?? []
   const criteria = workspace?.criteria ?? null
   const documents = workspace?.documents ?? []
+
+  // I2/I3 intake record: aggregate every readable document's extraction into the auto-filled
+  // deal record. Docs reach 'review_ready'/'applied' once their parser has run and stored a
+  // source-backed field set; we fetch each (independently of the hook's single `lastExtraction`
+  // so we don't clobber the detailed-review panel's own auto-load) and feed them to the model.
+  const [intakeExtractions, setIntakeExtractions] = useState<Map<string, ExtractionPreview>>(new Map())
+  const recordReadyDocuments = useMemo(
+    () => documents.filter((doc) => doc.status === 'review_ready' || doc.status === 'applied'),
+    [documents],
+  )
+  // Refetch only when the readable-doc set or its freshness changes (apply/edit bumps timestamps).
+  const recordDocSignature = recordReadyDocuments
+    .map((doc) => `${doc.documentId}:${doc.status}:${doc.appliedAt ?? ''}:${doc.extractedAt ?? ''}:${doc.reviewedAt ?? ''}`)
+    .join('|')
+
+  useEffect(() => {
+    const dealId = dealCheckpoint.dealId
+    if (!dealId || recordReadyDocuments.length === 0) {
+      setIntakeExtractions((current) => (current.size === 0 ? current : new Map()))
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      const next = new Map<string, ExtractionPreview>()
+      await Promise.all(
+        recordReadyDocuments.map(async (doc) => {
+          try {
+            const response = await fetch(
+              `${API_URL}/api/deals/${encodeURIComponent(dealId)}/documents/${encodeURIComponent(doc.documentId)}/extraction`,
+            )
+            if (!response.ok) return
+            const payload = (await response.json()) as { extraction?: ExtractionPreview }
+            if (payload.extraction) next.set(doc.documentId, payload.extraction)
+          } catch {
+            // Best-effort: a single document's extraction failing to load just omits its fields.
+          }
+        }),
+      )
+      if (!cancelled) setIntakeExtractions(next)
+    })()
+    return () => {
+      cancelled = true
+    }
+    // recordDocSignature captures the meaningful change surface of recordReadyDocuments.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dealCheckpoint.dealId, recordDocSignature])
+
+  // Merge the freshest single extraction (from an in-panel extract/review) over the aggregated
+  // map so a just-read document appears in the record immediately.
+  const dealRecordGroups = useMemo(() => {
+    const merged = new Map(intakeExtractions)
+    if (lastExtraction) merged.set(lastExtraction.documentId, lastExtraction)
+    return buildDealRecordGroups([...merged.values()])
+  }, [intakeExtractions, lastExtraction])
+  const dealRecordNeedsEye = useMemo(() => countNeedsEye(dealRecordGroups), [dealRecordGroups])
+
+  // One-line ingestion-agent status for the Intake stage, derived from document state.
+  const intakeAgentsLine = useMemo(
+    () => deriveIntakeAgentsLine(documents),
+    [documents],
+  )
 
   async function handlePhaseLaunch(phaseSlug: string): Promise<void> {
     const workflowId = PHASE_WORKFLOW[phaseSlug] ?? 'full-acquisition-review'
@@ -1994,18 +2086,37 @@ export default function DealWorkspace({
       return (
         <div className="space-y-4">
           {recovery}
-          <DocumentIntakePanel
-            documents={documents}
-            extraction={lastExtraction}
-            working={working}
-            onUpload={uploadDocument}
-            onExtract={extractDocument}
-            onLoadExtraction={loadExtraction}
-            onApply={applyExtraction}
-            onReview={(documentId, fieldIds, reviewStatus, note) =>
-              reviewExtraction(documentId, fieldIds, reviewStatus, note).then(() => undefined)
-            }
-          />
+          <IntakeStage
+            groups={dealRecordGroups}
+            needsEyeCount={dealRecordNeedsEye}
+            // DealRecord hands back the field PATH (fieldId === path) + the typed display string;
+            // coerceEditValue converts it to the typed value the field-edit endpoint requires.
+            // The hook surfaces failures via its `error` state, so swallow the promise rejection
+            // here (DealRecord commits on both Enter and blur; the blur fired while the stage body
+            // re-mounts on refresh can abort an in-flight fetch — that must not become an unhandled
+            // rejection / page error).
+            onEditField={(path, value) => {
+              void editField(path, coerceEditValue(path, value), path).catch(() => undefined)
+            }}
+            onStartDiligence={() => setActiveTab('due-diligence')}
+            saving={working}
+            agentsLine={intakeAgentsLine}
+            detailedReviewOpen={intakeReviewOpen}
+            onDetailedReviewToggle={setIntakeReviewOpen}
+          >
+            <DocumentIntakePanel
+              documents={documents}
+              extraction={lastExtraction}
+              working={working}
+              onUpload={uploadDocument}
+              onExtract={extractDocument}
+              onLoadExtraction={loadExtraction}
+              onApply={applyExtraction}
+              onReview={(documentId, fieldIds, reviewStatus, note) =>
+                reviewExtraction(documentId, fieldIds, reviewStatus, note).then(() => undefined)
+              }
+            />
+          </IntakeStage>
         </div>
       )
     }
@@ -2087,7 +2198,11 @@ export default function DealWorkspace({
         onSummon={() => setAdvancedOpen(true)}
         onOpenAdvanced={() => setAdvancedOpen(true)}
       >
-        {loading ? (
+        {loading && !workspace ? (
+          // Only blank to a placeholder on the FIRST load. Once the workspace is in hand, keep the
+          // stage body mounted through background refreshes (extract / apply / field edit) — a
+          // full unmount on every mutation would collapse the intake detailed-review disclosure
+          // and abort in-flight inline edits (Enter+blur double-commit -> ERR_ABORTED).
           <div className="portal-panel text-sm text-gray-500">Loading workspace...</div>
         ) : (
           renderStageBody()
