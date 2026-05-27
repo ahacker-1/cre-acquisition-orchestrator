@@ -14,13 +14,11 @@ interface DropZoneHeroProps {
   runError: string | null
 }
 
-const OUTCOME_CHIPS: Array<{ id: OutcomeIntent; label: string; goal: string }> = [
-  { id: 'screen-deal', label: 'Run go/no-go screen', goal: 'Tell me if this deal is worth pursuing' },
-  { id: 'ic-package', label: 'Build IC package', goal: 'Build an IC-ready acquisition package' },
-  { id: 'legal-blockers', label: 'Find legal blockers', goal: 'Review the PSA and diligence materials for blockers' },
-  { id: 'financing-package', label: 'Compare financing paths', goal: 'Prepare a financing package and lender comparison' },
-  { id: 'underwriting-refresh', label: 'Refresh the model', goal: 'Refresh the model and economics from the latest files' },
-]
+// The redesign makes dropping documents the one, obvious way to start a deal — no outcome
+// picker or mission-goal form up front (that friction is what made starting confusing). Intent
+// defaults to a full IC package and is changeable later via the in-workspace command bar.
+const DEFAULT_INTENT: OutcomeIntent = 'ic-package'
+const DEFAULT_GOAL = 'Build an IC-ready acquisition package'
 
 function toFileArray(files: FileList | null): File[] {
   return files ? Array.from(files) : []
@@ -33,23 +31,19 @@ export default function DropZoneHero({
   runError,
 }: DropZoneHeroProps) {
   const [dragging, setDragging] = useState(false)
-  const [selectedIntent, setSelectedIntent] = useState<OutcomeIntent>('ic-package')
-  const [goalText, setGoalText] = useState('Build an IC-ready acquisition package')
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   function handleFiles(files: File[]): void {
     if (files.length === 0) return
     setDragging(false)
-    onFilesSelected(files, selectedIntent, goalText.trim())
+    onFilesSelected(files, DEFAULT_INTENT, DEFAULT_GOAL)
   }
 
   return (
     <section
       data-testid="drop-zone-hero"
       className={`min-h-[50vh] border border-dashed p-6 transition-colors md:p-10 ${
-        dragging
-          ? 'border-white bg-white/[0.08]'
-          : 'border-white/20 bg-black/70 hover:border-white/40'
+        dragging ? 'border-white bg-white/[0.08]' : 'border-white/20 bg-black/70 hover:border-white/40'
       }`}
       onDragOver={(event) => {
         event.preventDefault()
@@ -76,46 +70,21 @@ export default function DropZoneHero({
           Drop the deal. Watch the team go to work.
         </h2>
         <p className="mt-5 max-w-3xl text-sm leading-6 text-gray-400 md:text-base">
-          Upload the source package, choose the outcome, and the orchestrator will staff specialist agents for diligence, underwriting, legal review, financing, blockers, and IC package assembly.
+          Drop your rent roll, T12, and offering memo. The team reads them, fills in the deal record for you,
+          and flags anything that needs your eye — no forms, no manual entry to get started.
         </p>
-        <p className="mt-3 text-xs font-semibold uppercase text-gray-500">
-          Source-backed extraction is local-first. CSV, TXT, Markdown, and supported XLSX rent rolls or T12s extract now; PDFs stay stored for review.
+        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
+          Source-backed extraction is local-first. CSV, TXT, Markdown, and supported XLSX rent rolls or T12s
+          auto-fill now; PDFs are stored for review.
         </p>
-
-        <div className="mt-8 w-full max-w-3xl">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
-            What should the team accomplish?
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {OUTCOME_CHIPS.map((chip) => (
-              <button
-                key={chip.id}
-                type="button"
-                className={`portal-button ${selectedIntent === chip.id ? 'portal-button-primary' : 'portal-button-secondary'}`}
-                data-testid={`outcome-chip-${chip.id}`}
-                onClick={() => {
-                  setSelectedIntent(chip.id)
-                  setGoalText(chip.goal)
-                }}
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
-          <label className="portal-field mt-4 text-left">
-            <span>Mission goal</span>
-            <textarea
-              data-testid="drop-zone-goal-input"
-              rows={3}
-              value={goalText}
-              onChange={(event) => setGoalText(event.target.value)}
-              placeholder="Example: Tell me if this deal is worth pursuing and identify the diligence blockers."
-            />
-          </label>
-        </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <button type="button" data-testid="drop-zone-browse" className="portal-button portal-button-primary" onClick={() => inputRef.current?.click()}>
+          <button
+            type="button"
+            data-testid="drop-zone-browse"
+            className="portal-button portal-button-primary"
+            onClick={() => inputRef.current?.click()}
+          >
             Upload Source Package
           </button>
           <button
@@ -129,7 +98,8 @@ export default function DropZoneHero({
           </button>
         </div>
         <p className="mt-3 max-w-2xl text-xs leading-5 text-gray-500">
-          No uploads or API keys required. Guided Demo Mode opens the deterministic Parkview sample and walks through Command, Swarm, Deal Team, Workpapers, and IC Package.
+          No uploads or API keys required for the demo. Guided Demo opens the deterministic Parkview sample and
+          walks the lifecycle spine, the live team feed, and the IC package.
         </p>
         {runError && <p className="mt-4 text-xs text-cre-danger">{runError}</p>}
       </div>

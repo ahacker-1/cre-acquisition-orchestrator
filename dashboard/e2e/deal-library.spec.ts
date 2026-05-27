@@ -379,7 +379,7 @@ test('creates a draft from the document-first homepage and uploads the dropped f
 
   await waitForDashboardReady(page)
   await expect(page.getByTestId('drop-zone-hero')).toContainText('Drop the deal. Watch the team go to work.')
-  await expect(page.getByTestId('drop-zone-hero')).toContainText('supported XLSX rent rolls or T12s extract now')
+  await expect(page.getByTestId('drop-zone-hero')).toContainText('supported XLSX rent rolls or T12s auto-fill now')
 
   await page.getByTestId('drop-zone-input').setInputFiles({
     name: 'playwright-hero-rent-roll.csv',
