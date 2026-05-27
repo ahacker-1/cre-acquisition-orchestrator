@@ -67,3 +67,6 @@ docs/*-GOAL.md
 
 # Local agent/editor working state (plans, session scratch — never published)
 .claude/
+
+# Superpowers brainstorming / visual-companion working artifacts (local only)
+.superpowers/
