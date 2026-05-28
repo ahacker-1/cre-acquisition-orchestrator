@@ -56,7 +56,7 @@ Use the front door to upload the files you actually have:
 - offering memo
 - LOI, PSA, title, survey, lender, environmental, or diligence support files
 
-Supported CSV/TXT/MD files and supported XLSX rent-roll/T12 workbooks can produce extracted candidate fields. PDFs and unsupported workbook shapes are stored and classified for review.
+Supported CSV/TXT/MD files, supported XLSX rent-roll/T12 workbooks, and text-based PDFs can produce extracted candidate fields. Scanned/image-only PDFs and unsupported workbook shapes are detected, stored, and flagged for OCR/review instead of being silently guessed.
 
 The repo includes a realistic local fixture package:
 
@@ -70,7 +70,7 @@ It points to messy XLSX rent roll and T12 workbooks plus an offering memo excerp
 
 ## Step 4: Review Source-Backed Fields
 
-Open **Evidence** in the deal workspace.
+Open the **Intake** source-review surface in the deal workspace.
 
 For each supported source document:
 
@@ -80,7 +80,7 @@ For each supported source document:
 4. Use **Reject Selected** when the field should not be used.
 5. Use **Waive Selected** when the field is acceptable to defer, with a short note.
 
-Critical deal inputs are not silently applied. They must be reviewed before they become source-backed deal inputs.
+Critical deal inputs are not silently applied. They must be reviewed before they become source-backed deal inputs. Approved values become the evidence layer that downstream workflows and specialist workpapers can cite.
 
 ---
 
@@ -88,9 +88,9 @@ Critical deal inputs are not silently applied. They must be reviewed before they
 
 Use these surfaces before launching work:
 
-- **Cockpit sidebar:** missing documents, source-backed launch coverage, and phase readiness.
-- **Operator Briefing:** one best next action, review queue, and workflow readiness.
-- **Deal Progression Guide:** checklist items that can be completed or waived with a reason.
+- **Lifecycle spine:** where the deal stands from Intake through IC.
+- **Live Feed / Your Team rail:** current specialist activity, missing evidence, and who can be summoned next.
+- **Command bar / stage actions:** the next plain-English action to resolve blockers and move the deal forward.
 
 The launch gate can enforce approved source-backed inputs for critical fields. Ambiguous fields should stay in review, be rejected, or be waived. Do not treat a waiver as proof that the value is true.
 
@@ -115,7 +115,7 @@ Open **IC Package** and export:
 - Markdown for human review
 - JSON for downstream tools or audit checks
 
-The export includes approved inputs, source references, assumptions, open questions, red flags, and launch-readiness status. It is a reviewable starting package, not financial, legal, or investment advice.
+The export includes approved inputs, source references where available, assumptions, open questions, red flags, workpaper links, and launch-readiness status. Use it to review at least one decision point from the IC package back to the originating workpaper or approved source evidence when that provenance is present. It is a reviewable starting package, not financial, legal, or investment advice.
 
 Generated package files are written under:
 
@@ -149,3 +149,4 @@ After the first deal run, you have:
 3. A plain-English missing-evidence checklist and one best next action.
 4. A gated workflow launch path for critical approved inputs.
 5. A Markdown/JSON IC starter package you can audit and adapt.
+6. A demonstrable source-to-IC review path for at least one approved field, red flag, or data gap where the current package exposes provenance.

@@ -2,117 +2,107 @@
 
 This roadmap is intentionally public-facing: it shows where the project is going, what is safe for contributors to pick up, and where the current release is honest about its limits.
 
-The north star is to make `cre-acquisition-orchestrator` the leading open-source AI-native workspace for multifamily acquisitions: source-document intake, mission intent, coordinated specialist agents, reviewable workpapers, and an investment committee package that a human operator can audit.
+The north star is to make `cre-acquisition-orchestrator` the leading open-source AI-native workspace for multifamily acquisitions: source-document intake, mission intent, coordinated specialist agents, reviewable workpapers, and an investment committee package that a human operator can audit back to source evidence.
 
 ## Current Release Baseline
 
-**v2.7.0 — Completion Pass** is the current public release. Building on the v2.6.0 credibility-hardening baseline, it implements the near-term priorities below and closes the prior known limits: text-based PDF extraction, merged-cell/image-only workbook handling, review-grade workpapers (quality gates, evidence completeness, red-flag drilldowns), live Codex runtime hardening, single-operator self-host deployment, and contributor tooling — while keeping the deterministic offline demo as the default.
+**v2.8.5 — Deal Workspace Redesign** is the current public release. It redesigns the operator dashboard into one persistent **deal space**: document-first Intake, auto-filled source-backed deal record, an always-visible lifecycle spine, Live Feed / Your Team rail, command bar, summonable agent panels, and an IC package view. It sits on top of the `v2.8.0` real-world drop-flow hardening and honest evaluation harness, the `v2.7.0` completion pass, and the `v2.6.0` credibility-hardening release.
 
-Release-grade validation for this baseline includes:
+The stable baseline remains:
+
+- **Local-first** — offline dashboard, deterministic Parkview sample, source-backed extraction, and IC package export require no API keys.
+- **Review-first** — critical inputs do not silently change underwriting state; operators approve/apply, reject, or waive candidate fields before workflows use them.
+- **Agent-visible** — 31 roles are represented as named orchestrators, specialists, and ingestion agents; the UI exposes handoffs, live/replayed work, workpapers, and package state.
+- **Honest about limits** — scanned/image-only documents are flagged for OCR instead of guessed, live Codex is optional, cloud multi-tenancy is out of scope, and all investment decisions require qualified human review.
+
+Release-grade local validation for this baseline includes:
 
 - `npm run demo`
 - `npm run validate`
+- `npm run validate:fixtures`
+- `npm run validate:docs`
+- `npm run validate:guides`
 - `npm run test:parsers`
 - `npm run test:workspace`
-- `npm run validate:guides`
-- `npm test`
+- `npm run test:pile`
+- `npm run demo:verify`
 - `npm --prefix dashboard run build`
 - `npm --prefix dashboard run test:e2e`
-- `npm --prefix dashboard audit --omit=dev --audit-level=high`
 
-Shipped in v2.6.0:
+## What Has Shipped
 
-- Replaced thin Parkview sample artifacts with populated workpapers and stricter completeness checks.
-- Added strict AJV schema validation, canonical shared enums, and per-agent schema coverage for critical specialist outputs.
-- Hardened local dashboard boundaries around paths, uploads, watcher state, loopback assumptions, and CSV formula sanitization.
-- Added API reference, WebSocket events documentation, agent catalog documentation, fixture validation, docs drift checks, and refreshed public screenshots.
+### v2.8.5 — Deal Workspace Redesign
+
+- Replaced the multi-tab dashboard with one persistent deal space: deal header, lifecycle spine, focused center stage, Live Feed / Your Team rail, and command bar.
+- Made **New Deal** document-first: the front door and create flow now lead with dropping source files instead of manual data entry.
+- Added summonable agent panels that show live/replayed reasoning, elapsed time, task echo, workpaper output, and follow-up tasking.
+- Reduced first-run friction: less runtime chrome before a deal exists, clearer PDF expectations, and plainer create-step language.
+
+### v2.8.0 — Drop-Flow Hardening + Honest Eval
+
+- Hardened a deliberately messy real-world document pile: no silent skips, confident-wrong averages, parser hangs, or path-leaking errors.
+- Added an open evaluation harness across 8 synthetic deals, including live Codex proof that narrative risks can be detected where the deterministic fixture is blind.
+- Documented honest soft spots: model-dependent return assumptions and one borderline verdict oscillation.
+
+### v2.7.0 and earlier — Completion + Source-Backed Foundation
+
+- Added text-based PDF extraction, merged-cell workbook handling, image-only workbook detection, source-decision audit trail, review-grade workpaper gates, IC drilldowns, single-operator self-host serve path, and contributor documentation.
+- Added XLSX/CSV rent-roll and T12 candidate extraction with confidence, provenance, warnings, persisted review/apply state, and launch-readiness source coverage.
+- Hardened the public sample, schemas, enums, API/WebSocket docs, and local dashboard boundaries.
 
 ## Near-Term Priorities
 
-### 1. Source-Backed Document Intelligence
+### 1. Source-to-IC Public Proof
 
-Goal: move from classified/stored files toward auditable extraction across the documents operators actually use.
-
-Candidate issues:
-
-- Continue expanding parser fixtures for messy real-world rent rolls, trailing-12s, and unit mixes.
-- True OCR for scanned/image-only documents (these are currently detected and flagged for OCR, not extracted).
-
-Shipped in v2.5.0:
-
-- XLSX rent-roll and T12 uploads now route through the local Excel parser into source-backed candidate fields with document hash, parser metadata, sheet/row provenance, confidence, and operator-review status.
-- Review-ready and applied documents can reopen persisted extraction previews without re-running the parser.
-- The Documents tab exposes `Preview Extraction`, `Review Fields`, and `View Applied Evidence` actions.
-- `npm run test:parsers` validates XLSX parser fixtures for rent roll and T12 field mapping.
-- `npm run test:workspace` validates persisted extraction retrieval, conflict-aware approve/apply, approved-field provenance, and launch-readiness source coverage.
-- Parser fixtures now cover alternate rent-roll headers, blank rows, total rows, common occupancy conventions, and multi-sheet T12 workbook selection while preserving candidate review warnings and field-level provenance.
-
-Shipped on current main (completion pass):
-
-- Text-based PDF extraction for offering memoranda / rent rolls via the local Python bridge (`scripts/parse_pdf.py`, pdfplumber): per-field confidence, page-level provenance, and candidate-review status; scanned/image-only PDFs are detected and flagged for OCR rather than silently skipped.
-- Merged-cell workbook handling (unmerge + forward-fill before header detection) and image-only workbook detection (flagged needs-OCR), plus additional messy rent-roll/T12 fixtures (currency symbols, subtotal/total rows, trailing notes, synonym headers).
-- Source-field decision audit trail: timestamped approve/reject/waive/needs-review history retrievable per field, with cross-document conflict blocking before apply.
-
-Shipped on the usability-hardening branch (real-world drop-flow pass):
-
-- A deliberately nasty "real-world pile" smoke set plus an automated test (`npm run test:pile`) that drives the pile through the real parser and asserts a typed per-file outcome (classified + stored; parseable files extracted with provenance; unparseable/irrelevant files flagged gracefully — no crashes or silent skips).
-- The open evaluation harness scores the orchestrator on a benchmark of 8 synthetic deals (core-plus / value-add / distressed, with both determinable and narrative document-buried planted risks), with an `npm run eval:offline` mode for the offline extraction + simulation layers and a live (Codex) layer that proves the agents catch narrative risks the deterministic fixture is blind to.
-- Parser robustness/honesty fixes surfaced by the pile: vacant `$0` rows no longer deflate in-place rent averages, content-aware rent-roll-vs-T12 classification, graceful `parse_failed` degradation for oversized/corrupt inputs, and a threshold-driven deterministic IC verdict.
-
-### 2. Demo Journey and Public Proof
-
-Goal: make a first-time GitHub visitor understand the workspace quickly and run a first real local source package in 10 minutes.
+Goal: make a first-time visitor see how a value or red flag moves from source document to extraction review, approved evidence, specialist workpaper context, and available IC package references/export without needing a video.
 
 Candidate issues:
 
-- Keep the Quick Demo path short, repeatable, credential-free, and centered on local source-backed deal intake.
-- Extend the deterministic screenshot capture script to include the front door, quick-create modal, and source-backed extraction review panel.
-- Rename the screenshot capture script to a version-neutral path.
+- Keep `docs/DEMO-JOURNEY.md`, `docs/QUICK-DEMO.md`, and README aligned around the source-to-IC proof path.
+- Extend the deterministic screenshot capture flow or manual screenshot checklist to show approved-field provenance and IC drilldowns when the current UI state supports it.
+- Add a small sample package/export note that tells visitors exactly which field or red flag can be reviewed across the demo, with honest caveats where provenance is not yet exposed.
 
-Shipped through v2.6.0:
+### 2. OCR for Scanned/Image-Only Documents
 
-- Current workspace screenshots for Acquisition Command, Mission, Deal Team, Workpapers, and IC Package live under `docs/assets/`.
-- `npm run screenshots` captures the core workspace gallery against a locally running dashboard.
-- `docs/QUICK-DEMO.md` gives first-time visitors the shortest offline path from clone to local dashboard.
-- `docs/FIRST-DEAL-GUIDE.md` now leads with local source package intake, extraction review, launch readiness, and Markdown/JSON IC starter export.
-- `npm run demo:verify` runs the offline demo, contract checks, parser/workspace tests, guide validation, system tests, and dashboard build in one command.
-- Mission includes a Swarm Goal Console that maps an operator goal to a recommended specialist swarm, blockers, handoffs, and next action.
-- `docs/RUNTIME-COMPARISON.md` explains offline simulation vs. live Codex execution, including artifact paths, credential boundaries, and when each path is appropriate.
+Goal: move from honest detection to reviewable local OCR for scanned offering memoranda, rent rolls, diligence checklists, and image files.
+
+Candidate issues:
+
+- Add or document an optional local OCR bridge.
+- Preserve source provenance: file hash, page/image number, OCR confidence, snippet/bounding context when available, parser metadata, and review status.
+- Route ambiguous OCR values to candidate review instead of silently applying them.
+
+### 3. Legal and Diligence Checklist Extraction
+
+Goal: make the document-first workspace useful earlier in legal/diligence by extracting obligations, dates, missing items, responsible parties, and statuses from legal/diligence PDFs and Markdown/TXT checklists.
+
+Candidate issues:
+
+- Add fixtures for at least two checklist layouts.
+- Preserve page/line/snippet provenance and review warnings.
+- Wire approved checklist candidates into readiness, workpapers, or IC data gaps where appropriate.
+
+### 4. Messy Parser Fixture Expansion
+
+Goal: keep pushing source-backed intake toward the ugly files operators actually receive.
+
+Candidate issues:
+
+- Add more rent-roll/T12 variants: merged headers, trailing notes, owner-formatted tabs, hidden rows, subtotal traps, mixed date formats, and confusing occupancy conventions.
+- Keep parser failures typed, reviewable, and non-blocking.
+- Update docs when support boundaries change.
+
+### 5. Contributor Experience for Product Extensions
+
+Goal: make the repo easier to extend without forcing contributors to reverse-engineer the dashboard/runtime.
+
+Candidate issues:
+
+- Add `good first issue` labels for docs, parser fixtures, and screenshot/storyboard improvements.
+- Keep the specialist-agent contributor guide and dashboard architecture docs linked from top-level contributor surfaces.
+- Prefer product-proof and source-review improvements over release-plumbing tasks.
 
 Approval-ready issue text for public follow-ups lives in [`docs/ISSUE-SEEDS.md`](docs/ISSUE-SEEDS.md).
-
-### 3. Review-Grade Workpapers
-
-Goal: make agent outputs feel like diligence workpapers, not generic AI summaries.
-
-Candidate issues:
-
-- Add workpaper quality gates for cited inputs, assumptions, calculations, caveats, and reviewer signoff.
-- Add package-level evidence completeness scoring by phase.
-- Add red-flag drilldowns from IC Package back to the originating specialist workpaper and source document.
-- Extend the Markdown/JSON IC starter package with richer source drilldowns, reviewer signoff, and package version history.
-
-### 4. Live Agent Runtime Hardening
-
-Goal: keep the optional Codex/ChatGPT path useful while preserving the local deterministic demo as the default.
-
-Candidate issues:
-
-- Add live-runtime hardening around partial failures now that the offline-vs-live runtime comparison doc exists.
-- Add per-agent Codex retry/backoff and operator-visible partial-failure recovery.
-- Add stricter sandbox documentation and no-secret logging checks.
-- Add sample live-run artifact manifests with sensitive fields redacted.
-
-### 5. Open-Source Contributor Experience
-
-Goal: make the repo easier to trust, extend, and discuss publicly.
-
-Candidate issues:
-
-- Add `good first issue` labels for docs, parser fixtures, and screenshot automation.
-- Add a contributor guide section for creating a new specialist agent end-to-end.
-- Add a dashboard architecture map for contributors who want to change the workspace UI.
-- Add release checklist automation for version bumps, release notes, validation commands, screenshots, and tag readiness.
 
 ## Out of Scope for Now
 

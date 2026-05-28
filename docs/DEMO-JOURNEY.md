@@ -8,7 +8,7 @@ The demo reflects the redesigned deal-workspace UI: a single persistent **deal s
 
 ## Promise
 
-**Drop the deal. Watch your team go to work across the lifecycle. Summon a specialist, read its workpaper, and review the IC package.**
+**Drop the deal. Watch your team go to work across the lifecycle. Trace one source-backed fact from extraction review, to approved evidence, to specialist workpaper, to IC package.**
 
 The safe default demo runs locally with deterministic data and does not require API keys. The optional live-agent path uses the user's local Codex CLI / ChatGPT login and should be introduced only after the offline journey is clear.
 
@@ -46,6 +46,18 @@ For a no-video first impression, run the dashboard and click **Start Guided Demo
 
 Use this when you want a first-time visitor to understand the product without uploads, API keys, or a recorded walkthrough.
 
+## Source-to-IC Proof Path
+
+Use this as the reviewer script when someone asks, "What proves this is more than a generic AI dashboard?" Pick one number, document warning, or red flag and follow it across the product:
+
+1. **Document drop** — the operator starts from source files on the front door, not a blank form or pasted prompt.
+2. **Extraction review** — supported CSV/XLSX/TXT/MD and text-based PDF sources produce candidate fields with confidence, warnings, file hashes, and source-location provenance. Scanned/image-only documents are detected and flagged for OCR instead of silently guessed.
+3. **Approved evidence** — trusted fields are explicitly approved/applied; ambiguous fields are rejected or waived with a reason, so underwriting inputs change only after human review.
+4. **Specialist workpapers** — the deal team works from the reviewed deal context, filing outputs with findings, impact, caveats, review status, and source/workpaper references where the current artifact provides them.
+5. **IC package** — the final package assembles recommendation, red flags, data gaps, manifest, workpaper links, and Markdown/JSON export so a human can review the decision trail and drill into available source/workpaper references.
+
+The current public screenshot sequence supports this proof with `dashboard-front-door.png`, `source-extraction-review.png`, `acquisition-command.png`, `deal-team-handoffs.png`, and `ic-package.png`.
+
 ## Operator Storyboard
 
 The storyboard tracks the five guided-tour steps and the persistent frame. Each step is anchored to a stable testid so the capture script and the in-product tour stay aligned.
@@ -75,6 +87,7 @@ What to show:
 
 - The dropped document package being read by the ingestion agents (Document Orchestrator → Rent Roll / Financials / Offering Memo parsers).
 - The auto-filled **deal record** — grouped Property / Operations / Deal Terms, each value tagged with its source and a confidence dot — with nothing typed by hand.
+- The review gate where trusted values become approved evidence, while ambiguous fields are rejected or waived with a reason before they can influence downstream work.
 - Only **flagged** values (source conflicts / low-confidence reads) highlighted for inline edit, full provenance one tap away, and the single forward action: **"Looks right → start Diligence."**
 
 Why it matters:
@@ -110,11 +123,12 @@ What to show:
 
 - **Your Team** rail for the focused stage and the "summon any of 31 agents" picker.
 - The **agent panel** sliding in over the dimmed workspace: one specialist's live (or replayed) reasoning with an elapsed timer, the workpaper it filed (cited inputs → finding → impact → caveats), and a follow-up box to re-task it.
+- The intended evidence chain: approved source-backed inputs inform the specialist context, and the filed workpaper remains inspectable with available source/workpaper references instead of being a free-floating answer.
 - The **Live Feed** in the rail continuing to run behind the panel so the rest of the desk visibly carries on.
 
 Why it matters:
 
-- This is the "watch the team work" moment, and it proves auditability: every agent's output is a reviewable, source-backed workpaper, not an opaque answer.
+- This is the "watch the team work" moment: agent output is treated as a reviewable workpaper artifact with explicit caveats and available references, not an opaque answer.
 
 Anchor testids: `team-rail`, `team-summon`, `live-feed`, `agent-panel`.
 
@@ -126,7 +140,8 @@ Current screenshot asset:
 
 What to show:
 
-- Final recommendation, phase outcomes, priority red flags and data gaps, document manifest, decision log, and workpaper links — assembled at the **IC** stage of the spine.
+- Final recommendation, phase outcomes, priority red flags and data gaps, document manifest, decision log, workpaper links, and Markdown/JSON export — assembled at the **IC** stage of the spine.
+- The review path from an IC red flag or data gap back to the originating workpaper or source evidence wherever the current package exposes that provenance.
 
 Why it matters:
 

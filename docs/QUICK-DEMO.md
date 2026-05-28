@@ -4,13 +4,13 @@ Use this path when you want to prove the product locally before reading the arch
 
 ## What You Will See
 
-The v2.6 demo follows the core operator journey:
+The current demo follows the v2.8.5 deal-space journey:
 
-1. **Drop documents** — start from source material, not a blank automation form. XLSX/CSV rent rolls and T12s become source-backed candidate fields for operator review.
-2. **State the mission** — preserve the acquisition goal and intended output.
-3. **Watch the team coordinate** — Acquisition Command and Deal Team show specialist activity, phase movement, and handoffs.
-4. **Review workpapers** — evidence and agent outputs are filed for diligence review.
-5. **Open the IC package** — review the committee-ready recommendation package and source trail.
+1. **Drop documents** — start from source material, not a blank automation form. XLSX/CSV/TXT/MD and text-based PDF sources can become reviewable candidates; scanned/image-only documents are detected and flagged for OCR.
+2. **Review extraction** — candidate fields show confidence, warnings, source file, file hash, and source location before they change underwriting inputs.
+3. **Approve evidence** — trusted fields are applied; ambiguous values are rejected or waived with a reason.
+4. **Watch the team work** — the persistent deal space shows the lifecycle spine, Your Team rail, Live Feed, and summonable agent panel.
+5. **Trace to IC** — workpapers and package artifacts expose available references, and the IC package gathers red flags, data gaps, manifest, review trail, and Markdown/JSON export.
 
 ## Start the Dashboard
 
@@ -35,10 +35,10 @@ The dashboard runs locally. No external AI APIs are called unless you explicitly
 
 1. Drop a local rent roll, T12, offering memo, or supporting document package on the front door.
 2. Name the deal and create the workspace.
-3. Open **Evidence** and click **Preview Extraction** for supported CSV/TXT/MD/XLSX source files.
-4. Review candidate fields with provenance, confidence, warnings, and source location.
-5. Approve/apply trusted fields, or reject/waive ambiguous fields with a note.
-6. Use the cockpit sidebar and Operator Briefing to resolve missing evidence and launch readiness.
+3. In **Intake**, review supported source files as candidate fields with provenance, confidence, warnings, and source location.
+4. Approve/apply trusted fields, or reject/waive ambiguous fields with a note.
+5. Use the lifecycle spine, right rail, and command bar to resolve missing evidence and move from Intake into Diligence.
+6. Summon a specialist or launch the appropriate review path; inspect the filed workpaper and its cited inputs.
 7. Open **IC Package** and export Markdown or JSON for an IC starter package.
 
 The repo includes a realistic source-backed package at [`fixtures/first-real-deal`](../fixtures/first-real-deal). It references messy XLSX rent roll and T12 fixtures plus an offering memo excerpt.
@@ -51,11 +51,11 @@ Once the dashboard is open, click **Start Guided Demo** on the front door. If a 
 
 Guided Demo Mode opens the deterministic Parkview sample without uploads or API keys, then walks through:
 
-1. **Acquisition Command** — executive state, readiness, blockers, package status, and latest movement.
-2. **Swarm Goal Console** — how a plain-English acquisition goal maps to workflow, specialists, gaps, and handoffs.
-3. **Deal Team** — specialist coordination across diligence, underwriting, financing, legal, and closing.
-4. **Workpapers & Evidence** — reviewable outputs and audit trail.
-5. **IC Package** — recommendation, phase outcomes, source-backed inputs, decision log, and package review.
+1. **The Deal Space** — the persistent frame: lifecycle spine, center stage, Live Feed, Your Team, and command bar.
+2. **Command Your Team** — plain-English tasking and suggestion chips.
+3. **Your Team** — the specialist rail and summonable 31-role team.
+4. **Watch It Work** — an agent panel with replayed/live reasoning and a filed workpaper.
+5. **IC Package** — recommendation, phase outcomes, source-backed inputs, red flags, data gaps, manifest, review trail, and export.
 
 ## Verify the Offline Demo
 
@@ -73,14 +73,13 @@ After the dashboard opens, use the sample deal/workspace and review these surfac
 
 | Screen | What to Look For |
 |--------|------------------|
-| **Front Door** | Document-first intake and quick deal creation. |
-| **Acquisition Command** | The executive state of the deal: stage, readiness, blockers, package status, and latest movement. |
-| **Mission** | The goal/outcome intent plus the Swarm Goal Console: recommended specialist team, blockers, handoff path, and next action. |
-| **Deal Team** | Specialist agents, status, handoffs, reviews, dependencies, and selected-agent detail. |
-| **Workpapers** | Filed diligence outputs and evidence-oriented artifacts. |
-| **IC Package** | Recommendation, phase outcomes, risks, data gaps, manifest, and package review state. |
+| **Front Door** | Document-first intake and the deterministic Parkview guided-demo option. |
+| **Intake / Extraction Review** | Source documents becoming candidate fields with confidence, warnings, and provenance before approval. |
+| **Deal Space** | One persistent frame: lifecycle spine, center stage, Live Feed, Your Team, and command bar. |
+| **Agent Panel / Workpaper** | A specialist's reasoning and filed workpaper, with findings/caveats and available source or workpaper references. |
+| **IC Package** | Recommendation, red flags, data gaps, manifest, review trail, workpaper links, and Markdown/JSON export. |
 
-Current public screenshots for these surfaces live under [`docs/assets/`](assets/). The longer storyboard is in [`docs/DEMO-JOURNEY.md`](DEMO-JOURNEY.md).
+Current public screenshots for these surfaces live under [`docs/assets/`](assets/). The longer source-to-IC storyboard is in [`docs/DEMO-JOURNEY.md`](DEMO-JOURNEY.md).
 
 ## What Is Real vs Simulated
 
@@ -134,12 +133,11 @@ npm run screenshots
 
 This updates the current public gallery under `docs/assets/` for:
 
-- Acquisition Command
-- Swarm Goal Console
-- Mission
-- Deal Team
-- Workpapers
-- IC Package
+- front door / document drop
+- Intake auto-fill and source extraction review
+- persistent deal space / lifecycle spine
+- agent panel and filed workpaper
+- IC package / review trail
 
 Review the image diff before committing. Public screenshots should not show contradictory states like a completed package paired with blocked source inputs.
 

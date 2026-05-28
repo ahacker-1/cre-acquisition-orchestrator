@@ -28,6 +28,7 @@ Let's bring this industry into the future.
 ## First-Time Visitor Path
 
 - **Run a first real deal in 10 minutes:** follow the [First Deal Guide](docs/FIRST-DEAL-GUIDE.md), start the dashboard, drop local rent roll/T12/offering memo files, review source-backed fields, and export the IC starter package.
+- **Trace the source-to-IC proof path:** use the [Demo Journey](docs/DEMO-JOURNEY.md#source-to-ic-proof-path) to follow a value or red flag from document drop, through extraction review and approved evidence, into workpapers and the IC package references the current artifacts expose.
 - **Use Parkview as the deterministic fallback:** click **Start Guided Demo** when you want a no-upload sample tour through the deal space - the lifecycle spine, the command bar, Your Team, the live feed, and the IC package.
 - **Install from scratch:** follow [Quick Start](#quick-start). The dashboard path is local-first and the sample demo remains deterministic after dependencies are installed.
 - **Choose the right runtime:** read [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md) before sending any real deal context through the optional live-agent path.
@@ -178,7 +179,7 @@ The public demo is intentionally visual: a first-time visitor should understand 
 
 ![IC Package view showing recommendation, phase outcomes, red flags, data gaps, manifest, and review trail](docs/assets/ic-package.png)
 
-See [Demo Journey](docs/DEMO-JOURNEY.md) for the storyboard and screenshot refresh path.
+See [Demo Journey](docs/DEMO-JOURNEY.md) for the storyboard, screenshot refresh path, and the source-to-IC proof script a visitor can follow without a video.
 
 ---
 
@@ -249,7 +250,7 @@ flowchart LR
     WS --> UI
 ```
 
-The offline simulation path stays local after dependencies are installed. The optional live Codex path sends selected prompts and deal context through the user's ChatGPT-authenticated Codex CLI session, then writes raw Codex outputs and dashboard-readable package artifacts back into the local `data/` tree. Authentication is not stored in this repository.
+The source-to-IC proof path is the public trust loop: local source documents become reviewable candidates, approved inputs shape deterministic/offline or optional live-agent workpapers, and the IC package exports the available decision trail for human review. The offline simulation path stays local after dependencies are installed. The optional live Codex path sends selected prompts and deal context through the user's ChatGPT-authenticated Codex CLI session, then writes raw Codex outputs and dashboard-readable package artifacts back into the local `data/` tree. Authentication is not stored in this repository.
 
 ---
 
