@@ -4,6 +4,27 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [2.8.5](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.8.0...v2.8.5) (2026-05-27)
+
+Redesigns the operator dashboard into one living "deal space" — a persistent frame you drive by
+summoning agents — without touching the engine. Drop documents and the deal record auto-populates;
+you only edit what the team flags. The deterministic offline demo (Parkview) remains the default
+public path and needs no API keys; all changes are presentation plus three thin, guarded backend
+hooks, and are backward-compatible.
+
+### Features
+
+* **Persistent "deal space" frame:** the old six-tab dashboard is replaced by one frame — deal header + a 7-step lifecycle spine (Intake → Diligence → Underwriting → Financing → Legal → Closing → IC) + a context-sensitive center stage + a right rail (live feed + "Your Team") + a command bar. The power-user knobs (runtime/scenario/Codex limits, criteria overrides, workflow presets, mission control, logs, timeline, partial-failure recovery) move into an Advanced drawer with dialog a11y (focus, Escape-close, body scroll-lock).
+* **Intake with no manual entry:** dropping the rent roll / T12 / offering memo auto-extracts and auto-applies every trusted source-backed value (confidence ≥ 0.7, no conflict, validated, source-hash matched); only conflicts and low-confidence reads are flagged for inline edit, which persists with provenance + a decision-audit entry. One document-first front door — the numbers come from the documents, not a data-entry form.
+* **Summon agents and watch them work:** click a teammate (rail), type a command, or tap a chip to open a slide-in agent panel that streams the agent's reasoning with an elapsed timer, renders its workpaper (summary / finding / verdict / caveats) with "open full workpaper," and echoes the task it was given — plus a follow-up box to keep tasking it (live Codex single-agent dispatch via `--agent`; offline replays recorded work). The live feed keeps running behind it.
+* **Editorial-premium visual system:** a real type scale (tight display headlines, wide-tracked uppercase labels), hairline structure, and a four-state functional status color (live / done / review / blocked) layered on the monochrome brand so progress is legible at a glance.
+
+### Bug Fixes
+
+* **Intake "Your Team" rail is staffed:** the default landing stage previously read "No agents staffed"; it now surfaces the ingestion crew (Document Orchestrator + rent-roll / financials / offering-memo parsers), and team status keys on the agent id so each member's live state renders.
+* **Agent panel completeness:** the promised elapsed timer is now populated from the agent's event span; the panel echoes the task it was summoned with; and a declined/failed live dispatch surfaces an actionable notice instead of sitting silently idle.
+* **Honest operator copy:** the front-door promise matches the real flow, and a gated live review explains exactly which source-backed inputs to provide first.
+
 ## [2.8.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.7.0...v2.8.0) (2026-05-25)
 
 Two themes: hardening the real-world document-drop journey, and shipping an honest open
