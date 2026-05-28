@@ -134,7 +134,7 @@ npm run dashboard
 # Drop files on the homepage, confirm the deal name, extract CSV/TXT/MD, approve fields
 ```
 
-Uploaded files and extraction previews stay under `data/deals/{deal-id}/` and are ignored by git. PDFs and Excel files are stored for review, classified, and mapped into source-backed extraction previews where supported.
+Uploaded files and extraction previews stay under `data/deals/{deal-id}/` and are ignored by git. CSV and supported Excel rent rolls and T12s auto-fill the deal record; PDFs upload and open for one-click extraction (they don't auto-fill).
 
 ---
 

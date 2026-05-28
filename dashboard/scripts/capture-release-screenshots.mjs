@@ -20,6 +20,29 @@ async function readApi(path) {
   return response.json()
 }
 
+async function postApi(path, body) {
+  const response = await fetch(`${apiURL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body ?? {}),
+  })
+  if (!response.ok) throw new Error(`POST ${path} failed with ${response.status}`)
+  return response.json().catch(() => ({}))
+}
+
+// Kick the deterministic demo run the same way the header "Run Demo" button does (it POSTs
+// /api/run/start). That control is now hidden on the clean front door, so call the API directly;
+// the app auto-reveals the workspace once the run goes active.
+async function startDemoRun() {
+  await postApi('/api/run/start', {
+    dealPath: 'config/deal.json',
+    mode: 'live',
+    speed: 'normal',
+    runtimeProvider: 'simulation',
+    reset: true,
+  })
+}
+
 async function waitForCondition(label, predicate, timeoutMs, intervalMs = 500) {
   const startedAt = Date.now()
   let lastError = null
@@ -71,7 +94,7 @@ async function waitForWorkspace(page) {
   }
 
   if (!(await page.getByTestId('workspace-frame').isVisible().catch(() => false))) {
-    await page.getByRole('button', { name: /^Run Demo$/ }).click()
+    await startDemoRun()
     await waitForRunStartedOrCompleted()
     await page.getByTestId('workspace-frame').waitFor({ timeout: 30_000 })
   }

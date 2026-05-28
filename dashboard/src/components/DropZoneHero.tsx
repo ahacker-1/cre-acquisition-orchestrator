@@ -75,7 +75,7 @@ export default function DropZoneHero({
         </p>
         <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
           Source-backed extraction is local-first. CSV, TXT, Markdown, and supported XLSX rent rolls or T12s
-          auto-fill now; PDFs are stored for review.
+          auto-fill now; PDFs upload for one-click extraction.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

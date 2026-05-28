@@ -187,7 +187,7 @@ export default function SavedDealsPanel({
         {error && <p className="mt-3 text-xs text-cre-danger">{error}</p>}
         {recentDeals.length === 0 ? (
           <div className="mt-4 border border-white/10 bg-black p-4 text-sm text-gray-500">
-            No saved deals yet. Drop a document above to create your first agent team workspace.
+            No deals yet. Drop your documents above to start your first deal.
           </div>
         ) : (
           <div className="mt-4 grid gap-3 lg:grid-cols-3 2xl:grid-cols-5">

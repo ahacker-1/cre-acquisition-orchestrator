@@ -363,23 +363,26 @@ export default function App() {
           )}
         </div>
         <div className="flex w-full min-w-0 flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
-          {/* Run Status */}
-          <div className="flex min-w-0 items-center gap-2 text-sm">
-            <span
-              className={`inline-block w-2.5 h-2.5 rounded-full ${
-                runStatus.state === 'RUNNING' || runStatus.state === 'STARTING'
-                  ? 'bg-cre-info'
-                  : runStatus.state === 'FAILED'
-                    ? 'bg-cre-danger'
-                    : runStatus.state === 'COMPLETED'
-                      ? 'bg-cre-success'
-                      : 'bg-gray-500'
-              }`}
-            />
-            <span className="min-w-0 break-words text-gray-400">
-              Run: {runStateLabel}{runProviderLabel ? ` / ${runProviderLabel}` : ''}
-            </span>
-          </div>
+          {/* Run status + controls are run-time concerns — hidden on the clean front door (no
+              deal open and nothing running) so a newcomer is not shown inert chrome or jargon. */}
+          {(visibleDealCheckpoint || runActive) && (
+            <div className="flex min-w-0 items-center gap-2 text-sm">
+              <span
+                className={`inline-block w-2.5 h-2.5 rounded-full ${
+                  runStatus.state === 'RUNNING' || runStatus.state === 'STARTING'
+                    ? 'bg-cre-info'
+                    : runStatus.state === 'FAILED'
+                      ? 'bg-cre-danger'
+                      : runStatus.state === 'COMPLETED'
+                        ? 'bg-cre-success'
+                        : 'bg-gray-500'
+                }`}
+              />
+              <span className="min-w-0 break-words text-gray-400">
+                Run: {runStateLabel}{runProviderLabel ? ` / ${runProviderLabel}` : ''}
+              </span>
+            </div>
+          )}
 
           {/* Connection Status */}
           <div className="flex min-w-0 items-center gap-2 text-sm">
@@ -396,7 +399,7 @@ export default function App() {
           <button
             onClick={() => setWorkflowOpen(true)}
             data-testid="header-workflows-button"
-            className="px-3 py-1.5 text-xs font-semibold uppercase bg-white text-black hover:bg-gray-200 transition-colors"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 transition-colors"
           >
             Advanced
           </button>
@@ -430,25 +433,29 @@ export default function App() {
             </button>
           )}
 
-          <button
-            onClick={() => {
-              setFrontDoorPinned(false)
-              setFrontDoorOpen(false)
-              void startLiveRun()
-            }}
-            disabled={!canStart}
-            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {runRequestPending ? 'Working...' : 'Run Demo'}
-          </button>
+          {(visibleDealCheckpoint || runActive) && (
+            <>
+              <button
+                onClick={() => {
+                  setFrontDoorPinned(false)
+                  setFrontDoorOpen(false)
+                  void startLiveRun()
+                }}
+                disabled={!canStart}
+                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {runRequestPending ? 'Working...' : 'Run Demo'}
+              </button>
 
-          <button
-            onClick={() => void stopRun()}
-            disabled={!canStop || runRequestPending}
-            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-cre-danger/80 text-white hover:bg-cre-danger disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Stop
-          </button>
+              <button
+                onClick={() => void stopRun()}
+                disabled={!canStop || runRequestPending}
+                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-cre-danger/80 text-white hover:bg-cre-danger disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Stop
+              </button>
+            </>
+          )}
         </div>
       </header>
 
@@ -475,7 +482,7 @@ export default function App() {
       <main className="p-6 max-w-[1440px] mx-auto">
         <ErrorBoundary routeName={visibleDealCheckpoint ? 'Deal workspace' : 'Home'} onGoHome={openUploadFrontDoor}>
           {!visibleDealCheckpoint ? (
-            <ErrorBoundary routeName="Upload package">
+            <ErrorBoundary routeName="New deal">
               <div className="space-y-6">
                 <DropZoneHero
                   onFilesSelected={handleQuickFiles}

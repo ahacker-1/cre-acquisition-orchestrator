@@ -265,6 +265,35 @@ test('New Deal opens the document-drop front door, not a manual entry form', asy
   await expect(page.getByTestId('drop-zone-hero')).toContainText('Drop the deal. Watch the team go to work.')
   await expect(page.getByTestId('deal-wizard-modal')).toBeHidden()
 
+  // First-load header is decluttered: run-time controls (the Run status chip + Stop) are hidden
+  // until a deal is open or a run is active, so a newcomer is not shown inert chrome. The create
+  // + library entries remain (the connection indicator stays as the readiness signal).
+  await expect(page.getByText(/^Run:/)).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Stop' })).toHaveCount(0)
+  await expect(page.getByTestId('header-new-deal-button')).toBeVisible()
+  await expect(page.getByTestId('header-deals-button')).toBeVisible()
+
+  expect(consoleErrors).toEqual([])
+})
+
+test('a dropped PDF sets the one-click-extraction expectation before create', async ({ page }) => {
+  const consoleErrors = collectConsoleErrors(page)
+
+  await waitForDashboardReady(page)
+  // A PDF is stored for extraction (not auto-applied like CSV/XLSX), so the create step surfaces
+  // an honest note up front instead of leaving the deal record silently empty after create.
+  await page.getByTestId('drop-zone-input').setInputFiles({
+    name: 'offering-memo.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4 placeholder'),
+  })
+  const quick = page.getByTestId('quick-deal-modal')
+  await expect(quick).toBeVisible()
+  await expect(quick.getByTestId('quick-pdf-note')).toBeVisible()
+  await expect(quick.getByTestId('quick-pdf-note')).toContainText('one-click extraction')
+  await quick.getByTestId('quick-deal-cancel').click()
+  await expect(quick).toBeHidden()
+
   expect(consoleErrors).toEqual([])
 })
 

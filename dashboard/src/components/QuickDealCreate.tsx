@@ -129,6 +129,9 @@ export default function QuickDealCreate({
   const progressText = uploadQueue.length > 0
     ? `${uploadedCount}/${uploadQueue.length} uploaded`
     : 'No files queued'
+  // PDFs are stored for extraction (extraction-pending) rather than auto-applied like CSV/XLSX,
+  // so set that expectation up front instead of leaving the deal record silently empty.
+  const hasPdf = files.some((file) => /\.pdf$/i.test(file.name))
 
   function updateQueueItem(itemId: string, update: Partial<UploadQueueItem>): void {
     setUploadQueue((current) =>
@@ -254,11 +257,11 @@ export default function QuickDealCreate({
           className="my-4 flex max-h-[calc(100vh-2rem)] w-full max-w-xl flex-col border border-cre-border bg-cre-surface shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:my-6 sm:max-h-[calc(100vh-3rem)]"
         >
           <div className="border-b border-cre-border px-6 py-5">
-            <p className="portal-kicker">Create agent team workspace</p>
-            <h2 id="quick-deal-title" className="portal-title">Name this mission</h2>
+            <p className="portal-kicker">New deal</p>
+            <h2 id="quick-deal-title" className="portal-title">Name your deal</h2>
             <p id="quick-deal-description" className="mt-3 text-sm text-gray-400">
-              I will create a deal workspace, upload {files.length} file{files.length === 1 ? '' : 's'},
-              and prepare the team for: {OUTCOME_LABEL_BY_INTENT[intent]}.
+              I'll create the deal, upload your {files.length} file{files.length === 1 ? '' : 's'}, and get
+              your acquisition team ready — {OUTCOME_LABEL_BY_INTENT[intent]}.
             </p>
           </div>
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
@@ -271,14 +274,11 @@ export default function QuickDealCreate({
               />
             </label>
             <div className="border border-white/10 bg-black p-3">
-              <p className="text-xs font-semibold uppercase text-gray-500">Requested outcome</p>
+              <p className="text-xs font-semibold uppercase text-gray-500">What you'll get</p>
               <p className="mt-2 text-sm text-gray-200">{goalText}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="status-badge status-pending">
-                  Recommended workflow: {WORKFLOW_BY_INTENT[intent]}
-                </span>
-                <span className="status-badge status-pending">
-                  Team preview available after workspace opens
+                  Your acquisition team is assembled when the deal opens
                 </span>
               </div>
             </div>
@@ -306,6 +306,12 @@ export default function QuickDealCreate({
                   </li>
                 ))}
               </ul>
+              {hasPdf && (
+                <p className="mt-3 text-xs leading-5 text-cre-warning" data-testid="quick-pdf-note">
+                  PDFs upload and open for one-click extraction in the deal — they don't auto-fill like CSV
+                  or Excel rent rolls and T12s. You'll review and apply their fields once the deal opens.
+                </p>
+              )}
             </div>
             {error && (
               <p className="border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-100">{error}</p>
