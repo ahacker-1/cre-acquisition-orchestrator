@@ -237,7 +237,7 @@ export default function SavedDealsPanel({
               Deal Library
             </h2>
           <p className="text-sm text-gray-500 mt-1">
-              Create a new deal, open its workspace, upload source documents, or run one of the included sample analyses.
+              Open a deal's workspace, drop in source documents, or run one of the included sample analyses.
           </p>
           </div>
           {loading && <span className="text-xs text-gray-500">Refreshing…</span>}
@@ -256,7 +256,7 @@ export default function SavedDealsPanel({
         </div>
         {userDeals.length === 0 ? (
           <div className="card bg-cre-surface/50 text-sm text-gray-500">
-            No saved deals yet. Start with the wizard to create your first one.
+            No saved deals yet. Click New Deal to drop in your documents and create your first one.
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">

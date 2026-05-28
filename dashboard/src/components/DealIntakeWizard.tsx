@@ -283,13 +283,13 @@ export default function DealIntakeWizard({
           <div className="border-b border-cre-border px-6 py-5 flex items-start justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-cre-accent font-semibold">
-                New Deal Wizard
+                Deal Details
               </p>
               <h2 className="text-2xl font-bold text-white mt-2">
                 {editingDealId ? 'Edit Deal' : 'Create a Deal'}
               </h2>
               <p className="text-sm text-gray-500 mt-2 max-w-2xl">
-                Start with a deal name, save a draft, then upload rent rolls, T12s, offering memoranda, LOIs, and legal files into the deal workspace for extraction before launch.
+                Update this deal's details and save your changes. New deals start from the home page — drop the rent roll, T12, or offering memo and the team fills the deal record for you.
               </p>
             </div>
             <button

@@ -208,12 +208,6 @@ export default function App() {
     return 'core-plus'
   }
 
-  function openNewDealWizard(): void {
-    setFrontDoorPinned(false)
-    setEditingDealId(null)
-    setWizardOpen(true)
-  }
-
   function openUploadFrontDoor(): void {
     setLibraryError(null)
     setFrontDoorPinned(true)
@@ -407,16 +401,10 @@ export default function App() {
             Advanced
           </button>
 
+          {/* "New Deal" opens the document-drop front door — no manual data-entry form.
+              Drop the source package and the team fills + flags the deal record. */}
           <button
             onClick={openUploadFrontDoor}
-            data-testid="header-upload-package-button"
-            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 transition-colors"
-          >
-            Upload Package
-          </button>
-
-          <button
-            onClick={openNewDealWizard}
             data-testid="header-new-deal-button"
             className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 transition-colors"
           >
@@ -631,7 +619,10 @@ export default function App() {
         isOpen={wizardOpen}
         suggestedDealId={suggestedDealId}
         editingDealId={editingDealId}
-        onClose={() => setWizardOpen(false)}
+        onClose={() => {
+          setWizardOpen(false)
+          setEditingDealId(null)
+        }}
         onLoadDeal={loadDeal}
         onValidateDeal={validateDeal}
         onSaveDeal={saveDeal}

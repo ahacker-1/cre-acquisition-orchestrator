@@ -128,6 +128,24 @@ export async function saveLaunchReadyDeal(
   await expectApiOk(response)
 }
 
+// Seed an incomplete deal that fails launch validation, so it persists as a `draft`
+// (deal-service derives saveState from launch-readiness, not the request mode). Used to
+// exercise reopening / continuing a saved deal in the EDIT wizard, now that creation happens
+// only through the document-drop front door.
+export async function saveDraftDeal(
+  request: APIRequestContext,
+  dealId: string,
+  dealName: string,
+): Promise<void> {
+  const response = await request.post(`${API_URL}/api/deals`, {
+    data: {
+      deal: { dealId, dealName, property: { city: 'Austin', state: 'TX' } },
+      mode: 'draft',
+    },
+  })
+  await expectApiOk(response)
+}
+
 export async function launchWorkflowForDeal(
   request: APIRequestContext,
   workflowId: string,
@@ -153,7 +171,7 @@ export async function launchWorkflowForDeal(
  *
  * The dashboard auto-reveals a completed run's workspace on load, so a leftover deal from a
  * prior test can already be on screen. This helper is robust to that: if the frame is showing
- * a *different* deal, it returns to the front door (Upload Package) before clicking the card.
+ * a *different* deal, it returns to the front door (New Deal) before clicking the card.
  */
 export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, dealName: string): Promise<void> {
   await waitForDashboardReady(page)
@@ -170,9 +188,9 @@ export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, d
   }
 
   // A leftover completed-run workspace can auto-open and obscure the recent-deals strip; if
-  // the strip is not already showing, return to the front door via Upload Package to reveal it.
+  // the strip is not already showing, return to the front door via New Deal to reveal it.
   if (!(await strip.isVisible().catch(() => false))) {
-    await page.getByTestId('header-upload-package-button').click()
+    await page.getByTestId('header-new-deal-button').click()
     await expect(strip).toBeVisible({ timeout: 20_000 })
   }
 

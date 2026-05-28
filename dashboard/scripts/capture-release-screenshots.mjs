@@ -112,10 +112,10 @@ async function captureIntakeAutoFill(browser) {
     const hero = intakePage.getByTestId('drop-zone-hero')
     if (!(await hero.isVisible().catch(() => false))) {
       // A deal is already open (e.g. the demo run captured on the main page); return to the
-      // document-first upload front door via the header affordance.
-      const uploadButton = intakePage.getByTestId('header-upload-package-button')
-      if (await uploadButton.isVisible().catch(() => false)) {
-        await uploadButton.click()
+      // document-first front door via the New Deal header affordance.
+      const newDealButton = intakePage.getByTestId('header-new-deal-button')
+      if (await newDealButton.isVisible().catch(() => false)) {
+        await newDealButton.click()
         await hero.waitFor({ timeout: 10_000 }).catch(() => {})
       }
     }

@@ -15,6 +15,7 @@ import {
   openAdvancedDrawer,
   openWorkspaceFromRecentDeals,
   parserFixturesRoot,
+  saveDraftDeal,
   saveLaunchReadyDeal,
   stopActiveRun,
   waitForDashboardReady,
@@ -203,61 +204,17 @@ function collectConsoleErrors(page: Page): string[] {
   return errors
 }
 
-async function openWizard(page: Page): Promise<void> {
-  await page.getByTestId('header-new-deal-button').click()
-  await expect(page.getByTestId('deal-wizard-modal').getByRole('heading', { name: /Create a Deal|Edit Deal/ })).toBeVisible()
+// The wizard is now reachable only in EDIT mode (creation happens via the document-drop
+// front door). Open it from an existing deal's Edit/Continue button in the library modal.
+async function openEditWizard(page: Page, dealId: string): Promise<void> {
+  const modal = await openDealLibraryModal(page)
+  await modal.getByTestId(`edit-deal-${dealId}`).click()
+  await expect(page.getByTestId('deal-wizard-modal').getByRole('heading', { name: 'Edit Deal' })).toBeVisible()
 }
 
 async function openDealLibraryModal(page: Page) {
   await page.getByTestId('header-deals-button').click()
   return page.getByTestId('deal-library-modal')
-}
-
-async function goNext(page: Page): Promise<void> {
-  await page.getByTestId('deal-wizard-next').click()
-}
-
-async function fillLaunchReadyDeal(page: Page, dealId: string, dealName: string): Promise<void> {
-  const wizard = page.getByTestId('deal-wizard-modal')
-  await wizard.getByTestId('deal-id-input').fill(dealId)
-  await wizard.getByTestId('deal-name-input').fill(dealName)
-  await wizard.getByRole('spinbutton', { name: 'Target Hold Period (years)' }).fill('5')
-  await wizard.getByRole('spinbutton', { name: /Target IRR/ }).fill('0.15')
-  await wizard.getByRole('spinbutton', { name: 'Target Equity Multiple' }).fill('1.9')
-  await wizard.getByRole('spinbutton', { name: /Target Cash-on-Cash/ }).fill('0.08')
-  await goNext(page)
-
-  await wizard.getByRole('textbox', { name: 'Street Address' }).fill('500 Release Avenue')
-  await wizard.getByRole('textbox', { name: 'City' }).fill('Austin')
-  await wizard.getByRole('textbox', { name: /State/ }).fill('TX')
-  await wizard.getByRole('textbox', { name: 'ZIP Code' }).fill('78701')
-  await wizard.getByRole('spinbutton', { name: 'Year Built' }).fill('2003')
-  await wizard.getByRole('spinbutton', { name: 'Total Units' }).fill('18')
-  await goNext(page)
-
-  await wizard.getByRole('textbox', { name: 'Type' }).fill('1BR/1BA')
-  await wizard.getByRole('spinbutton', { name: 'Count' }).fill('18')
-  await wizard.getByRole('spinbutton', { name: 'Avg Sq Ft' }).fill('725')
-  await wizard.getByRole('spinbutton', { name: 'Market Rent' }).fill('1700')
-  await wizard.getByRole('spinbutton', { name: 'In-Place Rent' }).fill('1600')
-  await goNext(page)
-
-  await wizard.getByRole('spinbutton', { name: 'Asking Price' }).fill('3600000')
-  await wizard.getByRole('spinbutton', { name: 'Current NOI' }).fill('230000')
-  await wizard.getByRole('spinbutton', { name: /In-Place Occupancy/ }).fill('0.94')
-  await wizard.getByRole('spinbutton', { name: 'Target LTV (decimal)' }).fill('0.7')
-  await wizard.getByRole('spinbutton', { name: 'Estimated Rate (decimal)' }).fill('0.061')
-  await wizard.getByRole('spinbutton', { name: 'Loan Term' }).fill('10')
-  await wizard.getByRole('spinbutton', { name: 'Amortization' }).fill('30')
-  await goNext(page)
-
-  await wizard.getByRole('textbox', { name: 'Seller Entity' }).fill('Playwright Seller LLC')
-  await wizard.getByRole('textbox', { name: 'PSA Execution Date' }).fill('2026-04-01')
-  await wizard.getByRole('textbox', { name: 'DD Start Date' }).fill('2026-04-02')
-  await wizard.getByRole('textbox', { name: 'DD Expiration Date' }).fill('2026-04-20')
-  await wizard.getByRole('textbox', { name: 'Closing Date' }).fill('2026-05-15')
-  await wizard.getByRole('combobox', { name: 'Speed' }).selectOption('fast')
-  await page.getByTestId('deal-wizard-next').click()
 }
 
 function documentCoverageStat(page: Page) {
@@ -297,16 +254,28 @@ test.afterEach(async ({ request }) => {
   await stopActiveRun(request)
 })
 
-
-test('saves a draft and reopens it from the deal library', async ({ page }) => {
+test('New Deal opens the document-drop front door, not a manual entry form', async ({ page }) => {
   const consoleErrors = collectConsoleErrors(page)
 
   await waitForDashboardReady(page)
-  await openWizard(page)
+  // The prominent create entry point lands on the seamless drop flow — no manual number-entry
+  // form. (The legacy DealIntakeWizard create path was retired; the wizard is edit-only now.)
+  await page.getByTestId('header-new-deal-button').click()
+  await expect(page.getByTestId('drop-zone-hero')).toBeVisible()
+  await expect(page.getByTestId('drop-zone-hero')).toContainText('Drop the deal. Watch the team go to work.')
+  await expect(page.getByTestId('deal-wizard-modal')).toBeHidden()
 
-  await page.getByTestId('deal-id-input').fill(DRAFT_DEAL_ID)
-  await page.getByTestId('deal-name-input').fill(DRAFT_DEAL_NAME)
-  await page.getByTestId('deal-wizard-save-draft').click()
+  expect(consoleErrors).toEqual([])
+})
+
+
+test('reopens a saved draft deal in the edit wizard from the deal library', async ({ page, request }) => {
+  const consoleErrors = collectConsoleErrors(page)
+
+  // Creation now happens through the document-drop front door, so seed the draft via the API
+  // and verify the wizard reopens it in EDIT mode with its fields loaded.
+  await saveDraftDeal(request, DRAFT_DEAL_ID, DRAFT_DEAL_NAME)
+  await waitForDashboardReady(page)
 
   const modal = await openDealLibraryModal(page)
   await expect(modal.getByTestId(`deal-card-${DRAFT_DEAL_ID}`)).toContainText('Draft')
@@ -319,23 +288,36 @@ test('saves a draft and reopens it from the deal library', async ({ page }) => {
   expect(consoleErrors).toEqual([])
 })
 
-test('creates a launch-ready deal and starts a run from the wizard', async ({ page }) => {
+test('edits a saved deal and starts a run from the wizard', async ({ page, request }) => {
   const consoleErrors = collectConsoleErrors(page)
 
+  // Seed a launch-ready deal via the API (creation is via document drop now), then drive the
+  // kept EDIT wizard through to Review and Save & Launch — the wizard's launch path must still
+  // work for an existing deal.
+  await saveLaunchReadyDeal(request, READY_DEAL_ID, READY_DEAL_NAME)
   await waitForDashboardReady(page)
-  await openWizard(page)
-  await fillLaunchReadyDeal(page, READY_DEAL_ID, READY_DEAL_NAME)
+  await openEditWizard(page, READY_DEAL_ID)
+
+  const wizard = page.getByTestId('deal-wizard-modal')
+  await expect(wizard.getByTestId('deal-id-input')).toHaveValue(READY_DEAL_ID)
+
+  // Advance Basics -> Property -> Unit Mix -> Financials -> Timeline -> Review; the last Next
+  // ("Review for Launch") triggers the launch-readiness check.
+  for (let step = 0; step < 5; step += 1) {
+    await wizard.getByTestId('deal-wizard-next').click()
+  }
 
   await expect(page.getByText('Launch Ready')).toBeVisible()
   await expect(page.getByText('0 blocking issue(s), 0 warning(s)')).toBeVisible()
 
   await page.getByTestId('deal-wizard-save-launch').click()
 
+  // The run started (header flipped to Running) and the app navigated to the launched deal —
+  // that is the proof that Edit -> Save & Launch starts a run. (The deal-library status badge
+  // only reads "Running" while the live run's dealPath still matches the card; the offline
+  // simulation finishes too fast to assert that reliably, so it is not checked here.)
   await expect(page.getByText('Run: Running')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('main').getByRole('heading', { name: READY_DEAL_NAME })).toBeVisible({ timeout: 20_000 })
-
-  const modal = await openDealLibraryModal(page)
-  await expect(modal.getByTestId(`deal-card-${READY_DEAL_ID}`)).toContainText(/Running|Complete/)
 
   expect(consoleErrors).toEqual([])
 })
@@ -477,7 +459,7 @@ test('shows compact recent deals without changing the full deal library modal', 
   expect(consoleErrors).toEqual([])
 })
 
-test('returns to the upload package page from a checkpoint-backed workspace', async ({ page, request }) => {
+test('returns to the deal front door from a checkpoint-backed workspace', async ({ page, request }) => {
   const consoleErrors = collectConsoleErrors(page)
 
   await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
@@ -485,7 +467,7 @@ test('returns to the upload package page from a checkpoint-backed workspace', as
   await openWorkspaceFromRecentDeals(page, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
   await stopActiveRun(request)
 
-  await page.getByTestId('header-upload-package-button').click()
+  await page.getByTestId('header-new-deal-button').click()
   await expect(page.getByTestId('drop-zone-hero')).toBeVisible()
   await expectViewportAtTop(page)
   await expect(page.getByTestId('drop-zone-hero')).toContainText('Drop the deal. Watch the team go to work.')

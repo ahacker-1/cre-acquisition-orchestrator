@@ -24,6 +24,7 @@ hooks, and are backward-compatible.
 * **Intake "Your Team" rail is staffed:** the default landing stage previously read "No agents staffed"; it now surfaces the ingestion crew (Document Orchestrator + rent-roll / financials / offering-memo parsers), and team status keys on the agent id so each member's live state renders.
 * **Agent panel completeness:** the promised elapsed timer is now populated from the agent's event span; the panel echoes the task it was summoned with; and a declined/failed live dispatch surfaces an actionable notice instead of sitting silently idle.
 * **Honest operator copy:** the front-door promise matches the real flow, and a gated live review explains exactly which source-backed inputs to provide first.
+* **"New Deal" is document-first too:** the prominent New Deal button still opened the legacy manual data-entry wizard, contradicting the "no data-entry form" intake promise above. It now opens the same document-drop front door — drop the package and the team fills + flags the deal record — while the step-through wizard is kept only for editing an existing deal (the redundant "Upload Package" header button folds into "New Deal").
 
 ## [2.8.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.7.0...v2.8.0) (2026-05-25)
 
