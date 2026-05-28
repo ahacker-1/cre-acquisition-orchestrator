@@ -98,16 +98,23 @@ per-deal results, and weaknesses).
 
 ## Current Status
 
-Current `main` is the latest public release (`v2.8.0`). It hardens the real-world document-drop journey and ships an honest open evaluation harness on top of the `v2.7.0` completion pass. The stable baseline remains local-first and review-first:
+Current `main` is the latest public release (`v2.8.5`). It redesigns the operator dashboard into one persistent "deal space" — drop documents and the deal record auto-fills, then summon agents and watch them work — on top of the `v2.8.0` drop-flow-hardening and open-evaluation release. The stable baseline remains local-first and review-first:
 
 - **Local by default** - offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
-- **Versioned release baseline** - `v2.8.0` adds real-world drop-flow hardening (parser confident-wrong/robustness fixes, content-aware rent-roll/T12 classification, a threshold-driven IC verdict, an automated `npm run test:pile` smoke test) and an open evaluation harness with an honest trust report, on top of the `v2.7.0` completion pass and the `v2.6.0` credibility-hardening release.
+- **Versioned release baseline** - `v2.8.5` redesigns the dashboard into a persistent deal space (lifecycle spine + auto-filling intake + summonable agent panels), on top of the `v2.8.0` drop-flow hardening and open evaluation harness, the `v2.7.0` completion pass, and the `v2.6.0` credibility-hardening release.
 - **Honest evaluation** - `npm run eval` scores the orchestrator on an **8-deal** synthetic benchmark and reports honest numbers including where it falls short (see [Honest Evaluation](#honest-evaluation--prove-it)). The live (Codex) layer covers all 8 deals; the documented soft spots are model-dependent returns (~50%) and one borderline IC verdict.
 - **Known limits** - true OCR of scanned/image-only documents (these are detected and flagged for OCR, not extracted), multi-tenant cloud hosting, and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are supported.
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
+
+## What's New in v2.8.5
+
+- **One persistent "deal space"** - the six-tab dashboard is replaced by a single frame: a deal header + an always-visible 7-stage lifecycle spine (Intake → Diligence → Underwriting → Financing → Legal → Closing → IC) + a context-sensitive center stage + a right rail (live feed + "Your Team") + a command bar. Power-user controls (runtime/Codex limits, criteria, presets, mission control, logs, recovery) move into an Advanced drawer.
+- **Intake with no manual entry** - drop the rent roll, T12, and offering memo and the deal record auto-fills from trusted source-backed values; you only edit what the team flags, and each edit persists with provenance and an audit entry. The numbers come from your documents, not a data-entry form.
+- **Summon agents and watch them work** - click a teammate, type a command, or tap a chip to open a slide-in panel that streams the agent's reasoning with an elapsed timer, renders its workpaper (finding / verdict / caveats) with "open full workpaper", and takes a follow-up task. Offline replays recorded work; the live Codex runtime dispatches a single agent.
+- **Re-presentation, not a rewrite** - the redesign is the new frame plus three thin, guarded backend hooks (single-agent dispatch, inline field override, per-agent stream). The engine, schemas, agents, and source-decision audit trail are unchanged, and the deterministic offline Parkview demo stays the default public path.
 
 ## What's New in v2.8.0
 
@@ -127,7 +134,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Release Journey
 
-This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, then a credibility-hardened sample package with strict schemas, and now a completion pass that adds PDF extraction, review-grade workpapers, live-runtime hardening, and single-operator self-host deployment.
+This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, then a credibility-hardened sample package with strict schemas, then a completion pass adding PDF extraction and review-grade workpapers, then real-world drop-flow hardening with an honest evaluation harness, and now a redesign into one persistent deal space you drive by summoning agents.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -143,6 +150,7 @@ This project has grown from agent architecture into a local-first acquisition wo
 | **v2.6.0 - Credibility and Infrastructure Hardening** | Aligns Parkview around Austin, replaces stub workpapers, enforces strict schemas/enums, hardens local security, documents APIs/events, and refreshes public repo infrastructure. | [RELEASE_NOTES_v2.6.0.md](RELEASE_NOTES_v2.6.0.md) |
 | **v2.7.0 - Completion Pass** | Closes the prior known limits (text-based PDF extraction, merged-cell/image-only workbooks, single-operator self-host deployment) and implements the ROADMAP near-term priorities: review-grade workpapers, live Codex runtime hardening, source-decision audit trail, and contributor tooling. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v2.7.0) |
 | **v2.8.0 - Drop-Flow Hardening + Honest Eval** | Hardens the real-world document-drop journey (parser confident-wrong/robustness fixes, content-aware classification, threshold-driven IC verdict, `npm run test:pile`) and ships an open evaluation harness with an honest trust report — live agents scored on all 8 synthetic deals, proving narrative-risk detection while honestly documenting the model-dependent-returns soft spot. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v2.8.0) |
+| **v2.8.5 - Deal Workspace Redesign** | Redesigns the operator dashboard into one persistent "deal space" — a lifecycle spine + auto-filling intake (drop documents, edit only what's flagged) + summonable agent panels that stream work and render workpapers — as presentation plus three thin backend hooks, engine and audit trail unchanged, offline demo still the default. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v2.8.5) |
 
 ---
 
