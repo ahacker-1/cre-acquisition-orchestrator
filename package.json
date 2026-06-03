@@ -52,7 +52,8 @@
     "codex:status": "node scripts/codex-status.js",
     "codex:smoke": "node scripts/codex-agent-runner.js --workflow underwriting-refresh --max-agents 1 --concurrency 1 --run-id codex-smoke",
     "codex:run": "node scripts/codex-agent-runner.js --workflow quick-deal-screen --concurrency 2",
-    "codex:run:full": "node scripts/codex-agent-runner.js --workflow full-acquisition-review --concurrency 3"
+    "codex:run:full": "node scripts/codex-agent-runner.js --workflow full-acquisition-review --concurrency 3",
+    "generate-readme": "node scripts/generate-readme.js"
   },
   "engines": {
     "node": ">=18.0.0"
