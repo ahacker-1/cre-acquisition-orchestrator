@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import ProofPathStrip, { type ProofPathStep } from './ProofPathStrip'
 import type {
   DealCheckpoint,
   DocumentArtifact,
@@ -29,6 +30,8 @@ interface PhaseOutcome {
   key: string
   phase: PhaseInfo
 }
+
+type ProofCoverage = NonNullable<NonNullable<DealCheckpoint['inputSnapshot']>['sourceCoverage']>
 
 function displayLabel(value: string): string {
   return value
@@ -76,6 +79,44 @@ function documentTone(docType: string): string {
   if (normalized.includes('model') || normalized.includes('underwriting')) return 'bg-cre-info/20 text-cre-info'
   if (normalized.includes('report') || normalized.includes('package')) return 'bg-cre-success/20 text-cre-success'
   return 'bg-white/10 text-gray-300'
+}
+
+function buildPackageProofSteps(
+  sourceCoverage: ProofCoverage | undefined,
+  documentArtifacts: DocumentArtifact[],
+  dealCheckpoint: DealCheckpoint | null,
+): ProofPathStep[] {
+  const sourceDocCount = sourceCoverage?.sourceDocumentCount ?? 0
+  const approvedFieldCount = sourceCoverage?.approvedFieldCount ?? 0
+  const workpaperCount = documentArtifacts.length
+  const packageReady = Boolean(dealCheckpoint && /^(complete|completed)$/i.test(dealCheckpoint.status))
+  const packageDetail = packageReady ? 'Complete' : workpaperCount > 0 ? 'In progress' : 'Pending'
+  return [
+    {
+      key: 'source-doc',
+      label: 'Source doc',
+      status: sourceDocCount > 0 ? 'ready' : 'pending',
+      detail: sourceDocCount > 0 ? `${sourceDocCount} captured` : 'Pending',
+    },
+    {
+      key: 'approved-field',
+      label: 'Approved field',
+      status: approvedFieldCount > 0 ? 'ready' : 'pending',
+      detail: approvedFieldCount > 0 ? `${approvedFieldCount} approved` : 'Pending',
+    },
+    {
+      key: 'agent-workpaper',
+      label: 'Agent workpaper',
+      status: workpaperCount > 0 ? 'ready' : 'pending',
+      detail: workpaperCount > 0 ? `${workpaperCount} filed` : 'Pending',
+    },
+    {
+      key: 'ic-package',
+      label: 'IC package',
+      status: packageReady ? 'ready' : 'pending',
+      detail: packageDetail,
+    },
+  ]
 }
 
 function finalRecommendation(
@@ -265,20 +306,26 @@ function CompletionPackage({
     return (
       <div
         data-testid="completion-package-view"
-        className={`card flex items-center justify-center h-64 text-center ${className}`}
+        className={`card space-y-4 ${className}`}
       >
-        <div>
+        <ProofPathStrip />
+        <div className="flex h-44 items-center justify-center text-center">
+          <div>
           <p className="text-gray-400">Completion package will appear after a workflow run starts.</p>
           <p className="text-xs text-gray-600 mt-1">
             Phase outcomes, workpapers, findings, decision log, document manifest, and final recommendation will be assembled here.
           </p>
+          </div>
         </div>
       </div>
     )
   }
 
+  const proofPathSteps = buildPackageProofSteps(sourceCoverage, documentArtifacts, dealCheckpoint)
+
   return (
     <div data-testid="completion-package-view" className={`space-y-6 ${className}`}>
+      <ProofPathStrip steps={proofPathSteps} />
       <div className="card">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>

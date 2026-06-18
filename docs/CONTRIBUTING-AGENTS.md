@@ -216,12 +216,13 @@ node scripts/release-check.js
 ### Doc-count drift checker — important
 
 `scripts/verify-doc-counts.js` (run by both `npm run validate:docs` and
-`npm test`) cross-checks the README **"By the Numbers"** table against the actual
-checked-in catalog. It counts, among other things:
+`npm test`) cross-checks the README **"By the Numbers"** table against the
+release-visible catalog: tracked files plus untracked non-ignored files. Ignored
+generated stress fixtures do not count. It counts, among other things:
 
 - **AI Roles** = `agents/**/*.md` + `orchestrators/**/*.md`
 - **Schemas** = `schemas/**/*.schema.json`
-- **Fixtures** = every file under `fixtures/`
+- **Fixtures** = every tracked or untracked non-ignored file under `fixtures/`
 
 So when you add an agent **and** a schema (Steps 1 + 3), you change both the
 **AI Roles** and **Schemas** counts; adding an input fixture (Step 4) changes the

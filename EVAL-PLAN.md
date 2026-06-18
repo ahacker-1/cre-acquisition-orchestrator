@@ -57,9 +57,10 @@ financials, financing, investmentStrategy, targetHoldPeriod, targetIRR, targetEq
 targetCashOnCash, seller, timeline`. Both paths accept `--deal <path>`.
 
 **Repo conventions that constrain placement (verified):**
-- `scripts/verify-doc-counts.js` counts files in `fixtures/`, `schemas/`, `skills/`, `agents/`,
-  `orchestrators/`, workflows in `config/workflows.json`, and `test:`-prefixed npm scripts. Expected
-  numbers live in the README "By the Numbers" table. → **Eval lives in top-level `eval/` (not walked).**
+- `scripts/verify-doc-counts.js` counts tracked files plus untracked non-ignored files in `fixtures/`,
+  `schemas/`, `skills/`, `agents/`, and `orchestrators/`, workflows in `config/workflows.json`, and
+  `test:`-prefixed npm scripts. Expected numbers live in the README "By the Numbers" table. → **Eval
+  lives in top-level `eval/` (not walked).**
   A new `test:`-prefixed script bumps the Tests count → README must be updated to match (honest).
 - `scripts/validate-fixtures.js` validates only `data/examples/**/*.json` (needs a schema mapping).
   → Eval artifacts go under `eval/` and `data/eval-runs/` (gitignored), NOT `data/examples/`.

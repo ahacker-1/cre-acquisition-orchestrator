@@ -17,9 +17,11 @@ Expected behavior:
 
 1. Node.js 18+ and npm are verified.
 2. Dashboard dependencies are installed.
-3. Codex CLI is installed if possible.
-4. If Codex is available and not logged in, `codex login` starts.
-5. You choose **Sign in with ChatGPT** for subscription-based Codex usage.
+3. Python 3.9+ is found unless `--skip-python-install` is passed.
+4. `.venv` is created and `scripts/requirements.txt` installs parser dependencies (`pandas`, `openpyxl`, `pdfplumber`).
+5. Codex CLI is installed if possible.
+6. If Codex is available and not logged in, `codex login` starts.
+7. You choose **Sign in with ChatGPT** for subscription-based Codex usage.
 
 If you want setup to fail unless the live Codex runtime is fully ready, run:
 
@@ -211,6 +213,14 @@ Dashboard browser tests:
 npm run test:e2e
 ```
 
+Full v3 workbench verification:
+
+```powershell
+npm run verify:v3
+```
+
+This is the heavy release/demo gate. It runs release drift checks, root tests, parser and workspace evidence tests, dashboard typecheck/build, npm audits, offline evaluation, production self-host smoke, and browser E2E.
+
 ---
 
 ## Quick Reference
@@ -225,6 +235,7 @@ npm run test:e2e
 | Multi-agent Codex quick screen | `npm run codex:run` |
 | Full live Codex catalog | `npm run codex:run:full` |
 | Validate latest outputs | `npm run validate` |
+| Verify source-to-IC workbench | `npm run verify:v3` |
 
 ---
 

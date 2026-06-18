@@ -16,6 +16,7 @@ import { collectFailedAgents, recoveryRunId, retryFailedAgents } from '../lib/ru
 import WorkspaceFrame from './workspace/WorkspaceFrame'
 import IntakeStage from './workspace/stages/IntakeStage'
 import AgentPanel from './workspace/AgentPanel'
+import type { ProofPathStep } from './ProofPathStrip'
 import { buildDealRecordGroups, coerceEditValue, countNeedsEye } from '../lib/dealRecordModel'
 import { buildAgentPanelView } from '../lib/agentView'
 import { routeIntent } from '../lib/intentRouting'
@@ -233,7 +234,7 @@ function readinessStatusClass(status: string): string {
 }
 
 function isCompleteStatus(status: string): boolean {
-  return /^complete|completed$/i.test(status)
+  return /^(complete|completed)$/i.test(status)
 }
 
 // W72: a run is still active (so re-running failed agents would conflict) when the
@@ -283,6 +284,49 @@ function fieldValue(value: unknown): string {
   if (Array.isArray(value)) return `${value.length} rows`
   if (value && typeof value === 'object') return JSON.stringify(value)
   return '--'
+}
+
+function buildProofPathSteps(
+  documents: SourceDocument[],
+  approvedFieldCount: number,
+  workpaperCount: number,
+  packageStatus: StageStatus,
+): ProofPathStep[] {
+  const packageReady = packageStatus === 'done'
+  const packageDetail =
+    packageStatus === 'done'
+      ? 'Complete'
+      : packageStatus === 'live'
+        ? 'In progress'
+        : packageStatus === 'blocked'
+          ? 'Blocked'
+          : 'Pending'
+  return [
+    {
+      key: 'source-doc',
+      label: 'Source doc',
+      status: documents.length > 0 ? 'ready' : 'pending',
+      detail: documents.length > 0 ? `${documents.length} uploaded` : 'Pending',
+    },
+    {
+      key: 'approved-field',
+      label: 'Approved field',
+      status: approvedFieldCount > 0 ? 'ready' : 'pending',
+      detail: approvedFieldCount > 0 ? `${approvedFieldCount} approved` : 'Pending',
+    },
+    {
+      key: 'agent-workpaper',
+      label: 'Agent workpaper',
+      status: workpaperCount > 0 ? 'ready' : 'pending',
+      detail: workpaperCount > 0 ? `${workpaperCount} filed` : 'Pending',
+    },
+    {
+      key: 'ic-package',
+      label: 'IC package',
+      status: packageReady ? 'ready' : 'pending',
+      detail: packageDetail,
+    },
+  ]
 }
 
 function downloadSafeName(value: string): string {
@@ -1874,7 +1918,7 @@ export default function DealWorkspace({
   const initialDefaultTab: WorkspaceTab = initialTab ?? (
     /^running|starting|in_progress$/i.test(dealCheckpoint.status)
       ? 'mission'
-      : /^complete|completed$/i.test(dealCheckpoint.status)
+      : isCompleteStatus(dealCheckpoint.status)
         ? 'package'
         : 'documents'
   )
@@ -1927,7 +1971,7 @@ export default function DealWorkspace({
     setActiveTab(initialTab ?? (
       /^running|starting|in_progress$/i.test(dealCheckpoint.status)
         ? 'mission'
-        : /^complete|completed$/i.test(dealCheckpoint.status)
+        : isCompleteStatus(dealCheckpoint.status)
           ? 'package'
           : 'documents'
     ))
@@ -2135,6 +2179,12 @@ export default function DealWorkspace({
   const packageStatus: StageStatus = icStage?.status ?? 'idle'
   const packageLabel =
     packageStatus === 'idle' ? 'IC Package — not started' : `IC Package ${icStage?.progress ?? 0}%`
+  const proofPathSteps = buildProofPathSteps(
+    documents,
+    workspace?.operatorCommand?.sourceCoverage?.approvedFieldCount ?? 0,
+    documentArtifacts.length,
+    packageStatus,
+  )
 
   const activePhaseForStage = phaseTabs.find((phase) => phase.phaseSlug === STAGE_TO_PHASE_SLUG[activeStage])
   // Intake's crew (the ingestion agents) isn't a runtime checkpoint phase, so it never appears in
@@ -2258,6 +2308,7 @@ export default function DealWorkspace({
             agentsLine={intakeAgentsLine}
             detailedReviewOpen={intakeReviewOpen}
             onDetailedReviewToggle={setIntakeReviewOpen}
+            proofPathSteps={proofPathSteps}
           >
             <DocumentIntakePanel
               documents={documents}

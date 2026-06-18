@@ -10,7 +10,9 @@ Everything needed before running the CRE Acquisition Orchestrator from a fresh W
 |-------------|-----------------|---------|
 | Node.js | 18.0+ | Root scripts, simulation engine, dashboard server |
 | npm | 9+ | Dependency install and launch scripts |
+| Python | 3.9+ | Local parser virtual environment for XLSX/PDF extraction |
 | Chrome, Edge, or another modern browser | Current stable | Dashboard at `http://localhost:5173` |
+| Google Chrome, Microsoft Edge, or Playwright Chromium | Current stable | Browser E2E in `npm run verify:v3` |
 
 Run the project setup from the repo root:
 
@@ -19,7 +21,13 @@ npm install
 npm run setup
 ```
 
-The setup script verifies Node/npm, installs dashboard dependencies, and tries to prepare the optional Codex live-agent runtime. The offline demo and dashboard still work if Codex install or login is skipped.
+The setup script verifies Node/npm, installs root and dashboard dependencies, creates `.venv`, installs `scripts/requirements.txt` (`pandas`, `openpyxl`, `pdfplumber`), and tries to prepare the optional Codex live-agent runtime. The offline demo and dashboard still work if Codex install or login is skipped.
+
+To inspect the environment without installing or writing files:
+
+```powershell
+npm run setup -- --check
+```
 
 For a strict live-agent setup check:
 
@@ -32,6 +40,14 @@ For offline-only setup:
 ```powershell
 npm run setup -- --skip-codex-install --skip-login
 ```
+
+For dashboard-only setup that skips parser dependencies:
+
+```powershell
+npm run setup -- --skip-python-install
+```
+
+Skipping Python dependencies keeps the dashboard usable, but XLSX/PDF parser tests and source-backed document extraction will report parser dependencies as unavailable until `.venv` is prepared.
 
 ---
 
@@ -92,10 +108,13 @@ npm run setup
 # 4. Run the no-key offline demo
 npm run demo
 
-# 5. Optional: run one live Codex-backed agent
+# 5. Run the full verified source-to-IC workbench gate
+npm run verify:v3
+
+# 6. Optional: run one live Codex-backed agent
 npm run codex:smoke
 
-# 6. Start the dashboard
+# 7. Start the dashboard
 npm run dashboard
 ```
 

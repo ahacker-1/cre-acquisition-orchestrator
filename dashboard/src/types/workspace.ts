@@ -207,6 +207,60 @@ export interface IcStarterPackageRedFlagDrilldown {
   }>
 }
 
+export type EvidenceRefKind =
+  | 'source-field'
+  | 'source-document'
+  | 'agent-workpaper'
+  | 'red-flag'
+  | 'data-gap'
+  | 'package-section'
+
+export type EvidenceRelation =
+  | 'extracted-from'
+  | 'approved-as'
+  | 'supports'
+  | 'flags'
+  | 'documents'
+  | 'summarizes'
+  | 'missing-evidence-for'
+
+export interface EvidenceRef {
+  refId: string
+  kind: EvidenceRefKind
+  fieldId?: string
+  path?: string
+  documentId?: string
+  fileName?: string
+  sourceRef?: SourceReference
+  workpaper?: string
+  workflowId?: string
+  phaseSlug?: string
+  raw?: string
+  location?: SourceReference['location']
+  derivedFrom?: string[]
+}
+
+export interface EvidenceGraphNode {
+  id: string
+  kind: EvidenceRefKind
+  label: string
+  summary?: string
+  ref?: EvidenceRef
+}
+
+export interface EvidenceGraphEdge {
+  from: string
+  to: string
+  relation: EvidenceRelation
+}
+
+export interface EvidenceGraph {
+  version: 1
+  generatedAt: string
+  nodes: EvidenceGraphNode[]
+  edges: EvidenceGraphEdge[]
+}
+
 export interface IcStarterPackageExport {
   packageJson: {
     version: number
@@ -222,12 +276,13 @@ export interface IcStarterPackageExport {
       label: string
       value: unknown
       confidence: number
-      sourceRef: SourceReference
+      sourceRef?: SourceReference
     }>
     assumptions: string[]
     openQuestions: string[]
     redFlags: string[]
     redFlagDrilldowns?: IcStarterPackageRedFlagDrilldown[]
+    evidenceGraph: EvidenceGraph
   }
   markdown: string
   files: {

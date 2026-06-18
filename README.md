@@ -42,7 +42,7 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 ## What It Does
 
 - **Document-first deal intake** - upload rent rolls, T12s, offering memos, PDFs, and supporting files into a local workspace.
-- **Source-backed extraction review** - supported XLSX/CSV/TXT/MD and text-based PDF sources become candidate fields with confidence, warnings, file hashes, and source-location (sheet/row/column or page) provenance; scanned/image-only documents are detected and flagged for OCR rather than silently skipped.
+- **Source-backed extraction review** - supported XLSX/CSV/TXT/MD and text-based PDF sources become candidate fields with confidence, warnings, file hashes, and source-location (sheet/row/column or page) provenance; scanned/image-only documents are detected as OCR-ready with a local review-gated bridge rather than silently skipped.
 - **Human approval gate** - underwriting inputs do not change until the operator approves/applies trusted fields or waives/rejects ambiguous ones.
 - **31-role AI deal team** - 6 orchestrators, 21 acquisition specialists, and 4 document-ingestion roles are defined as markdown prompts.
 - **Visible coordination** - dashboard events show specialist messages, handoffs, dependencies, reviews, workpapers, and package status.
@@ -56,7 +56,7 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 |----------|--------|---------|-----------|----------|---------------|
 | 31 | 8 | 27 | 5 | 36 | 10 |
 
-Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 36 curated fixture files under `fixtures/` (messy parser fixtures, the adversarial real-world-pile smoke set, and the first-deal package); and 10 root `test*` commands tracked by [package.json](package.json).
+Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 36 curated fixture files under `fixtures/` (messy parser fixtures, legal diligence checklist extraction, the adversarial real-world-pile smoke set, and the first-deal package); and 10 root `test*` commands tracked by [package.json](package.json).
 
 ---
 
@@ -99,16 +99,24 @@ per-deal results, and weaknesses).
 
 ## Current Status
 
-Current `main` is the latest public release (`v2.8.5`). It redesigns the operator dashboard into one persistent "deal space" — drop documents and the deal record auto-fills, then summon agents and watch them work — on top of the `v2.8.0` drop-flow-hardening and open-evaluation release. The stable baseline remains local-first and review-first:
+Current `main` is the latest public release (`v3.0.0`). It turns the persistent deal-space dashboard into an evidence-grade source-to-IC workbench: fresh-clone setup prepares parser dependencies, source documents stay review-gated, evidence lineage travels into the IC package, and `npm run verify:v3` proves the release surface end to end. The stable baseline remains local-first and review-first:
 
 - **Local by default** - offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
-- **Versioned release baseline** - `v2.8.5` redesigns the dashboard into a persistent deal space (lifecycle spine + auto-filling intake + summonable agent panels), on top of the `v2.8.0` drop-flow hardening and open evaluation harness, the `v2.7.0` completion pass, and the `v2.6.0` credibility-hardening release.
+- **Versioned release baseline** - `v3.0.0` adds evidence graph lineage, OCR-ready metadata, legal checklist candidates, proof-path UI, fresh-clone parser setup, CI, and a full `verify:v3` gate on top of the `v2.8.5` persistent deal-space redesign and the `v2.8.0` honest evaluation harness.
 - **Honest evaluation** - `npm run eval` scores the orchestrator on an **8-deal** synthetic benchmark and reports honest numbers including where it falls short (see [Honest Evaluation](#honest-evaluation--prove-it)). The live (Codex) layer covers all 8 deals; the documented soft spots are model-dependent returns (~50%) and one borderline IC verdict.
 - **Known limits** - true OCR of scanned/image-only documents (these are detected and flagged for OCR, not extracted), multi-tenant cloud hosting, and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are supported.
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
+
+## What's New in v3.0.0
+
+- **Evidence-grade source-to-IC chain** - IC package JSON now includes a deterministic evidence graph connecting source documents, approved fields, agent workpapers, red flags, data gaps, and package sections. Markdown export adds an Evidence Chain section.
+- **Fresh-clone parser setup** - `npm run setup` creates `.venv`, installs parser dependencies from `scripts/requirements.txt`, supports read-only `--check`, and the dashboard parser service prefers the repo virtualenv.
+- **OCR-ready and legal diligence intelligence** - scanned/image-only documents expose explicit OCR-ready bridge metadata and next action; legal/closing checklists can become review-only `diligence.checklistItems` candidates with line provenance.
+- **Proof-path dashboard** - Intake and IC Package views show the four-step Source doc -> Approved field -> Agent workpaper -> IC package path with conservative pending/ready states.
+- **One-command release proof** - `npm run verify:v3` runs release checks, root tests, parser/workspace coverage, dashboard typecheck/build, audits, offline eval, production smoke, and full Playwright E2E. CI now runs this gate too.
 
 ## What's New in v2.8.5
 
@@ -125,7 +133,8 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## What's New in v2.7.0
 
-- **Text-based PDF extraction** - offering memos and rent rolls in PDF now produce source-backed candidate fields with per-field confidence and page-level provenance; scanned/image-only PDFs are detected and flagged for OCR rather than silently skipped.
+- **Text-based PDF extraction** - offering memos and rent rolls in PDF now produce source-backed candidate fields with per-field confidence and page-level provenance; scanned/image-only PDFs are detected, marked OCR-ready, and held for local review-gated OCR rather than silently skipped.
+- **Legal checklist candidates** - Markdown/TXT legal or diligence checklists can produce low-confidence `diligence.checklistItems` candidates with line provenance for operator review, without auto-applying economics.
 - **Tougher spreadsheet parsing** - merged-cell workbooks are unmerged and forward-filled before header detection, image-only workbooks are flagged, and new fixtures cover currency symbols, subtotal/total rows, trailing notes, and synonym headers.
 - **Review-grade workpapers** - workpaper quality gates (cited inputs, assumptions, calculations, caveats, reviewer signoff), per-phase evidence-completeness scoring, IC red-flag drilldowns back to the originating workpaper/source, and richer IC export with source drilldowns and package version history.
 - **Source-decision audit trail** - timestamped approve/reject/waive history per field with cross-document conflict blocking, plus field-level provenance deep links from an approved input to its source snippet.
@@ -135,7 +144,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Release Journey
 
-This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, then a credibility-hardened sample package with strict schemas, then a completion pass adding PDF extraction and review-grade workpapers, then real-world drop-flow hardening with an honest evaluation harness, and now a redesign into one persistent deal space you drive by summoning agents.
+This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, then a credibility-hardened sample package with strict schemas, then a completion pass adding PDF extraction and review-grade workpapers, then real-world drop-flow hardening with an honest evaluation harness, then a redesign into one persistent deal space you drive by summoning agents, and now an evidence-grade source-to-IC workbench with full release verification.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -152,6 +161,7 @@ This project has grown from agent architecture into a local-first acquisition wo
 | **v2.7.0 - Completion Pass** | Closes the prior known limits (text-based PDF extraction, merged-cell/image-only workbooks, single-operator self-host deployment) and implements the ROADMAP near-term priorities: review-grade workpapers, live Codex runtime hardening, source-decision audit trail, and contributor tooling. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v2.7.0) |
 | **v2.8.0 - Drop-Flow Hardening + Honest Eval** | Hardens the real-world document-drop journey (parser confident-wrong/robustness fixes, content-aware classification, threshold-driven IC verdict, `npm run test:pile`) and ships an open evaluation harness with an honest trust report — live agents scored on all 8 synthetic deals, proving narrative-risk detection while honestly documenting the model-dependent-returns soft spot. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v2.8.0) |
 | **v2.8.5 - Deal Workspace Redesign** | Redesigns the operator dashboard into one persistent "deal space" — a lifecycle spine + auto-filling intake (drop documents, edit only what's flagged) + summonable agent panels that stream work and render workpapers — as presentation plus three thin backend hooks, engine and audit trail unchanged, offline demo still the default. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v2.8.5) |
+| **v3.0.0 - Evidence-Grade Workbench** | Adds fresh-clone parser setup, OCR-ready metadata, legal checklist candidates, deterministic evidence graph lineage, proof-path dashboard UI, CI, and the full `npm run verify:v3` release gate. | [RELEASE_NOTES_v3.0.0.md](RELEASE_NOTES_v3.0.0.md) |
 
 ---
 
@@ -414,6 +424,8 @@ The dashboard is intentionally not a landing page. It is the actual workspace: a
 
 - [Node.js](https://nodejs.org/) 18+
 - npm
+- Python 3.9+ for the local parser virtual environment (`pandas`, `openpyxl`, `pdfplumber`)
+- Google Chrome or Microsoft Edge for local browser E2E, unless Playwright's bundled Chromium is installed
 - Optional for live AI runs: [OpenAI Codex CLI](https://github.com/openai/codex) signed in with ChatGPT
 
 From a fresh clone on Windows:
@@ -428,6 +440,7 @@ npm run dashboard
 ```
 
 Open `http://localhost:5173`. The offline demo and dashboard work even if Codex is missing or login is skipped.
+`npm run setup` also prepares the local parser virtual environment used for XLSX/PDF extraction.
 
 To require a complete live-agent setup during onboarding:
 
@@ -471,6 +484,12 @@ Run browser E2E coverage:
 
 ```powershell
 npm run test:e2e
+```
+
+Run the full verified workbench gate before a release or serious demo:
+
+```powershell
+npm run verify:v3
 ```
 
 Run a small live Codex smoke test after ChatGPT login:
@@ -668,18 +687,13 @@ When adding market assumptions, lender terms, tax mechanics, or legal rules, use
 
 ## Validation Gate
 
-The main local gate is intentionally visible because this project is only credible if the sample deal, contracts, dashboard, and tests keep working together.
+The main local gate is intentionally visible because this project is only credible if the sample deal, contracts, dashboard, and tests keep working together. For the full source-to-IC workbench proof path, run:
 
 ```powershell
-npm run demo:verify
-npm --prefix dashboard run build
-npm --prefix dashboard run typecheck
-npm run test:parsers
-npm run test:workspace
-npm test
-npm run test:e2e
-npm audit --omit=dev
+npm run verify:v3
 ```
+
+This runs the release drift checks, root regression suite, parser and workspace evidence tests, dashboard typecheck/build, root and dashboard audits, offline evaluation, production self-host smoke test, and browser E2E coverage.
 
 For documentation drift:
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const BASE_DIR = path.resolve(__dirname, '..');
 
@@ -18,6 +19,24 @@ function walkFiles(relDir, predicate, files = []) {
     else if (entry.isFile() && predicate(relPath)) files.push(relPath);
   }
   return files;
+}
+
+function gitFiles(args) {
+  const result = spawnSync('git', args, { cwd: BASE_DIR, encoding: 'utf8' });
+  if (result.error || result.status !== 0) return null;
+  return (result.stdout || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function catalogFiles(relDir, predicate) {
+  const tracked = gitFiles(['ls-files', relDir]);
+  const untracked = gitFiles(['ls-files', '--others', '--exclude-standard', relDir]);
+  if (tracked && untracked) {
+    return [...new Set([...tracked, ...untracked])].filter(predicate);
+  }
+  return walkFiles(relDir, predicate);
 }
 
 function parseByTheNumbers(readme) {
@@ -46,12 +65,12 @@ function main() {
 
   const actual = {
     'AI Roles':
-      walkFiles('agents', (relPath) => relPath.endsWith('.md')).length +
-      walkFiles('orchestrators', (relPath) => relPath.endsWith('.md')).length,
-    Skills: walkFiles('skills', (relPath) => relPath.endsWith('.md')).length,
-    Schemas: walkFiles('schemas', (relPath) => relPath.endsWith('.schema.json')).length,
+      catalogFiles('agents', (relPath) => relPath.endsWith('.md')).length +
+      catalogFiles('orchestrators', (relPath) => relPath.endsWith('.md')).length,
+    Skills: catalogFiles('skills', (relPath) => relPath.endsWith('.md')).length,
+    Schemas: catalogFiles('schemas', (relPath) => relPath.endsWith('.schema.json')).length,
     Workflows: workflows.length,
-    Fixtures: walkFiles('fixtures', () => true).length,
+    Fixtures: catalogFiles('fixtures', () => true).length,
     'Tests passing': countTestScripts()
   };
 

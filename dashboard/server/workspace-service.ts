@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from 'fs'
 import { basename, dirname, extname, join } from 'path'
-import { randomUUID } from 'crypto'
+import { createHash, randomUUID } from 'crypto'
 import {
   getDealRecord,
   validateDealConfig,
@@ -384,6 +384,8 @@ export interface IcStarterPackage {
   evidenceCompleteness: PackageEvidenceCompleteness
   // W63: incrementing package version history.
   versionHistory: PackageVersionHistoryEntry[]
+  // V3: machine-readable evidence lineage from source documents to IC sections.
+  evidenceGraph: EvidenceGraph
 }
 
 export interface IcStarterPackageExport {
@@ -472,6 +474,60 @@ export interface PhaseEvidenceCompleteness {
 export interface PackageEvidenceCompleteness {
   overallScore: number
   phases: PhaseEvidenceCompleteness[]
+}
+
+export type EvidenceRefKind =
+  | 'source-field'
+  | 'source-document'
+  | 'agent-workpaper'
+  | 'red-flag'
+  | 'data-gap'
+  | 'package-section'
+
+export type EvidenceRelation =
+  | 'extracted-from'
+  | 'approved-as'
+  | 'supports'
+  | 'flags'
+  | 'documents'
+  | 'summarizes'
+  | 'missing-evidence-for'
+
+export interface EvidenceRef {
+  refId: string
+  kind: EvidenceRefKind
+  fieldId?: string
+  path?: string
+  documentId?: string
+  fileName?: string
+  sourceRef?: SourceReference
+  workpaper?: string
+  workflowId?: string
+  phaseSlug?: string
+  raw?: string
+  location?: SourceReference['location']
+  derivedFrom?: string[]
+}
+
+export interface EvidenceGraphNode {
+  id: string
+  kind: EvidenceRefKind
+  label: string
+  summary?: string
+  ref?: EvidenceRef
+}
+
+export interface EvidenceGraphEdge {
+  from: string
+  to: string
+  relation: EvidenceRelation
+}
+
+export interface EvidenceGraph {
+  version: 1
+  generatedAt: string
+  nodes: EvidenceGraphNode[]
+  edges: EvidenceGraphEdge[]
 }
 
 // W63: Source drilldown reference + package version history.
@@ -2057,6 +2113,260 @@ function buildEvidenceCompleteness(
   return { overallScore, phases: phaseScores }
 }
 
+function sha16(value: string): string {
+  return createHash('sha256').update(value).digest('hex').slice(0, 16)
+}
+
+export function evidenceNodeId(ref: EvidenceRef): string {
+  if (ref.kind === 'source-document' && ref.documentId) return `doc:${ref.documentId}`
+  if (ref.kind === 'source-field' && ref.fieldId) return `field:${ref.fieldId}`
+  if (ref.kind === 'red-flag') return ref.refId.startsWith('red-flag:') ? ref.refId : `red-flag:${sha16(ref.raw ?? ref.refId)}`
+  if (ref.kind === 'data-gap') return ref.refId.startsWith('data-gap:') ? ref.refId : `data-gap:${sha16(ref.raw ?? ref.refId)}`
+  if (ref.kind === 'package-section') return ref.refId.startsWith('package:') ? ref.refId : `package:${safeSegment(ref.path ?? ref.refId)}`
+  if (ref.kind === 'agent-workpaper') {
+    const phaseSlug = safeSegment(ref.phaseSlug ?? 'workpaper')
+    const agentSlug = safeSegment(ref.workflowId ?? ref.workpaper ?? ref.refId)
+    return `workpaper:${phaseSlug}:${agentSlug}`
+  }
+  return ref.refId
+}
+
+export function evidenceGraphHash(graph: EvidenceGraph): string {
+  return createHash('sha256').update(JSON.stringify(graph)).digest('hex').slice(0, 16)
+}
+
+function shortSummary(value: unknown): string {
+  const text = displayValue(value)
+  return text.length > 220 ? `${text.slice(0, 217)}...` : text
+}
+
+function addEvidenceNode(
+  nodes: Map<string, EvidenceGraphNode>,
+  ref: EvidenceRef,
+  label: string,
+  summary?: string,
+): string {
+  const id = evidenceNodeId(ref)
+  const normalizedRef: EvidenceRef = { ...ref, refId: id }
+  const existing = nodes.get(id)
+  if (existing) {
+    if (!existing.summary && summary) existing.summary = summary
+    if (!existing.ref) existing.ref = normalizedRef
+    return id
+  }
+  nodes.set(id, {
+    id,
+    kind: ref.kind,
+    label,
+    summary,
+    ref: normalizedRef,
+  })
+  return id
+}
+
+function addEvidenceEdge(
+  edges: Map<string, EvidenceGraphEdge>,
+  from: string,
+  to: string,
+  relation: EvidenceRelation,
+): void {
+  edges.set(`${from}|${to}|${relation}`, { from, to, relation })
+}
+
+function sourceDocumentRef(documentId: string, fileName: string, sourceRef?: SourceReference): EvidenceRef {
+  return {
+    refId: `doc:${documentId}`,
+    kind: 'source-document',
+    documentId,
+    fileName,
+    sourceRef,
+    raw: sourceRef?.raw,
+    location: sourceRef?.location,
+  }
+}
+
+function packageSectionRef(sectionSlug: string): EvidenceRef {
+  return {
+    refId: `package:${sectionSlug}`,
+    kind: 'package-section',
+    path: sectionSlug,
+  }
+}
+
+function addDataGapNode(
+  nodes: Map<string, EvidenceGraphNode>,
+  edges: Map<string, EvidenceGraphEdge>,
+  dataGapsSectionId: string,
+  gap: string,
+  derivedFrom?: string[],
+): void {
+  const dataGapId = addEvidenceNode(
+    nodes,
+    {
+      refId: `data-gap:${sha16(gap)}`,
+      kind: 'data-gap',
+      raw: gap,
+      derivedFrom,
+    },
+    gap,
+    'provenance unavailable',
+  )
+  addEvidenceEdge(edges, dataGapId, dataGapsSectionId, 'missing-evidence-for')
+}
+
+export function buildEvidenceGraph(packageJson: Omit<IcStarterPackage, 'evidenceGraph'>): EvidenceGraph {
+  const nodes = new Map<string, EvidenceGraphNode>()
+  const edges = new Map<string, EvidenceGraphEdge>()
+
+  const approvedInputsSectionId = addEvidenceNode(nodes, packageSectionRef('approved-inputs'), 'Approved Inputs')
+  const sourceDocumentsSectionId = addEvidenceNode(nodes, packageSectionRef('source-documents'), 'Source Documents')
+  const redFlagsSectionId = addEvidenceNode(nodes, packageSectionRef('red-flags'), 'Red Flags')
+  const dataGapsSectionId = addEvidenceNode(nodes, packageSectionRef('data-gaps'), 'Data Gaps')
+  const launchGateSectionId = addEvidenceNode(nodes, packageSectionRef('launch-gate'), 'Launch Gate')
+
+  const ensureDocumentNode = (documentId: string, fileName: string, sourceRef?: SourceReference): string => {
+    const documentIdValue = addEvidenceNode(
+      nodes,
+      sourceDocumentRef(documentId, fileName, sourceRef),
+      fileName,
+      sourceRef?.fileHash ? `source hash ${sourceRef.fileHash}` : undefined,
+    )
+    addEvidenceEdge(edges, sourceDocumentsSectionId, documentIdValue, 'documents')
+    return documentIdValue
+  }
+
+  for (const document of packageJson.sourceDocuments) {
+    ensureDocumentNode(document.documentId, document.fileName)
+  }
+
+  for (const input of packageJson.approvedInputs) {
+    const sourceRef = input.sourceRef
+    const fieldId = addEvidenceNode(
+      nodes,
+      {
+        refId: `field:${input.fieldId}`,
+        kind: 'source-field',
+        fieldId: input.fieldId,
+        path: input.path,
+        documentId: sourceRef?.documentId,
+        fileName: sourceRef?.fileName,
+        sourceRef,
+        raw: sourceRef?.raw,
+        location: sourceRef?.location,
+      },
+      input.label,
+      `${input.path}: ${shortSummary(input.value)}`,
+    )
+    addEvidenceEdge(edges, approvedInputsSectionId, fieldId, 'documents')
+    addEvidenceEdge(edges, fieldId, approvedInputsSectionId, 'approved-as')
+    if (sourceRef) {
+      const documentId = ensureDocumentNode(sourceRef.documentId, sourceRef.fileName, sourceRef)
+      addEvidenceEdge(edges, fieldId, documentId, 'extracted-from')
+    } else {
+      addDataGapNode(
+        nodes,
+        edges,
+        dataGapsSectionId,
+        `Missing parser provenance for approved input ${input.label} (${input.path}).`,
+        [fieldId],
+      )
+    }
+  }
+
+  for (const drilldown of packageJson.sourceDrilldown) {
+    if (drilldown.parserId === 'operator') continue
+    const fieldId = addEvidenceNode(
+      nodes,
+      {
+        refId: `field:${drilldown.fieldId}`,
+        kind: 'source-field',
+        fieldId: drilldown.fieldId,
+        path: drilldown.path,
+        documentId: drilldown.documentId,
+        fileName: drilldown.fileName,
+        raw: drilldown.raw,
+        location: drilldown.location,
+      },
+      drilldown.label,
+      drilldown.path,
+    )
+    const documentId = ensureDocumentNode(drilldown.documentId, drilldown.fileName)
+    addEvidenceEdge(edges, fieldId, documentId, 'extracted-from')
+  }
+
+  for (const drilldown of packageJson.redFlagDrilldowns) {
+    const redFlagId = addEvidenceNode(
+      nodes,
+      {
+        refId: `red-flag:${sha16(drilldown.flag)}`,
+        kind: 'red-flag',
+        raw: drilldown.flag,
+        workpaper: drilldown.workpaper,
+        workflowId: drilldown.workflowId,
+        phaseSlug: 'launch-readiness',
+      },
+      drilldown.flag,
+      drilldown.relatedFields.length > 0 ? `${drilldown.relatedFields.length} related source field(s)` : 'provenance unavailable',
+    )
+    addEvidenceEdge(edges, redFlagsSectionId, redFlagId, 'documents')
+    const workpaperId = addEvidenceNode(
+      nodes,
+      {
+        refId: `workpaper:launch-readiness:${safeSegment(drilldown.workflowId)}`,
+        kind: 'agent-workpaper',
+        workpaper: drilldown.workpaper,
+        workflowId: drilldown.workflowId,
+        phaseSlug: 'launch-readiness',
+      },
+      drilldown.workpaper,
+      `Launch readiness workpaper for ${drilldown.workflowId}`,
+    )
+    addEvidenceEdge(edges, workpaperId, redFlagId, 'documents')
+    addEvidenceEdge(edges, workpaperId, launchGateSectionId, 'summarizes')
+    for (const related of drilldown.relatedFields) {
+      const fieldId = addEvidenceNode(
+        nodes,
+        {
+          refId: `field:${related.fieldId}`,
+          kind: 'source-field',
+          fieldId: related.fieldId,
+          path: related.path,
+          documentId: related.documentId,
+          fileName: related.fileName,
+          raw: related.raw,
+          location: related.location,
+        },
+        related.label,
+        related.path,
+      )
+      const documentId = ensureDocumentNode(related.documentId, related.fileName)
+      addEvidenceEdge(edges, fieldId, documentId, 'extracted-from')
+      addEvidenceEdge(edges, redFlagId, fieldId, 'flags')
+    }
+  }
+
+  for (const missingField of packageJson.readiness.missingApprovedFields) {
+    addDataGapNode(
+      nodes,
+      edges,
+      dataGapsSectionId,
+      `Missing approved source evidence for ${missingField}.`,
+    )
+  }
+  for (const question of packageJson.openQuestions) {
+    addDataGapNode(nodes, edges, dataGapsSectionId, question)
+  }
+
+  return {
+    version: 1,
+    generatedAt: packageJson.generatedAt,
+    nodes: [...nodes.values()].sort((left, right) => left.id.localeCompare(right.id)),
+    edges: [...edges.values()].sort((left, right) =>
+      `${left.from}|${left.to}|${left.relation}`.localeCompare(`${right.from}|${right.to}|${right.relation}`),
+    ),
+  }
+}
+
 function renderIcStarterPackageMarkdown(packageJson: IcStarterPackage): string {
   const approvedRows = packageJson.approvedInputs.length > 0
     ? packageJson.approvedInputs.map((field) =>
@@ -2074,6 +2384,15 @@ function renderIcStarterPackageMarkdown(packageJson: IcStarterPackage): string {
         `| ${markdownCell(entry.label)} | ${markdownCell(entry.fileName)} | ${markdownCell(sourceLocationLabel({ ...entry, fileName: entry.fileName } as SourceReference))} | ${markdownCell(entry.parserId)} | ${markdownCell(entry.fileHash ?? '')} |`
       )
     : ['| No source drilldown references yet |  |  |  |  |']
+  const evidenceChainRows = packageJson.approvedInputs
+    .filter((field) => Boolean(field.sourceRef))
+    .map((field) =>
+      `- source document -> approved input: ${markdownCell(field.sourceRef?.fileName)} -> ${markdownCell(field.label)} (${markdownCell(field.path)})`
+    )
+  const evidenceGapRows = packageJson.evidenceGraph.nodes
+    .filter((node) => node.kind === 'data-gap')
+    .slice(0, 12)
+    .map((node) => `- data gap -> package section: ${markdownCell(node.label)}`)
   // W61: per-phase evidence completeness rows.
   const evidenceRows = packageJson.evidenceCompleteness.phases.map((phase) =>
     `| ${markdownCell(phase.label)} | ${(phase.score * 100).toFixed(0)}% | ${markdownCell(phase.status)} | ${phase.presentDocuments.length}/${phase.requiredDocuments.length} | ${phase.presentFields.length}/${phase.requiredFields.length} |`
@@ -2116,6 +2435,13 @@ function renderIcStarterPackageMarkdown(packageJson: IcStarterPackage): string {
     '| Field | File | Location | Parser | Source Hash |',
     '| --- | --- | --- | --- | --- |',
     ...drilldownRows,
+    '',
+    '## Evidence Chain',
+    `Evidence graph hash: ${evidenceGraphHash(packageJson.evidenceGraph)}`,
+    ...(evidenceChainRows.length > 0
+      ? evidenceChainRows
+      : ['- Pending: no source document -> approved input links yet.']),
+    ...evidenceGapRows,
     '',
     '## Source Documents',
     '| File | Type | Review Status | Extraction Status |',
@@ -3101,7 +3427,7 @@ export function exportIcStarterPackage(
   }
   const versionHistory: PackageVersionHistoryEntry[] = [...priorEntries, versionHistoryEntry]
 
-  const packageJson: IcStarterPackage = {
+  const packageJsonBase: Omit<IcStarterPackage, 'evidenceGraph'> = {
     version: packageVersion,
     generatedAt,
     dealId,
@@ -3153,6 +3479,11 @@ export function exportIcStarterPackage(
     qualityGate,
     evidenceCompleteness,
     versionHistory,
+  }
+  const evidenceGraph = buildEvidenceGraph(packageJsonBase)
+  const packageJson: IcStarterPackage = {
+    ...packageJsonBase,
+    evidenceGraph,
   }
   const markdown = renderIcStarterPackageMarkdown(packageJson)
   const outputDir = packagesDir(context, dealId)

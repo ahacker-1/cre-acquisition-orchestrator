@@ -29,6 +29,7 @@ data/eval-runs/
 # Python bytecode (eval generators)
 __pycache__/
 *.pyc
+.venv/
 
 # Environment
 .env

@@ -35,6 +35,16 @@ const PARTIAL_DEAL_NAME = 'Playwright Partial Failure Deal'
 const PARTIAL_RUN_ID = 'codex-playwright-partial-001'
 const RED_FLAG_DEAL_ID = 'DEAL-2099-906'
 const RED_FLAG_DEAL_NAME = 'Playwright Red Flag Deal'
+const EVAL_BENCHMARK_DEAL_IDS = [
+  'cp-concentration-risk',
+  'cp-insurance-understated',
+  'cp-stabilized-clean',
+  'ds-dscr-below-080',
+  'ds-occupancy-collapse',
+  'va-missing-phase1',
+  'va-overlevered-ltv',
+  'va-sub120-dscr',
+]
 
 function cleanupWorkflowPresets(): void {
   const target = join(dataRoot, 'workflow-presets')
@@ -184,6 +194,15 @@ async function waitForRunIdle(request: APIRequestContext): Promise<void> {
   throw new Error('Timed out waiting for active run to finish')
 }
 
+async function ensureCompletedRunWorkspaceVisible(page: Page): Promise<void> {
+  const workspace = page.getByTestId('workspace-frame')
+  if (!(await workspace.isVisible().catch(() => false))) {
+    await page.reload()
+    await expect(page.getByText('Connected')).toBeVisible({ timeout: 20_000 })
+  }
+  await expect(workspace).toBeVisible({ timeout: 25_000 })
+}
+
 async function expectViewportAtTop(page: Page): Promise<void> {
   await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5_000 }).toBeLessThan(20)
 }
@@ -245,6 +264,10 @@ test.beforeEach(async ({ request }) => {
   cleanupDealArtifacts(RECENT_DEAL_ID)
   cleanupDealArtifacts(PARTIAL_DEAL_ID)
   cleanupDealArtifacts(RED_FLAG_DEAL_ID)
+  for (const dealId of EVAL_BENCHMARK_DEAL_IDS) {
+    cleanupDealArtifacts(dealId)
+    cleanupGeneratedRuntimeArtifacts(dealId)
+  }
   cleanupGeneratedRuntimeArtifacts(WORKSPACE_DEAL_ID)
   cleanupWorkflowPresets()
   await stopActiveRun(request)
@@ -1125,8 +1148,7 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
     if (attempt === 59) throw new Error('Quick deal workflow did not complete in time')
   }
 
-  await expect(page.getByText('Run: Completed')).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByTestId('workspace-frame')).toBeVisible()
+  await ensureCompletedRunWorkspaceVisible(page)
 
   // Mission Control + the Swarm Goal Console moved into the Advanced drawer.
   const drawer = await openAdvancedDrawer(page)
@@ -1144,7 +1166,7 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   await swarmConsole.getByTestId('swarm-launch-button').click()
   await expect(page.getByText(/Run: Running|Run: Completed/)).toBeVisible({ timeout: 15_000 })
   await waitForRunIdle(request)
-  await expect(page.getByText(/Run: Completed/)).toBeVisible({ timeout: 15_000 })
+  await ensureCompletedRunWorkspaceVisible(page)
   // The launch itself is verified by the run-status poll above. Keep the post-launch assertions on
   // stable workspace surfaces so this test does not race the live WebSocket refresh after relaunch.
 

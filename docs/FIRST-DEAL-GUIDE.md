@@ -13,7 +13,7 @@ npm install
 npm run setup
 ```
 
-This verifies Node/npm, installs dashboard dependencies, and tries to prepare the optional Codex live-agent runtime. If Codex install or login is skipped, the local dashboard and deterministic sample still work.
+This verifies Node/npm, installs dashboard dependencies, prepares the local parser `.venv` with `pandas`, `openpyxl`, and `pdfplumber`, and tries to prepare the optional Codex live-agent runtime. If Codex install or login is skipped, the local dashboard and deterministic sample still work.
 
 If you want live AI agents, choose **Sign in with ChatGPT** during the Codex login flow. For a strict live-agent setup check, run:
 
@@ -56,7 +56,7 @@ Use the front door to upload the files you actually have:
 - offering memo
 - LOI, PSA, title, survey, lender, environmental, or diligence support files
 
-Supported CSV/TXT/MD files, supported XLSX rent-roll/T12 workbooks, and text-based PDFs can produce extracted candidate fields. Scanned/image-only PDFs and unsupported workbook shapes are detected, stored, and flagged for OCR/review instead of being silently guessed.
+Supported CSV/TXT/MD files, supported XLSX rent-roll/T12 workbooks, text-based PDFs, and Markdown/TXT legal checklists can produce extracted candidate fields. Scanned/image-only PDFs and unsupported workbook shapes are detected, stored, and marked OCR-ready for an optional local OCR pass instead of being silently guessed.
 
 The repo includes a realistic local fixture package:
 
@@ -81,6 +81,8 @@ For each supported source document:
 5. Use **Waive Selected** when the field is acceptable to defer, with a short note.
 
 Critical deal inputs are not silently applied. They must be reviewed before they become source-backed deal inputs. Approved values become the evidence layer that downstream workflows and specialist workpapers can cite.
+
+Legal or diligence checklist candidates use the `diligence.checklistItems` path with low confidence and line provenance. Treat them as review-only to-do evidence, not underwriting inputs. If a scanned document is marked OCR-ready, run OCR locally outside the app, upload the text layer or OCR output, and review the resulting candidates before applying anything.
 
 ---
 

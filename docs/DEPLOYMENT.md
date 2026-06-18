@@ -46,7 +46,16 @@ directly; only the static server's bind is operator-configurable.
 ## Prerequisites
 
 - Node.js 18+ and npm 9+ (see [PREREQUISITES.md](PREREQUISITES.md)).
-- Dependencies installed: `npm --prefix dashboard install`.
+- Fresh-clone setup completed from the repository root:
+
+```bash
+npm install
+npm run setup
+```
+
+This installs root/dashboard dependencies and parser dependencies. If you are
+only serving an already-built dashboard and do not need parser verification, the
+minimum dashboard dependency install is `npm --prefix dashboard install`.
 
 ---
 
@@ -75,16 +84,13 @@ static server and the API/WS server cleanly.
 If the build is missing, the script exits early and tells you to run the build
 first.
 
-### Optional: wire an npm script
+### npm shortcut
 
-For convenience you can add this to the root `package.json` `scripts` block (this
-repo ships the entry point; wiring the alias is optional):
+The root `package.json` already wires the same entry point:
 
-```json
-"serve": "node scripts/serve-prod.mjs"
+```bash
+npm run serve
 ```
-
-Then run `npm run serve`.
 
 ## 3. Verify (smoke check)
 
@@ -108,6 +114,14 @@ Expected output (abridged):
 
 The process exits `0` on PASS and `1` on FAIL — usable in CI or a pre-flight
 check.
+
+For the full release/demo gate that also proves parsers, evidence lineage,
+dashboard build, npm audits, offline evaluation, production smoke, and browser
+E2E together, run from the repository root:
+
+```bash
+npm run verify:v3
+```
 
 ---
 

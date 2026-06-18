@@ -252,6 +252,52 @@ try {
   assert.ok(noiDrill.fileName && noiDrill.parserId && noiDrill.documentId)
   assert.ok(quickPackage.markdown.includes('## Source Drilldown'))
 
+  // V3: machine-readable evidence graph from source document -> approved input -> package.
+  const evidenceGraph = quickPackage.packageJson.evidenceGraph
+  assert.equal(evidenceGraph.version, 1)
+  assert.equal(evidenceGraph.generatedAt, quickPackage.packageJson.generatedAt)
+  assert.ok(
+    evidenceGraph.nodes.some((node) => node.kind === 'package-section' && node.id === 'package:approved-inputs'),
+    'expected package-section node for approved inputs',
+  )
+  const noiInput = quickPackage.packageJson.approvedInputs.find((field) => field.path === 'financials.currentNOI')
+  assert.ok(noiInput?.sourceRef, 'expected NOI approved input to retain sourceRef')
+  const noiFieldNodeId = `field:${noiInput.fieldId}`
+  const noiDocumentNodeId = `doc:${noiInput.sourceRef.documentId}`
+  assert.ok(
+    evidenceGraph.nodes.some((node) => node.id === noiFieldNodeId && node.kind === 'source-field'),
+    'expected source-field node for NOI',
+  )
+  assert.ok(
+    evidenceGraph.nodes.some((node) => node.id === noiDocumentNodeId && node.kind === 'source-document'),
+    'expected source-document node for NOI source',
+  )
+  assert.ok(
+    evidenceGraph.edges.some((edge) =>
+      edge.from === noiFieldNodeId &&
+      edge.to === noiDocumentNodeId &&
+      edge.relation === 'extracted-from'
+    ),
+    'expected NOI field -> source document extraction edge',
+  )
+  assert.ok(
+    evidenceGraph.edges.some((edge) =>
+      edge.from === 'package:approved-inputs' &&
+      edge.to === noiFieldNodeId &&
+      edge.relation === 'documents'
+    ),
+    'expected package approved-inputs section -> NOI field edge',
+  )
+  assert.ok(
+    evidenceGraph.nodes.some((node) => node.kind === 'data-gap' && node.summary === 'provenance unavailable'),
+    'expected explicit data-gap nodes for package gaps without provenance',
+  )
+  assert.ok(quickPackage.markdown.includes('## Evidence Chain'))
+  assert.ok(
+    quickPackage.markdown.includes(`source document -> approved input: ${noiInput.sourceRef.fileName} -> ${noiInput.label} (${noiInput.path})`),
+    'expected the rendered evidence-chain row to cite the actual NOI source document and approved input',
+  )
+
   // W62: every red flag links back to its originating workpaper (and source fields).
   assert.ok(Array.isArray(quickPackage.packageJson.redFlagDrilldowns))
   assert.equal(quickPackage.packageJson.redFlagDrilldowns.length, quickPackage.packageJson.redFlags.length)

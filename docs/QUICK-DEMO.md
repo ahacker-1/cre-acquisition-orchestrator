@@ -4,13 +4,13 @@ Use this path when you want to prove the product locally before reading the arch
 
 ## What You Will See
 
-The current demo follows the v2.8.5 deal-space journey:
+The current demo follows the v3.0.0 evidence-grade deal-space journey:
 
-1. **Drop documents** — start from source material, not a blank automation form. XLSX/CSV/TXT/MD and text-based PDF sources can become reviewable candidates; scanned/image-only documents are detected and flagged for OCR.
+1. **Drop documents** — start from source material, not a blank automation form. XLSX/CSV/TXT/MD and text-based PDF sources can become reviewable candidates; scanned/image-only documents are detected as OCR-ready with review-gated next steps.
 2. **Review extraction** — candidate fields show confidence, warnings, source file, file hash, and source location before they change underwriting inputs.
 3. **Approve evidence** — trusted fields are applied; ambiguous values are rejected or waived with a reason.
 4. **Watch the team work** — the persistent deal space shows the lifecycle spine, Your Team rail, Live Feed, and summonable agent panel.
-5. **Trace to IC** — workpapers and package artifacts expose available references, and the IC package gathers red flags, data gaps, manifest, review trail, and Markdown/JSON export.
+5. **Trace to IC** — the proof path and evidence graph connect source documents, approved fields, workpapers, red flags, data gaps, and the IC package export.
 
 ## Start the Dashboard
 
@@ -59,13 +59,13 @@ Guided Demo Mode opens the deterministic Parkview sample without uploads or API 
 
 ## Verify the Offline Demo
 
-Before showing the project to someone else, run the one-command verification path:
+Before showing the project to someone else, run the full release verification path:
 
 ```powershell
-npm run demo:verify
+npm run verify:v3
 ```
 
-This command regenerates deterministic demo artifacts, validates contracts and operator guides, checks the deterministic swarm-goal helper, validates source-backed XLSX rent-roll/T12 parser fixtures, runs the system scenarios, and verifies the dashboard production build. It is offline and credential-free by default.
+This command runs release drift checks, root regression tests, parser/workspace evidence tests, dashboard typecheck/build, root and dashboard audits, offline eval, production self-host smoke, and browser E2E. It is offline and credential-free by default.
 
 ## Screens to Review
 
@@ -77,7 +77,7 @@ After the dashboard opens, use the sample deal/workspace and review these surfac
 | **Intake / Extraction Review** | Source documents becoming candidate fields with confidence, warnings, and provenance before approval. |
 | **Deal Space** | One persistent frame: lifecycle spine, center stage, Live Feed, Your Team, and command bar. |
 | **Agent Panel / Workpaper** | A specialist's reasoning and filed workpaper, with findings/caveats and available source or workpaper references. |
-| **IC Package** | Recommendation, red flags, data gaps, manifest, review trail, workpaper links, and Markdown/JSON export. |
+| **IC Package** | Proof path, evidence chain, recommendation, red flags, data gaps, manifest, review trail, workpaper links, and Markdown/JSON export. |
 
 Current public screenshots for these surfaces live under [`docs/assets/`](assets/). The longer source-to-IC storyboard is in [`docs/DEMO-JOURNEY.md`](DEMO-JOURNEY.md).
 
@@ -195,13 +195,13 @@ npm --prefix dashboard run build
 For a stronger local confidence check, start with:
 
 ```powershell
-npm run demo:verify
+npm run verify:v3
 ```
 
-For browser-level coverage, add:
+For a narrower deterministic artifact check:
 
 ```powershell
-npm --prefix dashboard run test:e2e
+npm run demo:verify
 ```
 
 ## Next Reading

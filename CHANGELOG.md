@@ -4,6 +4,55 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [3.0.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.8.5...v3.0.0) (2026-06-18)
+
+Turns the project into a verified, evidence-grade source-to-IC acquisition workbench. This release
+keeps the local-first/operator-review contract, then makes the full chain more trustworthy:
+fresh-clone setup prepares parser dependencies, document intelligence is more explicit about OCR
+boundaries, legal diligence checklists become review-only candidates, IC packages carry a
+deterministic evidence graph, the dashboard shows an honest proof path, and one command verifies
+the whole release surface.
+
+### Features
+
+* **Fresh-clone parser setup:** `npm run setup` now creates a repo-local `.venv`, installs
+  `scripts/requirements.txt` (`pandas`, `openpyxl`, `pdfplumber`), supports read-only `--check`,
+  and lets dashboard parser execution prefer the repo virtualenv before system Python.
+* **Evidence graph in IC packages:** package JSON now includes source document, approved field,
+  workpaper, red-flag, data-gap, and package-section nodes with deterministic edges and graph hash;
+  Markdown export adds an Evidence Chain section for source-to-decision review.
+* **OCR-ready document handling:** scanned/image-only PDFs and image-only workbooks now expose
+  explicit local OCR bridge metadata and a clear next action instead of implying extraction happened
+  or silently skipping the file.
+* **Legal diligence checklist candidates:** Markdown/TXT legal or closing checklists can produce
+  low-confidence, review-only `diligence.checklistItems` candidates with line/raw-text provenance
+  and no automatic economic field application.
+* **Source-to-IC proof path UI:** Intake and IC package views now show a four-step proof strip
+  (`Source doc` -> `Approved field` -> `Agent workpaper` -> `IC package`) with accessible list
+  semantics and conservative pending/ready states.
+* **Full v3 verification gate:** `npm run verify:v3` runs release drift checks, root tests,
+  parser/workspace/security paths, dashboard typecheck/build, root/dashboard audits, offline eval
+  without mutating committed eval results, production smoke, and browser E2E.
+* **CI verification:** GitHub Actions now installs root/dashboard/Python/parser/Playwright
+  dependencies and runs the full v3 gate.
+
+### Bug Fixes
+
+* Dashboard Playwright tests can use local Chrome or Edge when the bundled Chromium cache is
+  unavailable, and video recording is opt-in so local e2e does not require Playwright ffmpeg.
+* Browser E2E now clears benchmark eval runtime artifacts before deal-library tests, so
+  `eval:offline` can run before E2E in the same verification command without stale completed
+  benchmark deals hijacking the dashboard.
+* README fixture-count validation now ignores generated/ignored stress fixtures and counts
+  release-visible fixture files consistently.
+* Dashboard dependency audit is clean after refreshing vulnerable transitive packages.
+
+### Documentation
+
+* README, launch, deployment, prerequisites, troubleshooting, runtime comparison, first-deal, and
+  contributor docs now describe the parser `.venv`, OCR-ready boundary, legal checklist candidates,
+  proof-path surface, and `npm run verify:v3` release gate.
+
 ## [2.8.5](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.8.0...v2.8.5) (2026-05-27)
 
 Redesigns the operator dashboard into one living "deal space" — a persistent frame you drive by
