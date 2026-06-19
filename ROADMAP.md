@@ -6,14 +6,14 @@ The north star is to make `cre-acquisition-orchestrator` the leading open-source
 
 ## Current Release Baseline
 
-**v2.8.5 — Deal Workspace Redesign** is the current public release. It redesigns the operator dashboard into one persistent **deal space**: document-first Intake, auto-filled source-backed deal record, an always-visible lifecycle spine, Live Feed / Your Team rail, command bar, summonable agent panels, and an IC package view. It sits on top of the `v2.8.0` real-world drop-flow hardening and honest evaluation harness, the `v2.7.0` completion pass, and the `v2.6.0` credibility-hardening release.
+**v3.0.0 — Evidence-Grade Workbench** is the current public release. It adds fresh-clone parser setup, OCR-ready metadata, legal checklist candidates, deterministic evidence graph lineage, proof-path dashboard UI, CI, and the full `verify:v3` release gate on top of the `v2.8.5` persistent deal-space redesign.
 
 The stable baseline remains:
 
 - **Local-first** — offline dashboard, deterministic Parkview sample, source-backed extraction, and IC package export require no API keys.
 - **Review-first** — critical inputs do not silently change underwriting state; operators approve/apply, reject, or waive candidate fields before workflows use them.
 - **Agent-visible** — 31 roles are represented as named orchestrators, specialists, and ingestion agents; the UI exposes handoffs, live/replayed work, workpapers, and package state.
-- **Honest about limits** — scanned/image-only documents are flagged for OCR instead of guessed, live Codex is optional, cloud multi-tenancy is out of scope, and all investment decisions require qualified human review.
+- **Honest about limits** — readable scanned/image-only PDFs can run through a local review-gated OCR bridge, low-confidence or unsupported OCR stays pending, live Codex is optional, cloud multi-tenancy is out of scope, and all investment decisions require qualified human review.
 
 Release-grade local validation for this baseline includes:
 
@@ -30,6 +30,15 @@ Release-grade local validation for this baseline includes:
 - `npm --prefix dashboard run test:e2e`
 
 ## What Has Shipped
+
+### Current branch — OCR Bridge
+
+- Added a local OCR bridge for readable scanned/image-only PDFs using PyMuPDF page rendering and `tesseract.js`, with review-gated candidate fields and page/confidence/raw-snippet provenance.
+- Added an image-only scanned offering memo fixture that verifies asking price, unit count, occupancy, and NOI can extract through OCR without silently applying values.
+
+### v3.0.0 — Evidence-Grade Workbench
+
+- Added fresh-clone parser setup, OCR-ready metadata, legal checklist candidates, deterministic evidence graph lineage, proof-path dashboard UI, CI, and `verify:v3`.
 
 ### v2.8.5 — Deal Workspace Redesign
 
@@ -62,15 +71,15 @@ Candidate issues:
 - Extend the deterministic screenshot capture flow or manual screenshot checklist to show approved-field provenance and IC drilldowns when the current UI state supports it.
 - Add a small sample package/export note that tells visitors exactly which field or red flag can be reviewed across the demo, with honest caveats where provenance is not yet exposed.
 
-### 2. OCR for Scanned/Image-Only Documents
+### 2. OCR Hardening for Scanned/Image-Only Documents
 
-Goal: move from honest detection to reviewable local OCR for scanned offering memoranda, rent rolls, diligence checklists, and image files.
+Goal: harden the new local OCR bridge beyond readable scanned PDFs into broader scanned offering memoranda, rent rolls, diligence checklists, and image files.
 
 Candidate issues:
 
-- Add or document an optional local OCR bridge.
-- Preserve source provenance: file hash, page/image number, OCR confidence, snippet/bounding context when available, parser metadata, and review status.
-- Route ambiguous OCR values to candidate review instead of silently applying them.
+- Add OCR coverage for common image uploads and table-heavy scanned rent rolls.
+- Preserve richer OCR provenance when available: bounding boxes, page/image regions, parser metadata, confidence, snippet context, and review status.
+- Route ambiguous or low-confidence OCR values to candidate review with warnings instead of silently applying them.
 
 ### 3. Legal and Diligence Checklist Extraction
 

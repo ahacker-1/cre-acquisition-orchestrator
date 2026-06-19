@@ -33,7 +33,7 @@ Let's bring this industry into the future.
 - **Install from scratch:** follow [Quick Start](#quick-start). The dashboard path is local-first and the sample demo remains deterministic after dependencies are installed.
 - **Choose the right runtime:** read [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md) before sending any real deal context through the optional live-agent path.
 - **Understand the system:** read [Architecture](docs/ARCHITECTURE.md), [Agent Catalog](docs/AGENT-CATALOG.md), [API Reference](docs/API-REFERENCE.md), and [WebSocket Events](docs/WEBSOCKET-EVENTS.md).
-- **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially OCR for scanned documents, legal document parsing, richer live runtime controls, and additional messy parser fixtures.
+- **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially legal document parsing, richer live runtime controls, OCR hardening, and additional messy parser fixtures.
 
 For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the shortest deterministic demo, use [Quick Demo](docs/QUICK-DEMO.md).
 
@@ -42,7 +42,7 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 ## What It Does
 
 - **Document-first deal intake** - upload rent rolls, T12s, offering memos, PDFs, and supporting files into a local workspace.
-- **Source-backed extraction review** - supported XLSX/CSV/TXT/MD and text-based PDF sources become candidate fields with confidence, warnings, file hashes, and source-location (sheet/row/column or page) provenance; scanned/image-only documents are detected as OCR-ready with a local review-gated bridge rather than silently skipped.
+- **Source-backed extraction review** - supported XLSX/CSV/TXT/MD, text-based PDF sources, and readable scanned/image-only PDFs become candidate fields with confidence, warnings, file hashes, and source-location (sheet/row/column or page) provenance; OCR-derived fields stay review-gated before they can change deal inputs.
 - **Human approval gate** - underwriting inputs do not change until the operator approves/applies trusted fields or waives/rejects ambiguous ones.
 - **31-role AI deal team** - 6 orchestrators, 21 acquisition specialists, and 4 document-ingestion roles are defined as markdown prompts.
 - **Visible coordination** - dashboard events show specialist messages, handoffs, dependencies, reviews, workpapers, and package status.
@@ -54,9 +54,9 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 
 | AI Roles | Skills | Schemas | Workflows | Fixtures | Tests passing |
 |----------|--------|---------|-----------|----------|---------------|
-| 31 | 8 | 27 | 5 | 36 | 10 |
+| 31 | 8 | 27 | 5 | 37 | 10 |
 
-Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 36 curated fixture files under `fixtures/` (messy parser fixtures, legal diligence checklist extraction, the adversarial real-world-pile smoke set, and the first-deal package); and 10 root `test*` commands tracked by [package.json](package.json).
+Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 37 curated fixture files under `fixtures/` (messy parser fixtures, legal diligence checklist extraction, scanned OCR coverage, the adversarial real-world-pile smoke set, and the first-deal package); and 10 root `test*` commands tracked by [package.json](package.json).
 
 ---
 
@@ -99,12 +99,19 @@ per-deal results, and weaknesses).
 
 ## Current Status
 
-Current `main` is the latest public release (`v3.0.0`). It turns the persistent deal-space dashboard into an evidence-grade source-to-IC workbench: fresh-clone setup prepares parser dependencies, source documents stay review-gated, evidence lineage travels into the IC package, and `npm run verify:v3` proves the release surface end to end. The stable baseline remains local-first and review-first:
+The latest public release is `v3.0.0`. It turns the persistent deal-space dashboard into an evidence-grade source-to-IC workbench: fresh-clone setup prepares parser dependencies, source documents stay review-gated, evidence lineage travels into the IC package, and `npm run verify:v3` proves the release surface end to end. Current checked-in work builds on that baseline with a local OCR bridge for readable scanned PDFs. The stable baseline remains local-first and review-first:
 
 - **Local by default** - offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
 - **Versioned release baseline** - `v3.0.0` adds evidence graph lineage, OCR-ready metadata, legal checklist candidates, proof-path UI, fresh-clone parser setup, CI, and a full `verify:v3` gate on top of the `v2.8.5` persistent deal-space redesign and the `v2.8.0` honest evaluation harness.
 - **Honest evaluation** - `npm run eval` scores the orchestrator on an **8-deal** synthetic benchmark and reports honest numbers including where it falls short (see [Honest Evaluation](#honest-evaluation--prove-it)). The live (Codex) layer covers all 8 deals; the documented soft spots are model-dependent returns (~50%) and one borderline IC verdict.
-- **Known limits** - true OCR of scanned/image-only documents (these are detected and flagged for OCR, not extracted), multi-tenant cloud hosting, and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are supported.
+- **Known limits** - the local OCR bridge supports readable scanned/image-only PDFs for review-backed headline extraction, but not arbitrary image files or fully reliable table reconstruction. Multi-tenant cloud hosting and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are supported.
+
+## Current OCR Bridge
+
+- **Local and review-gated** - scanned/image-only PDFs are rendered locally with PyMuPDF, OCR'd with `tesseract.js`, and converted into candidate fields that must be reviewed before applying.
+- **Provenance-preserving** - OCR output keeps file hash, page number, raw snippet, OCR confidence, parser id, warnings, and review status.
+- **Fail-soft** - if OCR cannot read supported fields, the document remains stored with explicit OCR metadata and no guessed deal inputs.
+- **Verified fixture** - `fixtures/parsers/scanned-offering-memo-ocr.pdf` proves a true image-only offering memo excerpt can extract asking price, unit count, occupancy, and NOI through the local bridge.
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
@@ -424,7 +431,7 @@ The dashboard is intentionally not a landing page. It is the actual workspace: a
 
 - [Node.js](https://nodejs.org/) 18+
 - npm
-- Python 3.9+ for the local parser virtual environment (`pandas`, `openpyxl`, `pdfplumber`)
+- Python 3.9+ for the local parser virtual environment (`pandas`, `openpyxl`, `pdfplumber`, `PyMuPDF`)
 - Google Chrome or Microsoft Edge for local browser E2E, unless Playwright's bundled Chromium is installed
 - Optional for live AI runs: [OpenAI Codex CLI](https://github.com/openai/codex) signed in with ChatGPT
 

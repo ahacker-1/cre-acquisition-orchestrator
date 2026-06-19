@@ -10,7 +10,7 @@ Everything needed before running the CRE Acquisition Orchestrator from a fresh W
 |-------------|-----------------|---------|
 | Node.js | 18.0+ | Root scripts, simulation engine, dashboard server |
 | npm | 9+ | Dependency install and launch scripts |
-| Python | 3.9+ | Local parser virtual environment for XLSX/PDF extraction |
+| Python | 3.9+ | Local parser virtual environment for XLSX/PDF extraction and PDF page rendering for OCR |
 | Chrome, Edge, or another modern browser | Current stable | Dashboard at `http://localhost:5173` |
 | Google Chrome, Microsoft Edge, or Playwright Chromium | Current stable | Browser E2E in `npm run verify:v3` |
 
@@ -21,7 +21,7 @@ npm install
 npm run setup
 ```
 
-The setup script verifies Node/npm, installs root and dashboard dependencies, creates `.venv`, installs `scripts/requirements.txt` (`pandas`, `openpyxl`, `pdfplumber`), and tries to prepare the optional Codex live-agent runtime. The offline demo and dashboard still work if Codex install or login is skipped.
+The setup script verifies Node/npm, installs root and dashboard dependencies, creates `.venv`, installs `scripts/requirements.txt` (`pandas`, `openpyxl`, `pdfplumber`, `PyMuPDF`), and tries to prepare the optional Codex live-agent runtime. The offline demo and dashboard still work if Codex install or login is skipped.
 
 To inspect the environment without installing or writing files:
 

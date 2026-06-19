@@ -6,7 +6,7 @@ Use this path when you want to prove the product locally before reading the arch
 
 The current demo follows the v3.0.0 evidence-grade deal-space journey:
 
-1. **Drop documents** — start from source material, not a blank automation form. XLSX/CSV/TXT/MD and text-based PDF sources can become reviewable candidates; scanned/image-only documents are detected as OCR-ready with review-gated next steps.
+1. **Drop documents** — start from source material, not a blank automation form. XLSX/CSV/TXT/MD, text-based PDF sources, and readable scanned/image-only PDFs can become reviewable candidates; low-confidence OCR remains review-gated with warnings.
 2. **Review extraction** — candidate fields show confidence, warnings, source file, file hash, and source location before they change underwriting inputs.
 3. **Approve evidence** — trusted fields are applied; ambiguous values are rejected or waived with a reason.
 4. **Watch the team work** — the persistent deal space shows the lifecycle spine, Your Team rail, Live Feed, and summonable agent panel.

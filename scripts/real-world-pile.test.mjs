@@ -151,8 +151,8 @@ for (const fileName of pileFiles) {
     if (preview.metrics?.ocrBridge?.parser !== 'local-ocr-optional') {
       failures.push(`${fileName}: missing local OCR bridge parser metadata`)
     }
-    if (preview.metrics?.ocrBridge?.status !== 'not-configured') {
-      failures.push(`${fileName}: missing OCR bridge not-configured status`)
+    if (preview.metrics?.ocrBridge?.status !== 'completed-no-fields') {
+      failures.push(`${fileName}: missing OCR bridge completed-no-fields status`)
     }
   }
 

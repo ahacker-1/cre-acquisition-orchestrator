@@ -7,7 +7,8 @@ const { getCodexStatus, runSync, runSyncInherited } = require('./lib/codex-cli')
 const BASE_DIR = path.resolve(__dirname, '..');
 const VENV_DIR = path.join(BASE_DIR, '.venv');
 const REQUIREMENTS_FILE = path.join('scripts', 'requirements.txt');
-const PYTHON_IMPORT_CHECK = 'import pandas, openpyxl, pdfplumber';
+const PYTHON_IMPORT_CHECK = 'import pandas, openpyxl, pdfplumber, fitz';
+const PYTHON_DEPENDENCY_LABEL = 'pandas, openpyxl, pdfplumber, PyMuPDF';
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -142,7 +143,7 @@ function ensurePythonParserDependencies(options) {
       return false;
     }
     if (parserDepsAvailable(venvPython)) {
-      console.log('[setup] Python parser dependencies OK: pandas, openpyxl, pdfplumber');
+      console.log(`[setup] Python parser dependencies OK: ${PYTHON_DEPENDENCY_LABEL}`);
       return true;
     }
     console.warn('[setup] Python parser dependencies missing in .venv. Run npm run setup to install them.');
@@ -160,9 +161,9 @@ function ensurePythonParserDependencies(options) {
 
   runPythonRequired(venvPython, ['-m', 'pip', 'install', '-r', REQUIREMENTS_FILE], 'Installing Python parser dependencies');
   if (!parserDepsAvailable(venvPython)) {
-    fail('Python parser dependency check failed after install. Expected pandas, openpyxl, and pdfplumber.');
+    fail(`Python parser dependency check failed after install. Expected ${PYTHON_DEPENDENCY_LABEL}.`);
   }
-  console.log('[setup] Python parser dependencies OK: pandas, openpyxl, pdfplumber');
+  console.log(`[setup] Python parser dependencies OK: ${PYTHON_DEPENDENCY_LABEL}`);
   return true;
 }
 

@@ -75,7 +75,7 @@ const PARSER_VERSION = 'source-backed-v1'
 const MAX_TEXT_PARSE_BYTES = 25 * 1024 * 1024 // 25 MB on-disk cap
 const MAX_TEXT_PARSE_ROWS = 250_000 // parsed-row cap (sane upper bound for a rent roll / T12)
 const OCR_NEXT_ACTION =
-  'Run a local OCR pass outside the app, upload the text layer or OCR output, then review candidates before applying any fields.'
+  'Run the built-in local OCR bridge or upload OCR output, then review candidates before applying any fields.'
 
 export function isParserRunnable(fileName: string, mime: string): boolean {
   const extension = extname(fileName).toLowerCase()
@@ -539,14 +539,14 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 }
 
-function ocrBridgeMetrics(extra: Record<string, unknown> = {}): Record<string, unknown> {
+function ocrBridgeMetrics(extra: Record<string, unknown> = {}, status = 'not-configured'): Record<string, unknown> {
   return {
     ...extra,
     needsOcr: true,
     ocrReady: true,
     ocrBridge: {
       parser: 'local-ocr-optional',
-      status: 'not-configured',
+      status,
       nextAction: OCR_NEXT_ACTION,
     },
   }
@@ -714,6 +714,31 @@ function runExcelPythonParser(input: ParserInput, documentType: string): PythonR
 
 function runPdfPythonParser(input: ParserInput, documentType: string): PythonRunResult {
   return runPythonParser(input, 'parse_pdf.py', 'PDF', documentType)
+}
+
+function runPdfOcrBridge(input: ParserInput, documentType: string): PythonRunResult {
+  const scriptPath = safePaths.assertWithinBase(
+    input.projectRoot,
+    join(input.projectRoot, 'scripts', 'ocr_pdf.mjs'),
+    'PDF OCR bridge script path',
+  )
+  const result = spawnSync(process.execPath, [scriptPath, input.filePath, '--type', documentType], {
+    cwd: input.projectRoot,
+    encoding: 'utf8',
+    timeout: 45_000,
+    maxBuffer: 2 * 1024 * 1024,
+  })
+  const combined = `${result.stdout || ''}\n${result.stderr || ''}`.trim()
+  if (result.status === 0 && result.stdout) {
+    try {
+      return { parsed: JSON.parse(result.stdout || '{}') as Record<string, unknown> }
+    } catch {
+      return { parseFailedError: redactPaths(combined) || 'PDF OCR bridge returned invalid JSON.' }
+    }
+  }
+  return {
+    unavailableError: redactPaths(result.error?.message || combined || 'PDF OCR bridge failed.'),
+  }
 }
 
 function parsedWarnings(parsed: Record<string, unknown>): string[] {
@@ -926,21 +951,71 @@ function parsePdfIfAvailable(input: ParserInput, hash: string): ParserExtraction
   // gracefully to an explicit needs-OCR status rather than a silent empty
   // result or a crash. Mirrors the Excel image-only path.
   if (parsed.needsOcr === true) {
+    const ocrResult = runPdfOcrBridge(input, documentType)
+    if (ocrResult.parsed?.success === true) {
+      const ocrWarnings = parsedWarnings(ocrResult.parsed)
+      const bridgeFields = asPdfBridgeFields(ocrResult.parsed)
+      const fields: ParserExtractionField[] = bridgeFields.map((bridgeField) =>
+        field(
+          input,
+          hash,
+          'pdf-local-ocr-parser',
+          bridgeField.path,
+          bridgeField.label,
+          bridgeField.value,
+          Math.min(bridgeField.confidence, 0.78),
+          bridgeField.unit,
+          { page: bridgeField.page, description: `OCR text from PDF page ${bridgeField.page}` },
+          bridgeField.raw,
+        ),
+      )
+      const ocrProvenance = asRecord(ocrResult.parsed.provenance)
+      return {
+        documentId: input.documentId,
+        status: fields.length > 0 ? 'extracted' : 'unsupported',
+        extractedAt: new Date().toISOString(),
+        fields,
+        metrics: ocrBridgeMetrics({
+          pdfProvenance: asRecord(parsed.provenance),
+          ocrProvenance,
+        }, fields.length > 0 ? 'completed' : 'completed-no-fields'),
+        notes: fields.length > 0
+          ? [
+              `OCR extracted ${fields.length} source-backed field(s) from the scanned PDF; review before applying.`,
+              ...ocrWarnings.map((warning) => `OCR warning: ${warning}`),
+              ...warnings.map((warning) => `Parser warning: ${warning}`),
+            ]
+          : [
+              'OCR completed, but no supported headline fields were found.',
+              ...ocrWarnings.map((warning) => `OCR warning: ${warning}`),
+              ...warnings.map((warning) => `Parser warning: ${warning}`),
+            ],
+        parserId: 'pdf-local-ocr-parser',
+        parserVersion: PARSER_VERSION,
+        sourceHash: hash,
+        reviewStatus: 'candidate',
+        ...(fields.length > 0 ? {} : { error: 'OCR completed but no supported fields were found.' }),
+      }
+    }
+
     return {
       documentId: input.documentId,
       status: 'unsupported',
       extractedAt: new Date().toISOString(),
       fields: [],
-      metrics: ocrBridgeMetrics({ pdfProvenance: asRecord(parsed.provenance) }),
+      metrics: ocrBridgeMetrics({
+        pdfProvenance: asRecord(parsed.provenance),
+        ocrError: ocrResult.unavailableError || ocrResult.parseFailedError || 'OCR bridge failed.',
+      }, 'unavailable'),
       notes: [
-        'PDF appears to be scanned/image-only and needs OCR; no text-layer fields could be extracted.',
+        'PDF appears to be scanned/image-only and the local OCR bridge could not run.',
         ...warnings.map((warning) => `Parser warning: ${warning}`),
       ],
       parserId: 'pdf-image-ocr-parser',
       parserVersion: PARSER_VERSION,
       sourceHash: hash,
       reviewStatus: 'candidate',
-      error: 'Image-only/scanned PDF requires OCR.',
+      error: ocrResult.unavailableError || ocrResult.parseFailedError || 'Image-only/scanned PDF requires OCR.',
     }
   }
 

@@ -18,7 +18,7 @@ Expected behavior:
 1. Node.js 18+ and npm are verified.
 2. Dashboard dependencies are installed.
 3. Python 3.9+ is found unless `--skip-python-install` is passed.
-4. `.venv` is created and `scripts/requirements.txt` installs parser dependencies (`pandas`, `openpyxl`, `pdfplumber`).
+4. `.venv` is created and `scripts/requirements.txt` installs parser dependencies (`pandas`, `openpyxl`, `pdfplumber`, `PyMuPDF`).
 5. Codex CLI is installed if possible.
 6. If Codex is available and not logged in, `codex login` starts.
 7. You choose **Sign in with ChatGPT** for subscription-based Codex usage.

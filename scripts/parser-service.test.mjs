@@ -19,6 +19,7 @@ export function ensureOversizedCsv(filePath) {
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const fixturesRoot = resolve(projectRoot, 'fixtures', 'parsers')
+const OCR_NEXT_ACTION = 'Run the built-in local OCR bridge or upload OCR output, then review candidates before applying any fields.'
 
 function parseXlsx(fileName, type) {
   return runDocumentParser({
@@ -236,7 +237,7 @@ assert.equal(imageOnly.metrics?.ocrBridge?.parser, 'local-ocr-optional')
 assert.equal(imageOnly.metrics?.ocrBridge?.status, 'not-configured')
 assert.equal(
   imageOnly.metrics?.ocrBridge?.nextAction,
-  'Run a local OCR pass outside the app, upload the text layer or OCR output, then review candidates before applying any fields.',
+  OCR_NEXT_ACTION,
 )
 assert.ok(
   imageOnly.notes.some((note) => /ocr/i.test(note)),
@@ -336,36 +337,49 @@ assert.ok(
 )
 
 // ---------------------------------------------------------------------------
-// W21 - Scanned / image-only PDF detection (graceful degradation, needs OCR)
+// W21 - Scanned / image-only PDF OCR bridge.
 // ---------------------------------------------------------------------------
 
 const scannedPdf = parsePdf('scanned-rent-roll.pdf', 'rent_roll')
 
 // Must not crash and must not silently produce empty/zero fields with an
-// 'extracted' status. It must be flagged unsupported with an explicit
-// needs-OCR signal.
+// 'extracted' status. If OCR runs but cannot read supported fields, it degrades
+// gracefully with explicit completed-no-fields OCR metadata.
 assert.equal(scannedPdf.status, 'unsupported')
 assert.equal(scannedPdf.fields.length, 0)
 assert.equal(scannedPdf.metrics?.needsOcr, true)
 assert.equal(scannedPdf.metrics?.ocrReady, true)
 assert.equal(scannedPdf.metrics?.ocrBridge?.parser, 'local-ocr-optional')
-assert.equal(scannedPdf.metrics?.ocrBridge?.status, 'not-configured')
-assert.equal(
-  scannedPdf.metrics?.ocrBridge?.nextAction,
-  'Run a local OCR pass outside the app, upload the text layer or OCR output, then review candidates before applying any fields.',
-)
+assert.equal(scannedPdf.metrics?.ocrBridge?.status, 'completed-no-fields')
+assert.equal(scannedPdf.metrics?.ocrBridge?.nextAction, OCR_NEXT_ACTION)
+assert.equal(scannedPdf.metrics?.ocrProvenance?.ocrEngine, 'tesseract.js')
 assert.ok(
   scannedPdf.notes.some((note) => /ocr/i.test(note)),
   'expected a needs-OCR note for image-only PDF',
 )
 assert.ok(
-  scannedPdf.notes.some((note) => /scan|image/i.test(note)),
-  'expected a scan/image-detection note for image-only PDF',
-)
-assert.ok(
-  !scannedPdf.error || /ocr|scan|image/i.test(scannedPdf.error),
+  !scannedPdf.error || /ocr|scan|image|supported fields/i.test(scannedPdf.error),
   'image-only PDF must not crash with a generic parse error',
 )
+
+const scannedOcrPdf = parsePdf('scanned-offering-memo-ocr.pdf', 'offering_memo')
+
+// A true image-only PDF with readable text must run through local OCR and return
+// normal source-backed review candidates with page provenance.
+assert.equal(scannedOcrPdf.status, 'extracted')
+assert.equal(scannedOcrPdf.parserId, 'pdf-local-ocr-parser')
+assert.equal(scannedOcrPdf.metrics?.needsOcr, true)
+assert.equal(scannedOcrPdf.metrics?.ocrBridge?.status, 'completed')
+assert.equal(scannedOcrPdf.metrics?.ocrProvenance?.ocrEngine, 'tesseract.js')
+assert.ok(scannedOcrPdf.metrics?.ocrProvenance?.averageConfidence >= 80)
+assert.equal(fieldByPath(scannedOcrPdf, 'financials.askingPrice').value, 12500000)
+assert.equal(fieldByPath(scannedOcrPdf, 'property.totalUnits').value, 120)
+assert.equal(fieldByPath(scannedOcrPdf, 'financials.inPlaceOccupancy').value, 0.94)
+assert.equal(fieldByPath(scannedOcrPdf, 'financials.currentNOI').value, 845000)
+assert.ok(scannedOcrPdf.fields.every((field) => field.reviewStatus === 'candidate'))
+assert.ok(scannedOcrPdf.fields.every((field) => field.sourceRef.location?.page === 1))
+assert.ok(scannedOcrPdf.fields.every((field) => /OCR text/.test(field.sourceRef.location?.description || '')))
+assert.ok(fieldByPath(scannedOcrPdf, 'financials.askingPrice').sourceRef.raw?.includes('Asking Price'))
 
 // ---------------------------------------------------------------------------
 // V3 - Legal diligence checklist text extraction.

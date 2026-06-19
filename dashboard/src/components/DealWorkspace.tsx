@@ -640,7 +640,7 @@ function ExtractionPreviewPanel({
       <div className="portal-panel">
         <p className="portal-kicker">Extraction Preview</p>
         <p className="text-sm text-gray-500 mt-3">
-          Upload a CSV, TXT, markdown, or XLSX source document and run extraction to review source-backed candidate fields here. PDF evidence is stored for pending review until OCR is added.
+          Upload a CSV, TXT, markdown, XLSX, or PDF source document and run extraction to review source-backed candidate fields here. Readable scanned PDFs route through local OCR and stay review-gated.
         </p>
       </div>
     )

@@ -19,7 +19,7 @@ Do not create these issues automatically from automation. Review the text, adjus
 - `docs/DEMO-JOURNEY.md` documents the no-video guided demo and the source-to-IC proof path.
 - `docs/RUNTIME-COMPARISON.md` documents the offline demo vs live Codex split, artifact paths, and no-secret/data-sharing boundaries.
 - XLSX/CSV/TXT/MD and text-based PDF sources can produce reviewable candidate fields with provenance, confidence, warnings, approval state, and applied-evidence links.
-- Scanned/image-only documents are detected as OCR-ready with review-gated next steps rather than silently guessed.
+- Readable scanned/image-only PDFs can run through the local OCR bridge with review-gated candidate fields rather than silently guessed deal inputs.
 - Parser fixtures cover alternate rent-roll headers, blank rows, total/subtotal rows, common occupancy conventions, multi-sheet T12 selection, merged cells, synonym headers, trailing notes, currency symbols, and image-only workbook detection.
 - v2.8.0 hardened a messy real-world document pile and added an honest 8-deal evaluation harness.
 - v2.8.5 redesigned the dashboard into one persistent deal space: document-first front door, auto-filling Intake, lifecycle spine, Live Feed / Your Team rail, command bar, summonable agent panels, and IC package view.
@@ -58,13 +58,13 @@ Refresh the public demo journey, screenshots, and first-run docs so a visitor ca
 - [ ] Run `npm run validate:guides`.
 ```
 
-## 2. Add OCR extraction for scanned/image-only source documents
+## 2. Harden OCR extraction for scanned/image-only source documents
 
 Suggested labels: `enhancement`, `dashboard`, `validation`
 
 ```bash
 gh issue create \
-  --title "Add OCR extraction for scanned/image-only source documents" \
+  --title "Harden OCR extraction for scanned/image-only source documents" \
   --label enhancement --label dashboard --label validation \
   --body-file /tmp/cre-ocr-source-extraction.md
 ```
@@ -74,19 +74,19 @@ Issue body:
 ```markdown
 ## Goal
 
-Extend the document-intelligence path from text-based PDFs and image-only detection to local OCR for scanned offering memoranda, rent rolls, and diligence checklists.
+Extend the new local OCR bridge beyond readable scanned offering memo excerpts into table-heavy rent rolls, diligence checklists, and common image uploads.
 
 ## Scope
 
-Add an explicit OCR path for scanned/image-only documents while preserving the review-first contract: OCR-derived values must become source-backed candidates with confidence, warnings, provenance, and human approval state before changing deal inputs.
+Harden OCR while preserving the review-first contract: OCR-derived values must remain source-backed candidates with confidence, warnings, provenance, and human approval state before changing deal inputs.
 
 ## Acceptance Criteria
 
-- [ ] Add a local OCR bridge for image-only PDFs and common image files, or document a reproducible optional dependency path if the OCR engine is not bundled by default.
-- [ ] Preserve source provenance: file name, hash, page/image number, OCR confidence, snippet/bounding context when available, extracted value, parser metadata, and review status.
+- [ ] Add OCR coverage for common image files and table-heavy scanned rent rolls.
+- [ ] Preserve richer source provenance: file name, hash, page/image number, OCR confidence, snippet/bounding boxes when available, extracted value, parser metadata, and review status.
 - [ ] Route ambiguous OCR values to candidate review with warnings instead of silently applying them.
 - [ ] Keep text-based PDF parsing and image-only detection behavior backward-compatible.
-- [ ] Add fixtures for at least one scanned offering memo excerpt and one scanned rent roll or diligence checklist.
+- [ ] Add fixtures for at least one scanned rent roll or diligence checklist beyond the offering memo OCR fixture.
 - [ ] Update `docs/FIRST-DEAL-GUIDE.md`, `docs/QUICK-DEMO.md`, and `docs/RUNTIME-COMPARISON.md` with OCR support boundaries.
 - [ ] Run `npm run test:parsers`.
 - [ ] Run `npm run test:workspace`.

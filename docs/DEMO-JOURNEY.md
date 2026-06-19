@@ -51,7 +51,7 @@ Use this when you want a first-time visitor to understand the product without up
 Use this as the reviewer script when someone asks, "What proves this is more than a generic AI dashboard?" Pick one number, document warning, or red flag and follow it across the product:
 
 1. **Document drop** — the operator starts from source files on the front door, not a blank form or pasted prompt.
-2. **Extraction review** — supported CSV/XLSX/TXT/MD and text-based PDF sources produce candidate fields with confidence, warnings, file hashes, and source-location provenance. Scanned/image-only documents are detected and flagged for OCR instead of silently guessed.
+2. **Extraction review** — supported CSV/XLSX/TXT/MD, text-based PDF sources, and readable scanned/image-only PDFs produce candidate fields with confidence, warnings, file hashes, and source-location provenance. Low-confidence or unsupported OCR is flagged instead of silently guessed.
 3. **Approved evidence** — trusted fields are explicitly approved/applied; ambiguous fields are rejected or waived with a reason, so underwriting inputs change only after human review.
 4. **Specialist workpapers** — the deal team works from the reviewed deal context, filing outputs with findings, impact, caveats, review status, and source/workpaper references where the current artifact provides them.
 5. **IC package** — the final package assembles recommendation, red flags, data gaps, manifest, workpaper links, and Markdown/JSON export so a human can review the decision trail and drill into available source/workpaper references.

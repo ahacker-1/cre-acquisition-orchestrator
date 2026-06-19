@@ -31,6 +31,9 @@ __pycache__/
 *.pyc
 .venv/
 
+# Local OCR language-data cache (tesseract.js)
+*.traineddata
+
 # Environment
 .env
 .env.local
