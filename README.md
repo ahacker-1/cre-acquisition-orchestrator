@@ -99,10 +99,10 @@ per-deal results, and weaknesses).
 
 ## Current Status
 
-The latest public release is `v3.0.0`. It turns the persistent deal-space dashboard into an evidence-grade source-to-IC workbench: fresh-clone setup prepares parser dependencies, source documents stay review-gated, evidence lineage travels into the IC package, and `npm run verify:v3` proves the release surface end to end. Current checked-in work builds on that baseline with a local OCR bridge for readable scanned PDFs. The stable baseline remains local-first and review-first:
+The latest public release is `v3.1.0`. It turns the persistent deal-space dashboard into an evidence-grade source-to-IC workbench: fresh-clone setup prepares parser dependencies, source documents stay review-gated, evidence lineage travels into the IC package, `npm run verify:v3` proves the release surface end to end, and readable scanned PDFs now route through a local OCR bridge. The stable baseline remains local-first and review-first:
 
 - **Local by default** - offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
-- **Versioned release baseline** - `v3.0.0` adds evidence graph lineage, OCR-ready metadata, legal checklist candidates, proof-path UI, fresh-clone parser setup, CI, and a full `verify:v3` gate on top of the `v2.8.5` persistent deal-space redesign and the `v2.8.0` honest evaluation harness.
+- **Versioned release baseline** - `v3.1.0` adds the local scanned-PDF OCR bridge on top of `v3.0.0` evidence graph lineage, OCR-ready metadata, legal checklist candidates, proof-path UI, fresh-clone parser setup, CI, and the full `verify:v3` gate.
 - **Honest evaluation** - `npm run eval` scores the orchestrator on an **8-deal** synthetic benchmark and reports honest numbers including where it falls short (see [Honest Evaluation](#honest-evaluation--prove-it)). The live (Codex) layer covers all 8 deals; the documented soft spots are model-dependent returns (~50%) and one borderline IC verdict.
 - **Known limits** - the local OCR bridge supports readable scanned/image-only PDFs for review-backed headline extraction, but not arbitrary image files or fully reliable table reconstruction. Multi-tenant cloud hosting and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are supported.
 
@@ -116,6 +116,14 @@ The latest public release is `v3.0.0`. It turns the persistent deal-space dashbo
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
+
+## What's New in v3.1.0
+
+- **Local scanned-PDF OCR bridge** - readable scanned/image-only PDFs render locally with PyMuPDF and run through `tesseract.js`, with no external OCR service.
+- **Review-gated OCR candidates** - OCR-derived asking price, unit count, occupancy, and NOI become candidate fields with confidence, source hash, page provenance, raw snippets, parser metadata, and human review status.
+- **Fail-soft scan handling** - unreadable scans or scans without supported headline fields return explicit OCR metadata and warnings instead of guessed values.
+- **Fresh-clone OCR setup** - `npm run setup` installs and verifies `PyMuPDF`; npm tracks `tesseract.js`.
+- **OCR fixture proof** - `fixtures/parsers/scanned-offering-memo-ocr.pdf` verifies a true image-only offering memo can extract through the local bridge.
 
 ## What's New in v3.0.0
 
@@ -169,6 +177,7 @@ This project has grown from agent architecture into a local-first acquisition wo
 | **v2.8.0 - Drop-Flow Hardening + Honest Eval** | Hardens the real-world document-drop journey (parser confident-wrong/robustness fixes, content-aware classification, threshold-driven IC verdict, `npm run test:pile`) and ships an open evaluation harness with an honest trust report — live agents scored on all 8 synthetic deals, proving narrative-risk detection while honestly documenting the model-dependent-returns soft spot. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v2.8.0) |
 | **v2.8.5 - Deal Workspace Redesign** | Redesigns the operator dashboard into one persistent "deal space" — a lifecycle spine + auto-filling intake (drop documents, edit only what's flagged) + summonable agent panels that stream work and render workpapers — as presentation plus three thin backend hooks, engine and audit trail unchanged, offline demo still the default. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v2.8.5) |
 | **v3.0.0 - Evidence-Grade Workbench** | Adds fresh-clone parser setup, OCR-ready metadata, legal checklist candidates, deterministic evidence graph lineage, proof-path dashboard UI, CI, and the full `npm run verify:v3` release gate. | [RELEASE_NOTES_v3.0.0.md](RELEASE_NOTES_v3.0.0.md) |
+| **v3.1.0 - Local OCR Bridge** | Adds local scanned-PDF OCR with PyMuPDF and `tesseract.js`, review-gated OCR candidates, OCR fixture coverage, and setup/docs support. | [RELEASE_NOTES_v3.1.0.md](RELEASE_NOTES_v3.1.0.md) |
 
 ---
 

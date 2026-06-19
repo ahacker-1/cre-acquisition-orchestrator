@@ -4,7 +4,7 @@ Use this path when you want to prove the product locally before reading the arch
 
 ## What You Will See
 
-The current demo follows the v3.0.0 evidence-grade deal-space journey:
+The current demo follows the v3.1.0 evidence-grade deal-space journey:
 
 1. **Drop documents** — start from source material, not a blank automation form. XLSX/CSV/TXT/MD, text-based PDF sources, and readable scanned/image-only PDFs can become reviewable candidates; low-confidence OCR remains review-gated with warnings.
 2. **Review extraction** — candidate fields show confidence, warnings, source file, file hash, and source location before they change underwriting inputs.

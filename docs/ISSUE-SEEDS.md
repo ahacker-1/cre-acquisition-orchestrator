@@ -1,6 +1,6 @@
 # Public Issue Seeds
 
-Use these as approval-ready GitHub issues after v3.0.0. They are intentionally scoped to make the project more legible, impressive, and contributor-friendly for first-time visitors — especially around source-backed deal intake, reviewable workpapers, and the source-to-IC proof path.
+Use these as approval-ready GitHub issues after v3.1.0. They are intentionally scoped to make the project more legible, impressive, and contributor-friendly for first-time visitors — especially around source-backed deal intake, reviewable workpapers, and the source-to-IC proof path.
 
 Do not create these issues automatically from automation. Review the text, adjust labels/milestones, then publish from the GitHub UI or `gh issue create` when ready. If using the CLI snippets below, save each issue body to the referenced `/tmp/*.md` file first.
 
@@ -13,7 +13,7 @@ Do not create these issues automatically from automation. Review the text, adjus
 - `demo`
 - `validation`
 
-## Shipped through v3.0.0
+## Shipped through v3.1.0
 
 - `docs/QUICK-DEMO.md` gives first-time visitors a local path from clone to the current deal-space dashboard.
 - `docs/DEMO-JOURNEY.md` documents the no-video guided demo and the source-to-IC proof path.
@@ -24,6 +24,7 @@ Do not create these issues automatically from automation. Review the text, adjus
 - v2.8.0 hardened a messy real-world document pile and added an honest 8-deal evaluation harness.
 - v2.8.5 redesigned the dashboard into one persistent deal space: document-first front door, auto-filling Intake, lifecycle spine, Live Feed / Your Team rail, command bar, summonable agent panels, and IC package view.
 - v3.0.0 added fresh-clone parser setup, OCR-ready metadata, legal checklist candidates, deterministic evidence graph lineage, proof-path dashboard UI, CI, and the `npm run verify:v3` release gate.
+- v3.1.0 added local scanned-PDF OCR with PyMuPDF and `tesseract.js`, review-gated OCR candidates, OCR fixture coverage, and setup/docs support.
 
 ## 1. Add public source-to-IC proof path to the demo journey
 
@@ -51,7 +52,7 @@ Refresh the public demo journey, screenshots, and first-run docs so a visitor ca
 
 - [ ] `docs/DEMO-JOURNEY.md` includes a clear source-to-IC reviewer script.
 - [ ] README points first-time visitors to the source-to-IC proof path.
-- [ ] `docs/QUICK-DEMO.md` and `docs/FIRST-DEAL-GUIDE.md` use current v3.0.0 persistent deal-space language.
+- [ ] `docs/QUICK-DEMO.md` and `docs/FIRST-DEAL-GUIDE.md` use current v3.1.0 persistent deal-space language.
 - [ ] Screenshots or documented manual review steps show source extraction review, approved field provenance, workpaper output, and IC package references/export where current UI state supports it.
 - [ ] No video, external account, cloud service, or private deal file is required.
 - [ ] Run `npm run validate:docs`.

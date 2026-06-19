@@ -4,6 +4,42 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [3.1.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.0.0...v3.1.0) (2026-06-19)
+
+Ships the local OCR bridge that v3.0.0 made explicit as a review boundary. Readable
+scanned/image-only PDFs now render locally, OCR locally, and return source-backed
+candidate fields with confidence and provenance instead of stopping at "OCR-ready."
+
+### Features
+
+* **Local scanned-PDF OCR bridge:** scanned/image-only PDFs render to page images with
+  PyMuPDF and run through `tesseract.js` locally, with no external OCR service.
+* **Review-gated OCR candidates:** OCR-derived asking price, unit count, occupancy, and NOI
+  become normal candidate fields with raw snippets, page provenance, source hash, confidence,
+  parser metadata, and human review status before any deal input changes.
+* **Fail-soft OCR metadata:** unreadable scans or scans without supported headline fields keep
+  explicit OCR status, warnings, and next action instead of silently guessing.
+* **Fresh-clone OCR setup:** `npm run setup` now installs and verifies `PyMuPDF` alongside
+  `pandas`, `openpyxl`, and `pdfplumber`, and `tesseract.js` is tracked in npm dependencies.
+* **OCR fixture coverage:** adds a true image-only scanned offering memo fixture that extracts
+  asking price, unit count, occupancy, and NOI through the local bridge.
+
+### Documentation
+
+* README, roadmap, first-deal, runtime comparison, demo, setup, launch, prerequisites, and
+  troubleshooting docs now describe local OCR support and the remaining hardening boundary.
+* Public issue seeds now treat OCR as shipped and point contributors toward image uploads,
+  table-heavy scanned rent rolls, diligence checklists, and richer OCR region provenance.
+
+### Verification
+
+* `npm run setup -- --skip-install --skip-codex-install --skip-login`
+* `npm run test:parsers`
+* `npm run test:pile`
+* `npm run test:workspace`
+* `npm run demo:verify`
+* `npm run verify:v3` with all 29 Playwright browser tests passing.
+
 ## [3.0.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v2.8.5...v3.0.0) (2026-06-18)
 
 Turns the project into a verified, evidence-grade source-to-IC acquisition workbench. This release

@@ -6,7 +6,7 @@ The north star is to make `cre-acquisition-orchestrator` the leading open-source
 
 ## Current Release Baseline
 
-**v3.0.0 — Evidence-Grade Workbench** is the current public release. It adds fresh-clone parser setup, OCR-ready metadata, legal checklist candidates, deterministic evidence graph lineage, proof-path dashboard UI, CI, and the full `verify:v3` release gate on top of the `v2.8.5` persistent deal-space redesign.
+**v3.1.0 - Local OCR Bridge** is the current public release. It adds local scanned-PDF OCR with PyMuPDF and `tesseract.js`, review-gated OCR candidates, OCR fixture coverage, and setup/docs support on top of the `v3.0.0` evidence-grade workbench.
 
 The stable baseline remains:
 
@@ -31,7 +31,7 @@ Release-grade local validation for this baseline includes:
 
 ## What Has Shipped
 
-### Current branch — OCR Bridge
+### v3.1.0 - Local OCR Bridge
 
 - Added a local OCR bridge for readable scanned/image-only PDFs using PyMuPDF page rendering and `tesseract.js`, with review-gated candidate fields and page/confidence/raw-snippet provenance.
 - Added an image-only scanned offering memo fixture that verifies asking price, unit count, occupancy, and NOI can extract through OCR without silently applying values.
