@@ -88,13 +88,14 @@ export function collectFailedAgents(
 /**
  * The codex run id whose failed agents should be re-run. Prefer the run id carried by
  * an `agent_failed` story event (so the manifest with `failedAgents` can be reused),
- * falling back to the most recent run id seen in the deal's story events.
+ * falling back to the most recent run id seen in the deal's story events and finally
+ * the checkpoint run id when replaying a completed/partial run from disk.
  */
-export function recoveryRunId(storyEvents: StoryEvent[]): string | null {
+export function recoveryRunId(storyEvents: StoryEvent[], dealCheckpoint?: DealCheckpoint | null): string | null {
   const failedEvent = [...storyEvents].reverse().find((event) => event.kind === 'agent_failed' && event.runId)
   if (failedEvent?.runId) return failedEvent.runId
   const anyEvent = [...storyEvents].reverse().find((event) => Boolean(event.runId))
-  return anyEvent?.runId ?? null
+  return anyEvent?.runId ?? dealCheckpoint?.runId ?? null
 }
 
 export interface RetryFailedAgentsRequest {

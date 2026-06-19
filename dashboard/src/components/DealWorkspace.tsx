@@ -1759,7 +1759,7 @@ function PartialFailureRecovery({
     () => collectFailedAgents(dealCheckpoint, agentCheckpoints, storyEvents),
     [dealCheckpoint, agentCheckpoints, storyEvents],
   )
-  const rerunRunId = useMemo(() => recoveryRunId(storyEvents), [storyEvents])
+  const rerunRunId = useMemo(() => recoveryRunId(storyEvents, dealCheckpoint), [dealCheckpoint, storyEvents])
   const [working, setWorking] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
