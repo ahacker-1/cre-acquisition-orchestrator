@@ -12,6 +12,7 @@
 //   --workflow <id>                          (live; default quick-deal-screen)
 //   --concurrency <n>                        (live; default 3)
 //   --model <name>                           (live; optional, recorded)
+//   --no-update-results                      write only raw gitignored run artifacts
 //
 // Honesty: a failed layer/agent is reported, never hidden. The scorecard is
 // validated against eval/schemas/scorecard.schema.json before it is written; if
@@ -57,6 +58,7 @@ function parseArgs(argv) {
     workflow: get('--workflow', 'quick-deal-screen'),
     concurrency: Number(get('--concurrency', '3')),
     model: get('--model', null),
+    updateResults: !argv.includes('--no-update-results'),
     // For --mode reparse: the base run-id whose saved Codex workpapers to
     // re-score (live runId per deal is `<reparseRun>-<dealId>`). Lets us re-run
     // scoring after tuning parsers WITHOUT re-invoking Codex.
@@ -317,14 +319,17 @@ function main() {
     process.exit(1)
   }
 
-  // Commit-quality artifacts.
-  mkdirSync(resultsDir, { recursive: true })
-  writeFileSync(join(resultsDir, 'scorecard.json'), JSON.stringify(scorecard, null, 2))
-  const report = buildTrustReport(scorecard)
-  writeFileSync(join(resultsDir, 'TRUST-REPORT.md'), report)
-
   console.log('[eval] scorecard schema-valid ✓')
-  console.log(`[eval] wrote eval/results/scorecard.json + eval/results/TRUST-REPORT.md`)
+  if (args.updateResults) {
+    // Commit-quality artifacts.
+    mkdirSync(resultsDir, { recursive: true })
+    writeFileSync(join(resultsDir, 'scorecard.json'), JSON.stringify(scorecard, null, 2))
+    const report = buildTrustReport(scorecard)
+    writeFileSync(join(resultsDir, 'TRUST-REPORT.md'), report)
+    console.log(`[eval] wrote eval/results/scorecard.json + eval/results/TRUST-REPORT.md`)
+  } else {
+    console.log('[eval] skipped eval/results update (--no-update-results)')
+  }
   console.log(`[eval] raw run artifacts in data/eval-runs/${args.runId}/ (gitignored)`)
 }
 

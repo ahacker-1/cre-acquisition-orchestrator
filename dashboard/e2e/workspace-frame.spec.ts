@@ -51,6 +51,21 @@ test('renders the persistent workspace frame, spine, rail, and command bar', asy
   await expect(page.getByTestId('live-feed')).toBeVisible()
   await expect(page.getByTestId('command-bar')).toBeVisible()
   await expect(page.getByTestId('command-input')).toBeVisible()
+
+  const intakeProofPath = page.getByTestId('proof-path-strip-intake')
+  await expect(intakeProofPath).toBeVisible()
+  await expect(intakeProofPath).toContainText('Source doc')
+  await expect(intakeProofPath).toContainText('Approved field')
+  await expect(intakeProofPath).toContainText('Agent workpaper')
+  await expect(intakeProofPath).toContainText('IC package')
+
+  await page.getByTestId('spine-step-ic').click()
+  const packageProofPath = page.getByTestId('proof-path-strip')
+  await expect(packageProofPath).toBeVisible()
+  await expect(packageProofPath).toContainText('Source doc')
+  await expect(packageProofPath).toContainText('Approved field')
+  await expect(packageProofPath).toContainText('Agent workpaper')
+  await expect(packageProofPath).toContainText('IC package')
 })
 
 test('focuses a stage when its spine step is clicked', async ({ page, request }) => {

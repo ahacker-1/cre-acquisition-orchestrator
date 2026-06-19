@@ -1,6 +1,6 @@
 {
   "name": "cre-acquisition-orchestrator",
-  "version": "2.8.5",
+  "version": "3.0.0",
   "description": "Multi-agent AI orchestration framework for commercial real estate acquisitions",
   "author": "Avi Hacker",
   "license": "Apache-2.0",
@@ -48,6 +48,7 @@
     "screenshots": "node dashboard/scripts/capture-release-screenshots.mjs",
     "serve": "node scripts/serve-prod.mjs",
     "release:check": "node scripts/release-check.js",
+    "verify:v3": "npm run release:check && npm test && npm run test:parsers && npm run test:workspace && npm --prefix dashboard run typecheck && npm --prefix dashboard run build && npm audit --audit-level=moderate && npm --prefix dashboard audit --audit-level=moderate && node eval/run-eval.mjs --mode offline --no-update-results && node scripts/serve-prod.mjs --smoke && npm run test:e2e",
     "test:e2e": "npm --prefix dashboard run test:e2e",
     "codex:status": "node scripts/codex-status.js",
     "codex:smoke": "node scripts/codex-agent-runner.js --workflow underwriting-refresh --max-agents 1 --concurrency 1 --run-id codex-smoke",

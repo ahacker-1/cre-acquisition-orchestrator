@@ -69,6 +69,10 @@ function parseCsv(fileName, type) {
   return parseFile(fixturesRoot, fileName, type)
 }
 
+function parseMarkdown(fileName, type = 'other') {
+  return parseFile(fixturesRoot, fileName, type)
+}
+
 const realWorldPileRoot = resolve(projectRoot, 'fixtures', 'real-world-pile')
 
 function unitMixByType(preview) {
@@ -226,6 +230,14 @@ const imageOnly = parseXlsx('rent-roll-image-only.xlsx', 'rent_roll')
 // flagged unsupported with a clear needs-OCR note.
 assert.equal(imageOnly.status, 'unsupported')
 assert.equal(imageOnly.fields.length, 0)
+assert.equal(imageOnly.metrics?.needsOcr, true)
+assert.equal(imageOnly.metrics?.ocrReady, true)
+assert.equal(imageOnly.metrics?.ocrBridge?.parser, 'local-ocr-optional')
+assert.equal(imageOnly.metrics?.ocrBridge?.status, 'not-configured')
+assert.equal(
+  imageOnly.metrics?.ocrBridge?.nextAction,
+  'Run a local OCR pass outside the app, upload the text layer or OCR output, then review candidates before applying any fields.',
+)
 assert.ok(
   imageOnly.notes.some((note) => /ocr/i.test(note)),
   'expected a needs-OCR note for image-only workbook',
@@ -335,6 +347,13 @@ const scannedPdf = parsePdf('scanned-rent-roll.pdf', 'rent_roll')
 assert.equal(scannedPdf.status, 'unsupported')
 assert.equal(scannedPdf.fields.length, 0)
 assert.equal(scannedPdf.metrics?.needsOcr, true)
+assert.equal(scannedPdf.metrics?.ocrReady, true)
+assert.equal(scannedPdf.metrics?.ocrBridge?.parser, 'local-ocr-optional')
+assert.equal(scannedPdf.metrics?.ocrBridge?.status, 'not-configured')
+assert.equal(
+  scannedPdf.metrics?.ocrBridge?.nextAction,
+  'Run a local OCR pass outside the app, upload the text layer or OCR output, then review candidates before applying any fields.',
+)
 assert.ok(
   scannedPdf.notes.some((note) => /ocr/i.test(note)),
   'expected a needs-OCR note for image-only PDF',
@@ -346,6 +365,46 @@ assert.ok(
 assert.ok(
   !scannedPdf.error || /ocr|scan|image/i.test(scannedPdf.error),
   'image-only PDF must not crash with a generic parse error',
+)
+
+// ---------------------------------------------------------------------------
+// V3 - Legal diligence checklist text extraction.
+// Checklist items are review-only candidates below the auto-apply confidence
+// threshold and carry line-level provenance.
+// ---------------------------------------------------------------------------
+
+const legalChecklist = parseMarkdown('legal-diligence-checklist.md', 'legal')
+assert.equal(legalChecklist.status, 'extracted')
+assert.equal(legalChecklist.parserId, 'legal-diligence-checklist-parser')
+assert.ok(legalChecklist.fields.length >= 3, 'expected at least 3 checklist item candidates')
+assert.equal(legalChecklist.metrics?.checklistCandidateCount, legalChecklist.fields.length)
+assert.equal(legalChecklist.metrics?.reviewOnly, true)
+assert.ok(
+  legalChecklist.fields.every((field) => field.path === 'diligence.checklistItems'),
+  'all checklist candidates must use the review-only diligence.checklistItems path',
+)
+assert.ok(
+  legalChecklist.fields.every((field) => field.reviewStatus === 'candidate' && field.confidence === 0.64),
+  'checklist candidates must stay low-confidence review candidates',
+)
+const titleCommitment = legalChecklist.fields.find((field) => field.value?.item === 'Title commitment and exception documents')
+assert.ok(titleCommitment, 'expected title commitment checklist candidate')
+assert.equal(titleCommitment.value.status, 'missing')
+assert.equal(titleCommitment.value.category, 'title')
+assert.equal(titleCommitment.value.dueDate, '2026-07-03')
+assert.equal(titleCommitment.value.responsibleParty, 'Title company')
+assert.equal(titleCommitment.sourceRef.location?.line, 4)
+assert.ok(titleCommitment.sourceRef.raw?.includes('Title commitment'))
+const surveyUpdate = legalChecklist.fields.find((field) => field.value?.item === 'ALTA survey update')
+assert.ok(surveyUpdate, 'expected ALTA survey checklist candidate')
+assert.equal(surveyUpdate.value.status, 'open')
+assert.equal(surveyUpdate.value.category, 'survey')
+
+const t12TextWithInsurance = parseFile(realWorldPileRoot, 'operating-statement.csv', 't12')
+assert.notEqual(
+  t12TextWithInsurance.parserId,
+  'legal-diligence-checklist-parser',
+  'typed T12/rent-roll text must not be intercepted by checklist parsing',
 )
 
 // ---------------------------------------------------------------------------

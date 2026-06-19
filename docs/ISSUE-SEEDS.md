@@ -1,6 +1,6 @@
 # Public Issue Seeds
 
-Use these as approval-ready GitHub issues after v2.8.5. They are intentionally scoped to make the project more legible, impressive, and contributor-friendly for first-time visitors — especially around source-backed deal intake, reviewable workpapers, and the source-to-IC proof path.
+Use these as approval-ready GitHub issues after v3.0.0. They are intentionally scoped to make the project more legible, impressive, and contributor-friendly for first-time visitors — especially around source-backed deal intake, reviewable workpapers, and the source-to-IC proof path.
 
 Do not create these issues automatically from automation. Review the text, adjust labels/milestones, then publish from the GitHub UI or `gh issue create` when ready. If using the CLI snippets below, save each issue body to the referenced `/tmp/*.md` file first.
 
@@ -13,16 +13,17 @@ Do not create these issues automatically from automation. Review the text, adjus
 - `demo`
 - `validation`
 
-## Shipped through v2.8.5
+## Shipped through v3.0.0
 
 - `docs/QUICK-DEMO.md` gives first-time visitors a local path from clone to the current deal-space dashboard.
 - `docs/DEMO-JOURNEY.md` documents the no-video guided demo and the source-to-IC proof path.
 - `docs/RUNTIME-COMPARISON.md` documents the offline demo vs live Codex split, artifact paths, and no-secret/data-sharing boundaries.
 - XLSX/CSV/TXT/MD and text-based PDF sources can produce reviewable candidate fields with provenance, confidence, warnings, approval state, and applied-evidence links.
-- Scanned/image-only documents are detected and flagged for OCR rather than silently guessed.
+- Scanned/image-only documents are detected as OCR-ready with review-gated next steps rather than silently guessed.
 - Parser fixtures cover alternate rent-roll headers, blank rows, total/subtotal rows, common occupancy conventions, multi-sheet T12 selection, merged cells, synonym headers, trailing notes, currency symbols, and image-only workbook detection.
 - v2.8.0 hardened a messy real-world document pile and added an honest 8-deal evaluation harness.
 - v2.8.5 redesigned the dashboard into one persistent deal space: document-first front door, auto-filling Intake, lifecycle spine, Live Feed / Your Team rail, command bar, summonable agent panels, and IC package view.
+- v3.0.0 added fresh-clone parser setup, OCR-ready metadata, legal checklist candidates, deterministic evidence graph lineage, proof-path dashboard UI, CI, and the `npm run verify:v3` release gate.
 
 ## 1. Add public source-to-IC proof path to the demo journey
 
@@ -50,7 +51,7 @@ Refresh the public demo journey, screenshots, and first-run docs so a visitor ca
 
 - [ ] `docs/DEMO-JOURNEY.md` includes a clear source-to-IC reviewer script.
 - [ ] README points first-time visitors to the source-to-IC proof path.
-- [ ] `docs/QUICK-DEMO.md` and `docs/FIRST-DEAL-GUIDE.md` use current v2.8.5 persistent deal-space language.
+- [ ] `docs/QUICK-DEMO.md` and `docs/FIRST-DEAL-GUIDE.md` use current v3.0.0 persistent deal-space language.
 - [ ] Screenshots or documented manual review steps show source extraction review, approved field provenance, workpaper output, and IC package references/export where current UI state supports it.
 - [ ] No video, external account, cloud service, or private deal file is required.
 - [ ] Run `npm run validate:docs`.

@@ -145,6 +145,16 @@ for (const fileName of pileFiles) {
   if (preview.status === 'extracted' && fieldCount < Math.max(1, expected.minFields)) {
     failures.push(`${fileName}: status=extracted but only ${fieldCount} field(s) — silent failure`)
   }
+  if (fileName === 'scanned-rent-roll.pdf') {
+    if (preview.metrics?.needsOcr !== true) failures.push(`${fileName}: missing needsOcr=true metadata`)
+    if (preview.metrics?.ocrReady !== true) failures.push(`${fileName}: missing ocrReady=true metadata`)
+    if (preview.metrics?.ocrBridge?.parser !== 'local-ocr-optional') {
+      failures.push(`${fileName}: missing local OCR bridge parser metadata`)
+    }
+    if (preview.metrics?.ocrBridge?.status !== 'not-configured') {
+      failures.push(`${fileName}: missing OCR bridge not-configured status`)
+    }
+  }
 
   // Invariant: no path/interpreter leakage in surfaced strings.
   const surfaced = `${preview.error || ''} ${(preview.notes || []).join(' ')}`

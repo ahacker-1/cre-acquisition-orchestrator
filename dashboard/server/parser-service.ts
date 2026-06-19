@@ -74,6 +74,8 @@ const PARSER_VERSION = 'source-backed-v1'
 // past EITHER cap degrades gracefully to parse_failed rather than being loaded.
 const MAX_TEXT_PARSE_BYTES = 25 * 1024 * 1024 // 25 MB on-disk cap
 const MAX_TEXT_PARSE_ROWS = 250_000 // parsed-row cap (sane upper bound for a rent roll / T12)
+const OCR_NEXT_ACTION =
+  'Run a local OCR pass outside the app, upload the text layer or OCR output, then review candidates before applying any fields.'
 
 export function isParserRunnable(fileName: string, mime: string): boolean {
   const extension = extname(fileName).toLowerCase()
@@ -398,8 +400,156 @@ function parseOfferingMemo(input: ParserInput, raw: string, hash: string): Parse
   }
 }
 
+type ChecklistStatus = 'open' | 'received' | 'missing' | 'waived' | 'complete' | 'unknown'
+type ChecklistCategory = 'legal' | 'environmental' | 'title' | 'survey' | 'insurance' | 'financing' | 'closing' | 'general'
+
+interface ChecklistCandidate {
+  item: string
+  status: ChecklistStatus
+  dueDate?: string
+  responsibleParty?: string
+  category: ChecklistCategory
+  notes?: string
+  line: number
+  raw: string
+}
+
+function checklistStatusFromText(text: string): ChecklistStatus {
+  const normalized = text.toLowerCase()
+  if (/\b(status\s*[:=-]\s*)?open\b/.test(normalized)) return 'open'
+  if (/\b(received|delivered|provided|uploaded|complete|completed)\b/.test(normalized)) {
+    return /\bcomplete|completed\b/.test(normalized) ? 'complete' : 'received'
+  }
+  if (/\bmissing|not received|outstanding|needed|required\b/.test(normalized)) return 'missing'
+  if (/\bwaived|n\/a|not applicable\b/.test(normalized)) return 'waived'
+  return 'open'
+}
+
+function checklistCategoryFromText(text: string): ChecklistCategory {
+  const normalized = text.toLowerCase()
+  if (/\b(environmental|phase i|phase one|esa|remediation)\b/.test(normalized)) return 'environmental'
+  if (/\b(title|commitment|endorsement|lien)\b/.test(normalized)) return 'title'
+  if (/\b(survey|alta|boundary|zoning)\b/.test(normalized)) return 'survey'
+  if (/\b(insurance|binder|policy|coverage)\b/.test(normalized)) return 'insurance'
+  if (/\b(loan|lender|financing|debt|term sheet)\b/.test(normalized)) return 'financing'
+  if (/\b(closing|escrow|settlement|funds flow)\b/.test(normalized)) return 'closing'
+  if (/\b(psa|legal|contract|lease|estoppel|snda|counsel|entity|opinion)\b/.test(normalized)) return 'legal'
+  return 'general'
+}
+
+function extractChecklistDueDate(text: string): string | undefined {
+  const iso = text.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/)
+  if (iso) return iso[0]
+  const slash = text.match(/\b(1[0-2]|0?[1-9])\/([0-3]?\d)\/(20\d{2})\b/)
+  if (!slash) return undefined
+  const month = slash[1].padStart(2, '0')
+  const day = slash[2].padStart(2, '0')
+  return `${slash[3]}-${month}-${day}`
+}
+
+function extractResponsibleParty(text: string): string | undefined {
+  const match = text.match(/\b(?:owner|responsible|party|assigned to|from)\s*[:=-]\s*([^;|]+?)(?:\s{2,}|$|;|\|)/i)
+  return match ? match[1].trim() : undefined
+}
+
+export function checklistItemFromLine(line: string, lineNumber: number): ChecklistCandidate | null {
+  const raw = line.trim()
+  if (!raw) return null
+  const normalized = raw.replace(/^[-*]\s+/, '').replace(/^\d+[.)]\s+/, '').trim()
+  const hasChecklistSignal =
+    /\b(checklist|deliverable|required|missing|received|waived|due|title|survey|environmental|insurance|closing|psa|estoppel|snda)\b/i.test(normalized) ||
+    /^\[[ xX-]\]/.test(normalized)
+  if (!hasChecklistSignal) return null
+  const withoutCheckbox = normalized.replace(/^\[[ xX-]\]\s*/, '').trim()
+  const pieces = withoutCheckbox.split(/\s+[|;]\s+/).map((piece) => piece.trim()).filter(Boolean)
+  const item = pieces[0]
+    .replace(/\b(status|due|owner|responsible|party)\s*[:=-].*$/i, '')
+    .replace(/\s{2,}.*/, '')
+    .trim()
+  if (item.length < 6) return null
+  return {
+    item,
+    status: checklistStatusFromText(withoutCheckbox),
+    dueDate: extractChecklistDueDate(withoutCheckbox),
+    responsibleParty: extractResponsibleParty(withoutCheckbox),
+    category: checklistCategoryFromText(withoutCheckbox),
+    notes: pieces.length > 1 ? pieces.slice(1).join('; ') : undefined,
+    line: lineNumber,
+    raw,
+  }
+}
+
+export function parseChecklistText(raw: string): ChecklistCandidate[] {
+  return raw
+    .split(/\r?\n/)
+    .map((line, index) => checklistItemFromLine(line, index + 1))
+    .filter((candidate): candidate is ChecklistCandidate => Boolean(candidate))
+}
+
+export function mapChecklistCandidates(
+  input: ParserInput,
+  raw: string,
+  hash: string,
+): ParserExtractionPreview {
+  const parserId = 'legal-diligence-checklist-parser'
+  const candidates = parseChecklistText(raw)
+  const fields = candidates.map((candidate) =>
+    field(
+      input,
+      hash,
+      parserId,
+      'diligence.checklistItems',
+      'Diligence Checklist Item',
+      {
+        item: candidate.item,
+        status: candidate.status,
+        dueDate: candidate.dueDate,
+        responsibleParty: candidate.responsibleParty,
+        category: candidate.category,
+        notes: candidate.notes,
+      },
+      0.64,
+      undefined,
+      { line: candidate.line, description: 'Legal diligence checklist candidate' },
+      candidate.raw,
+    ),
+  )
+
+  return {
+    documentId: input.documentId,
+    status: fields.length > 0 ? 'extracted' : 'unsupported',
+    extractedAt: new Date().toISOString(),
+    fields,
+    metrics: {
+      characterCount: raw.length,
+      checklistCandidateCount: fields.length,
+      reviewOnly: true,
+    },
+    notes: fields.length > 0
+      ? [`Mapped ${fields.length} legal diligence checklist candidate(s) for operator review.`]
+      : ['Document text was readable, but no checklist candidates were found.'],
+    parserId,
+    parserVersion: PARSER_VERSION,
+    sourceHash: hash,
+    reviewStatus: 'candidate',
+  }
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+}
+
+function ocrBridgeMetrics(extra: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    ...extra,
+    needsOcr: true,
+    ocrReady: true,
+    ocrBridge: {
+      parser: 'local-ocr-optional',
+      status: 'not-configured',
+      nextAction: OCR_NEXT_ACTION,
+    },
+  }
 }
 
 // Redact absolute local filesystem paths (and interpreter executables) from any
@@ -454,8 +604,16 @@ function numberFieldValue(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
 
-function pythonCandidates(): Array<{ command: string; args: string[] }> {
+function pythonCandidates(projectRoot?: string): Array<{ command: string; args: string[] }> {
   const candidates: Array<{ command: string | null; args: string[] }> = []
+  if (projectRoot) {
+    candidates.push({
+      command: process.platform === 'win32'
+        ? join(projectRoot, '.venv', 'Scripts', 'python.exe')
+        : join(projectRoot, '.venv', 'bin', 'python'),
+      args: [],
+    })
+  }
   if (process.platform === 'win32') {
     const localPython = process.env.LOCALAPPDATA
       ? join(process.env.LOCALAPPDATA, 'Programs', 'Python', 'Python313', 'python.exe')
@@ -497,7 +655,7 @@ function runPythonParser(input: ParserInput, scriptName: string, parserLabel: st
   let sawInterpreter = false
   const otherErrors: string[] = []
 
-  for (const candidate of pythonCandidates()) {
+  for (const candidate of pythonCandidates(input.projectRoot)) {
     const result = spawnSync(candidate.command, [...candidate.args, scriptPath, input.filePath, '--type', documentType], {
       cwd: input.projectRoot,
       encoding: 'utf8',
@@ -538,7 +696,7 @@ function runPythonParser(input: ParserInput, scriptName: string, parserLabel: st
   if (sawDepsMissing && otherErrors.length === 0) {
     return {
       unavailableError:
-        'Python parser dependencies (openpyxl/pdfplumber) not installed for any available interpreter.',
+        'Python parser dependencies (pandas/openpyxl/pdfplumber) not installed for any available interpreter.',
     }
   }
   if (otherErrors.length > 0) {
@@ -681,7 +839,7 @@ function parseExcelIfAvailable(input: ParserInput, hash: string): ParserExtracti
       status: 'unsupported',
       extractedAt: new Date().toISOString(),
       fields: [],
-      metrics: { excelSummary: parsed, needsOcr: true },
+      metrics: ocrBridgeMetrics({ excelSummary: parsed }),
       notes: [
         'Excel sheet appears to be image-only/scanned and needs OCR; no tabular fields could be extracted.',
         ...warnings.map((warning) => `Parser warning: ${warning}`),
@@ -773,7 +931,7 @@ function parsePdfIfAvailable(input: ParserInput, hash: string): ParserExtraction
       status: 'unsupported',
       extractedAt: new Date().toISOString(),
       fields: [],
-      metrics: { needsOcr: true, pdfProvenance: asRecord(parsed.provenance) },
+      metrics: ocrBridgeMetrics({ pdfProvenance: asRecord(parsed.provenance) }),
       notes: [
         'PDF appears to be scanned/image-only and needs OCR; no text-layer fields could be extracted.',
         ...warnings.map((warning) => `Parser warning: ${warning}`),
@@ -911,6 +1069,10 @@ export function runDocumentParser(input: ParserInput): ParserExtractionPreview {
     }
     raw = readFileSync(safeFilePath, 'utf8')
     if (safeInput.type === 'offering_memo') return parseOfferingMemo(safeInput, raw, hash)
+    if (['other', 'legal', 'closing'].includes(safeInput.type)) {
+      const checklistCandidatePreview = mapChecklistCandidates(safeInput, raw, hash)
+      if (checklistCandidatePreview.fields.length > 0) return checklistCandidatePreview
+    }
     const rows = parseCsvRows(raw)
     // Row guard (P3): a file under the byte cap can still carry an unreasonable
     // number of rows; cap the parsed-row count as a second graceful backstop.

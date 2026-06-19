@@ -329,6 +329,7 @@ function normalizeDealCheckpoint(raw: Record<string, unknown>): DealCheckpoint |
     dealName: asString(raw.dealName, 'Unknown Deal'),
     property,
     status: normalizedDealStatus,
+    runId: asOptionalString(raw.runId),
     workflowId: asOptionalString(raw.workflowId),
     workflowName: asOptionalString(raw.workflowName),
     runtimeProvider: asOptionalString(raw.runtimeProvider),

@@ -1,14 +1,20 @@
 #!/usr/bin/env node
+const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { getCodexStatus, runSync, runSyncInherited } = require('./lib/codex-cli');
 
 const BASE_DIR = path.resolve(__dirname, '..');
+const VENV_DIR = path.join(BASE_DIR, '.venv');
+const REQUIREMENTS_FILE = path.join('scripts', 'requirements.txt');
+const PYTHON_IMPORT_CHECK = 'import pandas, openpyxl, pdfplumber';
 
 function parseArgs() {
   const args = process.argv.slice(2);
   return {
     checkOnly: args.includes('--check'),
     skipInstall: args.includes('--skip-install'),
+    skipPythonInstall: args.includes('--skip-python-install'),
     skipCodexInstall: args.includes('--skip-codex-install'),
     skipLogin: args.includes('--skip-login'),
     requireCodex: args.includes('--require-codex'),
@@ -33,6 +39,22 @@ function runRequired(command, args, label) {
   }
 }
 
+function runPython(candidate, args, options = {}) {
+  return spawnSync(candidate.command, [...candidate.args, ...args], {
+    cwd: BASE_DIR,
+    encoding: 'utf8',
+    stdio: options.stdio || 'pipe',
+  });
+}
+
+function runPythonRequired(candidate, args, label) {
+  console.log(`[setup] ${label}: ${commandText(candidate.command, [...candidate.args, ...args])}`);
+  const result = runPython(candidate, args, { stdio: 'inherit' });
+  if (result.status !== 0) {
+    fail(`${label} failed with exit code ${result.status}`);
+  }
+}
+
 function parseNodeMajor(versionText) {
   const match = String(versionText || '').match(/v?(\d+)/);
   return match ? Number(match[1]) : 0;
@@ -51,12 +73,97 @@ function verifyNodeAndNpm() {
   console.log(`[setup] npm OK: ${`${npmResult.stdout || npmResult.stderr}`.trim()}`);
 }
 
+function ensureRootDependencies(options) {
+  if (options.skipInstall || options.checkOnly) {
+    console.log('[setup] Skipping root dependency install.');
+    return;
+  }
+  runRequired('npm', ['install'], 'Installing root dependencies');
+}
+
 function ensureDashboardDependencies(options) {
   if (options.skipInstall || options.checkOnly) {
-    console.log('[setup] Skipping dependency install.');
+    console.log('[setup] Skipping dashboard dependency install.');
     return;
   }
   runRequired('npm', ['--prefix', 'dashboard', 'install'], 'Installing dashboard dependencies');
+}
+
+function venvPythonPath() {
+  return process.platform === 'win32'
+    ? path.join(VENV_DIR, 'Scripts', 'python.exe')
+    : path.join(VENV_DIR, 'bin', 'python');
+}
+
+function pythonCommandCandidates(options = {}) {
+  const includeVenv = options.includeVenv !== false;
+  const candidates = [];
+  if (includeVenv) {
+    candidates.push({ command: venvPythonPath(), args: [], label: 'repo .venv' });
+  }
+  if (process.platform === 'win32') {
+    candidates.push(
+      { command: 'py', args: ['-3'], label: 'py -3' },
+      { command: 'python', args: [], label: 'python' },
+      { command: 'python3', args: [], label: 'python3' },
+    );
+  } else {
+    candidates.push(
+      { command: 'python3', args: [], label: 'python3' },
+      { command: 'python', args: [], label: 'python' },
+    );
+  }
+  return candidates;
+}
+
+function findPython(options = {}) {
+  for (const candidate of pythonCommandCandidates(options)) {
+    const result = runPython(candidate, ['--version']);
+    if (!result.error && result.status === 0) return candidate;
+  }
+  return null;
+}
+
+function parserDepsAvailable(candidate) {
+  const result = runPython(candidate, ['-c', PYTHON_IMPORT_CHECK]);
+  return !result.error && result.status === 0;
+}
+
+function ensurePythonParserDependencies(options) {
+  if (options.skipPythonInstall) {
+    console.log('[setup] Skipping Python parser dependency install.');
+    return false;
+  }
+
+  const venvPython = { command: venvPythonPath(), args: [], label: 'repo .venv' };
+  if (options.checkOnly) {
+    if (!fs.existsSync(venvPython.command)) {
+      console.warn('[setup] Python parser .venv is missing. Run npm run setup to create it.');
+      return false;
+    }
+    if (parserDepsAvailable(venvPython)) {
+      console.log('[setup] Python parser dependencies OK: pandas, openpyxl, pdfplumber');
+      return true;
+    }
+    console.warn('[setup] Python parser dependencies missing in .venv. Run npm run setup to install them.');
+    return false;
+  }
+
+  const bootstrapPython = findPython({ includeVenv: false });
+  if (!bootstrapPython) {
+    fail('Python 3 is required for parser dependencies. Install Python 3, or rerun with --skip-python-install for dashboard-only setup.');
+  }
+
+  if (!fs.existsSync(venvPython.command)) {
+    runPythonRequired(bootstrapPython, ['-m', 'venv', '.venv'], 'Creating Python parser virtual environment');
+  }
+
+  runPythonRequired(venvPython, ['-m', 'pip', 'install', '-r', REQUIREMENTS_FILE], 'Installing Python parser dependencies');
+  if (!parserDepsAvailable(venvPython)) {
+    fail('Python parser dependency check failed after install. Expected pandas, openpyxl, and pdfplumber.');
+  }
+  console.log('[setup] Python parser dependencies OK: pandas, openpyxl, pdfplumber');
+  return true;
 }
 
 function ensureCodex(options) {
@@ -135,7 +242,9 @@ function runDemoIfRequested(options) {
 function main() {
   const options = parseArgs();
   verifyNodeAndNpm();
+  ensureRootDependencies(options);
   ensureDashboardDependencies(options);
+  ensurePythonParserDependencies(options);
   const codexReady = ensureCodex(options);
   runDemoIfRequested(options);
 

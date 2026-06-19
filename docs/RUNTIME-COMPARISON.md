@@ -10,8 +10,9 @@ The project has two runtime paths. Start with the offline deterministic demo whe
 | External network calls during run? | No AI calls during the demo run | Yes, selected prompts and deal context are sent through the authenticated Codex CLI session |
 | Deterministic? | Yes: sample Parkview deal, fixed scenario, fixed seed | No: model output can vary by run |
 | Default command | `npm run demo` | `npm run codex:smoke`, `npm run codex:run`, or dashboard-launched Codex workflows |
-| Strong validation command | `npm run demo:verify` | `npm run codex:status` first, then inspect run manifests and package artifacts |
+| Strong validation command | `npm run verify:v3` | `npm run codex:status` first, then inspect run manifests and package artifacts |
 | Main artifacts | `data/status/`, `data/phase-outputs/`, `data/reports/` | `data/codex-runs/`, plus dashboard-readable status/package artifacts under `data/status/` and `data/reports/` |
+| Document intelligence | Local parsers and parser `.venv`; OCR bridge is local/manual and review-gated | Same local parser boundary before any live agent workflow consumes approved evidence |
 | Dashboard experience | Fully local sample workspace, Guided Demo Mode, screenshots | Live workpapers and story events when the local Codex runner completes agents |
 | Secret handling | No credentials needed | Credentials stay outside the repo; dashboard status returns booleans only and must never expose token/cookie contents |
 | Public positioning | Safe default for README, screenshots, demos, release notes | Optional advanced path for users who understand the data-sharing boundary |
@@ -22,7 +23,7 @@ The project has two runtime paths. Start with the offline deterministic demo whe
 2. Generate deterministic artifacts with `npm run demo`.
 3. Start the dashboard with `npm run dashboard`.
 4. Open `http://localhost:5173` and click **Start Guided Demo**.
-5. Run `npm run demo:verify` before publishing screenshots, docs, or release notes.
+5. Run `npm run verify:v3` before publishing screenshots, docs, or release notes.
 6. Only then evaluate the live path with `npm run codex:status` and a small `npm run codex:smoke` run.
 
 ## Safety Notes for Live Runs
@@ -31,6 +32,7 @@ The project has two runtime paths. Start with the offline deterministic demo whe
 - Do not commit runtime artifacts from `data/`; they are local outputs and may contain deal context.
 - Keep authentication outside the repository. If a future integration needs credentials, document the storage boundary before adding code.
 - Redact tokens, cookies, connection strings, or secrets from logs, screenshots, issue bodies, and sample artifacts.
+- Scanned/image-only documents are never sent to an external OCR service by this repo. They are marked OCR-ready with a local next action, and any OCR output must return through the same source-review gate.
 
 ## Operator Rule of Thumb
 

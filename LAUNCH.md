@@ -32,7 +32,7 @@ npm install
 npm run setup
 ```
 
-This installs dashboard dependencies, verifies Node/npm, and tries to prepare the optional Codex live-agent runtime. If Codex install or login is skipped, the offline demo and dashboard still work. For a strict live-agent setup check, run `npm run setup -- --require-codex`.
+This installs dashboard dependencies, verifies Node/npm, creates `.venv`, installs `scripts/requirements.txt` for XLSX/PDF parsing, and tries to prepare the optional Codex live-agent runtime. If Codex install or login is skipped, the offline demo and dashboard still work. For a strict live-agent setup check, run `npm run setup -- --require-codex`.
 
 When `codex login` opens, pick **Sign in with ChatGPT** to use an existing ChatGPT subscription. You can also start that same local login flow from the dashboard by choosing **Codex / ChatGPT** in the Workflow Launcher and clicking **Login to ChatGPT**.
 
@@ -94,6 +94,14 @@ node scripts/demo-replay.js --deal config/deal.json --scenario core-plus --seed 
 ```powershell
 node scripts/system-test.js
 ```
+
+## Full Verified Workbench Gate
+
+```powershell
+npm run verify:v3
+```
+
+This is the release/demo proof path: release drift checks, root tests, parser and workspace evidence tests, dashboard typecheck/build, npm audits, offline eval, production self-host smoke, and browser E2E.
 
 ---
 

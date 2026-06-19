@@ -98,6 +98,7 @@ export interface DealCheckpoint {
     askingPrice: number
   }
   status: string
+  runId?: string
   workflowId?: string
   workflowName?: string
   runtimeProvider?: string

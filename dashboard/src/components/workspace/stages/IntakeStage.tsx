@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import DealRecord, { type RecordGroup } from './DealRecord'
+import ProofPathStrip, { type ProofPathStep } from '../../ProofPathStrip'
 
 interface IntakeStageProps {
   groups: RecordGroup[]
@@ -21,6 +22,7 @@ interface IntakeStageProps {
   // upload (incl. multi-file/batch) + the deep approve/reject/waive + provenance flow, now
   // tucked behind a disclosure so the auto-filled record leads.
   children?: ReactNode
+  proofPathSteps?: ProofPathStep[]
 }
 
 const DEFAULT_AGENTS_LINE = 'Document Orchestrator routes each file to its parser — Rent Roll, Financials, and Offering Memo readers fill the record as they go.'
@@ -42,6 +44,7 @@ export default function IntakeStage({
   detailedReviewOpen,
   onDetailedReviewToggle,
   children,
+  proofPathSteps,
 }: IntakeStageProps) {
   // Controlled when the parent owns the open-state (so it survives stage-body remounts on
   // workspace refresh); otherwise the native <details> manages itself.
@@ -66,13 +69,16 @@ export default function IntakeStage({
         </p>
       </section>
 
-      <DealRecord
-        groups={groups}
-        needsEyeCount={needsEyeCount}
-        onEditField={onEditField}
-        onStartDiligence={onStartDiligence}
-        saving={saving}
-      />
+      <div className="space-y-3">
+        <ProofPathStrip steps={proofPathSteps} testId="proof-path-strip-intake" />
+        <DealRecord
+          groups={groups}
+          needsEyeCount={needsEyeCount}
+          onEditField={onEditField}
+          onStartDiligence={onStartDiligence}
+          saving={saving}
+        />
+      </div>
 
       <details
         className="portal-panel"

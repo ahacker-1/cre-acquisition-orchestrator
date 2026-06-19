@@ -4,7 +4,7 @@ Use this as the public demo path for current `main`. It is optimized for a first
 
 ## Current Reality
 
-The demo reflects the redesigned deal-workspace UI: a single persistent **deal space** (deal header + an always-visible lifecycle spine + a context-sensitive center stage + a Live Feed / Your Team rail + a command bar), document-first **Intake** that auto-extracts and auto-fills the deal record, deterministic offline orchestration, generated workpapers, and an optional local Codex/ChatGPT live-agent path. Power-user controls live in an Advanced drawer. Current `main` may include unreleased hardening and documentation updates on top of the most recent packaged release line.
+The demo reflects the v3.0.0 evidence-grade deal-workspace UI: a single persistent **deal space** (deal header + an always-visible lifecycle spine + a context-sensitive center stage + a Live Feed / Your Team rail + a command bar), document-first **Intake** that auto-extracts and auto-fills the deal record, deterministic offline orchestration, generated workpapers, an evidence graph / proof path into the IC package, and an optional local Codex/ChatGPT live-agent path. Power-user controls live in an Advanced drawer.
 
 ## Promise
 
