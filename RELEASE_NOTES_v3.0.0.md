@@ -1,6 +1,6 @@
 # Release Notes v3.0.0 - Evidence-Grade Workbench
 
-Released: 2026-06-18
+Released: 2026-06-19
 
 v3.0.0 turns CRE Acquisition Orchestrator into a verified source-to-IC acquisition workbench. The big shift is trust: every important claim now has a clearer setup path, review boundary, evidence trail, dashboard proof surface, and one-command verification gate.
 
