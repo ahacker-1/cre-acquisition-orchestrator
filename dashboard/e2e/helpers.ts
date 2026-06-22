@@ -211,6 +211,7 @@ export async function launchWorkflowForDeal(
 export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, dealName: string): Promise<void> {
   await waitForDashboardReady(page)
   const workspace = page.getByTestId('workspace-frame')
+  const libraryModal = page.getByTestId('deal-library-modal')
   // The frame's own H1 — distinct from the recent-deals card's H3 of the same name, which
   // also lives inside <main>, so we must scope the heading to the frame to avoid matching it.
   const heading = workspace.getByRole('heading', { name: dealName, level: 1 })
@@ -219,6 +220,7 @@ export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, d
 
   // Fast path: the target deal's workspace is already on screen (its run auto-revealed it).
   if ((await workspace.isVisible().catch(() => false)) && (await heading.isVisible().catch(() => false))) {
+    await expect(libraryModal).toBeHidden({ timeout: 20_000 })
     return
   }
 
@@ -232,6 +234,7 @@ export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, d
         await button.click({ timeout: 5_000 })
         await expect(workspace).toBeVisible({ timeout: 20_000 })
         await expect(heading).toBeVisible({ timeout: 20_000 })
+        await expect(libraryModal).toBeHidden({ timeout: 20_000 })
         return true
       } catch {
         await new Promise((resolvePromise) => setTimeout(resolvePromise, 250 * (attempt + 1)))
