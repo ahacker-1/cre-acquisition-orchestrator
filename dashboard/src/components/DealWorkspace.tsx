@@ -94,6 +94,16 @@ type WorkspaceTab =
   | 'legal'
   | 'closing'
 
+function defaultWorkspaceTab(status: string, initialTab?: WorkspaceTab): WorkspaceTab {
+  return initialTab ?? (
+    /^running|starting|in_progress$/i.test(status)
+      ? 'mission'
+      : isCompleteStatus(status)
+        ? 'package'
+        : 'documents'
+  )
+}
+
 const PHASE_WORKFLOW: Record<string, string> = {
   underwriting: 'underwriting-refresh',
   'due-diligence': 'quick-deal-screen',
@@ -2235,13 +2245,7 @@ export default function DealWorkspace({
   onLaunchStarted,
   onPresetSaved,
 }: DealWorkspaceProps) {
-  const initialDefaultTab: WorkspaceTab = initialTab ?? (
-    /^running|starting|in_progress$/i.test(dealCheckpoint.status)
-      ? 'mission'
-      : isCompleteStatus(dealCheckpoint.status)
-        ? 'package'
-        : 'documents'
-  )
+  const initialDefaultTab = defaultWorkspaceTab(dealCheckpoint.status, initialTab)
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialDefaultTab)
   const {
     workspace,
@@ -2288,14 +2292,9 @@ export default function DealWorkspace({
   const { dispatchAgent } = useAgentDispatch(dealCheckpoint.dealId, dispatchRuntimeProvider)
 
   useEffect(() => {
-    setActiveTab(initialTab ?? (
-      /^running|starting|in_progress$/i.test(dealCheckpoint.status)
-        ? 'mission'
-        : isCompleteStatus(dealCheckpoint.status)
-          ? 'package'
-          : 'documents'
-    ))
-  }, [dealCheckpoint.dealId, dealCheckpoint.status, initialTab])
+    setActiveTab(defaultWorkspaceTab(dealCheckpoint.status, initialTab))
+    // Status updates for the same deal should not override a user-focused lifecycle stage.
+  }, [dealCheckpoint.dealId, initialTab])
 
   useEffect(() => {
     if (!startGuidedDemo) return

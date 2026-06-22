@@ -262,15 +262,15 @@ export default function App() {
 
   async function openDealWorkspace(dealId: string, section: WorkspaceInitialTab = 'documents'): Promise<boolean> {
     setLibraryError(null)
+    setFrontDoorPinned(false)
+    setFrontDoorOpen(false)
+    setLibraryOpen(false)
+    setWorkflowOpen(false)
+    setWizardOpen(false)
     try {
       const record = await loadDeal(dealId)
-      setFrontDoorPinned(false)
-      setFrontDoorOpen(false)
       setWorkspaceCheckpoint(checkpointFromDealRecord(record))
       setWorkspaceInitialTab(section)
-      setLibraryOpen(false)
-      setWorkflowOpen(false)
-      setWizardOpen(false)
       scrollToPageTop()
       return true
     } catch (err) {
@@ -569,7 +569,7 @@ export default function App() {
       </footer>
 
       {libraryOpen && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm overflow-y-auto">
+        <div data-testid="deal-library-backdrop" className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm overflow-y-auto">
           <div className="min-h-full flex items-start justify-center p-6 lg:p-10">
             <div
               data-testid="deal-library-modal"

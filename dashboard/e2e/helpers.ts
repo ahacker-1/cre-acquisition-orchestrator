@@ -211,6 +211,7 @@ export async function launchWorkflowForDeal(
 export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, dealName: string): Promise<void> {
   await waitForDashboardReady(page)
   const workspace = page.getByTestId('workspace-frame')
+  const libraryBackdrop = page.getByTestId('deal-library-backdrop')
   const libraryModal = page.getByTestId('deal-library-modal')
   // The frame's own H1 — distinct from the recent-deals card's H3 of the same name, which
   // also lives inside <main>, so we must scope the heading to the frame to avoid matching it.
@@ -220,6 +221,7 @@ export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, d
 
   // Fast path: the target deal's workspace is already on screen (its run auto-revealed it).
   if ((await workspace.isVisible().catch(() => false)) && (await heading.isVisible().catch(() => false))) {
+    await expect(libraryBackdrop).toBeHidden({ timeout: 20_000 })
     await expect(libraryModal).toBeHidden({ timeout: 20_000 })
     return
   }
@@ -234,6 +236,7 @@ export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, d
         await button.click({ timeout: 5_000 })
         await expect(workspace).toBeVisible({ timeout: 20_000 })
         await expect(heading).toBeVisible({ timeout: 20_000 })
+        await expect(libraryBackdrop).toBeHidden({ timeout: 20_000 })
         await expect(libraryModal).toBeHidden({ timeout: 20_000 })
         return true
       } catch {
@@ -260,10 +263,24 @@ export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, d
  * Focus a lifecycle stage by clicking its spine step, then assert it became the active
  * step (aria-current). Replaces the old `workspace-tab-*` click + `.active` class checks.
  */
+const STAGE_LABELS: Record<string, string> = {
+  intake: 'Intake',
+  diligence: 'Diligence',
+  underwriting: 'Underwriting',
+  financing: 'Financing',
+  legal: 'Legal',
+  closing: 'Closing',
+  ic: 'IC',
+}
+
 export async function focusStage(page: Page, stageId: string): Promise<void> {
   const step = page.getByTestId(`spine-step-${stageId}`)
   await step.click()
   await expect(step).toHaveAttribute('aria-current', 'step')
+  const label = STAGE_LABELS[stageId]
+  if (label) {
+    await expect(page.getByTestId('team-rail')).toContainText(`Your Team · ${label}`, { timeout: 20_000 })
+  }
 }
 
 /**
