@@ -51,8 +51,17 @@ function titleize(value: unknown, fallback = 'Agent'): string {
 
 async function readApiError(response: Response, fallback: string): Promise<Error> {
   try {
-    const payload = await response.json() as { error?: string; message?: string }
-    return new Error(payload.error || payload.message || fallback)
+    const payload = await response.json() as {
+      error?: string
+      message?: string
+      validation?: { blockingIssues?: { path: string; message: string }[] }
+    }
+    const baseMessage = payload.error || payload.message || fallback
+    const blockingIssues = payload.validation?.blockingIssues ?? []
+    if (blockingIssues.length > 0) {
+      return new Error(`${baseMessage}: ${blockingIssues.map((issue) => issue.message).join('; ')}`)
+    }
+    return new Error(baseMessage)
   } catch {
     return new Error(fallback)
   }

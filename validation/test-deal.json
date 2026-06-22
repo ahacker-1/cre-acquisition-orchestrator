@@ -66,7 +66,14 @@
     "ddExpirationDate": "2026-02-25",
     "financingCommitmentDeadline": "2026-03-15",
     "closingDate": "2026-03-31",
-    "extensionOptions": ["15 days with $50,000 hard deposit"]
+    "extensionOptions": [
+      {
+        "type": "dd",
+        "days": 15,
+        "cost": 50000,
+        "description": "15 days with $50,000 hard deposit"
+      }
+    ]
   },
   "notes": "Value-add opportunity. Units have not been renovated since 2010. Interior renovations estimated at $10,000/unit for upgraded finishes, appliances, and flooring. Expected rent premium of $200-300/unit post-renovation."
 }

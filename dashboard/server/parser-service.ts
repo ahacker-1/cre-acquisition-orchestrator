@@ -595,7 +595,7 @@ function parseT12(input: ParserInput, rows: string[][], hash: string): ParserExt
   const noi = findAmount(/net operating income|noi/i)
   const fields: ParserExtractionField[] = []
   if (revenue) fields.push(field(input, hash, parserId, 'financials.trailingT12Revenue', 'Trailing T12 Revenue', revenue.value, 0.82, 'usd', { row: revenue.rowNumber, column: header[totalIndex] }, revenue.raw))
-  if (expenses) fields.push(field(input, hash, parserId, 'financials.trailingT12Expenses', 'Trailing T12 Expenses', expenses.value, 0.88, 'usd', { row: expenses.rowNumber, column: header[totalIndex] }, expenses.raw))
+  if (expenses) fields.push(field(input, hash, parserId, 'financials.trailingT12Expenses', 'Trailing T12 Expenses', Math.abs(expenses.value), 0.88, 'usd', { row: expenses.rowNumber, column: header[totalIndex] }, expenses.raw))
   if (noi) fields.push(field(input, hash, parserId, 'financials.currentNOI', 'Current NOI', noi.value, 0.92, 'usd', { row: noi.rowNumber, column: header[totalIndex] }, noi.raw))
 
   return {
@@ -1074,7 +1074,7 @@ function mapExcelT12(input: ParserInput, hash: string, parsed: Record<string, un
   const noi = numberFieldValue(summary.netOperatingIncome)
 
   if (revenue !== null) fields.push(field(input, hash, parserId, 'financials.trailingT12Revenue', 'Trailing T12 Revenue', revenue, 0.82 - confidencePenalty, 'usd', parsedExcelLocation(parsed, 'effectiveGrossIncome', 2, 'Effective gross income / total revenue row'), String(revenue)))
-  if (expenses !== null) fields.push(field(input, hash, parserId, 'financials.trailingT12Expenses', 'Trailing T12 Expenses', expenses, 0.88 - confidencePenalty, 'usd', parsedExcelLocation(parsed, 'totalExpenses', 3, 'Total operating expenses row'), String(expenses)))
+  if (expenses !== null) fields.push(field(input, hash, parserId, 'financials.trailingT12Expenses', 'Trailing T12 Expenses', Math.abs(expenses), 0.88 - confidencePenalty, 'usd', parsedExcelLocation(parsed, 'totalExpenses', 3, 'Total operating expenses row'), String(expenses)))
   if (noi !== null) fields.push(field(input, hash, parserId, 'financials.currentNOI', 'Current NOI', noi, 0.92 - confidencePenalty, 'usd', parsedExcelLocation(parsed, 'netOperatingIncome', 4, 'Net operating income row'), String(noi)))
 
   return {

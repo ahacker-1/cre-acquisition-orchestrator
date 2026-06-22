@@ -10,6 +10,19 @@ import type {
   WorkflowPresetSaveResponse,
   WorkflowPresetsResponse,
 } from '../types/workflows'
+import type { DealValidationResult } from '../types/deals'
+
+// Error thrown by a launch (or other deal-gated call) that the server rejected with a
+// launch-readiness validation 400. Carries the structured blockers so callers can render
+// the missing required fields instead of only the bare 'Deal is not launch ready' string.
+export class LaunchValidationError extends Error {
+  validation: DealValidationResult
+  constructor(message: string, validation: DealValidationResult) {
+    super(message)
+    this.name = 'LaunchValidationError'
+    this.validation = validation
+  }
+}
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   const payload = (await response.json()) as T
@@ -18,8 +31,18 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 
 async function readApiError(response: Response, fallback: string): Promise<Error> {
   try {
-    const payload = await parseJsonResponse<{ error?: string; message?: string }>(response)
-    return new Error(payload.error || payload.message || fallback)
+    const payload = await parseJsonResponse<{
+      error?: string
+      message?: string
+      validation?: DealValidationResult
+    }>(response)
+    const baseMessage = payload.error || payload.message || fallback
+    const blockingIssues = payload.validation?.blockingIssues ?? []
+    if (blockingIssues.length > 0) {
+      const detail = blockingIssues.map((issue) => issue.message).join('; ')
+      return new LaunchValidationError(`${baseMessage}: ${detail}`, payload.validation as DealValidationResult)
+    }
+    return new Error(baseMessage)
   } catch {
     return new Error(fallback)
   }
@@ -251,10 +274,21 @@ export function useWorkflows() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(request),
         })
-        const payload = await parseJsonResponse<WorkflowLaunchResponse & { error?: string }>(response)
         if (!response.ok) {
-          throw new Error(payload.error || 'Failed to launch workflow')
+          const payload = await parseJsonResponse<{
+            error?: string
+            message?: string
+            validation?: DealValidationResult
+          }>(response)
+          const baseMessage = payload.error || payload.message || 'Failed to launch workflow'
+          const blockingIssues = payload.validation?.blockingIssues ?? []
+          if (blockingIssues.length > 0) {
+            const detail = blockingIssues.map((issue) => issue.message).join('; ')
+            throw new LaunchValidationError(`${baseMessage}: ${detail}`, payload.validation as DealValidationResult)
+          }
+          throw new Error(baseMessage)
         }
+        const payload = await parseJsonResponse<WorkflowLaunchResponse & { error?: string }>(response)
         setError(null)
         return payload
       } catch (err) {

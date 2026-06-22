@@ -268,6 +268,16 @@ export default function DealIntakeWizard({
     setStepIndex((current) => Math.min(current + 1, STEPS.length - 1))
   }
 
+  async function goToStep(index: number): Promise<void> {
+    if (index === stepIndex) return
+    // Jumping into the Review step refreshes launch validation so the
+    // blocking-issue panel is accurate, matching handleNext's behavior.
+    if (index === STEPS.length - 1) {
+      await refreshLaunchValidation()
+    }
+    setStepIndex(index)
+  }
+
   const launchBlockingIssues = validation?.blockingIssues ?? []
   const warningIssues = validation?.warnings ?? []
   const reviewReady = validation?.launchReady ?? false
@@ -310,9 +320,15 @@ export default function DealIntakeWizard({
                 const active = index === stepIndex
                 const complete = index < stepIndex
                 return (
-                  <div
+                  <button
                     key={step}
-                    className={`rounded-2xl border px-3 py-3 transition-colors ${
+                    type="button"
+                    onClick={() => void goToStep(index)}
+                    disabled={active || loadingDeal || workingState !== null}
+                    aria-current={active ? 'step' : undefined}
+                    aria-label={`Go to step ${index + 1}: ${step}`}
+                    data-testid={`deal-wizard-step-${index}`}
+                    className={`w-full text-left rounded-2xl border px-3 py-3 transition-colors disabled:cursor-not-allowed ${
                       active
                         ? 'border-cre-accent bg-cre-accent/10'
                         : complete
@@ -326,7 +342,7 @@ export default function DealIntakeWizard({
                     <div className={`text-sm font-semibold mt-1 ${active ? 'text-white' : 'text-gray-300'}`}>
                       {step}
                     </div>
-                  </div>
+                  </button>
                 )
               })}
             </div>

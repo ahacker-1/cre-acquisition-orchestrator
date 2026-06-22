@@ -1645,7 +1645,36 @@ function getDeepValue(target: Record<string, unknown>, pathValue: string): unkno
   return cursor
 }
 
+// Coerce a numeric-ish value to a number for comparison: pass numbers through;
+// for strings, strip currency/grouping/percent decoration ($, commas, %, spaces)
+// and parse. Returns null when the value is not a finite number.
+function comparableNumber(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
+  if (typeof value === 'string') {
+    const cleaned = value.replace(/[$,\s]/g, '').replace(/%$/, '')
+    if (cleaned === '') return null
+    const parsed = Number(cleaned)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
+}
+
+// True when two values represent genuinely different data. Numeric-ish operands are
+// compared numerically after unit-normalization (a decimal ratio and its percent form,
+// e.g. 0.917 vs 91.7 / "91.7%", are equal) within a 0.1% relative tolerance. The tolerance
+// absorbs rounding/representation noise — a memo's stated 91.7% vs a rent roll's computed
+// 91.67%, or float drift — as equal, while still flagging material gaps (a $312K memo NOI
+// vs a $253K T12 NOI). Non-numeric values fall back to a structural JSON comparison.
 function valuesDiffer(left: unknown, right: unknown): boolean {
+  let a = comparableNumber(left)
+  let b = comparableNumber(right)
+  if (a !== null && b !== null) {
+    // Percent vs decimal: one side is a percent magnitude (>1), the other a ratio (<=1).
+    if (Math.abs(a) > 1 && Math.abs(b) <= 1) a = a / 100
+    else if (Math.abs(b) > 1 && Math.abs(a) <= 1) b = b / 100
+    const tolerance = Math.max(1e-9, 1e-3 * Math.max(Math.abs(a), Math.abs(b)))
+    return Math.abs(a - b) > tolerance
+  }
   return JSON.stringify(left) !== JSON.stringify(right)
 }
 
@@ -2457,7 +2486,7 @@ function renderIcStarterPackageMarkdown(packageJson: IcStarterPackage): string {
     `Action: ${packageJson.nextAction.cta}`,
     '',
     '## Source Coverage',
-    `Approved fields: ${packageJson.sourceCoverage.approvedFieldCount}/${packageJson.sourceCoverage.requiredApprovedFieldCount} required`,
+    `Approved fields: ${packageJson.sourceCoverage.approvedFieldCount} approved (${packageJson.sourceCoverage.requiredApprovedFieldCount} required)`,
     `Documents uploaded: ${packageJson.sourceCoverage.sourceDocumentCount}`,
     `Documents waiting for review: ${packageJson.sourceCoverage.reviewReadyDocumentCount}`,
     '',
