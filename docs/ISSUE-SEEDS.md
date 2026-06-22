@@ -17,6 +17,7 @@ Do not create these issues automatically from automation. Review the text, adjus
 
 - `docs/QUICK-DEMO.md` gives first-time visitors a local path from clone to the current deal-space dashboard.
 - `docs/DEMO-JOURNEY.md` documents the no-video guided demo and the source-to-IC proof path.
+- `docs/PROOF-PATH.md` and `npm run proof` provide the fastest local proof path from source document to uploaded data inspector to extraction review to IC package.
 - `docs/RUNTIME-COMPARISON.md` documents the offline demo vs live Codex split, artifact paths, and no-secret/data-sharing boundaries.
 - XLSX/CSV/TXT/MD and text-based PDF sources can produce reviewable candidate fields with provenance, confidence, warnings, approval state, and applied-evidence links.
 - Readable scanned/image-only PDFs can run through the local OCR bridge with review-gated candidate fields rather than silently guessed deal inputs.
@@ -27,6 +28,8 @@ Do not create these issues automatically from automation. Review the text, adjus
 - v3.1.0 added local scanned-PDF OCR with PyMuPDF and `tesseract.js`, review-gated OCR candidates, OCR fixture coverage, and setup/docs support.
 
 ## 1. Add public source-to-IC proof path to the demo journey
+
+Status: shipped locally. Keep this issue seed only if you want a follow-up GitHub issue for richer screenshots, a Loom/GIF, or deeper drilldowns beyond the current `npm run proof` + `docs/PROOF-PATH.md` path.
 
 Suggested labels: `demo`, `dashboard`, `documentation`, `good first issue`
 
@@ -42,7 +45,7 @@ Issue body:
 ```markdown
 ## Goal
 
-Make the source-backed acquisition story obvious to a first-time GitHub visitor without requiring a video: source document → extraction review → approved evidence → specialist workpaper → IC package drilldown/export.
+Make the source-backed acquisition story obvious to a first-time GitHub visitor without requiring a video: source document -> uploaded data inspector -> extraction review -> approved evidence -> specialist workpaper -> IC package drilldown/export.
 
 ## Scope
 
@@ -50,13 +53,14 @@ Refresh the public demo journey, screenshots, and first-run docs so a visitor ca
 
 ## Acceptance Criteria
 
-- [ ] `docs/DEMO-JOURNEY.md` includes a clear source-to-IC reviewer script.
-- [ ] README points first-time visitors to the source-to-IC proof path.
-- [ ] `docs/QUICK-DEMO.md` and `docs/FIRST-DEAL-GUIDE.md` use current v3.1.0 persistent deal-space language.
-- [ ] Screenshots or documented manual review steps show source extraction review, approved field provenance, workpaper output, and IC package references/export where current UI state supports it.
-- [ ] No video, external account, cloud service, or private deal file is required.
-- [ ] Run `npm run validate:docs`.
-- [ ] Run `npm run validate:guides`.
+- [x] `docs/DEMO-JOURNEY.md` includes a clear source-to-IC reviewer script.
+- [x] README points first-time visitors to the source-to-IC proof path.
+- [x] `docs/QUICK-DEMO.md` and `docs/FIRST-DEAL-GUIDE.md` use current v3.2.0 persistent deal-space language.
+- [x] Screenshots or documented manual review steps show source extraction review, approved field provenance, workpaper output, and IC package references/export where current UI state supports it.
+- [x] No video, external account, cloud service, or private deal file is required.
+- [x] Run `npm run validate:docs`.
+- [x] Run `npm run validate:guides`.
+- [x] Run `npm run proof -- --smoke --no-open`.
 ```
 
 ## 2. Harden OCR extraction for scanned/image-only source documents

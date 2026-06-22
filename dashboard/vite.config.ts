@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    open: true,
+    open: process.env.CRE_PROOF_NO_OPEN === '1' ? false : true,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8081',

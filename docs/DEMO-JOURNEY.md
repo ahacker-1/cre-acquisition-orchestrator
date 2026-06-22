@@ -1,14 +1,14 @@
 # Demo Journey
 
-Use this as the public demo path for current `main`. It is optimized for a first-time visitor who wants to understand the product before reading the architecture docs.
+Use this as the public demo path for current `main`. It is optimized for a first-time visitor who wants to understand the product before reading the architecture docs. For the shortest runnable trust loop, start with [`docs/PROOF-PATH.md`](PROOF-PATH.md) and `npm run proof`.
 
 ## Current Reality
 
-The demo reflects the v3.1.0 evidence-grade deal-workspace UI: a single persistent **deal space** (deal header + an always-visible lifecycle spine + a context-sensitive center stage + a Live Feed / Your Team rail + a command bar), document-first **Intake** that auto-extracts and auto-fills the deal record, deterministic offline orchestration, generated workpapers, local scanned-PDF OCR, an evidence graph / proof path into the IC package, and an optional local Codex/ChatGPT live-agent path. Power-user controls live in an Advanced drawer.
+The demo reflects the v3.2.0 evidence-grade deal-workspace UI: a single persistent **deal space** (deal header + an always-visible lifecycle spine + a context-sensitive center stage + a Live Feed / Your Team rail + a command bar), document-first **Intake** that auto-extracts and auto-fills the deal record, uploaded data inspection for source tables and rows, deterministic offline orchestration, generated workpapers, local scanned-PDF OCR, an evidence graph / proof path into the IC package, and an optional local Codex/ChatGPT live-agent path. Power-user controls live in an Advanced drawer.
 
 ## Promise
 
-**Drop the deal. Watch your team go to work across the lifecycle. Trace one source-backed fact from extraction review, to approved evidence, to specialist workpaper, to IC package.**
+**Drop the deal. Inspect the uploaded source data. Watch your team go to work across the lifecycle. Trace one source-backed fact from extraction review, to approved evidence, to specialist workpaper, to IC package.**
 
 The safe default demo runs locally with deterministic data and does not require API keys. The optional live-agent path uses the user's local Codex CLI / ChatGPT login and should be introduced only after the offline journey is clear.
 
@@ -20,9 +20,8 @@ For the exact runtime split, artifacts, and data-sharing boundaries, see [`docs/
 git clone https://github.com/ahacker-1/cre-acquisition-orchestrator.git
 cd cre-acquisition-orchestrator
 npm install
-npm run setup
-npm run demo
-npm run dashboard
+npm run setup -- --skip-codex-install --skip-login
+npm run proof
 ```
 
 Open `http://localhost:5173`.
@@ -48,15 +47,16 @@ Use this when you want a first-time visitor to understand the product without up
 
 ## Source-to-IC Proof Path
 
-Use this as the reviewer script when someone asks, "What proves this is more than a generic AI dashboard?" Pick one number, document warning, or red flag and follow it across the product:
+Use [`docs/PROOF-PATH.md`](PROOF-PATH.md) as the focused reviewer script when someone asks, "What proves this is more than a generic AI dashboard?" Pick one number, document warning, or red flag and follow it across the product:
 
 1. **Document drop** — the operator starts from source files on the front door, not a blank form or pasted prompt.
-2. **Extraction review** — supported CSV/XLSX/TXT/MD, text-based PDF sources, and readable scanned/image-only PDFs produce candidate fields with confidence, warnings, file hashes, and source-location provenance. Low-confidence or unsupported OCR is flagged instead of silently guessed.
-3. **Approved evidence** — trusted fields are explicitly approved/applied; ambiguous fields are rejected or waived with a reason, so underwriting inputs change only after human review.
-4. **Specialist workpapers** — the deal team works from the reviewed deal context, filing outputs with findings, impact, caveats, review status, and source/workpaper references where the current artifact provides them.
-5. **IC package** — the final package assembles recommendation, red flags, data gaps, manifest, workpaper links, and Markdown/JSON export so a human can review the decision trail and drill into available source/workpaper references.
+2. **Uploaded data inspector** - parsed tables expose field types, fill rates, examples, source rows, and click-through row detail before extracted values are trusted.
+3. **Extraction review** - supported CSV/XLSX/TXT/MD, text-based PDF sources, and readable scanned/image-only PDFs produce candidate fields with confidence, warnings, file hashes, and source-location provenance. Low-confidence or unsupported OCR is flagged instead of silently guessed.
+4. **Approved evidence** - trusted fields are explicitly approved/applied; ambiguous fields are rejected or waived with a reason, so underwriting inputs change only after human review.
+5. **Specialist workpapers** - the deal team works from the reviewed deal context, filing outputs with findings, impact, caveats, review status, and source/workpaper references where the current artifact provides them.
+6. **IC package** - the final package assembles recommendation, red flags, data gaps, manifest, workpaper links, and Markdown/JSON export so a human can review the decision trail and drill into available source/workpaper references.
 
-The current public screenshot sequence supports this proof with `dashboard-front-door.png`, `source-extraction-review.png`, `acquisition-command.png`, `deal-team-handoffs.png`, and `ic-package.png`.
+The current public screenshot sequence supports this proof with `dashboard-front-door.png`, `uploaded-data-inspector.png`, `source-extraction-review.png`, `acquisition-command.png`, `deal-team-handoffs.png`, and `ic-package.png`; `npm run screenshots` refreshes the gallery from the deterministic local dashboard.
 
 ## Operator Storyboard
 
@@ -161,7 +161,7 @@ Before the next public release:
 - [ ] Run `npm run dashboard` and click **Start Guided Demo**.
 - [ ] Confirm the guided tour advances through The Deal Space, Command Your Team, Your Team, Watch It Work, and IC Package.
 - [ ] Run `npm run screenshots` while the dashboard is available at `http://localhost:5173`.
-- [ ] Capture current public surfaces for the front door, the Intake auto-fill, the deal space, the agent panel, and the IC package.
+- [ ] Capture current public surfaces for the front door, uploaded data inspector, Intake auto-fill, the deal space, the agent panel, and the IC package.
 - [x] Add a current screenshot gallery in `docs/assets/`.
 - [ ] Update README image alt text so each screenshot explains the operator value.
 - [ ] Run `git diff --check`.

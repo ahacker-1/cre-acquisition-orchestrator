@@ -18,6 +18,7 @@ interface QuickDealCreateProps {
   intent: OutcomeIntent
   goalText: string
   suggestedDealId: string
+  dealIdReady: boolean
   isOpen: boolean
   onCancel: () => void
   onCreated: (dealId: string) => void
@@ -60,10 +61,19 @@ function nextDealId(candidate: string, offset: number): string {
 }
 
 function isDealIdConflictError(error: unknown): boolean {
-  const validation = (error as { validation?: { blockingIssues?: Array<{ path?: string; message?: string }> } })?.validation
-  return Boolean(validation?.blockingIssues?.some((issue) => (
-    issue.path === 'dealId' && /already exists/i.test(issue.message || '')
-  )))
+  const validation = (error as {
+    validation?: {
+      blockingIssues?: Array<{ path?: string; message?: string } | null>
+      issues?: Array<{ path?: string; message?: string } | null>
+    }
+  })?.validation
+  const issues = [
+    ...(validation?.blockingIssues ?? []),
+    ...(validation?.issues ?? []),
+  ]
+  return issues.some((issue) => (
+    issue?.path === 'dealId' && /already exists/i.test(issue.message || '')
+  ))
 }
 
 const WORKFLOW_BY_INTENT: Record<OutcomeIntent, string> = {
@@ -87,6 +97,7 @@ export default function QuickDealCreate({
   intent,
   goalText,
   suggestedDealId,
+  dealIdReady,
   isOpen,
   onCancel,
   onCreated,
@@ -132,6 +143,7 @@ export default function QuickDealCreate({
   // PDFs are stored for extraction (extraction-pending) rather than auto-applied like CSV/XLSX,
   // so set that expectation up front instead of leaving the deal record silently empty.
   const hasPdf = files.some((file) => /\.pdf$/i.test(file.name))
+  const createDisabled = working || Boolean(savedDealId) || !dealIdReady
 
   function updateQueueItem(itemId: string, update: Partial<UploadQueueItem>): void {
     setUploadQueue((current) =>
@@ -353,10 +365,10 @@ export default function QuickDealCreate({
               type="button"
               data-testid="quick-deal-create"
               className="portal-button portal-button-primary w-full sm:w-auto"
-              disabled={working || Boolean(savedDealId)}
+              disabled={createDisabled}
               onClick={() => void handleCreate()}
             >
-              {working ? 'Preparing Team' : 'Create Workspace & Upload'}
+              {!dealIdReady ? 'Preparing Deal ID' : working ? 'Preparing Team' : 'Create Workspace & Upload'}
             </button>
           </div>
         </section>

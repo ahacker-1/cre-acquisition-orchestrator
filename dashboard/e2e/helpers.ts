@@ -46,15 +46,50 @@ export async function expectApiOk(response: APIResponse): Promise<void> {
   throw new Error(`API request failed (${response.status()} ${response.statusText()}): ${await response.text()}`)
 }
 
+function isTransientApiRequestError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /ECONNRESET|ECONNREFUSED|ECONNABORTED|ETIMEDOUT|socket hang up|fetch failed/i.test(message)
+}
+
+async function retryApiRequest<T>(operation: () => Promise<T>): Promise<T> {
+  let lastError: unknown = null
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      return await operation()
+    } catch (err) {
+      lastError = err
+      if (!isTransientApiRequestError(err) || attempt === 4) break
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 150 * (attempt + 1)))
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError || 'API request failed'))
+}
+
+export async function apiGet(
+  request: APIRequestContext,
+  url: string,
+  options?: Parameters<APIRequestContext['get']>[1],
+): Promise<APIResponse> {
+  return retryApiRequest(() => request.get(url, options))
+}
+
+export async function apiPost(
+  request: APIRequestContext,
+  url: string,
+  options?: Parameters<APIRequestContext['post']>[1],
+): Promise<APIResponse> {
+  return retryApiRequest(() => request.post(url, options))
+}
+
 export function isApiResponse(response: APIResponse, method: string, path: string): boolean {
   return new URL(response.url()).pathname === path && response.request().method() === method
 }
 
 export async function stopActiveRun(request: APIRequestContext): Promise<void> {
-  await request.post(`${API_URL}/api/run/stop`)
+  await apiPost(request, `${API_URL}/api/run/stop`)
 
   for (let attempt = 0; attempt < 30; attempt += 1) {
-    const response = await request.get(`${API_URL}/api/run/status`)
+    const response = await apiGet(request, `${API_URL}/api/run/status`)
     const payload = (await response.json()) as { active?: boolean }
     if (!payload.active) return
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 500))
@@ -119,7 +154,7 @@ export async function saveLaunchReadyDeal(
   dealId: string,
   dealName: string,
 ): Promise<void> {
-  const response = await request.post(`${API_URL}/api/deals`, {
+  const response = await apiPost(request, `${API_URL}/api/deals`, {
     data: {
       deal: buildLaunchReadyDeal(dealId, dealName),
       mode: 'launch',
@@ -137,7 +172,7 @@ export async function saveDraftDeal(
   dealId: string,
   dealName: string,
 ): Promise<void> {
-  const response = await request.post(`${API_URL}/api/deals`, {
+  const response = await apiPost(request, `${API_URL}/api/deals`, {
     data: {
       deal: { dealId, dealName, property: { city: 'Austin', state: 'TX' } },
       mode: 'draft',
@@ -151,7 +186,7 @@ export async function launchWorkflowForDeal(
   workflowId: string,
   dealId: string,
 ): Promise<void> {
-  const response = await request.post(`${API_URL}/api/workflows/${workflowId}/launch`, {
+  const response = await apiPost(request, `${API_URL}/api/workflows/${workflowId}/launch`, {
     data: {
       dealId,
       scenario: 'core-plus',
@@ -187,16 +222,35 @@ export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, d
     return
   }
 
-  // A leftover completed-run workspace can auto-open and obscure the recent-deals strip; if
-  // the strip is not already showing, return to the front door via New Deal to reveal it.
-  if (!(await strip.isVisible().catch(() => false))) {
-    await page.getByTestId('header-new-deal-button').click()
-    await expect(strip).toBeVisible({ timeout: 20_000 })
+  async function clickWorkspaceButton(button: ReturnType<Page['getByTestId']>): Promise<boolean> {
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      if ((await workspace.isVisible().catch(() => false)) && (await heading.isVisible().catch(() => false))) {
+        return true
+      }
+      try {
+        await button.scrollIntoViewIfNeeded({ timeout: 5_000 })
+        await button.click({ timeout: 5_000 })
+        await expect(workspace).toBeVisible({ timeout: 20_000 })
+        await expect(heading).toBeVisible({ timeout: 20_000 })
+        return true
+      } catch {
+        await new Promise((resolvePromise) => setTimeout(resolvePromise, 250 * (attempt + 1)))
+      }
+    }
+    return false
   }
 
-  await card.click({ timeout: 30_000 })
-  await expect(workspace).toBeVisible({ timeout: 20_000 })
-  await expect(heading).toBeVisible({ timeout: 20_000 })
+  if ((await strip.isVisible().catch(() => false)) && await clickWorkspaceButton(card)) {
+    return
+  }
+
+  await page.getByTestId('header-deals-button').click()
+  const modal = page.getByTestId('deal-library-modal')
+  await expect(modal).toBeVisible({ timeout: 20_000 })
+  const modalButton = modal.getByTestId(`workspace-docs-${dealId}`)
+  if (await clickWorkspaceButton(modalButton)) return
+
+  throw new Error(`Could not open workspace for ${dealId}`)
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { RunSpeed } from './checkpoint'
+import type { DealCheckpoint, RunSpeed } from './checkpoint'
 
 export type InvestmentStrategy = 'core' | 'core-plus' | 'value-add' | 'opportunistic' | ''
 export type LoanType = 'Agency' | 'CMBS' | 'Bank' | 'Bridge' | 'Life Company' | 'HUD' | ''
@@ -106,6 +106,7 @@ export interface DealRecordResponse {
   item: DealLibraryItem
   deal: Record<string, unknown>
   validation: DealValidationResult
+  checkpoint?: DealCheckpoint | null
 }
 
 export interface DealLibraryResponse {

@@ -63,11 +63,13 @@ Release-grade local validation for this baseline includes:
 
 ### 1. Source-to-IC Public Proof
 
-Goal: make a first-time visitor see how a value or red flag moves from source document to extraction review, approved evidence, specialist workpaper context, and available IC package references/export without needing a video.
+Status: shipped as the public proof pack. `npm run proof` regenerates the deterministic sample, starts the local dashboard, waits for readiness, and opens the reviewer path. [`docs/PROOF-PATH.md`](docs/PROOF-PATH.md) is now the focused script for tracing source document -> uploaded data inspector -> extraction review -> approved evidence -> specialist workpaper -> IC package.
+
+Goal: keep making a first-time visitor see how a value or red flag moves from source document to extraction review, approved evidence, specialist workpaper context, and available IC package references/export without needing a video.
 
 Candidate issues:
 
-- Keep `docs/DEMO-JOURNEY.md`, `docs/QUICK-DEMO.md`, and README aligned around the source-to-IC proof path.
+- Keep `docs/PROOF-PATH.md`, `docs/DEMO-JOURNEY.md`, `docs/QUICK-DEMO.md`, and README aligned around the source-to-IC proof path.
 - Extend the deterministic screenshot capture flow or manual screenshot checklist to show approved-field provenance and IC drilldowns when the current UI state supports it.
 - Add a small sample package/export note that tells visitors exactly which field or red flag can be reviewed across the demo, with honest caveats where provenance is not yet exposed.
 

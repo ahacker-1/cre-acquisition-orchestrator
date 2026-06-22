@@ -918,7 +918,6 @@ function ExtractionPreviewPanel({
   extraction,
   onApply,
   onReview,
-  working,
 }: {
   extraction: ExtractionPreview | null
   onApply: (documentId: string, fieldIds: string[], allowConflicts?: boolean) => Promise<void>
@@ -928,16 +927,17 @@ function ExtractionPreviewPanel({
     reviewStatus: Extract<ExtractionReviewStatus, 'rejected' | 'waived'>,
     note?: string,
   ) => Promise<void>
-  working: boolean
 }) {
   const [selectedFieldIds, setSelectedFieldIds] = useState<string[]>([])
   const [confirmConflicts, setConfirmConflicts] = useState(false)
   const [reviewNote, setReviewNote] = useState('')
+  const [submittingReview, setSubmittingReview] = useState(false)
 
   useEffect(() => {
     setSelectedFieldIds([])
     setConfirmConflicts(false)
     setReviewNote('')
+    setSubmittingReview(false)
   }, [extraction])
 
   if (!extraction) {
@@ -966,9 +966,23 @@ function ExtractionPreviewPanel({
     field.reviewStatus !== 'waived'
   ).length
   async function handleReview(reviewStatus: Extract<ExtractionReviewStatus, 'rejected' | 'waived'>): Promise<void> {
-    await onReview(extractionDocumentId, selectedFieldIds, reviewStatus, reviewNote)
-    setSelectedFieldIds([])
-    setReviewNote('')
+    setSubmittingReview(true)
+    try {
+      await onReview(extractionDocumentId, selectedFieldIds, reviewStatus, reviewNote)
+      setSelectedFieldIds([])
+      setReviewNote('')
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
+
+  async function handleApply(): Promise<void> {
+    setSubmittingReview(true)
+    try {
+      await onApply(extractionDocumentId, selectedFieldIds, selectedConflictCount > 0 && confirmConflicts)
+    } finally {
+      setSubmittingReview(false)
+    }
   }
 
   return (
@@ -1126,8 +1140,8 @@ function ExtractionPreviewPanel({
         <button
           type="button"
           data-testid="apply-extraction"
-          disabled={working || extraction.fields.length === 0 || !canApply}
-          onClick={() => void onApply(extraction.documentId, selectedFieldIds, selectedConflictCount > 0 && confirmConflicts)}
+          disabled={submittingReview || extraction.fields.length === 0 || !canApply}
+          onClick={() => void handleApply()}
           className="portal-button portal-button-primary w-full"
         >
           {selectedFieldIds.length === 0
@@ -1141,7 +1155,7 @@ function ExtractionPreviewPanel({
         <button
           type="button"
           data-testid="reject-extraction-fields"
-          disabled={working || selectedReviewableCount === 0}
+          disabled={submittingReview || selectedReviewableCount === 0}
           onClick={() => void handleReview('rejected')}
           className="portal-button portal-button-secondary w-full"
         >
@@ -1150,7 +1164,7 @@ function ExtractionPreviewPanel({
         <button
           type="button"
           data-testid="waive-extraction-fields"
-          disabled={working || selectedReviewableCount === 0}
+          disabled={submittingReview || selectedReviewableCount === 0}
           onClick={() => void handleReview('waived')}
           className="portal-button portal-button-secondary w-full"
         >
@@ -1320,7 +1334,7 @@ function DocumentIntakePanel({
           )}
         </div>
       </div>
-      <ExtractionPreviewPanel extraction={extraction} working={working} onApply={onApply} onReview={onReview} />
+      <ExtractionPreviewPanel extraction={extraction} onApply={onApply} onReview={onReview} />
     </section>
   )
 }

@@ -7,7 +7,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18-61DAFB.svg)](https://reactjs.org/)
 
-<!-- HERO: replace with Loom URL -->
+**Fastest proof path:** run `npm run proof`, open the local dashboard, and trace one source-backed fact from upload to IC package. Full reviewer script: [Public Proof Path](docs/PROOF-PATH.md).
 
 I've been working on something that I think the CRE industry needs, and I wanted to share where it is now.
 
@@ -15,7 +15,7 @@ A few months ago I wrote about [what happens when you point 489 AI agents at a 2
 
 **It is not fully production-ready.** I want to be direct about that. But what is here is the most in-depth open-source framework I have seen for CRE acquisition orchestration because the category barely exists. There are agent frameworks for coding, customer support, research, and data analysis. There is almost nothing that models how a real multifamily acquisition moves across due diligence, underwriting, financing, legal, and closing while preserving data handoffs, review gates, and investment committee evidence.
 
-The default path is intentionally local. You can run the dashboard with no API keys, drop a rent roll/T12/offering memo package, review extracted candidate fields with provenance, approve or waive ambiguous values, and export Markdown/JSON for an investment committee starter package. If you want live agents, the optional ChatGPT/Codex path is there, but the offline demo remains the public proof path.
+The default path is intentionally local. You can run the proof path with no API keys, inspect uploaded tables and source rows, review extracted candidate fields with provenance, approve or waive ambiguous values, and export Markdown/JSON for an investment committee starter package. If you want live agents, the optional ChatGPT/Codex path is there, but the offline demo remains the public proof path.
 
 Everything in here - the agent prompts, domain skills, schemas, pipeline architecture, dashboard, and demo artifacts - is yours to use as a starting point. Fork it. Build on it. Adapt it to your own deals, investment thesis, and internal acquisition workflow. If this framework helps even one CRE team rethink how they approach acquisitions, it was worth open-sourcing.
 
@@ -27,8 +27,9 @@ Let's bring this industry into the future.
 
 ## First-Time Visitor Path
 
+- **Prove the trust loop first:** run `npm run proof` and follow the [Public Proof Path](docs/PROOF-PATH.md) from source document to uploaded data inspector to extraction review to approved evidence to workpaper to IC package.
 - **Run a first real deal in 10 minutes:** follow the [First Deal Guide](docs/FIRST-DEAL-GUIDE.md), start the dashboard, drop local rent roll/T12/offering memo files, review source-backed fields, and export the IC starter package.
-- **Trace the source-to-IC proof path:** use the [Demo Journey](docs/DEMO-JOURNEY.md#source-to-ic-proof-path) to follow a value or red flag from document drop, through extraction review and approved evidence, into workpapers and the IC package references the current artifacts expose.
+- **Trace the source-to-IC proof path manually:** use the [Demo Journey](docs/DEMO-JOURNEY.md#source-to-ic-proof-path) to follow a value or red flag from document drop, through uploaded data inspection, extraction review, approved evidence, workpapers, and the IC package references the current artifacts expose.
 - **Use Parkview as the deterministic fallback:** click **Start Guided Demo** when you want a no-upload sample tour through the deal space - the lifecycle spine, the command bar, Your Team, the live feed, and the IC package.
 - **Install from scratch:** follow [Quick Start](#quick-start). The dashboard path is local-first and the sample demo remains deterministic after dependencies are installed.
 - **Choose the right runtime:** read [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md) before sending any real deal context through the optional live-agent path.
@@ -55,9 +56,9 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 
 | AI Roles | Skills | Schemas | Workflows | Fixtures | Tests passing |
 |----------|--------|---------|-----------|----------|---------------|
-| 31 | 8 | 27 | 5 | 37 | 10 |
+| 31 | 8 | 27 | 5 | 37 | 11 |
 
-Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 37 curated fixture files under `fixtures/` (messy parser fixtures, legal diligence checklist extraction, scanned OCR coverage, the adversarial real-world-pile smoke set, and the first-deal package); and 10 root `test*` commands tracked by [package.json](package.json).
+Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 37 curated fixture files under `fixtures/` (messy parser fixtures, legal diligence checklist extraction, scanned OCR coverage, the adversarial real-world-pile smoke set, and the first-deal package); and 11 root `test*` commands tracked by [package.json](package.json).
 
 ---
 
@@ -456,12 +457,12 @@ git clone https://github.com/ahacker-1/cre-acquisition-orchestrator.git
 cd cre-acquisition-orchestrator
 
 npm install
-npm run setup
-npm run dashboard
+npm run setup -- --skip-codex-install --skip-login
+npm run proof
 ```
 
-Open `http://localhost:5173`. The offline demo and dashboard work even if Codex is missing or login is skipped.
-`npm run setup` also prepares the local parser virtual environment used for XLSX/PDF extraction.
+Open `http://localhost:5173` if the browser does not open automatically. The proof path regenerates deterministic Parkview artifacts, starts the dashboard, waits for the local UI/API to respond, and works even if Codex is missing or login is skipped.
+`npm run setup -- --skip-codex-install --skip-login` also prepares the local parser virtual environment used for XLSX/PDF extraction without starting the optional Codex/ChatGPT auth path.
 
 To require a complete live-agent setup during onboarding:
 
@@ -480,6 +481,14 @@ Expected login output should say `Logged in using ChatGPT`.
 ---
 
 ## Common Runs
+
+Run the public proof path:
+
+```powershell
+npm run proof
+```
+
+This regenerates Parkview, starts the dashboard, opens the local app, and points you to [Public Proof Path](docs/PROOF-PATH.md) so you can inspect source data, approve evidence, and trace it into the IC package.
 
 Run the first real-deal workspace:
 

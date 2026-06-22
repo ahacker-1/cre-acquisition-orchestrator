@@ -2,15 +2,24 @@
 
 Use this path when you want to prove the product locally before reading the architecture docs. The primary path is a local, source-backed workspace for your own files. Parkview remains the deterministic fallback when you want a no-upload sample.
 
+Fastest path:
+
+```powershell
+npm run proof
+```
+
+For the focused source-to-IC reviewer script, follow [`docs/PROOF-PATH.md`](PROOF-PATH.md).
+
 ## What You Will See
 
-The current demo follows the v3.1.0 evidence-grade deal-space journey:
+The current demo follows the v3.2.0 evidence-grade deal-space journey:
 
 1. **Drop documents** — start from source material, not a blank automation form. XLSX/CSV/TXT/MD, text-based PDF sources, and readable scanned/image-only PDFs can become reviewable candidates; low-confidence OCR remains review-gated with warnings.
-2. **Review extraction** — candidate fields show confidence, warnings, source file, file hash, and source location before they change underwriting inputs.
-3. **Approve evidence** — trusted fields are applied; ambiguous values are rejected or waived with a reason.
-4. **Watch the team work** — the persistent deal space shows the lifecycle spine, Your Team rail, Live Feed, and summonable agent panel.
-5. **Trace to IC** — the proof path and evidence graph connect source documents, approved fields, workpapers, red flags, data gaps, and the IC package export.
+2. **Inspect uploaded data** - source tables show field types, fill rates, examples, source rows, and row detail before values are trusted.
+3. **Review extraction** - candidate fields show confidence, warnings, source file, file hash, and source location before they change underwriting inputs.
+4. **Approve evidence** - trusted fields are applied; ambiguous values are rejected or waived with a reason.
+5. **Watch the team work** - the persistent deal space shows the lifecycle spine, Your Team rail, Live Feed, and summonable agent panel.
+6. **Trace to IC** - the proof path and evidence graph connect source documents, approved fields, workpapers, red flags, data gaps, and the IC package export.
 
 ## Start the Dashboard
 
@@ -20,7 +29,8 @@ From a fresh clone:
 git clone https://github.com/ahacker-1/cre-acquisition-orchestrator.git
 cd cre-acquisition-orchestrator
 npm install
-npm run dashboard
+npm run setup -- --skip-codex-install --skip-login
+npm run proof
 ```
 
 Open:
@@ -29,7 +39,7 @@ Open:
 http://localhost:5173
 ```
 
-The dashboard runs locally. No external AI APIs are called unless you explicitly choose the optional Codex / ChatGPT runtime later.
+The proof command regenerates the deterministic Parkview sample, starts the dashboard, waits for the local UI/API, and opens the app. No external AI APIs are called unless you explicitly choose the optional Codex / ChatGPT runtime later.
 
 ## Run a First Real Deal
 
@@ -74,12 +84,13 @@ After the dashboard opens, use the sample deal/workspace and review these surfac
 | Screen | What to Look For |
 |--------|------------------|
 | **Front Door** | Document-first intake and the deterministic Parkview guided-demo option. |
+| **Uploaded Data Inspector** | Parsed tables, field quality, examples, source rows, and row-level detail before trusting extraction. |
 | **Intake / Extraction Review** | Source documents becoming candidate fields with confidence, warnings, and provenance before approval. |
 | **Deal Space** | One persistent frame: lifecycle spine, center stage, Live Feed, Your Team, and command bar. |
 | **Agent Panel / Workpaper** | A specialist's reasoning and filed workpaper, with findings/caveats and available source or workpaper references. |
 | **IC Package** | Proof path, evidence chain, recommendation, red flags, data gaps, manifest, review trail, workpaper links, and Markdown/JSON export. |
 
-Current public screenshots for these surfaces live under [`docs/assets/`](assets/). The longer source-to-IC storyboard is in [`docs/DEMO-JOURNEY.md`](DEMO-JOURNEY.md).
+Current public screenshots for these surfaces live under [`docs/assets/`](assets/). The focused proof script is [`docs/PROOF-PATH.md`](PROOF-PATH.md), and the longer source-to-IC storyboard is in [`docs/DEMO-JOURNEY.md`](DEMO-JOURNEY.md).
 
 ## What Is Real vs Simulated
 

@@ -47,6 +47,12 @@ export function useDealWorkspace(dealId: string | null | undefined) {
   }, [dealId])
 
   useEffect(() => {
+    setWorkspace(null)
+    setLastExtraction(null)
+    setError(null)
+  }, [dealId])
+
+  useEffect(() => {
     void refreshWorkspace()
   }, [refreshWorkspace])
 

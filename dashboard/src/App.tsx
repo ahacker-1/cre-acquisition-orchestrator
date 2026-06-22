@@ -69,6 +69,36 @@ function pendingPhase(name: string, totalAgents: number): PhaseInfo {
 
 function checkpointFromDealRecord(record: DealRecordResponse): DealCheckpoint {
   const property = asObject(record.deal.property)
+  if (record.checkpoint) {
+    const checkpointProperty = asObject(record.checkpoint.property)
+    return {
+      ...record.checkpoint,
+      dealId: record.checkpoint.dealId || record.item.dealId,
+      dealName: record.checkpoint.dealName || record.item.dealName,
+      property: {
+        address: asString(checkpointProperty.address, asString(property.address, record.item.address || '')),
+        city: asString(checkpointProperty.city, asString(property.city, record.item.city || '')),
+        state: asString(checkpointProperty.state, asString(property.state, record.item.state || '')),
+        zip: asString(checkpointProperty.zip, asString(property.zip)),
+        totalUnits: asNumber(checkpointProperty.totalUnits, asNumber(property.totalUnits, record.item.totalUnits ?? 0)),
+        askingPrice: asNumber(checkpointProperty.askingPrice, asNumber(asObject(record.deal.financials).askingPrice, record.item.askingPrice ?? 0)),
+      },
+      status: record.checkpoint.status || record.item.pipelineStatus || record.item.saveState,
+      workflowName: record.checkpoint.workflowName || 'Deal Workspace',
+      overallProgress: asNumber(record.checkpoint.overallProgress, 0),
+      startedAt: asString(record.checkpoint.startedAt, record.item.createdAt || record.item.updatedAt),
+      lastUpdatedAt: asString(record.checkpoint.lastUpdatedAt, record.item.updatedAt),
+      phases: record.checkpoint.phases || {
+        dueDiligence: pendingPhase('Due Diligence', 7),
+        underwriting: pendingPhase('Underwriting', 3),
+        financing: pendingPhase('Financing', 3),
+        legal: pendingPhase('Legal', 6),
+        closing: pendingPhase('Closing', 2),
+      },
+      resumeInstructions:
+        record.checkpoint.resumeInstructions || 'Review source documents, phase outcomes, and the IC package.',
+    }
+  }
   return {
     dealId: record.item.dealId,
     dealName: record.item.dealName,
@@ -509,6 +539,7 @@ export default function App() {
             <ErrorBoundary routeName="Deal workspace" onGoHome={openUploadFrontDoor}>
               <Suspense fallback={<RouteSkeleton label="Loading workspace..." />}>
                 <DealWorkspace
+                  key={visibleDealCheckpoint.dealId}
                   dealCheckpoint={visibleDealCheckpoint}
                   agentCheckpoints={showingManualWorkspace ? new Map() : agentCheckpoints}
                   liveDealCheckpoint={recoveryDealCheckpoint}
@@ -655,6 +686,7 @@ export default function App() {
         intent={quickCreateIntent}
         goalText={quickCreateGoal}
         suggestedDealId={suggestedDealId}
+        dealIdReady={!dealsLoading && !dealsError && Boolean(suggestedDealId)}
         isOpen={quickCreateFiles.length > 0}
         onCancel={() => setQuickCreateFiles([])}
         onCreated={(dealId) => void handleQuickDealCreated(dealId)}

@@ -3,6 +3,8 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 import {
   API_URL,
+  apiGet,
+  apiPost,
   cleanupDealArtifacts,
   cleanupGeneratedRuntimeArtifacts,
   closeAdvancedDrawer,
@@ -120,7 +122,7 @@ function writePartialFailureCheckpoint(dealId: string, dealName: string): void {
 
 async function waitForRunIdle(request: APIRequestContext): Promise<void> {
   for (let attempt = 0; attempt < 90; attempt += 1) {
-    const response = await request.get(`${API_URL}/api/run/status`)
+    const response = await apiGet(request, `${API_URL}/api/run/status`)
     const payload = (await response.json()) as { active?: boolean }
     if (!payload.active) return
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 500))
@@ -326,7 +328,7 @@ test('launches a shipped sample deal from the library', async ({ page, request }
   await expect
     .poll(
       async () => {
-        const response = await request.get(`${API_URL}/api/run/status`)
+        const response = await apiGet(request, `${API_URL}/api/run/status`)
         if (!response.ok()) return null
         const payload = (await response.json()) as { dealPath?: string | null }
         return payload.dealPath ?? null
@@ -364,8 +366,11 @@ test('creates a draft from the document-first homepage and uploads the dropped f
   await expect(quickModal.getByTestId('quick-upload-progress')).toContainText('0/1 uploaded')
   await expect(quickModal.getByTestId('quick-upload-item-queued')).toContainText('playwright-hero-rent-roll.csv')
   await quickModal.getByTestId('quick-deal-name-input').fill('Playwright Hero Drop Deal')
+  await expect(quickModal.getByTestId('quick-deal-create')).toBeEnabled()
 
-  const saveResponsePromise = page.waitForResponse((response) => isApiResponse(response, 'POST', '/api/deals'))
+  const saveResponsePromise = page.waitForResponse((response) => (
+    isApiResponse(response, 'POST', '/api/deals') && response.ok()
+  ))
   await quickModal.getByTestId('quick-deal-create').click()
   const saveResponse = await saveResponsePromise
   await expectApiOk(saveResponse)
@@ -409,12 +414,12 @@ test('creates a draft from the document-first homepage and uploads the dropped f
   await expect(recordPanel.getByTestId('record-field-property.totalUnits')).toContainText('Total Units')
   await expect(recordPanel.getByTestId('record-field-property.totalUnits')).toContainText('2')
 
-  const workspaceResponse = await request.get(`${API_URL}/api/deals/${quickDealId}/workspace`)
+  const workspaceResponse = await apiGet(request, `${API_URL}/api/deals/${quickDealId}/workspace`)
   await expectApiOk(workspaceResponse)
   const workspace = (await workspaceResponse.json()) as { documents: Array<{ fileName?: string; type?: string }> }
   expect(workspace.documents.some((doc) => doc.fileName === 'playwright-hero-rent-roll.csv' && doc.type === 'rent_roll')).toBe(true)
 
-  const dealResponse = await request.get(`${API_URL}/api/deals/${quickDealId}`)
+  const dealResponse = await apiGet(request, `${API_URL}/api/deals/${quickDealId}`)
   await expectApiOk(dealResponse)
   const dealRecord = (await dealResponse.json()) as {
     deal: { property?: Record<string, unknown>; financials?: Record<string, unknown> }
@@ -519,10 +524,7 @@ test('mobile guided workspace smoke @mobile', async ({ page, request }) => {
   const consoleErrors = collectConsoleErrors(page)
 
   await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
-  await waitForDashboardReady(page)
-
-  await page.getByTestId(`workspace-docs-${WORKSPACE_DEAL_ID}`).click()
-  await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
+  await openWorkspaceFromRecentDeals(page, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
   await expect(page.getByTestId('command-bar')).toBeVisible()
   // The lifecycle spine + Advanced control replace the old tab strip on mobile.
   await expect(page.getByTestId('lifecycle-spine')).toBeVisible()
@@ -613,7 +615,7 @@ test('shows Codex ChatGPT authentication status in workflow launcher', async ({ 
 })
 
 test('guards local document upload API against unsafe browser origins and malformed content', async ({ request }) => {
-  const rejectedOrigin = await request.post(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/documents`, {
+  const rejectedOrigin = await apiPost(request, `${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/documents`, {
     headers: { Origin: 'https://example.com' },
     data: {
       fileName: 'cross-origin-rent-roll.csv',
@@ -623,7 +625,7 @@ test('guards local document upload API against unsafe browser origins and malfor
   expect(rejectedOrigin.status()).toBe(403)
 
   await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
-  const malformedUpload = await request.post(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/documents`, {
+  const malformedUpload = await apiPost(request, `${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/documents`, {
     headers: { Origin: 'http://localhost:5173' },
     data: {
       fileName: 'bad-rent-roll.csv',
@@ -638,7 +640,7 @@ test('guards local document upload API against unsafe browser origins and malfor
 test('enforces source-backed saved presets when launching through the workflow API', async ({ request }) => {
   await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
 
-  const presetResponse = await request.post(`${API_URL}/api/workflow-presets`, {
+  const presetResponse = await apiPost(request, `${API_URL}/api/workflow-presets`, {
     data: {
       name: 'Playwright Source-Gated Preset',
       workflowId: 'quick-deal-screen',
@@ -658,7 +660,7 @@ test('enforces source-backed saved presets when launching through the workflow A
   const presetId = presetPayload.preset.presetId ?? presetPayload.preset.id
   expect(presetId).toBeTruthy()
 
-  const launchResponse = await request.post(`${API_URL}/api/workflows/quick-deal-screen/launch`, {
+  const launchResponse = await apiPost(request, `${API_URL}/api/workflows/quick-deal-screen/launch`, {
     data: { presetId },
   })
   expect(launchResponse.status()).toBe(400)
@@ -687,7 +689,7 @@ test('launches full acquisition workflow from the launcher', async ({ page, requ
   await modal.getByTestId('workflow-launch-selected').click()
 
   await expect(page.getByText('Run: Running')).toBeVisible({ timeout: 15_000 })
-  const status = await request.get(`${API_URL}/api/run/status`)
+  const status = await apiGet(request, `${API_URL}/api/run/status`)
   const payload = (await status.json()) as { workflowId?: string }
   expect(payload.workflowId).toBe('full-acquisition-review')
 
@@ -731,7 +733,7 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   expect((await criteriaSaveResponse).ok()).toBe(true)
   await closeAdvancedDrawer(page)
 
-  const workspaceResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
+  const workspaceResponse = await apiGet(request, `${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
   await expectApiOk(workspaceResponse)
   const workspace = (await workspaceResponse.json()) as {
     criteria: { scenario?: string; targetIRR?: number }
@@ -801,8 +803,26 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await expect(extractionPreview).toContainText('Ambiguous occupancy status')
   await expect(extractionPreview).toContainText('Total Units')
   await expect(extractionPreview).toContainText('In-Place Occupancy')
-  await extractionPreview.locator('[data-field-path="property.totalUnits"]').check()
-  await extractionPreview.locator('[data-field-path="property.unitMix.types"]').check()
+  const totalUnitsCheckbox = extractionPreview.locator('[data-field-path="property.totalUnits"]')
+  const unitMixCheckbox = extractionPreview.locator('[data-field-path="property.unitMix.types"]')
+  const occupancyCheckbox = extractionPreview.locator('[data-field-path="financials.inPlaceOccupancy"]')
+  const totalUnitsField = extractionPreview.locator('label:has([data-field-path="property.totalUnits"])')
+  const unitMixField = extractionPreview.locator('label:has([data-field-path="property.unitMix.types"])')
+  const occupancyField = extractionPreview.locator('label:has([data-field-path="financials.inPlaceOccupancy"])')
+  const clearSelectedFields = extractionPreview.getByTestId('clear-selected-fields')
+  await expect(async () => {
+    if (await clearSelectedFields.isEnabled().catch(() => false)) {
+      await clearSelectedFields.click()
+    }
+    await unitMixField.getByText('Unit Mix').click()
+    await totalUnitsField.getByText('Total Units').click()
+    if (await occupancyCheckbox.isChecked()) {
+      await occupancyField.getByText('In-Place Occupancy').click()
+    }
+    await expect(totalUnitsCheckbox).toBeChecked({ timeout: 1_000 })
+    await expect(unitMixCheckbox).toBeChecked({ timeout: 1_000 })
+    await expect(occupancyCheckbox).not.toBeChecked({ timeout: 1_000 })
+  }).toPass({ timeout: 15_000 })
   await expect(extractionPreview.getByTestId('selected-field-change-summary')).toContainText('Deal data changes')
   await expect(extractionPreview.getByTestId('selected-field-change-summary')).toContainText('Total Units')
   await extractionPreview.getByTestId('confirm-conflict-review').check()
@@ -901,7 +921,7 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   // The edited value round-trips into the saved deal record (stored as the 0.95 ratio).
   await expect
     .poll(async () => {
-      const response = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}`)
+      const response = await apiGet(request, `${API_URL}/api/deals/${WORKSPACE_DEAL_ID}`)
       if (!response.ok()) return null
       const payload = (await response.json()) as { deal: { financials?: Record<string, unknown> } }
       return payload.deal.financials?.inPlaceOccupancy ?? null
@@ -923,7 +943,7 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await expect(guideDrawer.getByTestId('source-backed-input-score')).toContainText('4/4')
   await closeAdvancedDrawer(page)
 
-  const checklistWorkspaceResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
+  const checklistWorkspaceResponse = await apiGet(request, `${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
   await expectApiOk(checklistWorkspaceResponse)
   const checklistWorkspace = (await checklistWorkspaceResponse.json()) as {
     progressionGuide: {
@@ -934,7 +954,7 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   expect(underwritingGuide?.checklist.find((item) => item.id === 'underwriting-run-workflow')?.status).toBe('complete')
   expect(underwritingGuide?.checklist.find((item) => item.id === 'underwriting-run-workflow')?.note).toContain('Playwright')
 
-  const dealResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}`)
+  const dealResponse = await apiGet(request, `${API_URL}/api/deals/${WORKSPACE_DEAL_ID}`)
   await expectApiOk(dealResponse)
   const dealRecord = (await dealResponse.json()) as {
     deal: { property?: Record<string, unknown>; financials?: Record<string, unknown> }
@@ -985,7 +1005,7 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
   await page.getByTestId('phase-launch-underwriting').click()
   await expect(page.getByText(/Run: (Starting|Running|Completed)/)).toBeVisible({ timeout: 15_000 })
 
-  const status = await request.get(`${API_URL}/api/run/status`)
+  const status = await apiGet(request, `${API_URL}/api/run/status`)
   const payload = (await status.json()) as { state?: string; workflowId?: string }
   expect(payload.workflowId).toBe('underwriting-refresh')
   expect(['STARTING', 'RUNNING', 'COMPLETED']).toContain(payload.state)
@@ -1033,7 +1053,7 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
   await expect(honestPreview).toContainText('parse_failed')
   await expect(honestPreview).toContainText('could not safely interpret this document')
 
-  const workspaceResponse = await request.get(`${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
+  const workspaceResponse = await apiGet(request, `${API_URL}/api/deals/${WORKSPACE_DEAL_ID}/workspace`)
   await expectApiOk(workspaceResponse)
   const workspace = (await workspaceResponse.json()) as {
     documents: Array<{ fileName?: string; extractionStatus?: string }>
@@ -1045,7 +1065,7 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
 })
 
 test('plans a swarm from an operator goal through the API', async ({ request }) => {
-  const response = await request.post(`${API_URL}/api/swarm/plan`, {
+  const response = await apiPost(request, `${API_URL}/api/swarm/plan`, {
     data: {
       dealId: SAMPLE_DEAL_ID,
       goal: 'Help me quickly decide whether this acquisition is worth pursuing',
@@ -1073,16 +1093,22 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   await page.getByTestId('header-workflows-button').click()
   const modal = page.getByTestId('workflow-launcher-modal')
   await modal.getByTestId('workflow-step-review').click()
-  await modal.getByTestId('workflow-deal-select').selectOption(SAMPLE_DEAL_ID)
+  const workflowDealSelect = modal.getByTestId('workflow-deal-select')
+  await expect
+    .poll(async () => workflowDealSelect.locator(`option[value="${SAMPLE_DEAL_ID}"]`).count(), { timeout: 20_000 })
+    .toBe(1)
+  await workflowDealSelect.selectOption({ value: SAMPLE_DEAL_ID })
+  await expect(workflowDealSelect).toHaveValue(SAMPLE_DEAL_ID)
   await modal.getByTestId('workflow-select').selectOption('quick-deal-screen')
   await modal.getByTestId('workflow-speed-select').selectOption('fast')
   await modal.getByTestId('workflow-mode-select').selectOption('fast')
+  await expect(workflowDealSelect).toHaveValue(SAMPLE_DEAL_ID)
   await modal.getByTestId('workflow-launch-selected').click()
 
-  await expect(page.getByText('Run: Running')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText(/Run: (Starting|Running|Completed)/)).toBeVisible({ timeout: 15_000 })
 
   for (let attempt = 0; attempt < 60; attempt += 1) {
-    const response = await request.get(`${API_URL}/api/run/status`)
+    const response = await apiGet(request, `${API_URL}/api/run/status`)
     const payload = (await response.json()) as { state?: string; workflowId?: string }
     if (payload.state === 'COMPLETED') {
       expect(payload.workflowId).toBe('quick-deal-screen')
@@ -1110,21 +1136,26 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   await swarmConsole.getByTestId('swarm-launch-button').click()
   await expect(page.getByText(/Run: Running|Run: Completed/)).toBeVisible({ timeout: 15_000 })
   await waitForRunIdle(request)
+  // Reload after the relaunch is idle so the browser reads the final checkpoint instead of a
+  // transient in-progress package render emitted during the run.
+  await waitForDashboardReady(page)
   await ensureCompletedRunWorkspaceVisible(page)
   // The launch itself is verified by the run-status poll above. Keep the post-launch assertions on
   // stable workspace surfaces so this test does not race the live WebSocket refresh after relaunch.
 
   // Deal Team (agent tree) + the skipped-phase status badges also live in the Advanced drawer.
   // Re-open it in a poll loop in case a late checkpoint refresh re-renders the drawer contents.
-  const agentTree = drawer.getByTestId('agent-tree')
   await expect(async () => {
-    await openAdvancedDrawer(page)
-    await expect(agentTree).toBeVisible({ timeout: 5_000 })
+    const currentDrawer = await openAdvancedDrawer(page)
+    await expect(currentDrawer.getByTestId('agent-tree')).toBeVisible({ timeout: 5_000 })
   }).toPass({ timeout: 20_000 })
+  const agentDrawer = page.getByTestId('advanced-drawer')
+  const agentTree = agentDrawer.getByTestId('agent-tree')
+  await expect(agentTree).toBeVisible({ timeout: 5_000 })
   await expect(agentTree).toContainText('Deal Team Lead')
-  await expect(drawer.getByTestId('agent-phase-row-due-diligence')).toContainText(/Complete|Running|Skipped/)
-  await expect(drawer.getByTestId('agent-row-rent-roll-analyst')).toContainText(/Filed|Working now|Queued/)
-  await expect(drawer.getByTestId('agent-row-financial-model-builder')).toContainText(/Stress-testing returns|Filed/)
+  await expect(agentDrawer.getByTestId('agent-phase-row-due-diligence')).toContainText(/Complete|Running|Skipped/)
+  await expect(agentDrawer.getByTestId('agent-row-rent-roll-analyst')).toContainText(/Filed|Working now|Queued|Reconciling leases/)
+  await expect(agentDrawer.getByTestId('agent-row-financial-model-builder')).toContainText(/Stress-testing returns|Filed/)
 
   // Skipped phases surface in the drawer (pipeline + agent tree). Some skipped markers live
   // inside collapsed regions, so assert on the first *visible* one rather than DOM-first.
@@ -1141,7 +1172,11 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   await expect(async () => {
     await page.getByTestId('spine-step-ic').click()
     await expect(packageView).toBeVisible({ timeout: 5_000 })
-  }).toPass({ timeout: 20_000 })
+    await expect(packageView).toContainText(
+      'Scoped workflow completed. Review the package outputs before expanding to a full closing run.',
+      { timeout: 5_000 },
+    )
+  }).toPass({ timeout: 30_000 })
   await expect(packageView).toContainText('Completion Package')
   await expect(packageView.getByTestId('ic-review-brief')).toContainText('IC Review Brief')
   await expect(packageView.getByTestId('ic-review-brief')).toContainText('Recommended next decision')
@@ -1169,7 +1204,7 @@ test('drills a red flag back to its originating specialist workpaper in the IC p
   await expect
     .poll(
       async () => {
-        const response = await request.get(`${API_URL}/api/run/status`)
+        const response = await apiGet(request, `${API_URL}/api/run/status`)
         if (!response.ok()) return null
         const payload = (await response.json()) as { state?: string }
         return payload.state ?? null

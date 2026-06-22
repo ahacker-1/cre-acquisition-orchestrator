@@ -161,8 +161,19 @@ async function captureIntakeAutoFill(browser) {
         await extractButton.click()
       }
     }
+    const inspector = intakePage.getByTestId('uploaded-data-inspector')
+    if (await inspector.isVisible({ timeout: 30_000 }).catch(() => false)) {
+      await inspector.getByTestId('uploaded-field-list').getByText('Market Rent').click().catch(() => {})
+      await inspector.getByTestId('uploaded-row-3').click().catch(() => {})
+      await inspector.scrollIntoViewIfNeeded()
+      await intakePage.waitForTimeout(300)
+      await capture(intakePage, 'uploaded-data-inspector.png')
+    } else {
+      console.warn('skip uploaded-data-inspector.png: uploaded data inspector not visible')
+    }
     // The auto-filled deal record is the headline of Intake.
     await intakePage.getByTestId('deal-record').waitFor({ timeout: 30_000 })
+    await intakePage.getByTestId('deal-record').scrollIntoViewIfNeeded()
     await intakePage.waitForTimeout(500)
     await capture(intakePage, 'source-extraction-review.png')
   } finally {

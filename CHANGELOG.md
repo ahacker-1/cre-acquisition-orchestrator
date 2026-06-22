@@ -4,6 +4,61 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [3.2.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.1.0...v3.2.0) (2026-06-22)
+
+Ships a production-scale local QA harness and a clearer public proof path. The release adds a
+sanitized 150-deal local data path, documents the dashboard's full user-facing surface, exercises
+the app like a real operator, and hardens the workspace bugs exposed by that pass.
+
+### Features
+
+* **Production-scale local seed:** `npm run seed:prod-local -- --count 150` creates sanitized
+  `QA-LOCAL-2026-*` deals with source documents, extraction artifacts, approved fields, criteria,
+  phase state, checkpoint status, and completed-report artifacts under local `data/`.
+* **Production local data regression:** `npm run test:prod-local-data` validates schemas,
+  source-hash provenance, local-only output boundaries, idempotent reseeding, and generated
+  artifact sensitive-token avoidance.
+* **Browser inventory gate:** adds a Playwright production-scale inventory that opens a 150-deal
+  library, loads a completed seeded workspace, checks lifecycle stages, source review, uploaded
+  data inspection, underwriting controls, advanced workflow launch, agent panel routing, and IC
+  package export.
+* **Public proof path:** adds `npm run proof` and `docs/PROOF-PATH.md` so first-time visitors can
+  regenerate Parkview, start the dashboard, and trace one source-backed fact from upload through
+  inspection, review, workpaper context, and IC package.
+
+### Bug Fixes
+
+* Reopened completed deals now preserve their checkpoint/source-backed evidence instead of
+  synthesizing a pending workspace from saved metadata only.
+* Switching between saved deals clears deal-scoped workspace state and remounts the workspace by
+  deal ID, preventing stale documents, extraction previews, or package context from bleeding into
+  the next deal.
+* Manual extraction review actions now use local submission state so unrelated background
+  workspace work no longer disables Apply, Reject, or Waive.
+* Quick-create duplicate-ID retry handling now waits for a successful create response and detects
+  duplicate-ID evidence across sanitized validation payloads.
+* API response sanitization now treats repeated safe objects correctly while still breaking true
+  circular references.
+* Browser test helpers now retry transient loopback setup requests and fall back from the
+  recent-deals strip to the Deal Library when auto-refresh detaches a card.
+
+### Documentation
+
+* Adds `docs/QA-INVENTORY.md` with user-facing routes, roles, modals, buttons, inputs, workflows,
+  acceptance criteria, and finite risk-based edge cases.
+* Adds `docs/QA-BUG-LOG.md` with every production-scale QA defect, reproduction evidence, fix, and
+  verification result.
+* Updates README, quick demo, first-deal, demo journey, roadmap, and issue seeds around the proof
+  path and uploaded data inspector.
+
+### Verification
+
+* `npm test`
+* `npm run validate:docs`
+* `npm run validate:guides`
+* `npm --prefix dashboard run typecheck`
+* `npm --prefix dashboard run test:e2e` with all 30 Playwright browser tests passing.
+
 ## [3.1.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.0.0...v3.1.0) (2026-06-19)
 
 Ships the local OCR bridge that v3.0.0 made explicit as a review boundary. Readable

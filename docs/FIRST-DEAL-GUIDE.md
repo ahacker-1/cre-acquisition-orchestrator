@@ -2,6 +2,8 @@
 
 A source-backed path from fresh clone to a local IC starter package.
 
+If you want the fastest no-upload trust loop first, run `npm run proof` and follow [`docs/PROOF-PATH.md`](PROOF-PATH.md). Then come back here for your own source package.
+
 ---
 
 ## Step 1: Install and Verify
@@ -71,6 +73,8 @@ It points to messy XLSX rent roll and T12 workbooks plus an offering memo excerp
 ## Step 4: Review Source-Backed Fields
 
 Open the **Intake** source-review surface in the deal workspace.
+
+Before approving candidates, use the uploaded data inspector to inspect parsed source tables, field types, fill rates, examples, source rows, and row-level detail. This is the quickest way to verify that extracted values are grounded in the files you uploaded.
 
 For each supported source document:
 
@@ -147,8 +151,9 @@ Parkview is best for screenshots, public demos, and validating the end-to-end sa
 After the first deal run, you have:
 
 1. A local deal workspace created from source documents.
-2. A source-backed approved-field manifest with provenance and review status.
-3. A plain-English missing-evidence checklist and one best next action.
-4. A gated workflow launch path for critical approved inputs.
-5. A Markdown/JSON IC starter package you can audit and adapt.
-6. A demonstrable source-to-IC review path for at least one approved field, red flag, or data gap where the current package exposes provenance.
+2. Uploaded table inspection with field quality, examples, source rows, and row-level detail.
+3. A source-backed approved-field manifest with provenance and review status.
+4. A plain-English missing-evidence checklist and one best next action.
+5. A gated workflow launch path for critical approved inputs.
+6. A Markdown/JSON IC starter package you can audit and adapt.
+7. A demonstrable source-to-IC review path for at least one approved field, red flag, or data gap where the current package exposes provenance.

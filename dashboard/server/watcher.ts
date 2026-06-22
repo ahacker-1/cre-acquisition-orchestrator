@@ -60,6 +60,7 @@ const runtimeCore = require('../../scripts/lib/runtime-core') as {
 };
 const workflowCatalog = require('../../config/workflows.json') as Record<string, unknown>;
 const agentRegistry = require('../../config/agent-registry.json') as Record<string, unknown>;
+const packageManifest = require('../../package.json') as { name?: string; version?: string };
 const codexCli = require('../../scripts/lib/codex-cli') as {
   getCodexStatus: (cwd?: string) => {
     installed: boolean;
@@ -215,10 +216,14 @@ function sanitizeApiResponse(value: unknown, seen = new WeakSet<object>()): unkn
   if (!value || typeof value !== 'object') return value;
   if (seen.has(value)) return null;
   seen.add(value);
-  if (Array.isArray(value)) return value.map((entry) => sanitizeApiResponse(entry, seen));
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, sanitizeApiResponse(entry, seen)]),
-  );
+  try {
+    if (Array.isArray(value)) return value.map((entry) => sanitizeApiResponse(entry, seen));
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, sanitizeApiResponse(entry, seen)]),
+    );
+  } finally {
+    seen.delete(value);
+  }
 }
 
 function isLoopbackRequest(req: IncomingMessage): boolean {
@@ -552,6 +557,15 @@ const workflowServiceContext = {
 
 function safeFileSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').slice(0, 120) || 'item';
+}
+
+function readDealCheckpoint(dealId: string): Record<string, unknown> | null {
+  const checkpointPath = safePaths.assertWithinBase(statusDir, join(statusDir, `${dealId}.json`), 'checkpoint path');
+  if (!existsSync(checkpointPath)) return null;
+  const checkpoint = readJsonSafe(checkpointPath);
+  return checkpoint && typeof checkpoint === 'object' && !Array.isArray(checkpoint)
+    ? checkpoint as Record<string, unknown>
+    : null;
 }
 
 function logFileWatcherError(scope: string, err: Error): void {
@@ -970,6 +984,20 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
   }
 
   try {
+    // GET /api/health - loopback-only readiness identity for local proof/dashboard tooling
+    if (method === 'GET' && url === '/api/health') {
+      if (!ensureLoopbackRequest(req, res)) return;
+      sendJson(res, 200, {
+        ok: true,
+        service: 'cre-acquisition-dashboard-api',
+        packageName: packageManifest.name ?? null,
+        version: packageManifest.version ?? null,
+        projectRoot,
+        dataRoot,
+      });
+      return;
+    }
+
     // POST /api/deal — Create a new deal checkpoint
     // GET /api/run/status - current run lifecycle status
     if (method === 'GET' && url === '/api/run/status') {
@@ -1622,7 +1650,10 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         return;
       }
 
-      sendJson(res, 200, record);
+      sendJson(res, 200, {
+        ...record,
+        checkpoint: readDealCheckpoint(dealId),
+      });
       return;
     }
 
