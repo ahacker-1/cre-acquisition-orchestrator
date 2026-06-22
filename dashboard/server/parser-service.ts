@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { existsSync, readFileSync, statSync } from 'fs'
+import { closeSync, existsSync, openSync, readFileSync, readSync, statSync } from 'fs'
 import { extname, join } from 'path'
 import { createRequire } from 'module'
 import { spawnSync } from 'child_process'
@@ -53,7 +53,48 @@ export interface ParserExtractionPreview {
   parserVersion: string
   sourceHash: string
   reviewStatus: 'candidate'
+  uploadedData?: UploadedDataProfile
   error?: string
+}
+
+export type UploadedColumnValueType = 'blank' | 'boolean' | 'date' | 'mixed' | 'number' | 'string'
+
+export interface UploadedColumnProfile {
+  columnId: string
+  name: string
+  valueType: UploadedColumnValueType
+  fillRate: number
+  missingCount: number
+  uniqueCount: number
+  examples: string[]
+}
+
+export interface UploadedDataRow {
+  rowNumber: number
+  values: Record<string, string>
+}
+
+export interface UploadedDataTable {
+  tableId: string
+  label: string
+  rowCount: number
+  columnCount: number
+  truncated: boolean
+  columns: UploadedColumnProfile[]
+  rows: UploadedDataRow[]
+  source?: {
+    sheet?: string
+    headerRow?: number
+  }
+}
+
+export interface UploadedDataProfile {
+  generatedAt: string
+  tableCount: number
+  rowCount: number
+  columnCount: number
+  tables: UploadedDataTable[]
+  issues: string[]
 }
 
 export interface ParserInput {
@@ -74,6 +115,9 @@ const PARSER_VERSION = 'source-backed-v1'
 // past EITHER cap degrades gracefully to parse_failed rather than being loaded.
 const MAX_TEXT_PARSE_BYTES = 25 * 1024 * 1024 // 25 MB on-disk cap
 const MAX_TEXT_PARSE_ROWS = 250_000 // parsed-row cap (sane upper bound for a rent roll / T12)
+const MAX_UPLOAD_INSPECTOR_ROWS = 250
+const MAX_UPLOAD_COLUMN_EXAMPLES = 5
+const MAX_UNIQUE_TRACKED_VALUES = 1000
 const OCR_NEXT_ACTION =
   'Run the built-in local OCR bridge or upload OCR output, then review candidates before applying any fields.'
 
@@ -88,7 +132,19 @@ export function isParserPendingOnly(fileName: string, mime: string): boolean {
 }
 
 export function fileHash(filePath: string): string {
-  return createHash('sha256').update(readFileSync(filePath)).digest('hex')
+  const hash = createHash('sha256')
+  const buffer = Buffer.allocUnsafe(1024 * 1024)
+  const fd = openSync(filePath, 'r')
+  try {
+    let bytesRead = 0
+    do {
+      bytesRead = readSync(fd, buffer, 0, buffer.length, null)
+      if (bytesRead > 0) hash.update(buffer.subarray(0, bytesRead))
+    } while (bytesRead > 0)
+  } finally {
+    closeSync(fd)
+  }
+  return hash.digest('hex')
 }
 
 export function sanitizeCsvCell(value: string): string {
@@ -206,6 +262,190 @@ function numberFromCell(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function slug(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'table'
+}
+
+function stringifyUploadedValue(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
+
+function inferUploadedValueType(value: string): UploadedColumnValueType {
+  const trimmed = value.trim()
+  if (!trimmed) return 'blank'
+  if (/^(true|false|yes|no)$/i.test(trimmed)) return 'boolean'
+  if (numberFromCell(trimmed) !== null) return 'number'
+  if (/^\d{1,4}[-/]\d{1,2}[-/]\d{1,4}$/.test(trimmed) && Number.isFinite(Date.parse(trimmed))) return 'date'
+  return 'string'
+}
+
+function mergeUploadedValueTypes(types: Set<UploadedColumnValueType>): UploadedColumnValueType {
+  const nonBlank = [...types].filter((type) => type !== 'blank')
+  if (nonBlank.length === 0) return 'blank'
+  const unique = new Set(nonBlank)
+  return unique.size === 1 ? [...unique][0] : 'mixed'
+}
+
+function uniqueColumnNames(header: string[], records: string[][]): string[] {
+  const width = Math.max(header.length, ...records.map((row) => row.length), 0)
+  const seen = new Map<string, number>()
+  return Array.from({ length: width }, (_, index) => {
+    const raw = (header[index] || `Column ${index + 1}`).trim() || `Column ${index + 1}`
+    const count = seen.get(raw) ?? 0
+    seen.set(raw, count + 1)
+    return count === 0 ? raw : `${raw} (${count + 1})`
+  })
+}
+
+function profileUploadedColumns(columns: string[], rows: UploadedDataRow[], totalRowCount: number): UploadedColumnProfile[] {
+  return columns.map((name) => {
+    const types = new Set<UploadedColumnValueType>()
+    const examples: string[] = []
+    const uniqueValues = new Set<string>()
+    let missingCount = 0
+
+    for (const row of rows) {
+      const value = row.values[name] ?? ''
+      const trimmed = value.trim()
+      types.add(inferUploadedValueType(value))
+      if (!trimmed) {
+        missingCount += 1
+        continue
+      }
+      if (examples.length < MAX_UPLOAD_COLUMN_EXAMPLES && !examples.includes(trimmed)) {
+        examples.push(trimmed)
+      }
+      if (uniqueValues.size < MAX_UNIQUE_TRACKED_VALUES) uniqueValues.add(trimmed)
+    }
+
+    const sampledCount = rows.length
+    const estimatedMissing = sampledCount > 0 && totalRowCount > sampledCount
+      ? Math.round((missingCount / sampledCount) * totalRowCount)
+      : missingCount
+    const denominator = totalRowCount > 0 ? totalRowCount : sampledCount
+    const filled = Math.max(0, denominator - estimatedMissing)
+
+    return {
+      columnId: slug(name),
+      name,
+      valueType: mergeUploadedValueTypes(types),
+      fillRate: denominator > 0 ? Number((filled / denominator).toFixed(4)) : 0,
+      missingCount: estimatedMissing,
+      uniqueCount: uniqueValues.size,
+      examples,
+    }
+  })
+}
+
+function buildUploadedDataProfile(
+  input: ParserInput,
+  label: string,
+  header: string[],
+  records: string[][],
+  options: { sheet?: string; headerRow?: number; firstDataRow?: number } = {},
+): UploadedDataProfile {
+  const columns = uniqueColumnNames(header, records)
+  const rows: UploadedDataRow[] = records.slice(0, MAX_UPLOAD_INSPECTOR_ROWS).map((row, index) => ({
+    rowNumber: (options.firstDataRow ?? 2) + index,
+    values: Object.fromEntries(columns.map((column, columnIndex) => [column, stringifyUploadedValue(row[columnIndex])])),
+  }))
+  const truncated = records.length > rows.length
+  const table: UploadedDataTable = {
+    tableId: `${input.documentId}-${slug(label)}`,
+    label,
+    rowCount: records.length,
+    columnCount: columns.length,
+    truncated,
+    columns: profileUploadedColumns(columns, rows, records.length),
+    rows,
+    source: {
+      sheet: options.sheet,
+      headerRow: options.headerRow,
+    },
+  }
+  const issues = truncated
+    ? [`Inspector preview shows ${rows.length} of ${records.length} uploaded rows.`]
+    : []
+  return {
+    generatedAt: new Date().toISOString(),
+    tableCount: 1,
+    rowCount: table.rowCount,
+    columnCount: table.columnCount,
+    tables: [table],
+    issues,
+  }
+}
+
+function buildTextUploadedDataProfile(input: ParserInput, raw: string, label = 'Document Text'): UploadedDataProfile {
+  const lines = raw.split(/\r?\n/)
+  return buildUploadedDataProfile(
+    input,
+    label,
+    ['Line', 'Text'],
+    lines.map((line, index) => [String(index + 1), line]),
+    { firstDataRow: 1 },
+  )
+}
+
+function uploadedDataFromExcelParsed(
+  input: ParserInput,
+  parsed: Record<string, unknown>,
+  fallbackLabel: string,
+): UploadedDataProfile | undefined {
+  const tablePreview = asRecord(parsed.tablePreview)
+  const columns = Array.isArray(tablePreview.columns)
+    ? tablePreview.columns.map((column) => stringifyUploadedValue(column)).filter((column) => column.trim().length > 0)
+    : []
+  const rawRows = Array.isArray(tablePreview.rows) ? tablePreview.rows : []
+  if (columns.length === 0 || rawRows.length === 0) return undefined
+
+  const rows: UploadedDataRow[] = rawRows.map((entry, index) => {
+    const record = asRecord(entry)
+    const values = asRecord(record.values)
+    return {
+      rowNumber: typeof record.rowNumber === 'number' && Number.isFinite(record.rowNumber)
+        ? record.rowNumber
+        : index + 1,
+      values: Object.fromEntries(columns.map((column) => [column, stringifyUploadedValue(values[column])])),
+    }
+  })
+  const rowCount = typeof tablePreview.rowCount === 'number' && Number.isFinite(tablePreview.rowCount)
+    ? tablePreview.rowCount
+    : rows.length
+  const truncated = Boolean(tablePreview.truncated)
+  const source = asRecord(tablePreview.source)
+  const table: UploadedDataTable = {
+    tableId: `${input.documentId}-${slug(fallbackLabel)}`,
+    label: typeof tablePreview.label === 'string' && tablePreview.label.trim().length > 0
+      ? tablePreview.label
+      : fallbackLabel,
+    rowCount,
+    columnCount: columns.length,
+    truncated,
+    columns: profileUploadedColumns(columns, rows, rowCount),
+    rows,
+    source: {
+      sheet: typeof source.sheet === 'string' ? source.sheet : undefined,
+      headerRow: typeof source.headerRow === 'number' ? source.headerRow : undefined,
+    },
+  }
+  return {
+    generatedAt: new Date().toISOString(),
+    tableCount: 1,
+    rowCount,
+    columnCount: columns.length,
+    tables: [table],
+    issues: truncated ? [`Inspector preview shows ${rows.length} of ${rowCount} uploaded rows.`] : [],
+  }
+}
+
 function average(values: number[]): number | null {
   return values.length > 0 ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null
 }
@@ -214,6 +454,7 @@ function parseRentRoll(input: ParserInput, rows: string[][], hash: string): Pars
   const parserId = 'rent-roll-csv-parser'
   const header = rows[0] ?? []
   const records = rows.slice(1)
+  const uploadedData = buildUploadedDataProfile(input, 'Rent Roll Rows', header, records)
   const unitTypeIndex = header.findIndex((cell) => /unit type|bed\/bath|floorplan/i.test(cell))
   const sqftIndex = header.findIndex((cell) => /sqft|square/i.test(cell))
   const marketRentIndex = header.findIndex((cell) => /market rent|asking rent/i.test(cell))
@@ -234,6 +475,7 @@ function parseRentRoll(input: ParserInput, rows: string[][], hash: string): Pars
       parserVersion: PARSER_VERSION,
       sourceHash: hash,
       reviewStatus: 'candidate',
+      uploadedData,
     }
   }
   const occupied = statusIndex >= 0
@@ -257,6 +499,7 @@ function parseRentRoll(input: ParserInput, rows: string[][], hash: string): Pars
       hash,
       parserId,
       `Malformed rent roll row(s): ${malformedRows.length} row(s) are missing unit type or required rent roll values.`,
+      uploadedData,
     )
   }
   const unitMix = new Map<string, { count: number; sqft: number[]; market: number[]; current: number[] }>()
@@ -302,6 +545,7 @@ function parseRentRoll(input: ParserInput, rows: string[][], hash: string): Pars
       parserVersion: PARSER_VERSION,
       sourceHash: hash,
       reviewStatus: 'candidate',
+      uploadedData,
     }
   }
   const occupancy = records.length > 0 && occupied !== null ? Number((occupied / records.length).toFixed(4)) : null
@@ -324,6 +568,7 @@ function parseRentRoll(input: ParserInput, rows: string[][], hash: string): Pars
     parserVersion: PARSER_VERSION,
     sourceHash: hash,
     reviewStatus: 'candidate',
+    uploadedData,
   }
 }
 
@@ -334,6 +579,10 @@ function parseT12(input: ParserInput, rows: string[][], hash: string): ParserExt
   const totalIndex = header.findIndex((cell) => /t12 total|total|annual/i.test(cell))
   const lineItemIndex = header.findIndex((cell) => /line item|account/i.test(cell))
   const records = rows.slice(headerIndex >= 0 ? headerIndex + 1 : 1)
+  const uploadedData = buildUploadedDataProfile(input, 'T12 Rows', header, records, {
+    headerRow: headerIndex >= 0 ? headerIndex + 1 : 1,
+    firstDataRow: headerIndex >= 0 ? headerIndex + 2 : 2,
+  })
   const findAmount = (pattern: RegExp): { value: number; rowNumber: number; raw: string } | null => {
     const rowIndex = records.findIndex((entry) => pattern.test(entry[lineItemIndex] || entry[0] || ''))
     if (rowIndex < 0 || totalIndex < 0) return null
@@ -360,12 +609,14 @@ function parseT12(input: ParserInput, rows: string[][], hash: string): ParserExt
     parserVersion: PARSER_VERSION,
     sourceHash: hash,
     reviewStatus: 'candidate',
+    uploadedData,
   }
 }
 
 function parseOfferingMemo(input: ParserInput, raw: string, hash: string): ParserExtractionPreview {
   const parserId = 'offering-memo-text-parser'
   const fields: ParserExtractionField[] = []
+  const uploadedData = buildTextUploadedDataProfile(input, raw, 'Offering Memo Lines')
   const addMatch = (
     regex: RegExp,
     path: string,
@@ -397,6 +648,7 @@ function parseOfferingMemo(input: ParserInput, raw: string, hash: string): Parse
     parserVersion: PARSER_VERSION,
     sourceHash: hash,
     reviewStatus: 'candidate',
+    uploadedData,
   }
 }
 
@@ -493,6 +745,7 @@ export function mapChecklistCandidates(
 ): ParserExtractionPreview {
   const parserId = 'legal-diligence-checklist-parser'
   const candidates = parseChecklistText(raw)
+  const uploadedData = buildTextUploadedDataProfile(input, raw, 'Checklist Lines')
   const fields = candidates.map((candidate) =>
     field(
       input,
@@ -532,6 +785,7 @@ export function mapChecklistCandidates(
     parserVersion: PARSER_VERSION,
     sourceHash: hash,
     reviewStatus: 'candidate',
+    uploadedData,
   }
 }
 
@@ -776,6 +1030,7 @@ function mapExcelRentRoll(input: ParserInput, hash: string, parsed: Record<strin
   const unitMix = Array.isArray(parsed.unitMix) ? parsed.unitMix : []
   const fields: ParserExtractionField[] = []
   const warnings = parsedWarnings(parsed)
+  const uploadedData = uploadedDataFromExcelParsed(input, parsed, 'Rent Roll Worksheet')
   const confidencePenalty = warnings.length > 0 ? 0.06 : 0
   const totalUnits = numberFieldValue(summary.totalUnits)
   const occupancy = numberFieldValue(summary.occupancyRate)
@@ -803,6 +1058,7 @@ function mapExcelRentRoll(input: ParserInput, hash: string, parsed: Record<strin
     parserVersion: PARSER_VERSION,
     sourceHash: hash,
     reviewStatus: 'candidate',
+    uploadedData,
   }
 }
 
@@ -811,6 +1067,7 @@ function mapExcelT12(input: ParserInput, hash: string, parsed: Record<string, un
   const summary = asRecord(parsed.summary)
   const fields: ParserExtractionField[] = []
   const warnings = parsedWarnings(parsed)
+  const uploadedData = uploadedDataFromExcelParsed(input, parsed, 'T12 Worksheet')
   const confidencePenalty = warnings.length > 0 ? 0.04 : 0
   const revenue = numberFieldValue(summary.effectiveGrossIncome)
   const expenses = numberFieldValue(summary.totalExpenses)
@@ -833,6 +1090,7 @@ function mapExcelT12(input: ParserInput, hash: string, parsed: Record<string, un
     parserVersion: PARSER_VERSION,
     sourceHash: hash,
     reviewStatus: 'candidate',
+    uploadedData,
   }
 }
 
@@ -889,6 +1147,7 @@ function parseExcelIfAvailable(input: ParserInput, hash: string): ParserExtracti
     parserVersion: PARSER_VERSION,
     sourceHash: hash,
     reviewStatus: 'candidate',
+    uploadedData: uploadedDataFromExcelParsed(input, parsed, 'Excel Worksheet'),
   }
 }
 
@@ -1053,7 +1312,13 @@ function parsePdfIfAvailable(input: ParserInput, hash: string): ParserExtraction
   }
 }
 
-function parseFailed(input: ParserInput, hash: string, parserId: string, error: string): ParserExtractionPreview {
+function parseFailed(
+  input: ParserInput,
+  hash: string,
+  parserId: string,
+  error: string,
+  uploadedData?: UploadedDataProfile,
+): ParserExtractionPreview {
   return {
     documentId: input.documentId,
     status: 'parse_failed',
@@ -1065,6 +1330,7 @@ function parseFailed(input: ParserInput, hash: string, parserId: string, error: 
     parserVersion: PARSER_VERSION,
     sourceHash: hash,
     reviewStatus: 'candidate',
+    uploadedData,
     error,
   }
 }
@@ -1176,5 +1442,6 @@ export function runDocumentParser(input: ParserInput): ParserExtractionPreview {
     parserVersion: PARSER_VERSION,
     sourceHash: hash,
     reviewStatus: 'candidate',
+    uploadedData: buildTextUploadedDataProfile(safeInput, raw),
   }
 }

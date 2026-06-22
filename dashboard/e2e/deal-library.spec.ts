@@ -388,6 +388,16 @@ test('creates a draft from the document-first homepage and uploads the dropped f
   const extractionPreview = page.getByTestId('extraction-preview')
   await page.getByTestId('extract-document-rent_roll').click()
   await expect(extractionPreview).toContainText('3 Fields Found')
+  const uploadInspector = extractionPreview.getByTestId('uploaded-data-inspector')
+  await expect(uploadInspector).toBeVisible()
+  await expect(uploadInspector).toContainText('6 Fields / 2 Rows')
+  await expect(uploadInspector.getByTestId('uploaded-field-list')).toContainText('Market Rent')
+  await uploadInspector.getByTestId('uploaded-field-market-rent').click()
+  await expect(uploadInspector.getByTestId('uploaded-field-detail')).toContainText('Market Rent')
+  await expect(uploadInspector.getByTestId('uploaded-field-detail')).toContainText('1700')
+  await uploadInspector.getByTestId('uploaded-row-3').click()
+  await expect(uploadInspector.getByTestId('uploaded-row-detail')).toContainText('Row 3')
+  await expect(uploadInspector.getByTestId('uploaded-row-detail')).toContainText('102')
   // Auto-apply default (backend I2b): the rent roll's trusted reads (total units, unit mix,
   // occupancy — all high-confidence, no conflict on a fresh deal) apply themselves the moment
   // they're read, so the document goes straight to "applied" without manual field selection.

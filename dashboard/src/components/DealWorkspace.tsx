@@ -53,6 +53,10 @@ import type {
   PhaseWorkspaceStatus,
   SourceDocument,
   SourceReference,
+  UploadedColumnProfile,
+  UploadedDataProfile,
+  UploadedDataRow,
+  UploadedDataTable,
 } from '../types/workspace'
 import type { WorkflowLaunchResponse, WorkflowPreset } from '../types/workflows'
 
@@ -442,6 +446,307 @@ function FieldSourceDrilldown({ field }: { field: ExtractionField }) {
   )
 }
 
+function uploadedTestId(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'field'
+}
+
+function formatFillRate(value: number): string {
+  return `${Math.round(value * 100)}%`
+}
+
+function uploadedCellValue(value: string | undefined): string {
+  const normalized = value?.trim() ?? ''
+  return normalized.length > 0 ? normalized : 'blank'
+}
+
+function UploadedColumnCard({
+  column,
+  selected,
+  onSelect,
+}: {
+  column: UploadedColumnProfile
+  selected: boolean
+  onSelect: () => void
+}) {
+  return (
+    <button
+      type="button"
+      data-testid={`uploaded-field-${column.columnId || uploadedTestId(column.name)}`}
+      className={`w-full border px-3 py-2 text-left transition-colors ${
+        selected ? 'border-white bg-white/10' : 'border-white/10 bg-black hover:border-white/30'
+      }`}
+      onClick={onSelect}
+    >
+      <span className="flex items-center justify-between gap-2">
+        <span className="truncate text-sm font-semibold text-white">{column.name}</span>
+        <span className="status-badge status-pending shrink-0">{column.valueType}</span>
+      </span>
+      <span className="mt-2 grid grid-cols-3 gap-2 text-[11px] uppercase tracking-[0.1em] text-gray-500">
+        <span>{formatFillRate(column.fillRate)} filled</span>
+        <span>{column.uniqueCount} unique</span>
+        <span>{column.missingCount} blank</span>
+      </span>
+    </button>
+  )
+}
+
+function UploadedDataGrid({
+  table,
+  selectedColumn,
+  selectedRow,
+  onSelectColumn,
+  onSelectRow,
+}: {
+  table: UploadedDataTable
+  selectedColumn: UploadedColumnProfile | null
+  selectedRow: UploadedDataRow | null
+  onSelectColumn: (column: UploadedColumnProfile) => void
+  onSelectRow: (row: UploadedDataRow) => void
+}) {
+  return (
+    <div className="min-w-0 overflow-auto border border-white/10 bg-black" data-testid="uploaded-row-grid">
+      <table className="min-w-full border-collapse text-left text-xs">
+        <thead className="bg-white/[0.04] text-gray-500">
+          <tr>
+            <th className="sticky left-0 z-10 border-b border-r border-white/10 bg-[#080808] px-3 py-2 font-semibold uppercase tracking-[0.1em]">
+              Row
+            </th>
+            {table.columns.map((column) => (
+              <th key={column.name} className="min-w-36 border-b border-r border-white/10 px-3 py-2 font-semibold uppercase tracking-[0.1em]">
+                <button
+                  type="button"
+                  className={`max-w-48 truncate text-left ${selectedColumn?.name === column.name ? 'text-white' : 'text-gray-500 hover:text-gray-200'}`}
+                  onClick={() => onSelectColumn(column)}
+                >
+                  {column.name}
+                </button>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row) => {
+            const active = selectedRow?.rowNumber === row.rowNumber
+            return (
+              <tr
+                key={row.rowNumber}
+                className={active ? 'bg-white/[0.07]' : 'hover:bg-white/[0.035]'}
+                data-testid={`uploaded-row-${row.rowNumber}`}
+                onClick={() => onSelectRow(row)}
+              >
+                <td className="sticky left-0 z-10 border-r border-t border-white/10 bg-[#080808] px-3 py-2 font-mono text-gray-400">
+                  <button
+                    type="button"
+                    className={active ? 'text-white' : 'hover:text-gray-200'}
+                    onClick={() => onSelectRow(row)}
+                  >
+                    {row.rowNumber}
+                  </button>
+                </td>
+                {table.columns.map((column) => (
+                  <td
+                    key={`${row.rowNumber}-${column.name}`}
+                    className={`max-w-64 border-r border-t border-white/10 px-3 py-2 font-mono ${
+                      selectedColumn?.name === column.name ? 'text-white' : 'text-gray-400'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className="block max-w-56 truncate text-left"
+                      onClick={() => {
+                        onSelectColumn(column)
+                        onSelectRow(row)
+                      }}
+                    >
+                      {uploadedCellValue(row.values[column.name])}
+                    </button>
+                  </td>
+                ))}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function UploadedDetailPanel({
+  table,
+  selectedColumn,
+  selectedRow,
+}: {
+  table: UploadedDataTable
+  selectedColumn: UploadedColumnProfile | null
+  selectedRow: UploadedDataRow | null
+}) {
+  return (
+    <aside className="border border-white/10 bg-black p-3" data-testid="uploaded-detail-panel">
+      <p className="portal-kicker">Detail</p>
+      {selectedColumn ? (
+        <div className="mt-3 border-b border-white/10 pb-3" data-testid="uploaded-field-detail">
+          <p className="text-sm font-semibold text-white">{selectedColumn.name}</p>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-500">
+            <span>Type: {selectedColumn.valueType}</span>
+            <span>Filled: {formatFillRate(selectedColumn.fillRate)}</span>
+            <span>Unique: {selectedColumn.uniqueCount}</span>
+            <span>Blank: {selectedColumn.missingCount}</span>
+          </div>
+          {selectedColumn.examples.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {selectedColumn.examples.map((example) => (
+                <span key={example} className="border border-white/10 bg-white/[0.04] px-2 py-1 font-mono text-[11px] text-gray-300">
+                  {example}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="mt-3 text-sm text-gray-500">No fields available.</p>
+      )}
+
+      {selectedRow ? (
+        <div className="mt-3" data-testid="uploaded-row-detail">
+          <p className="text-sm font-semibold text-white">Row {selectedRow.rowNumber}</p>
+          <div className="mt-3 max-h-80 space-y-2 overflow-auto pr-1">
+            {table.columns.map((column) => (
+              <div key={`${selectedRow.rowNumber}-${column.name}-detail`} className="border-b border-white/10 pb-2 last:border-b-0">
+                <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-600">{column.name}</p>
+                <p className="mt-1 break-words font-mono text-xs text-gray-300">{uploadedCellValue(selectedRow.values[column.name])}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="mt-3 text-sm text-gray-500">No rows available.</p>
+      )}
+    </aside>
+  )
+}
+
+function UploadedDataInspector({ uploadedData }: { uploadedData?: UploadedDataProfile }) {
+  const tables = uploadedData?.tables ?? []
+  const [activeTableId, setActiveTableId] = useState('')
+  const [fieldQuery, setFieldQuery] = useState('')
+  const [selectedColumnName, setSelectedColumnName] = useState('')
+  const [selectedRowNumber, setSelectedRowNumber] = useState<number | null>(null)
+
+  useEffect(() => {
+    const firstTable = tables[0]
+    setActiveTableId(firstTable?.tableId ?? '')
+    setSelectedColumnName(firstTable?.columns[0]?.name ?? '')
+    setSelectedRowNumber(firstTable?.rows[0]?.rowNumber ?? null)
+    setFieldQuery('')
+  }, [uploadedData?.generatedAt, uploadedData?.rowCount, uploadedData?.columnCount])
+
+  if (!uploadedData || tables.length === 0) return null
+
+  const activeTable = tables.find((table) => table.tableId === activeTableId) ?? tables[0]
+  const filteredColumns = activeTable.columns.filter((column) =>
+    column.name.toLowerCase().includes(fieldQuery.trim().toLowerCase()),
+  )
+  const selectedColumn = activeTable.columns.find((column) => column.name === selectedColumnName) ?? activeTable.columns[0] ?? null
+  const selectedRow = activeTable.rows.find((row) => row.rowNumber === selectedRowNumber) ?? activeTable.rows[0] ?? null
+
+  return (
+    <section className="mt-4 border border-white/10 bg-[#050505] p-4" data-testid="uploaded-data-inspector">
+      <div className="portal-section-header">
+        <div>
+          <p className="portal-kicker">Uploaded Data Inspector</p>
+          <h3 className="portal-title text-xl">{uploadedData.columnCount} Fields / {uploadedData.rowCount} Rows</h3>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {tables.map((table) => (
+            <button
+              key={table.tableId}
+              type="button"
+              className={`portal-button min-h-9 px-3 py-1 ${table.tableId === activeTable.tableId ? 'portal-button-primary' : 'portal-button-secondary'}`}
+              onClick={() => {
+                setActiveTableId(table.tableId)
+                setSelectedColumnName(table.columns[0]?.name ?? '')
+                setSelectedRowNumber(table.rows[0]?.rowNumber ?? null)
+              }}
+            >
+              {table.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="portal-stat">
+          <strong>{activeTable.columnCount}</strong>
+          <span>Fields</span>
+        </div>
+        <div className="portal-stat">
+          <strong>{activeTable.rowCount}</strong>
+          <span>Rows</span>
+        </div>
+        <div className="portal-stat">
+          <strong>{activeTable.truncated ? activeTable.rows.length : activeTable.rowCount}</strong>
+          <span>{activeTable.truncated ? 'Rows Shown' : 'Rows Loaded'}</span>
+        </div>
+      </div>
+
+      {activeTable.source?.sheet && (
+        <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-gray-600">
+          Sheet {activeTable.source.sheet}
+          {activeTable.source.headerRow ? ` / Header row ${activeTable.source.headerRow}` : ''}
+        </p>
+      )}
+
+      {uploadedData.issues.length > 0 && (
+        <div className="mt-3 space-y-1" data-testid="uploaded-data-issues">
+          {uploadedData.issues.map((issue) => (
+            <p key={issue} className="border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+              {issue}
+            </p>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 grid gap-4 2xl:grid-cols-[260px_minmax(0,1fr)_300px]">
+        <div className="space-y-3">
+          <label className="portal-field">
+            <span>Find Fields</span>
+            <input
+              data-testid="uploaded-field-search"
+              value={fieldQuery}
+              onChange={(event) => setFieldQuery(event.target.value)}
+              placeholder="Column name"
+            />
+          </label>
+          <div className="max-h-[28rem] space-y-2 overflow-auto pr-1" data-testid="uploaded-field-list">
+            {filteredColumns.length === 0 ? (
+              <p className="border border-white/10 bg-black px-3 py-2 text-sm text-gray-500">No matching fields.</p>
+            ) : (
+              filteredColumns.map((column) => (
+                <UploadedColumnCard
+                  key={column.name}
+                  column={column}
+                  selected={selectedColumn?.name === column.name}
+                  onSelect={() => setSelectedColumnName(column.name)}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+        <UploadedDataGrid
+          table={activeTable}
+          selectedColumn={selectedColumn}
+          selectedRow={selectedRow}
+          onSelectColumn={(column) => setSelectedColumnName(column.name)}
+          onSelectRow={(row) => setSelectedRowNumber(row.rowNumber)}
+        />
+
+        <UploadedDetailPanel table={activeTable} selectedColumn={selectedColumn} selectedRow={selectedRow} />
+      </div>
+    </section>
+  )
+}
+
 function phaseFromCheckpoint(
   dealCheckpoint: DealCheckpoint,
   phase: PhaseWorkspaceStatus,
@@ -685,6 +990,7 @@ function ExtractionPreviewPanel({
       {extraction.error && (
         <p className="mt-3 border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-100">{extraction.error}</p>
       )}
+      <UploadedDataInspector uploadedData={extraction.uploadedData} />
       {extraction.fields.length > 0 && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <button

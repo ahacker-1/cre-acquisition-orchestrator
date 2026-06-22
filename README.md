@@ -42,6 +42,7 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 ## What It Does
 
 - **Document-first deal intake** - upload rent rolls, T12s, offering memos, PDFs, and supporting files into a local workspace.
+- **Uploaded data inspector** - see uploaded tables, field types, fill rates, examples, source rows, and click-through row detail before applying extracted values.
 - **Source-backed extraction review** - supported XLSX/CSV/TXT/MD, text-based PDF sources, and readable scanned/image-only PDFs become candidate fields with confidence, warnings, file hashes, and source-location (sheet/row/column or page) provenance; OCR-derived fields stay review-gated before they can change deal inputs.
 - **Human approval gate** - underwriting inputs do not change until the operator approves/applies trusted fields or waives/rejects ambiguous ones.
 - **31-role AI deal team** - 6 orchestrators, 21 acquisition specialists, and 4 document-ingestion roles are defined as markdown prompts.
@@ -183,7 +184,7 @@ This project has grown from agent architecture into a local-first acquisition wo
 
 ## Visual Demo Tour
 
-The public demo is intentionally visual: a first-time visitor should understand the workspace before they read the architecture. The path below starts at the front door, drops a document package into **Intake**, then moves through the persistent deal space - the lifecycle spine, the agents at work, and the IC package - using the deterministic Parkview sample so it populates with no API keys.
+The public demo is intentionally visual: a first-time visitor should understand the workspace before they read the architecture. The path below starts at the front door, drops a document package into **Intake**, inspects the uploaded tables field by field, then moves through the persistent deal space - the lifecycle spine, the agents at work, and the IC package - using the deterministic Parkview sample so it populates with no API keys.
 
 ### 1. Front Door - drop your deal, watch your team go to work
 
@@ -193,15 +194,19 @@ The public demo is intentionally visual: a first-time visitor should understand 
 
 ![Intake stage showing dropped source documents auto-extracted by the ingestion agents into an auto-filled deal record, with source tags, confidence dots, flagged values to review inline, and the "start Diligence" action](docs/assets/source-extraction-review.png)
 
-### 3. The Deal Space - one frame, the whole lifecycle
+### 3. Uploaded Data Inspector - see every field and click into rows
+
+![Uploaded Data Inspector showing parsed rent roll fields, field quality stats, row-level source data, and click-through detail for the selected field and selected row](docs/assets/uploaded-data-inspector.png)
+
+### 4. The Deal Space - one frame, the whole lifecycle
 
 ![The persistent deal space showing the deal header with IC-package readiness, the always-visible lifecycle spine (Intake to IC) with status dots, the focused center stage, and the right rail with the Live Feed and Your Team](docs/assets/acquisition-command.png)
 
-### 4. Watch It Work - summon an agent, read its workpaper
+### 5. Watch It Work - summon an agent, read its workpaper
 
 ![An agent panel slid in over the dimmed deal space, streaming one specialist's work with an elapsed timer and its filed workpaper, while the Live Feed keeps running in the right rail](docs/assets/deal-team-handoffs.png)
 
-### 5. IC Package - decision-ready acquisition package
+### 6. IC Package - decision-ready acquisition package
 
 ![IC Package view showing recommendation, phase outcomes, red flags, data gaps, manifest, and review trail](docs/assets/ic-package.png)
 

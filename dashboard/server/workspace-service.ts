@@ -145,9 +145,50 @@ export interface ExtractionPreview {
   sourceHash?: string
   reviewStatus?: ExtractionReviewStatus
   error?: string
+  uploadedData?: UploadedDataProfile
   // I2b: paths auto-applied into the deal during this extraction (trusted fields). Present on
   // the extractSourceDocument response so the UI can show "applied automatically" vs flagged.
   autoAppliedPaths?: string[]
+}
+
+export type UploadedColumnValueType = 'blank' | 'boolean' | 'date' | 'mixed' | 'number' | 'string'
+
+export interface UploadedColumnProfile {
+  columnId: string
+  name: string
+  valueType: UploadedColumnValueType
+  fillRate: number
+  missingCount: number
+  uniqueCount: number
+  examples: string[]
+}
+
+export interface UploadedDataRow {
+  rowNumber: number
+  values: Record<string, string>
+}
+
+export interface UploadedDataTable {
+  tableId: string
+  label: string
+  rowCount: number
+  columnCount: number
+  truncated: boolean
+  columns: UploadedColumnProfile[]
+  rows: UploadedDataRow[]
+  source?: {
+    sheet?: string
+    headerRow?: number
+  }
+}
+
+export interface UploadedDataProfile {
+  generatedAt: string
+  tableCount: number
+  rowCount: number
+  columnCount: number
+  tables: UploadedDataTable[]
+  issues: string[]
 }
 
 // I1: how an approved field's value got into the deal record.

@@ -27,6 +27,8 @@ except ImportError:
     }))
     sys.exit(1)
 
+MAX_UPLOAD_INSPECTOR_ROWS = 250
+
 
 def normalize_text(value: Any) -> str:
     """Normalize labels while keeping word boundaries for fuzzy matching."""
@@ -229,6 +231,39 @@ def prepare_table(raw_df: pd.DataFrame, sheet_name: str) -> pd.DataFrame:
     data.attrs["column_positions"] = {str(header): index + 1 for index, header in enumerate(headers)}
     data.attrs["ambiguous_headers"] = ambiguous_headers
     return data
+
+
+def serialize_cell(value: Any) -> str:
+    if pd.isna(value):
+        return ""
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value)
+
+
+def build_table_preview(df: pd.DataFrame) -> Dict[str, Any]:
+    columns = [str(column) for column in df.columns if not str(column).startswith("__")]
+    rows = []
+    for _, row in df.head(MAX_UPLOAD_INSPECTOR_ROWS).iterrows():
+        row_number = row.get("__excel_row_number")
+        values = {column: serialize_cell(row.get(column)) for column in columns}
+        rows.append({
+            "rowNumber": int(row_number) if row_number and not pd.isna(row_number) else len(rows) + 1,
+            "values": values
+        })
+    row_count = int(len(df))
+    return {
+        "label": df.attrs.get("sheet_name", "Source Data"),
+        "rowCount": row_count,
+        "columnCount": len(columns),
+        "truncated": row_count > len(rows),
+        "columns": columns,
+        "rows": rows,
+        "source": {
+            "sheet": df.attrs.get("sheet_name", "Source Data"),
+            "headerRow": df.attrs.get("header_row_number")
+        }
+    }
 
 
 def sheet_score(raw_df: pd.DataFrame, doc_type: str) -> int:
@@ -897,6 +932,8 @@ def main():
                 "error": f"Unknown document type: {doc_type}",
                 "detectedType": doc_type
             }
+
+        result["tablePreview"] = build_table_preview(df)
 
         print(json.dumps(result, indent=2))
 

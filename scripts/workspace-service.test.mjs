@@ -81,6 +81,8 @@ try {
   const persisted = getSourceExtraction(context, dealId, document.documentId)
   assert.equal(persisted.documentId, document.documentId)
   assert.equal(persisted.status, 'extracted')
+  assert.ok(persisted.uploadedData?.tables[0]?.columns.some((column) => /unit/i.test(column.name)))
+  assert.ok(persisted.uploadedData?.tables[0]?.rows.length >= 3)
 
   const totalUnits = persisted.fields.find((field) => field.path === 'property.totalUnits')
   assert.ok(totalUnits, 'expected total units field from persisted extraction')

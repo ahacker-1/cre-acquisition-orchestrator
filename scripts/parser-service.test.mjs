@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
-import { existsSync, statSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { runDocumentParser } from '../dashboard/server/parser-service.ts'
+import { fileHash, runDocumentParser } from '../dashboard/server/parser-service.ts'
 
 // The oversized-CSV fixture is generated at test time, not committed (a ~35 MB
 // file does not belong in git). Any file exceeding the parser's 25 MB cap
@@ -17,8 +18,35 @@ export function ensureOversizedCsv(filePath) {
   writeFileSync(filePath, parts.join(''))
 }
 
+function writeGeneratedFixture(filePath, contents) {
+  mkdirSync(dirname(filePath), { recursive: true })
+  writeFileSync(filePath, contents)
+}
+
+function ensureTruncatedInspectorCsv(filePath) {
+  if (existsSync(filePath)) return
+  const rows = ['Unit,Unit Type,SqFt,Market Rent,Current Rent,Status']
+  for (let index = 1; index <= 300; index += 1) {
+    rows.push(`${100 + index},1BR/1BA,700,${1700 + index},${1600 + index},Occupied`)
+  }
+  writeGeneratedFixture(filePath, rows.join('\n'))
+}
+
+function ensureMalformedInspectorCsv(filePath) {
+  if (existsSync(filePath)) return
+  writeGeneratedFixture(
+    filePath,
+    [
+      'Unit,Unit Type,SqFt,Market Rent,Current Rent,Status',
+      '101,1BR/1BA,700,1700,1600,Occupied',
+      '102,1BR/1BA,710,1710,,Occupied',
+    ].join('\n'),
+  )
+}
+
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const fixturesRoot = resolve(projectRoot, 'fixtures', 'parsers')
+const generatedFixturesRoot = resolve(projectRoot, 'dashboard', 'test-results', 'parser-fixtures')
 const OCR_NEXT_ACTION = 'Run the built-in local OCR bridge or upload OCR output, then review candidates before applying any fields.'
 
 function parseXlsx(fileName, type) {
@@ -90,6 +118,24 @@ function fieldByPath(preview, path) {
   return match
 }
 
+function assertUploadedInspector(preview, columnPattern, minRows = 1) {
+  assert.ok(preview.uploadedData, `expected uploadedData inspector payload in ${preview.documentId}`)
+  assert.equal(preview.uploadedData.tableCount, 1)
+  assert.ok(preview.uploadedData.rowCount >= minRows, `expected at least ${minRows} uploaded rows in ${preview.documentId}`)
+  const table = preview.uploadedData.tables[0]
+  assert.ok(table, `expected first uploaded-data table in ${preview.documentId}`)
+  assert.ok(table.rows.length >= minRows, `expected preview rows in ${preview.documentId}`)
+  assert.ok(
+    table.columns.some((column) => columnPattern.test(column.name)),
+    `expected uploaded column matching ${columnPattern} in ${preview.documentId}`,
+  )
+  assert.ok(
+    table.columns.every((column) => typeof column.fillRate === 'number' && column.fillRate >= 0 && column.fillRate <= 1),
+    `expected valid column fill rates in ${preview.documentId}`,
+  )
+  return table
+}
+
 function assertCandidateProvenance(preview, path, expectedSheet) {
   const match = fieldByPath(preview, path)
   assert.equal(match.reviewStatus, 'candidate')
@@ -105,12 +151,21 @@ function assertCandidateProvenance(preview, path, expectedSheet) {
 
 const rentRoll = parseXlsx('rent-roll-basic.xlsx', 'rent_roll')
 
+assert.equal(
+  fileHash(resolve(fixturesRoot, 'rent-roll-basic.xlsx')),
+  createHash('sha256').update(readFileSync(resolve(fixturesRoot, 'rent-roll-basic.xlsx'))).digest('hex'),
+  'chunked fileHash must match the canonical sha256 digest',
+)
+
 assert.equal(rentRoll.status, 'extracted')
 assert.equal(rentRoll.parserId, 'excel-rent-roll-parser')
 assert.equal(rentRoll.fields.find((field) => field.path === 'property.totalUnits')?.value, 3)
 assert.equal(rentRoll.fields.find((field) => field.path === 'financials.inPlaceOccupancy')?.value, 0.6667)
 assert.ok(rentRoll.fields.find((field) => field.path === 'property.unitMix.types')?.sourceRef.location?.sheet)
 assert.ok(rentRoll.fields.every((field) => field.reviewStatus === 'candidate'))
+const rentRollInspector = assertUploadedInspector(rentRoll, /unit/i, 3)
+assert.equal(rentRollInspector.rowCount, 3)
+assert.ok(rentRollInspector.columns.some((column) => /market rent/i.test(column.name)))
 
 const t12 = parseXlsx('t12-basic.xlsx', 't12')
 
@@ -120,6 +175,8 @@ assert.equal(t12.fields.find((field) => field.path === 'financials.trailingT12Re
 assert.equal(t12.fields.find((field) => field.path === 'financials.trailingT12Expenses')?.value, 510000)
 assert.equal(t12.fields.find((field) => field.path === 'financials.currentNOI')?.value, 730000)
 assert.ok(t12.fields.find((field) => field.path === 'financials.currentNOI')?.sourceRef.location?.row)
+const t12Inspector = assertUploadedInspector(t12, /line|account|description/i, 3)
+assert.ok(t12Inspector.columns.some((column) => /total|annual|t12/i.test(column.name)))
 
 const alternateHeaders = parseXlsx('rent-roll-alternate-headers.xlsx', 'rent_roll')
 
@@ -488,6 +545,25 @@ assert.ok(
 // A normal small CSV is unaffected by the guard.
 const smallCsv = parseCsv('rent-roll-vacant-units.csv', 'rent_roll')
 assert.equal(smallCsv.status, 'extracted')
+
+ensureTruncatedInspectorCsv(resolve(generatedFixturesRoot, 'inspector-truncated-rent-roll.csv'))
+const truncatedInspectorCsv = parseFile(generatedFixturesRoot, 'inspector-truncated-rent-roll.csv', 'rent_roll')
+assert.equal(truncatedInspectorCsv.status, 'extracted')
+const truncatedInspectorTable = assertUploadedInspector(truncatedInspectorCsv, /market rent/i, 250)
+assert.equal(truncatedInspectorTable.rowCount, 300)
+assert.equal(truncatedInspectorTable.rows.length, 250)
+assert.equal(truncatedInspectorTable.truncated, true)
+assert.ok(
+  truncatedInspectorCsv.uploadedData.issues.some((issue) => /shows 250 of 300/i.test(issue)),
+  'expected uploaded-data truncation issue for large inspector previews',
+)
+
+ensureMalformedInspectorCsv(resolve(generatedFixturesRoot, 'inspector-malformed-rent-roll.csv'))
+const malformedInspectorCsv = parseFile(generatedFixturesRoot, 'inspector-malformed-rent-roll.csv', 'rent_roll')
+assert.equal(malformedInspectorCsv.status, 'parse_failed')
+const malformedInspectorTable = assertUploadedInspector(malformedInspectorCsv, /current rent/i, 2)
+assert.equal(malformedInspectorTable.rows.length, 2)
+assert.equal(malformedInspectorTable.rows[1].values['Current Rent'], '')
 
 // ---------------------------------------------------------------------------
 // P4 - A genuinely corrupt .xlsx is a FILE problem, not an environment problem.
