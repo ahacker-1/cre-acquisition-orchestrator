@@ -1659,23 +1659,32 @@ function comparableNumber(value: unknown): number | null {
   return null
 }
 
-// True when two values represent genuinely different data. Numeric-ish operands are
-// compared numerically after unit-normalization (a decimal ratio and its percent form,
-// e.g. 0.917 vs 91.7 / "91.7%", are equal) within a 0.1% relative tolerance. The tolerance
-// absorbs rounding/representation noise — a memo's stated 91.7% vs a rent roll's computed
-// 91.67%, or float drift — as equal, while still flagging material gaps (a $312K memo NOI
-// vs a $253K T12 NOI). Non-numeric values fall back to a structural JSON comparison.
-function valuesDiffer(left: unknown, right: unknown): boolean {
+// True when two values represent genuinely different data. Numeric-ish operands are compared
+// numerically within a 0.1% relative tolerance, which absorbs rounding/representation noise — a
+// memo's stated 91.7% vs a rent roll's computed 91.67%, or float drift — while still flagging
+// material gaps (a $312K memo NOI vs a $253K T12 NOI). For RATIO fields only (ratioField=true,
+// e.g. occupancy), a percent magnitude and its 0–1 decimal form are normalized to equal
+// (0.917 vs 91.7 / "91.7%"); counts and currency are never scaled, so a real gap like
+// totalUnits 100 vs 1 still flags. Non-numeric values fall back to a structural JSON comparison.
+function valuesDiffer(left: unknown, right: unknown, ratioField = false): boolean {
   let a = comparableNumber(left)
   let b = comparableNumber(right)
   if (a !== null && b !== null) {
-    // Percent vs decimal: one side is a percent magnitude (>1), the other a ratio (<=1).
-    if (Math.abs(a) > 1 && Math.abs(b) <= 1) a = a / 100
-    else if (Math.abs(b) > 1 && Math.abs(a) <= 1) b = b / 100
+    if (ratioField) {
+      // Percent vs decimal: one side is a percent magnitude (>1), the other a 0–1 ratio.
+      if (Math.abs(a) > 1 && Math.abs(b) <= 1) a = a / 100
+      else if (Math.abs(b) > 1 && Math.abs(a) <= 1) b = b / 100
+    }
     const tolerance = Math.max(1e-9, 1e-3 * Math.max(Math.abs(a), Math.abs(b)))
     return Math.abs(a - b) > tolerance
   }
   return JSON.stringify(left) !== JSON.stringify(right)
+}
+
+// A field whose stored value is a 0–1 ratio (occupancy, cap rate, LTV, …); only these get
+// percent-vs-decimal normalization in valuesDiffer.
+function isRatioField(field: { unit?: string }): boolean {
+  return field.unit === 'decimal'
 }
 
 function extractionFieldId(field: Partial<ExtractionField>): string {
@@ -1691,7 +1700,7 @@ function enrichExtractionFields(
     ...extraction,
     fields: extraction.fields.map((field) => {
       const currentValue = getDeepValue(deal, field.path)
-      const conflict = currentValue !== undefined && valuesDiffer(currentValue, field.value)
+      const conflict = currentValue !== undefined && valuesDiffer(currentValue, field.value, isRatioField(field))
       return {
         ...field,
         fieldId: extractionFieldId(field),
@@ -1807,7 +1816,7 @@ function findUnresolvedCandidateConflict(
       const status = field.reviewStatus ?? 'candidate'
       // Only unresolved candidates block; rejected/waived/applied are resolved.
       if (status !== 'candidate') continue
-      if (!valuesDiffer(field.value, target.value)) continue
+      if (!valuesDiffer(field.value, target.value, isRatioField(field))) continue
       return { fileName: document.fileName, label: field.label, path: field.path }
     }
   }

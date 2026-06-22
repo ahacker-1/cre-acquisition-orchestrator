@@ -1694,9 +1694,15 @@ function PhaseWorkspaceView({
             >
               <p className="font-semibold">Launch blocked — this deal is not launch ready.</p>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-5">
-                {launchBlockers.map((issue) => (
-                  <li key={issue.path}>
-                    <span className="font-medium">{fieldLabel(issue.path)}</span> — {issue.message}
+                {launchBlockers.map((issue, index) => (
+                  <li key={issue.path || index}>
+                    {issue.path ? (
+                      <>
+                        <span className="font-medium">{fieldLabel(issue.path)}</span> — {issue.message}
+                      </>
+                    ) : (
+                      issue.message
+                    )}
                   </li>
                 ))}
               </ul>
@@ -2464,7 +2470,7 @@ export default function DealWorkspace({
     } catch (err) {
       setLaunchMessage(err instanceof Error ? err.message : String(err))
       if (err instanceof LaunchValidationError) {
-        setLaunchBlockers(err.validation.blockingIssues)
+        setLaunchBlockers(err.blockers)
       }
     }
   }

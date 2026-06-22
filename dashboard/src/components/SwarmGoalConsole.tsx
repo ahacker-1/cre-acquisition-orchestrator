@@ -55,11 +55,15 @@ async function readApiError(response: Response, fallback: string): Promise<Error
       error?: string
       message?: string
       validation?: { blockingIssues?: { path: string; message: string }[] }
+      readiness?: { blockers?: string[] }
     }
     const baseMessage = payload.error || payload.message || fallback
-    const blockingIssues = payload.validation?.blockingIssues ?? []
-    if (blockingIssues.length > 0) {
-      return new Error(`${baseMessage}: ${blockingIssues.map((issue) => issue.message).join('; ')}`)
+    // A launch 400 is either deal-not-ready (validation.blockingIssues) or a source-backed
+    // readiness gate (readiness.blockers); surface whichever reasons the server returned.
+    const reasons = (payload.validation?.blockingIssues ?? []).map((issue) => issue.message)
+      .concat(payload.readiness?.blockers ?? [])
+    if (reasons.length > 0) {
+      return new Error(`${baseMessage}: ${reasons.join('; ')}`)
     }
     return new Error(baseMessage)
   } catch {
