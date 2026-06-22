@@ -219,16 +219,27 @@ export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, d
   const strip = page.getByTestId('recent-deals-strip')
   const card = strip.getByTestId(`workspace-docs-${dealId}`)
 
+  async function ensureLibraryOverlayClosed(): Promise<void> {
+    if (await libraryBackdrop.isVisible().catch(() => false)) {
+      const closeButton = page.getByLabel('Close deal library')
+      if (await closeButton.isVisible().catch(() => false)) {
+        await closeButton.click({ timeout: 5_000 }).catch(() => undefined)
+      }
+    }
+    await expect(libraryBackdrop).toBeHidden({ timeout: 5_000 })
+    await expect(libraryModal).toBeHidden({ timeout: 5_000 })
+  }
+
   // Fast path: the target deal's workspace is already on screen (its run auto-revealed it).
   if ((await workspace.isVisible().catch(() => false)) && (await heading.isVisible().catch(() => false))) {
-    await expect(libraryBackdrop).toBeHidden({ timeout: 20_000 })
-    await expect(libraryModal).toBeHidden({ timeout: 20_000 })
+    await ensureLibraryOverlayClosed()
     return
   }
 
   async function clickWorkspaceButton(button: ReturnType<Page['getByTestId']>): Promise<boolean> {
     for (let attempt = 0; attempt < 6; attempt += 1) {
       if ((await workspace.isVisible().catch(() => false)) && (await heading.isVisible().catch(() => false))) {
+        await ensureLibraryOverlayClosed()
         return true
       }
       try {
@@ -236,8 +247,7 @@ export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, d
         await button.click({ timeout: 5_000 })
         await expect(workspace).toBeVisible({ timeout: 20_000 })
         await expect(heading).toBeVisible({ timeout: 20_000 })
-        await expect(libraryBackdrop).toBeHidden({ timeout: 20_000 })
-        await expect(libraryModal).toBeHidden({ timeout: 20_000 })
+        await ensureLibraryOverlayClosed()
         return true
       } catch {
         await new Promise((resolvePromise) => setTimeout(resolvePromise, 250 * (attempt + 1)))

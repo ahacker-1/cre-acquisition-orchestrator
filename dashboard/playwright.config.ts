@@ -3,6 +3,10 @@ import { existsSync } from 'node:fs'
 
 const useExternalServers = process.env.PLAYWRIGHT_SKIP_WEBSERVER === '1'
 const recordVideo = process.env.PLAYWRIGHT_RECORD_VIDEO === '1'
+const isCi = process.env.CI === 'true'
+const retries = Number(process.env.PLAYWRIGHT_RETRIES ?? (isCi ? '1' : '2'))
+const testTimeout = Number(process.env.PLAYWRIGHT_TEST_TIMEOUT_MS ?? (isCi ? '120000' : '240000'))
+const expectTimeout = Number(process.env.PLAYWRIGHT_EXPECT_TIMEOUT_MS ?? (isCi ? '15000' : '30000'))
 const chromiumExecutableCandidates =
   process.platform === 'darwin'
     ? [
@@ -32,12 +36,11 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
   workers: 1,
-  // Hardened for slow / contended machines (CI, or local file-sync/AV load): retry transient
-  // timeout flakes and allow generous budgets. Test assertions/coverage are unchanged.
-  retries: 2,
-  timeout: 240_000,
+  // Local runs stay generous for file-sync/AV load; CI stays tight so blocked UI states fail quickly.
+  retries,
+  timeout: testTimeout,
   expect: {
-    timeout: 30_000,
+    timeout: expectTimeout,
   },
   use: {
     baseURL: 'http://127.0.0.1:4173',

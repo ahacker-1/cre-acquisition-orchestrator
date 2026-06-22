@@ -1237,6 +1237,7 @@ test('drills a red flag back to its originating specialist workpaper in the IC p
 })
 
 test('surfaces failed agents and retries only them through the run API', async ({ page, request }) => {
+  test.setTimeout(60_000)
   const consoleErrors = collectConsoleErrors(page)
 
   await saveLaunchReadyDeal(request, PARTIAL_DEAL_ID, PARTIAL_DEAL_NAME)
@@ -1253,6 +1254,7 @@ test('surfaces failed agents and retries only them through the run API', async (
 
   const retryButton = recovery.getByTestId('retry-failed-agents')
   await expect(retryButton).toBeEnabled({ timeout: 20_000 })
+  await expect(page.getByTestId('deal-library-backdrop')).toBeHidden({ timeout: 5_000 })
 
   // Intercept the run-start call so no real Codex process is launched, and assert the
   // request re-runs only the failed agents from the prior run id.
@@ -1266,7 +1268,7 @@ test('surfaces failed agents and retries only them through the run API', async (
     })
   })
 
-  await retryButton.click()
+  await retryButton.click({ timeout: 10_000 })
   await expect(recovery.getByTestId('partial-failure-status')).toContainText(PARTIAL_RUN_ID, { timeout: 20_000 })
 
   expect(capturedBody).not.toBeNull()
