@@ -51,8 +51,21 @@ function titleize(value: unknown, fallback = 'Agent'): string {
 
 async function readApiError(response: Response, fallback: string): Promise<Error> {
   try {
-    const payload = await response.json() as { error?: string; message?: string }
-    return new Error(payload.error || payload.message || fallback)
+    const payload = await response.json() as {
+      error?: string
+      message?: string
+      validation?: { blockingIssues?: { path: string; message: string }[] }
+      readiness?: { blockers?: string[] }
+    }
+    const baseMessage = payload.error || payload.message || fallback
+    // A launch 400 is either deal-not-ready (validation.blockingIssues) or a source-backed
+    // readiness gate (readiness.blockers); surface whichever reasons the server returned.
+    const reasons = (payload.validation?.blockingIssues ?? []).map((issue) => issue.message)
+      .concat(payload.readiness?.blockers ?? [])
+    if (reasons.length > 0) {
+      return new Error(`${baseMessage}: ${reasons.join('; ')}`)
+    }
+    return new Error(baseMessage)
   } catch {
     return new Error(fallback)
   }

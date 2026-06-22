@@ -182,13 +182,17 @@ export function formatFieldValue(field: ExtractionField): string {
 
 // First human-readable reason this field is flagged: conflict (name the disagreeing
 // sources/values), then validation issue, then low-confidence.
-function flagReasonFor(field: ExtractionField, displayValue: string): string | undefined {
+function flagReasonFor(field: ExtractionField, conflictWith?: ExtractionField): string | undefined {
   if (!isFlagged(field)) return undefined
   if (field.conflict === true) {
-    const incoming = abbreviateSource(field.sourceRef, field.source)
+    // Name the read that actually disagrees and its value. After dedupe the displayed field can be
+    // the already-applied read (whose value equals currentValue); the real conflict lives on another
+    // read for the same path, so prefer that read's source/value over re-showing the applied value.
+    const conflictingField = conflictWith ?? field
+    const incoming = abbreviateSource(conflictingField.sourceRef, conflictingField.source)
     const current = field.currentValue
     if (current !== undefined && current !== null) {
-      return `Sources disagree: applied "${formatRawValue(current)}" vs ${incoming} "${displayValue}" — confirm`
+      return `Sources disagree: applied "${formatRawValue(current)}" vs ${incoming} "${formatRawValue(conflictingField.value)}" — confirm`
     }
     return `Sources disagree on this value (${incoming}) — confirm`
   }
@@ -216,7 +220,7 @@ function preferField(a: ExtractionField, b: ExtractionField): ExtractionField {
   return a
 }
 
-function toRecordField(field: ExtractionField): RecordField {
+function toRecordField(field: ExtractionField, conflictWith?: ExtractionField): RecordField {
   const value = formatFieldValue(field)
   const flagged = isFlagged(field)
   return {
@@ -227,7 +231,7 @@ function toRecordField(field: ExtractionField): RecordField {
     source: shortSourceLabel(field.sourceRef, field.source),
     confidence: confidenceTier(field.confidence),
     flagged,
-    flagReason: flagReasonFor(field, value),
+    flagReason: flagReasonFor(field, conflictWith),
     provenance: provenanceText(field.sourceRef),
   }
 }
@@ -243,13 +247,23 @@ export function buildDealRecordGroups(extractions: ExtractionPreview[], _deal?: 
   // Capture a conflict that disappears after dedupe: if any read of a path conflicts, the
   // surviving field should still surface the conflict flag.
   const conflictPaths = new Set<string>()
+  // The read that actually disagrees per path (highest-confidence conflicting candidate). Its
+  // value/source feed the "Sources disagree" message so it names the value that truly conflicts
+  // rather than re-showing the applied value when the surviving read is the already-applied one.
+  const conflictFieldByPath = new Map<string, ExtractionField>()
 
   for (const extraction of extractions) {
     for (const field of extraction.fields ?? []) {
       if (!field || typeof field.path !== 'string') continue
       // Skip fields the operator can't act on (not an approved source-backed deal field).
       if (!isRecordEligible(field)) continue
-      if (field.conflict === true) conflictPaths.add(field.path)
+      if (field.conflict === true) {
+        conflictPaths.add(field.path)
+        const existingConflict = conflictFieldByPath.get(field.path)
+        if (!existingConflict || field.confidence > existingConflict.confidence) {
+          conflictFieldByPath.set(field.path, field)
+        }
+      }
       const existing = byPath.get(field.path)
       byPath.set(field.path, existing ? preferField(existing, field) : field)
     }
@@ -261,7 +275,7 @@ export function buildDealRecordGroups(extractions: ExtractionPreview[], _deal?: 
       conflictPaths.has(field.path) && field.conflict !== true ? { ...field, conflict: true } : field
     const groupLabel = groupForPath(effective.path)
     const list = grouped.get(groupLabel) ?? []
-    list.push(toRecordField(effective))
+    list.push(toRecordField(effective, conflictFieldByPath.get(field.path)))
     grouped.set(groupLabel, list)
   }
 

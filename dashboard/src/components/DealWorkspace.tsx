@@ -11,7 +11,7 @@ import PipelineView from './PipelineView'
 import StoryNarrative from './StoryNarrative'
 import TimelineView from './TimelineView'
 import { useDealWorkspace } from '../hooks/useDealWorkspace'
-import { useWorkflows } from '../hooks/useWorkflows'
+import { useWorkflows, LaunchValidationError } from '../hooks/useWorkflows'
 import { collectFailedAgents, recoveryRunId, retryFailedAgents } from '../lib/runRecovery'
 import WorkspaceFrame from './workspace/WorkspaceFrame'
 import IntakeStage from './workspace/stages/IntakeStage'
@@ -39,7 +39,7 @@ import type {
   RuntimeProvider,
   StoryEvent,
 } from '../types/checkpoint'
-import type { DealLibraryItem } from '../types/deals'
+import type { DealLibraryItem, DealValidationIssue } from '../types/deals'
 import type {
   DealCriteria,
   DealProgressionGuide,
@@ -466,7 +466,14 @@ function formatFillRate(value: number): string {
 
 function uploadedCellValue(value: string | undefined): string {
   const normalized = value?.trim() ?? ''
-  return normalized.length > 0 ? normalized : 'blank'
+  // Strip the Excel/Sheets leading-apostrophe text qualifier, but only when the
+  // remaining cell is numeric-looking (e.g. "'-3200" -> "-3200"). Genuine string
+  // values that happen to start with an apostrophe are left untouched.
+  const dequalified =
+    normalized.startsWith("'") && /^-?[\d,]*\.?\d+%?$/.test(normalized.slice(1))
+      ? normalized.slice(1)
+      : normalized
+  return dequalified.length > 0 ? dequalified : 'blank'
 }
 
 function UploadedColumnCard({
@@ -1559,6 +1566,8 @@ function PhaseWorkspaceView({
   onChecklist,
   onLaunch,
   launching,
+  launchBlockers = [],
+  onEditDeal,
   runtimeProvider,
   onRuntimeProviderChange,
   codexMaxAgents,
@@ -1574,6 +1583,8 @@ function PhaseWorkspaceView({
   onChecklist: (phaseSlug: string, checklist: Record<string, GuideChecklistStatus>, notes?: Record<string, string>) => Promise<unknown>
   onLaunch: (phaseSlug: string) => Promise<void>
   launching: boolean
+  launchBlockers?: DealValidationIssue[]
+  onEditDeal?: () => void
   runtimeProvider: RuntimeProvider
   onRuntimeProviderChange: (runtimeProvider: RuntimeProvider) => void
   codexMaxAgents: number | null
@@ -1676,6 +1687,37 @@ function PhaseWorkspaceView({
           >
             {launching ? 'Launching Workflow' : 'Run Phase Workflow'}
           </button>
+          {launchBlockers.length > 0 && (
+            <div
+              className="mt-3 border border-amber-400/30 bg-amber-400/10 px-3 py-3 text-sm text-amber-100"
+              data-testid={`phase-launch-blocked-${phase.phaseSlug}`}
+            >
+              <p className="font-semibold">Launch blocked — this deal is not launch ready.</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-5">
+                {launchBlockers.map((issue, index) => (
+                  <li key={issue.path || index}>
+                    {issue.path ? (
+                      <>
+                        <span className="font-medium">{fieldLabel(issue.path)}</span> — {issue.message}
+                      </>
+                    ) : (
+                      issue.message
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {onEditDeal && (
+                <button
+                  type="button"
+                  data-testid={`phase-launch-blocked-edit-${phase.phaseSlug}`}
+                  onClick={onEditDeal}
+                  className="portal-button portal-button-secondary mt-3 px-3 py-1"
+                >
+                  Open Edit Deal
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="portal-panel">
@@ -2266,6 +2308,9 @@ export default function DealWorkspace({
   } = useDealWorkspace(dealCheckpoint.dealId)
   const { launchWorkflow, launchingWorkflowId } = useWorkflows()
   const [launchMessage, setLaunchMessage] = useState<string | null>(null)
+  // Structured launch-readiness blockers from the most recent rejected phase launch, shown inline
+  // in the Agent Playbook (near the Run button) so the BLOCKED state explains WHY and how to fix.
+  const [launchBlockers, setLaunchBlockers] = useState<DealValidationIssue[]>([])
   const [phaseRuntimeProvider, setPhaseRuntimeProvider] = useState<RuntimeProvider>('simulation')
   const [phaseCodexMaxAgents, setPhaseCodexMaxAgents] = useState<number | null>(1)
   const [phaseCodexConcurrency, setPhaseCodexConcurrency] = useState(1)
@@ -2401,6 +2446,7 @@ export default function DealWorkspace({
 
   async function handlePhaseLaunch(phaseSlug: string): Promise<void> {
     const workflowId = PHASE_WORKFLOW[phaseSlug] ?? 'full-acquisition-review'
+    setLaunchBlockers([])
     try {
       const response = await launchWorkflow(workflowId, {
         dealId: dealCheckpoint.dealId,
@@ -2423,6 +2469,9 @@ export default function DealWorkspace({
       onLaunchStarted?.(response)
     } catch (err) {
       setLaunchMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof LaunchValidationError) {
+        setLaunchBlockers(err.blockers)
+      }
     }
   }
 
@@ -2681,6 +2730,8 @@ export default function DealWorkspace({
             onChecklist={savePhaseChecklist}
             onLaunch={handlePhaseLaunch}
             launching={launchingWorkflowId !== null}
+            launchBlockers={launchBlockers}
+            onEditDeal={() => { setLaunchBlockers([]); onOpenEditDetails?.(dealCheckpoint.dealId) }}
             runtimeProvider={phaseRuntimeProvider}
             onRuntimeProviderChange={setPhaseRuntimeProvider}
             codexMaxAgents={phaseCodexMaxAgents}

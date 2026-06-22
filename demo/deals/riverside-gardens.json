@@ -67,7 +67,14 @@
     "ddExpirationDate": "2026-02-20",
     "financingCommitmentDeadline": "2026-03-05",
     "closingDate": "2026-03-20",
-    "extensionOptions": ["10 days with $25,000 hard deposit"]
+    "extensionOptions": [
+      {
+        "type": "dd",
+        "days": 10,
+        "cost": 25000,
+        "description": "10 days with $25,000 hard deposit"
+      }
+    ]
   },
   "notes": "Stabilized core asset. Built in 2018 with modern finishes. Strong submarket fundamentals with 3.5% rent growth over last 12 months. Institutional-quality construction and amenities. Minimal deferred maintenance. In-place rents are at market - limited loss-to-lease. Clean title, no known environmental issues. This is a straightforward acquisition with strong fundamentals."
 }

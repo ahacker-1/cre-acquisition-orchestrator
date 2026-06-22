@@ -66,7 +66,14 @@
     "ddExpirationDate": "2026-02-28",
     "financingCommitmentDeadline": "2026-03-31",
     "closingDate": "2026-04-30",
-    "extensionOptions": ["30 days with $100,000 hard deposit"]
+    "extensionOptions": [
+      {
+        "type": "dd",
+        "days": 30,
+        "cost": 100000,
+        "description": "30 days with $100,000 hard deposit"
+      }
+    ]
   },
   "notes": "WARNING: High-risk distressed asset. Property shows signs of significant deferred maintenance including roof issues, HVAC failures, and plumbing problems. Current occupancy of 72% is well below market. Submarket has experienced flat rent growth and elevated crime rates. Environmental Phase 1 flagged potential soil contamination from adjacent former gas station - Phase 2 recommended. Title search revealed unpaid mechanic's liens totaling $85,000. Several long-term tenants are on month-to-month leases below market. Bridge financing only - Agency lenders have declined. This deal has multiple dealbreakers that should result in a FAIL verdict."
 }
