@@ -227,6 +227,10 @@ The public demo is intentionally visual: a first-time visitor should understand 
 
 ![IC Package view showing recommendation, phase outcomes, red flags, data gaps, manifest, and review trail](docs/assets/ic-package.png)
 
+### 7. Launch on live Codex - the default runtime, with web search
+
+![Workflow Launcher (in the Advanced drawer) on the Review step: Runtime is set to Codex / ChatGPT, "Live web search" is on by default, Codex concurrency is 2, and the ChatGPT session is authenticated - the default launch path that sends the selected workflow to live agents that look up and cite real market, lender, and environmental data. Simulation stays available as the no-credential fallback.](docs/assets/workflow-launcher.png)
+
 See [Demo Journey](docs/DEMO-JOURNEY.md) for the storyboard, screenshot refresh path, and the source-to-IC proof script a visitor can follow without a video.
 
 ---

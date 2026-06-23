@@ -181,7 +181,64 @@ async function captureIntakeAutoFill(browser) {
   }
 }
 
-const browser = await chromium.launch({ headless: true })
+// v3.3.0 launch experience: the Advanced drawer's Workflow Launcher now defaults to the live
+// Codex / ChatGPT runtime with web search on. Open the drawer, keep the Codex default selected, and
+// capture the launcher element showing the runtime picker, the Codex controls, and the live
+// web-search toggle. Skips gracefully if the drawer or launcher is not reachable.
+async function captureWorkflowLauncher(page) {
+  const openAdvanced = page.getByTestId('open-advanced')
+  if (!(await openAdvanced.isVisible().catch(() => false))) {
+    console.warn('skip workflow-launcher.png: Advanced control not visible')
+    return
+  }
+  await openAdvanced.click({ force: true })
+  if (!(await page.getByTestId('advanced-drawer').isVisible({ timeout: 10_000 }).catch(() => false))) {
+    console.warn('skip workflow-launcher.png: Advanced drawer did not open')
+    return
+  }
+  const launcher = page.getByTestId('workspace-workflow-launcher')
+  if (!(await launcher.isVisible({ timeout: 10_000 }).catch(() => false))) {
+    console.warn('skip workflow-launcher.png: workflow launcher not visible')
+    await page.getByTestId('advanced-drawer-close').click().catch(() => {})
+    return
+  }
+  // The runtime picker, Codex controls, and web-search toggle live on the Review step.
+  await page.getByTestId('workflow-step-review').click().catch(() => {})
+  await page.getByTestId('workflow-runtime-provider-select').waitFor({ timeout: 10_000 }).catch(() => {})
+  // A fresh draft already defaults to the live Codex runtime; assert it so the shot reliably shows
+  // the runtime on Codex with the "Live web search" toggle on.
+  await page.getByTestId('workflow-runtime-provider-select').selectOption('codex').catch(() => {})
+  // Grow the viewport so the whole launch form fits, then clip the shot from the launcher top to
+  // just below the Launch button. The Advanced drawer is not a full-viewport modal and the launcher
+  // wrapper is taller than its content, so a plain element/viewport shot would include the dimmed
+  // workspace behind it; clipping to the form gives a clean image of the runtime picker, the Codex
+  // controls, and the "Live web search" toggle.
+  await page.setViewportSize({ width: 1440, height: 1900 })
+  await page.waitForTimeout(400)
+  const launcherBox = await launcher.boundingBox()
+  const launchBox = await page.getByTestId('workflow-launch-selected').boundingBox().catch(() => null)
+  if (launcherBox && launchBox) {
+    const height = Math.min(launchBox.y + launchBox.height + 24, launcherBox.y + launcherBox.height) - launcherBox.y
+    await page.screenshot({
+      path: resolve(assetsDir, 'workflow-launcher.png'),
+      clip: { x: launcherBox.x, y: launcherBox.y, width: launcherBox.width, height },
+    })
+  } else {
+    await launcher.screenshot({ path: resolve(assetsDir, 'workflow-launcher.png') })
+  }
+  console.log('captured docs/assets/workflow-launcher.png')
+  await page.setViewportSize({ width: 1440, height: 1100 })
+  await page.getByTestId('advanced-drawer-close').click().catch(() => {})
+  await page.getByTestId('advanced-drawer').waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {})
+}
+
+// Default: launch Playwright's bundled headless Chromium. Set CRE_CDP_ENDPOINT (e.g.
+// http://localhost:9222) to instead attach to an already-running Chromium over the DevTools
+// Protocol — useful when Playwright's browser download is unavailable in the environment.
+const cdpEndpoint = process.env.CRE_CDP_ENDPOINT
+const browser = cdpEndpoint
+  ? await chromium.connectOverCDP(cdpEndpoint)
+  : await chromium.launch({ headless: true })
 const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1 })
 
 await page.addStyleTag({
@@ -236,6 +293,9 @@ if (await agentButton.isVisible().catch(() => false)) {
 await focusStage(page, 'ic')
 await page.getByTestId('completion-package-view').waitFor({ timeout: 20_000 })
 await capture(page, 'ic-package.png')
+
+// The v3.3.0 default launch surface: live Codex runtime + web search, from the Advanced drawer.
+await captureWorkflowLauncher(page)
 
 await captureIntakeAutoFill(browser)
 
