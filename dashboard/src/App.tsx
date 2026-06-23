@@ -567,7 +567,15 @@ export default function App() {
       {/* Footer - minimal, demo-friendly */}
       <footer className="border-t border-cre-border px-6 py-3 text-center">
         <p className="text-xs text-gray-600">
-          CRE Acquisition Orchestrator | Open-source multi-orchestration for CRE acquisitions
+          CRE Acquisition Orchestrator · Built by{' '}
+          <a
+            href="https://www.theaiconsultingnetwork.com"
+            target="_blank"
+            rel="noreferrer"
+            className="underline-offset-2 hover:text-gray-300 hover:underline"
+          >
+            Avi Hacker, J.D. — The AI Consulting Network
+          </a>
         </p>
       </footer>
 
