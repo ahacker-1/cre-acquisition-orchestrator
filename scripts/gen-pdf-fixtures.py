@@ -138,10 +138,80 @@ def gen_scanned_image_only_pdf():
     png_path.unlink(missing_ok=True)
 
 
+# ---------------------------------------------------------------------------
+# Legal document fixtures (text-layer PDFs for psa / title / estoppel parsing)
+# ---------------------------------------------------------------------------
+
+def _legal_page(c: canvas.Canvas, title: str, lines: list) -> None:
+    text = c.beginText(1 * inch, 10 * inch)
+    text.setFont("Helvetica-Bold", 15)
+    text.textLine(title)
+    text.setFont("Helvetica", 11)
+    text.textLine("")
+    for line in lines:
+        text.textLine(line)
+    c.drawText(text)
+    c.showPage()
+
+
+def gen_psa_pdf():
+    """A purchase & sale agreement with the headline economic + timing terms."""
+    c = _new_canvas(FIXTURES / "psa.pdf")
+    _legal_page(c, "Purchase and Sale Agreement", [
+        "Property: Parkview Apartments, 1234 Parkview Lane, Austin, TX 78704",
+        "Seller: Parkview Holdings LLC",
+        "Buyer: Acquisition Partners LP",
+        "",
+        "1. Purchase Price: $42,500,000",
+        "2. Earnest Money Deposit: $1,250,000",
+        "3. Due Diligence Period: 45 days from the Effective Date",
+        "4. Closing Date: September 30, 2026",
+        "5. Financing Contingency: None - Buyer's obligation is not contingent on financing.",
+        "6. Title and Survey Objection Period: 20 days",
+    ])
+    c.save()
+
+
+def gen_title_commitment_pdf():
+    """A title commitment with a numbered Schedule B exceptions list."""
+    c = _new_canvas(FIXTURES / "title-commitment.pdf")
+    _legal_page(c, "Commitment for Title Insurance", [
+        "Effective Date: June 1, 2026",
+        "Commitment Amount: $42,500,000",
+        "Proposed Insured: Acquisition Partners LP",
+        "",
+        "SCHEDULE B - EXCEPTIONS",
+        "1. Taxes for the year 2026 and subsequent years, a lien not yet due and payable.",
+        "2. Easement granted to City of Austin recorded in Volume 1234, Page 567.",
+        "3. Deed of Trust in favor of Regional Bank recorded as Document No. 2019004321.",
+        "4. Restrictive covenants recorded in Volume 880, Page 12.",
+    ])
+    c.save()
+
+
+def gen_estoppel_pdf():
+    """A tenant estoppel certificate with per-tenant lease terms."""
+    c = _new_canvas(FIXTURES / "estoppel.pdf")
+    _legal_page(c, "Tenant Estoppel Certificate", [
+        "Tenant: Jane Doe",
+        "Unit: 204",
+        "Monthly Rent: $1,850",
+        "Lease Start Date: March 1, 2025",
+        "Lease Expiration Date: February 28, 2026",
+        "Security Deposit: $1,850",
+        "",
+        "The Lease is in full force and effect. There are no defaults by Landlord or Tenant.",
+    ])
+    c.save()
+
+
 def main():
     FIXTURES.mkdir(parents=True, exist_ok=True)
     gen_text_offering_memo_pdf()
     gen_scanned_image_only_pdf()
+    gen_psa_pdf()
+    gen_title_commitment_pdf()
+    gen_estoppel_pdf()
     print("Generated PDF fixtures in", FIXTURES)
 
 

@@ -299,6 +299,51 @@ function uniqueExistingRepoPaths(filePaths) {
     });
 }
 
+// Document types whose content the legal-phase agents reason over (PSA, title,
+// estoppels, etc.). Kept broad enough to cover every legal specialist's inputs.
+const LEGAL_DOCUMENT_TYPES = new Set([
+  'psa',
+  'title',
+  'title_commitment',
+  'estoppel',
+  'survey',
+  'loi',
+  'insurance',
+  'loan_documents',
+  'closing_statement'
+]);
+
+// Source formats a Codex agent can read directly as text. Binary PDFs are
+// represented to the agent by their extraction JSON instead.
+const TEXT_DOCUMENT_EXTENSIONS = new Set(['.md', '.txt', '.csv', '.json']);
+
+// Repo-relative files giving the legal agents the actual uploaded legal
+// documents for a deal: each document's source-backed extraction JSON (parsed
+// fields + raw snippets with provenance) plus the raw source when it is a text
+// format. Returns [] when the deal has no document manifest. This is what lets a
+// legal specialist reason over the real PSA / title commitment / estoppels
+// rather than only the deal config and upstream phase outputs.
+function legalDocumentRepoFiles(dealId) {
+  const manifestPath = path.join(BASE_DIR, 'data', 'deals', String(dealId), 'document-manifest.json');
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  } catch {
+    return [];
+  }
+  const documents = Array.isArray(manifest.documents) ? manifest.documents : [];
+  const files = [];
+  for (const doc of documents) {
+    if (!doc || !LEGAL_DOCUMENT_TYPES.has(doc.type)) continue;
+    files.push(`data/deals/${dealId}/extractions/${doc.documentId}.json`);
+    const ext = path.extname(doc.fileName || '').toLowerCase();
+    if (doc.path && TEXT_DOCUMENT_EXTENSIONS.has(ext)) {
+      files.push(toRepoPath(doc.path));
+    }
+  }
+  return files;
+}
+
 function selectTasks(options, registry, workflow) {
   const plan = createWorkflowRunPlan(workflow, PHASES);
   const selectedAgentSet = new Set(options.agentNames);
@@ -382,6 +427,10 @@ function buildPrompt({
   const sharedSkillFiles = Object.values(registry.skills || {});
   const inputSnapshotRepoPath =
     inputSnapshotPath && fs.existsSync(inputSnapshotPath) ? toRepoPath(inputSnapshotPath) : null;
+  // Legal specialists reason over the deal's actual legal documents; other
+  // phases do not need them, so scope this to the legal phase.
+  const legalDocumentFiles =
+    task.phaseMeta?.slug === 'legal' ? legalDocumentRepoFiles(deal.dealId) : [];
   const promptFiles = uniqueExistingRepoPaths([
     task.phasePromptPath,
     task.agentMeta.file,
@@ -393,8 +442,11 @@ function buildPrompt({
     'skills/self-review-protocol.md',
     'templates/agent-checkpoint.json',
     'templates/report-template.md',
+    ...legalDocumentFiles,
     ...runtimeFiles
   ]);
+  const hasLegalDocuments = legalDocumentFiles.some((filePath) =>
+    fs.existsSync(path.join(BASE_DIR, filePath)));
 
   return [
     `You are the ${task.agentName} specialist in the CRE Acquisition Orchestrator.`,
@@ -410,6 +462,15 @@ function buildPrompt({
     `- Scenario config assumptions: ${JSON.stringify(scenarioConfig.assumptions || {})}`,
     `- Dashboard input snapshot: ${inputSnapshotRepoPath || 'not provided'}`,
     `- Source-backed launch summary: ${JSON.stringify(summarizeInputSnapshot(inputSnapshot) || {})}`,
+    ...(task.phaseMeta?.slug === 'legal'
+      ? [
+          `- Legal source documents: ${
+            hasLegalDocuments
+              ? 'uploaded legal documents and their source-backed extractions are included in the file list below — ground your review in their actual terms (purchase price, deposits, dates, Schedule B exceptions, estoppel lease terms).'
+              : 'none uploaded for this deal — flag any document you would need under Data Gaps.'
+          }`
+        ]
+      : []),
     '',
     'Read these local files before answering:',
     ...promptFiles.map((filePath) => `- ${filePath}`),
@@ -826,5 +887,7 @@ module.exports = {
   computeBackoffMs,
   runWithRetry,
   computeRunOutcome,
-  selectFailedAgentSelectors
+  selectFailedAgentSelectors,
+  legalDocumentRepoFiles,
+  buildPrompt
 };

@@ -1171,6 +1171,7 @@ function classifyByFileName(fileName: string): string {
   if (lower.includes('survey')) return 'survey'
   if (lower.includes('loi') || lower.includes('letter-of-intent') || lower.includes('letter of intent')) return 'loi'
   if (lower.includes('psa') || lower.includes('purchase')) return 'psa'
+  if (lower.includes('estoppel')) return 'estoppel'
   if (lower.includes('insurance')) return 'insurance'
   if (lower.includes('loan') || lower.includes('debt')) return 'loan_documents'
   if (lower.includes('closing') || lower.includes('settlement')) return 'closing_statement'
