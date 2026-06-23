@@ -1184,14 +1184,30 @@ function asPdfBridgeFields(parsed: Record<string, unknown>): PdfBridgeField[] {
   return fields
 }
 
+// Map a document's classified type to the --type value parse_pdf.py dispatches
+// on. Legal documents (psa / title / estoppel) get their own lean matcher sets;
+// anything unrecognized falls back to 'auto' (headline acquisition matchers).
+const PDF_DOC_TYPE_BY_INPUT: Record<string, string> = {
+  rent_roll: 'rent_roll',
+  t12: 't12',
+  offering_memo: 'offering_memo',
+  psa: 'psa',
+  title: 'title_commitment',
+  title_commitment: 'title_commitment',
+  estoppel: 'estoppel',
+}
+
+function pdfDocumentType(inputType: string): string {
+  return PDF_DOC_TYPE_BY_INPUT[inputType] ?? 'auto'
+}
+
 function parsePdfIfAvailable(input: ParserInput, hash: string): ParserExtractionPreview {
   const scriptPath = join(input.projectRoot, 'scripts', 'parse_pdf.py')
   const parserId = 'pdf-text-parser'
   if (!existsSync(scriptPath)) {
     return unavailable(input, hash, parserId, 'PDF parser script is not available.')
   }
-  const documentType =
-    input.type === 'rent_roll' ? 'rent_roll' : input.type === 't12' ? 't12' : input.type === 'offering_memo' ? 'offering_memo' : 'auto'
+  const documentType = pdfDocumentType(input.type)
   const { parsed, parseFailedError, unavailableError } = runPdfPythonParser(input, documentType)
   // The FILE is bad (e.g. an unreadable/corrupt PDF): distinct from a missing
   // interpreter/dependency. Surface as parse_failed, not parser-unavailable.

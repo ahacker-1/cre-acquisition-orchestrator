@@ -770,7 +770,21 @@ function renderFinalAcquisitionReport(checkpoint, phasesMetadata = []) {
   lines.push('');
   lines.push('## Workpaper Index');
   phasesMetadata.forEach((phase) => {
-    (phase.agents || []).forEach((agent) => {
+    const state = phases[phase.key] || {};
+    // Scoped workflows skip whole phases and run only a subset of each phase's
+    // agents, so a workpaper file exists only for an agent that actually ran.
+    // List those agents (recorded under the phase's agentFindings) rather than
+    // the full catalog, otherwise the index links workpapers that were never
+    // generated. Fall back to the catalog only when a completed phase did not
+    // record agentFindings.
+    if (state.status === 'SKIPPED') return;
+    const ranAgents = state.dataForDownstream && state.dataForDownstream.agentFindings
+      ? new Set(Object.keys(state.dataForDownstream.agentFindings))
+      : null;
+    const agents = ranAgents
+      ? (phase.agents || []).filter((agent) => ranAgents.has(agent))
+      : (phase.agents || []);
+    agents.forEach((agent) => {
       lines.push(`- ${phase.label} / ${agent}: see \`data/reports/${checkpoint.dealId}/${phase.slug}/${agent}-workpaper-v1.md\`.`);
     });
   });
