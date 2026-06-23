@@ -163,14 +163,14 @@ function WorkspacePanelSkeleton({ label }: { label: string }) {
 }
 
 const RUNTIME_OPTIONS: { value: RuntimeProvider; label: string }[] = [
-  { value: 'simulation', label: 'Simulation' },
   { value: 'codex', label: 'Codex / ChatGPT' },
+  { value: 'simulation', label: 'Simulation Demo' },
 ]
 
 const CODEX_AGENT_LIMITS: { value: string; label: string }[] = [
+  { value: '', label: 'All selected' },
   { value: '1', label: '1 agent' },
   { value: '2', label: '2 agents' },
-  { value: '', label: 'All selected' },
 ]
 
 const WORKFLOW_LABELS: Record<string, string> = {
@@ -1685,7 +1685,7 @@ function PhaseWorkspaceView({
             onClick={() => void onLaunch(phase.phaseSlug)}
             className="portal-button portal-button-primary mt-5 w-full"
           >
-            {launching ? 'Launching Workflow' : 'Run Phase Workflow'}
+            {launching ? 'Launching Workflow' : isCodexRun ? 'Run Phase with Codex' : 'Run Phase Demo'}
           </button>
           {launchBlockers.length > 0 && (
             <div
@@ -2311,9 +2311,9 @@ export default function DealWorkspace({
   // Structured launch-readiness blockers from the most recent rejected phase launch, shown inline
   // in the Agent Playbook (near the Run button) so the BLOCKED state explains WHY and how to fix.
   const [launchBlockers, setLaunchBlockers] = useState<DealValidationIssue[]>([])
-  const [phaseRuntimeProvider, setPhaseRuntimeProvider] = useState<RuntimeProvider>('simulation')
-  const [phaseCodexMaxAgents, setPhaseCodexMaxAgents] = useState<number | null>(1)
-  const [phaseCodexConcurrency, setPhaseCodexConcurrency] = useState(1)
+  const [phaseRuntimeProvider, setPhaseRuntimeProvider] = useState<RuntimeProvider>('codex')
+  const [phaseCodexMaxAgents, setPhaseCodexMaxAgents] = useState<number | null>(null)
+  const [phaseCodexConcurrency, setPhaseCodexConcurrency] = useState(2)
   const [guidedDemoActive, setGuidedDemoActive] = useState(false)
   const [guidedDemoStep, setGuidedDemoStep] = useState(0)
   const [packageExportMessage, setPackageExportMessage] = useState<string | null>(null)

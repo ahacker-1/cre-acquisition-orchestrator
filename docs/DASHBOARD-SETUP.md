@@ -11,7 +11,7 @@ The dashboard provides a local-first agentic deal team workspace for deal setup,
 - **Document + goal entry**: Drop deal files, state the desired outcome, and let the workspace recommend the first orchestration path
 - **Mission workspace**: Documents, Mission, Agents, Workpapers, Package, and Advanced views for each deal
 - **Advanced workflow launcher**: Five outcome workflows with saved local presets and run-now launch for operators who want manual control
-- **Runtime selector**: Choose offline simulation or live Codex / ChatGPT execution before launching supported workflows
+- **Runtime selector**: Launch with live Codex / ChatGPT by default, or choose Simulation Demo for deterministic local validation
 - **Document intake**: Upload queue, classification, extraction preview, approve/reject/waive review, and source-backed apply from local files
 - **Operator briefing**: Best next move, source-backed input coverage, review queue, phase readiness, and workflow-level launch confidence
 - **Phase progress**: Visual progress bars for each of the 5 phases, including skipped-phase visibility for scoped workflows
@@ -42,7 +42,7 @@ See [Prerequisites](PREREQUISITES.md) for full software requirements.
 npm run setup
 ```
 
-This installs all frontend dependencies (React, Vite, Tailwind CSS) and the watcher dependencies. It also tries to prepare the optional Codex live-agent runtime. Offline dashboard workflows still work if Codex is not installed or not logged in.
+This installs all frontend dependencies (React, Vite, Tailwind CSS) and the watcher dependencies. It also tries to prepare the Codex live-agent runtime. The explicit Simulation Demo path still works if Codex is not installed or not logged in.
 
 ---
 
@@ -243,7 +243,7 @@ Important request fields:
 | Field | Values | Notes |
 |-------|--------|-------|
 | `dealId` | saved deal id | Required unless using a saved preset |
-| `runtimeProvider` | `simulation` or `codex` | Defaults to `simulation` |
+| `runtimeProvider` | `codex` or `simulation` | Defaults to `codex`; pass `simulation` only for the deterministic demo lane |
 | `codexMaxAgents` | positive integer | Optional cap for live Codex launches |
 | `codexConcurrency` | positive integer | Optional live Codex parallelism |
 | `codexSandbox` | Codex sandbox string | Defaults to read-only in the runner |

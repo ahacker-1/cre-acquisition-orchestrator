@@ -36,7 +36,7 @@ Local dashboard API base URL: `http://127.0.0.1:8081`. The Vite dev proxy also s
 | `POST` | `/api/deals/validate` | Validate a draft or launch-ready deal payload. | `{ "deal": {}, "mode": "draft" | "launch", "currentDealId": "..." }` | `DealValidationResult` |
 | `POST` | `/api/deals` | Save a user deal. | `{ "deal": {}, "mode": "draft" | "launch", "currentDealId": "..." }` | `DealRecordResponse` |
 | `GET` | `/api/deals/:id` | Load one saved or sample deal. | `id` path param. | `DealRecordResponse` |
-| `POST` | `/api/deals/:id/launch` | Launch the selected deal with the default workflow. | `{ "scenario": "...", "speed": "...", "mode": "...", "reset": true, "runtimeProvider": "simulation" | "codex", "requireSourceBackedInputs": false }` | `LaunchDealResponse` plus `readiness` and `inputSnapshot`. |
+| `POST` | `/api/deals/:id/launch` | Launch the selected deal with the default workflow. | `{ "scenario": "...", "speed": "...", "mode": "...", "reset": false, "runtimeProvider": "codex" | "simulation", "requireSourceBackedInputs": false }` (`runtimeProvider` defaults to `codex`) | `LaunchDealResponse` plus `readiness` and `inputSnapshot`. |
 
 ## Workflows
 
@@ -73,4 +73,3 @@ These routes remain for compatibility with earlier dashboard flows. Prefer `/api
 | `GET` | `/api/deal/:id` | Read legacy checkpoint status. | `id` path param. | `{ "deal": {}, "agents": [] }` |
 | `POST` | `/api/deal/:id/pause` | Mark a legacy checkpoint paused. | `id` path param. | `{ "dealId": "...", "status": "paused", "lastUpdatedAt": "..." }` |
 | `POST` | `/api/deal/:id/resume` | Mark a legacy checkpoint running. | `id` path param. | `{ "dealId": "...", "status": "running", "lastUpdatedAt": "..." }` |
-

@@ -412,7 +412,8 @@ function buildPrompt({
   registry,
   scenarioName,
   workflow,
-  scenarioConfig
+  scenarioConfig,
+  searchEnabled
 }) {
   const runtimeFiles = [
     `data/status/${deal.dealId}.json`,
@@ -478,7 +479,9 @@ function buildPrompt({
     'Operating rules:',
     '- Do not edit files.',
     '- Do not create commits.',
-    '- Use local repo files first. If web search is unavailable, mark outside facts as data gaps.',
+    searchEnabled
+      ? '- Web search is ENABLED — actively use it to verify and fill any market or economic fact not in the deal documents: rent and sales comps, submarket rents, occupancy, cap rates, demographics, supply pipeline, and current interest/lender rates. Cite the source URL inline next to each fetched figure, and prefer fetched, cited facts over assumptions. Only mark an item as a Data Gap if a real search returns nothing usable — do not claim web search is unavailable when it is enabled.'
+      : '- Web search is NOT available — use local repo files only and mark any outside facts (comps, market rents, rates, demographics) as Data Gaps rather than guessing.',
     '- Treat the dashboard input snapshot as the approved launch package and call out any mismatch with the deal file.',
     '- Do not invent source documents. If a required document is missing, call that out.',
     '- Keep the output useful to a CRE acquisition operator reviewing whether to proceed.',
@@ -562,7 +565,8 @@ async function runAgentTask({
     registry,
     scenarioName,
     workflow,
-    scenarioConfig
+    scenarioConfig,
+    searchEnabled: options.search === true && codexRootSupports('--search')
   });
   fs.writeFileSync(promptPath, prompt);
   story.emit('agent_started', {

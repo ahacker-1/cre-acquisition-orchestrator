@@ -23,7 +23,7 @@ interface WorkflowLauncherProps {
   lockDealSelection?: boolean
 }
 
-const DRAFT_STORAGE_KEY = 'cre.workflowLauncher.v1'
+const DRAFT_STORAGE_KEY = 'cre.workflowLauncher.v2'
 
 interface CodexAuthStatus {
   installed: boolean
@@ -61,14 +61,14 @@ const MODES: { value: RunMode; label: string }[] = [
 ]
 
 const RUNTIME_PROVIDERS: { value: RuntimeProvider; label: string }[] = [
-  { value: 'simulation', label: 'Simulation' },
   { value: 'codex', label: 'Codex / ChatGPT' },
+  { value: 'simulation', label: 'Simulation Demo' },
 ]
 
 const CODEX_AGENT_LIMITS: { value: string; label: string }[] = [
+  { value: '', label: 'All selected' },
   { value: '1', label: '1 agent' },
   { value: '2', label: '2 agents' },
-  { value: '', label: 'All selected' },
 ]
 
 function readStoredDraft(): Partial<WorkflowSelectionDraft> {
@@ -179,17 +179,19 @@ function createInitialDraft(
         ? stored.speed
         : 'normal',
     mode: stored.mode === 'fast' ? 'fast' : 'live',
-    runtimeProvider: stored.runtimeProvider === 'codex' ? 'codex' : 'simulation',
+    runtimeProvider: stored.runtimeProvider === 'simulation' ? 'simulation' : 'codex',
     reset: typeof stored.reset === 'boolean' ? stored.reset : false,
     codexMaxAgents:
       typeof stored.codexMaxAgents === 'number' && stored.codexMaxAgents > 0
         ? Math.round(stored.codexMaxAgents)
-        : 1,
+        : null,
     codexConcurrency:
       typeof stored.codexConcurrency === 'number' && stored.codexConcurrency > 0
         ? Math.round(stored.codexConcurrency)
-        : 1,
-    codexSearch: stored.codexSearch === true,
+        : 2,
+    // Web search is on by default for live Codex runs so agents can look up real market/lender/
+    // environmental facts; a stored explicit `false` (user turned it off) is still respected.
+    codexSearch: stored.codexSearch !== false,
     requireSourceBackedInputs:
       defaultRequireSourceBackedInputs
         ? true
@@ -227,7 +229,7 @@ function WorkflowLauncher({
   } = useWorkflows()
 
   const [draft, setDraft] = useState<WorkflowSelectionDraft>(() =>
-    createInitialDraft(deals, 'full-acquisition-review', initialDealId, defaultRequireSourceBackedInputs)
+    createInitialDraft(deals, defaultWorkflowId || 'full-acquisition-review', initialDealId, defaultRequireSourceBackedInputs)
   )
   const [activeStep, setActiveStep] = useState<'deal' | 'workflow' | 'review'>('deal')
   const [localMessage, setLocalMessage] = useState<string | null>(null)
@@ -330,8 +332,8 @@ function WorkflowLauncher({
       mode: preset.inputs.mode,
       runtimeProvider: preset.inputs.runtimeProvider,
       reset: preset.inputs.reset,
-      codexMaxAgents: preset.inputs.codexMaxAgents ?? 1,
-      codexConcurrency: preset.inputs.codexConcurrency ?? 1,
+      codexMaxAgents: preset.inputs.codexMaxAgents ?? null,
+      codexConcurrency: preset.inputs.codexConcurrency ?? 2,
       codexSearch: preset.inputs.codexSearch === true,
       requireSourceBackedInputs: preset.inputs.requireSourceBackedInputs === true,
       notes: preset.inputs.notes || '',
@@ -790,7 +792,7 @@ function WorkflowLauncher({
                 </select>
               </label>
               <label className="block">
-                <span className="block text-sm font-medium text-gray-200 mb-2">Simulation Speed</span>
+                <span className="block text-sm font-medium text-gray-200 mb-2">Demo Speed</span>
                 <select
                   data-testid="workflow-speed-select"
                   value={draft.speed}
@@ -808,7 +810,7 @@ function WorkflowLauncher({
                 </select>
               </label>
               <label className="block">
-                <span className="block text-sm font-medium text-gray-200 mb-2">Simulation Mode</span>
+                <span className="block text-sm font-medium text-gray-200 mb-2">Demo Mode</span>
                 <select
                   data-testid="workflow-mode-select"
                   value={draft.mode}
@@ -868,6 +870,25 @@ function WorkflowLauncher({
                       }
                       className={inputClassName()}
                     />
+                  </label>
+                  <label className="md:col-span-2 flex items-start gap-3 border border-cre-border bg-black/20 p-4">
+                    <input
+                      data-testid="workflow-codex-search-toggle"
+                      type="checkbox"
+                      checked={draft.codexSearch === true}
+                      onChange={(event) =>
+                        setDraft((current) => ({ ...current, codexSearch: event.target.checked }))
+                      }
+                      className="mt-1 h-4 w-4 accent-cre-accent"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-gray-200">Live web search</span>
+                      <span className="mt-1 block text-xs leading-5 text-gray-500">
+                        Lets agents look up real market, lender, and environmental facts via Codex's built-in
+                        web search (<code>--search</code>). On by default — uses your ChatGPT plan, no API key.
+                        Requires a Codex CLI that supports search; the runner falls back gracefully if not.
+                      </span>
+                    </span>
                   </label>
                   <div
                     data-testid="workflow-codex-auth-card"
@@ -1047,7 +1068,7 @@ function WorkflowLauncher({
                 <div className="flex justify-between gap-4">
                   <dt className="text-gray-500">Runtime</dt>
                   <dd className="min-w-0 break-words text-right text-gray-200">
-                    {isCodexRun ? 'Codex / ChatGPT' : 'Simulation'}
+                    {isCodexRun ? 'Codex / ChatGPT' : 'Simulation Demo'}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">

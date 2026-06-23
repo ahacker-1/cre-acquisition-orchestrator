@@ -4,6 +4,62 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [3.3.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.2.0...v3.3.0) (2026-06-22)
+
+Makes **live Codex / ChatGPT the default workflow lane** and gives the agent team **real web
+search**, so a launched workflow actually goes online and pulls cited market, lender, and
+environmental data instead of reasoning only over local fixtures. Also adds lean legal-document
+parsing and lands the intake/extraction/launch UX fixes and e2e/CI stabilization from the 3.2.x line.
+
+### Features
+
+* **Codex is the main workflow runtime:** the dashboard now launches the selected workflow on live
+  Codex / ChatGPT by default. The Workflow Launcher, Swarm Goal Console, and saved presets default
+  to the Codex runtime (Codex listed first, "All selected" agents, concurrency 2), with the
+  deterministic Simulation runtime kept as the no-credential fallback for demos, screenshots, and
+  CI. `docs/RUNTIME-COMPARISON.md` is reframed accordingly.
+* **Live agents actually use web search:** the Codex runner now threads a `searchEnabled` flag into
+  the agent prompt and, when `--search` is on, directs agents to actively look up and cite real
+  rent/sales comps, submarket rents, occupancy, cap rates, demographics, supply pipeline, and
+  current interest/lender rates — and not to claim web search is unavailable when it is enabled.
+  Web search is on by default for Codex runs with a visible toggle, and the Swarm launch and
+  retry-failed-agents paths both keep it on.
+* **Lean legal-document parsing:** PSA, title commitment, and estoppel documents parse into
+  review-gated candidate fields with provenance, with committed fixtures and tests.
+* **Swarm console can launch live Codex:** the Swarm Goal Console launches the recommended swarm on
+  the Codex runtime (with web search) rather than only the deterministic simulation.
+
+### Bug Fixes
+
+* **T12 operating expenses** are stored as a positive magnitude to satisfy the deal schema
+  (`financials.trailingT12Expenses` `minimum: 0`), so the extraction applies cleanly instead of
+  throwing "Applied extraction would make the deal invalid" on every workspace load.
+* **Source reconciliation** no longer false-flags equal values: `valuesDiffer` compares numerically
+  with unit normalization (decimal vs percent) and a 0.1% tolerance, and the "Sources disagree"
+  message now names the actual conflicting read's value (e.g. `applied 312,000 vs T12 253,548`)
+  instead of re-showing the applied value.
+* **Blocked phase launch** surfaces the specific missing required fields inline under the Run
+  button — with an "Open Edit Deal" shortcut to the wizard — instead of failing silently.
+* **Edit Deal wizard** step pills are clickable buttons that jump to a step.
+* **Sample/demo deals** are aligned to the schema's `timeline.extensionOptions` object shape so the
+  bundled samples validate.
+* **Uploaded data inspector** renders negative spreadsheet cells without the CSV formula-injection
+  text-qualifier apostrophe (display only; the sanitizer and its security test are unchanged), and
+  the IC starter-package source-coverage line is reworded to `N approved (M required)`.
+* **Scoped-workflow reports** list only the agents that actually ran in the Workpaper Index, so a
+  scoped workflow no longer links workpaper files that were never generated.
+* **e2e / CI stabilization:** fixes the dashboard workspace overlay race and modal staging that made
+  recovery and stage flows flaky, and speeds up CI feedback for the v3 checks.
+
+### Verification
+
+* `npm test`
+* `npm --prefix dashboard run typecheck`
+* `npm --prefix dashboard run test:e2e`
+* `npm run codex:status` + live Codex single-agent and multi-agent (`quick-deal-screen`) runs with
+  web search, confirming real cited sources (Census, FRED, HUD/Fannie Mae, county appraisal,
+  apartment-listing data) and passing `validate-contracts --codex-run-id`.
+
 ## [3.2.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.1.0...v3.2.0) (2026-06-22)
 
 Ships a production-scale local QA harness and a clearer public proof path. The release adds a

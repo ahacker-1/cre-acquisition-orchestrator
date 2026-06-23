@@ -31,8 +31,8 @@ Let's bring this industry into the future.
 - **Run a first real deal in 10 minutes:** follow the [First Deal Guide](docs/FIRST-DEAL-GUIDE.md), start the dashboard, drop local rent roll/T12/offering memo files, review source-backed fields, and export the IC starter package.
 - **Trace the source-to-IC proof path manually:** use the [Demo Journey](docs/DEMO-JOURNEY.md#source-to-ic-proof-path) to follow a value or red flag from document drop, through uploaded data inspection, extraction review, approved evidence, workpapers, and the IC package references the current artifacts expose.
 - **Use Parkview as the deterministic fallback:** click **Start Guided Demo** when you want a no-upload sample tour through the deal space - the lifecycle spine, the command bar, Your Team, the live feed, and the IC package.
-- **Install from scratch:** follow [Quick Start](#quick-start). The dashboard path is local-first and the sample demo remains deterministic after dependencies are installed.
-- **Choose the right runtime:** read [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md) before sending any real deal context through the optional live-agent path.
+- **Install from scratch:** follow [Quick Start](#quick-start). The dashboard path is local-first, launches live Codex workflows by default, and keeps the sample tour deterministic.
+- **Choose the right runtime:** read [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md) before sending any real deal context through Codex.
 - **Understand the system:** read [Architecture](docs/ARCHITECTURE.md), [Agent Catalog](docs/AGENT-CATALOG.md), [API Reference](docs/API-REFERENCE.md), and [WebSocket Events](docs/WEBSOCKET-EVENTS.md).
 - **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially legal document parsing, richer live runtime controls, OCR hardening, and additional messy parser fixtures.
 
@@ -48,7 +48,7 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 - **Human approval gate** - underwriting inputs do not change until the operator approves/applies trusted fields or waives/rejects ambiguous ones.
 - **31-role AI deal team** - 6 orchestrators, 21 acquisition specialists, and 4 document-ingestion roles are defined as markdown prompts.
 - **Visible coordination** - dashboard events show specialist messages, handoffs, dependencies, reviews, workpapers, and package status.
-- **Two runtime paths** - offline deterministic simulation by default, with an optional ChatGPT-authenticated Codex CLI path for live agent workflows.
+- **Two runtime paths** - ChatGPT-authenticated Codex CLI is the operator launch lane, with an explicit offline deterministic simulation for demos, screenshots, and CI-safe validation.
 
 ---
 

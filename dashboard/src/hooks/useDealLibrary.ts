@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { API_URL } from '../config'
-import type { RunSpeed } from '../types/checkpoint'
+import type { RunSpeed, RuntimeProvider } from '../types/checkpoint'
 import type {
   DealFormData,
   DealLibraryItem,
@@ -17,6 +17,11 @@ interface LaunchOptions {
   scenario: string
   speed: RunSpeed
   reset?: boolean
+  runtimeProvider?: RuntimeProvider
+  codexMaxAgents?: number | null
+  codexConcurrency?: number | null
+  codexSearch?: boolean
+  requireSourceBackedInputs?: boolean
 }
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {

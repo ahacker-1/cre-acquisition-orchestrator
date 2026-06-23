@@ -36,10 +36,11 @@ function assertAgentPlan(plan) {
 
   assert.equal(plan.workflowId, 'quick-deal-screen');
   assert.equal(plan.workflowName, 'Quick Deal Screen');
-  assert.equal(plan.runtimeProvider, 'simulation');
+  assert.equal(plan.runtimeProvider, 'codex');
   assert.equal(plan.requiresConfirmation, true);
   assert.equal(plan.launchRequest.workflowId, 'quick-deal-screen');
   assert.equal(plan.launchRequest.scenario, 'core-plus');
+  assert.equal(plan.launchRequest.runtimeProvider, 'codex');
   assert.equal(plan.launchRequest.requireSourceBackedInputs, true);
   assert.match(plan.explanation, /go\/no-go|screen|pursu|deeper/i);
   assert.ok(plan.dataGaps.length > 0, 'missing source coverage should produce data gaps');

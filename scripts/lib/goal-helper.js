@@ -148,7 +148,7 @@ function suggestSwarmGoal({ goal, catalog, registry, phaseMetadata, dealSummary 
     workflowSummary: workflow.summary || '',
     operatorGoal: workflow.operatorGoal || goalText,
     explanation: `${workflow.name || workflow.id} is the best-fit swarm because its operator goal is: ${workflow.operatorGoal || workflow.summary || 'advance this acquisition decision.'}`,
-    runtimeProvider: 'simulation',
+    runtimeProvider: 'codex',
     requiresConfirmation: true,
     readiness: blockerCount > 0 ? 'blocked' : 'ready',
     dataGaps,
@@ -162,7 +162,7 @@ function suggestSwarmGoal({ goal, catalog, registry, phaseMetadata, dealSummary 
         }
       : {
           label: `Launch ${workflow.name || workflow.id}`,
-          detail: 'The recommended swarm has enough approved source coverage for a deterministic review.',
+          detail: 'The recommended swarm has enough approved source coverage for a Codex review.',
           target: 'advanced',
         },
     launchRequest: {
@@ -171,7 +171,7 @@ function suggestSwarmGoal({ goal, catalog, registry, phaseMetadata, dealSummary 
       scenario,
       speed: 'fast',
       mode: 'fast',
-      runtimeProvider: 'simulation',
+      runtimeProvider: 'codex',
       requireSourceBackedInputs: true,
       reset: true,
     },

@@ -248,8 +248,9 @@ function safeRunId(value: string): string {
   return safePaths.assertSafeSegment(value, 'run ID');
 }
 
-function asRuntimeProvider(value: unknown): 'simulation' | 'codex' {
-  return value === 'codex' ? 'codex' : 'simulation';
+function asRuntimeProvider(value: unknown, fallback: 'simulation' | 'codex' = 'codex'): 'simulation' | 'codex' {
+  if (value === 'codex' || value === 'simulation') return value;
+  return fallback;
 }
 
 function asPositiveInteger(value: unknown): number | undefined {
@@ -1362,7 +1363,7 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         seed: typeof body.seed === 'number' ? body.seed : preset?.seed ?? undefined,
         reset: typeof body.reset === 'boolean' ? body.reset : false,
         workflowId: workflow.id,
-        runtimeProvider: asRuntimeProvider(body.runtimeProvider),
+        runtimeProvider: asRuntimeProvider(body.runtimeProvider ?? preset?.runtimeProvider),
         presetId: preset?.presetId || presetId || undefined,
         codexMaxAgents: asPositiveInteger(body.codexMaxAgents),
         codexConcurrency: asPositiveInteger(body.codexConcurrency),

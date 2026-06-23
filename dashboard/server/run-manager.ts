@@ -118,7 +118,7 @@ function sanitizeWorkflowId(workflowId: unknown): string {
 }
 
 function sanitizeRuntimeProvider(runtimeProvider: unknown): RuntimeProvider {
-  return runtimeProvider === 'codex' ? 'codex' : 'simulation'
+  return runtimeProvider === 'simulation' ? 'simulation' : 'codex'
 }
 
 function sanitizePresetId(presetId: unknown): string | null {

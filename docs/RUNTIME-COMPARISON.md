@@ -1,10 +1,10 @@
 # Runtime Comparison: Offline Demo vs Live Codex Agents
 
-The project has two runtime paths. Start with the offline deterministic demo when evaluating the product or showing it to a first-time visitor. Use live Codex execution only after the local journey is clear and the deal data is approved for that environment.
+The project has two runtime paths. The dashboard's operator launch lane is live Codex / ChatGPT execution. Use the offline deterministic demo when you need a no-credential product tour, screenshots, or CI-safe validation.
 
 | Question | Offline deterministic demo | Live Codex / ChatGPT execution |
 |---|---|---|
-| Best for | First evaluation, screenshots, docs, local product demo, CI-safe validation | Testing the markdown agent catalog against a real LLM runtime |
+| Best for | Screenshots, docs, local product demo, CI-safe validation | Main operator workflow and testing the markdown agent catalog against a real LLM runtime |
 | Requires API keys? | No | No repo-stored API keys; uses the user's local Codex CLI / ChatGPT login |
 | Requires ChatGPT/Codex login? | No | Yes, via `codex login` / dashboard **Login to ChatGPT** |
 | External network calls during run? | No AI calls during the demo run | Yes, selected prompts and deal context are sent through the authenticated Codex CLI session |
@@ -13,18 +13,18 @@ The project has two runtime paths. Start with the offline deterministic demo whe
 | Strong validation command | `npm run verify:v3` | `npm run codex:status` first, then inspect run manifests and package artifacts |
 | Main artifacts | `data/status/`, `data/phase-outputs/`, `data/reports/` | `data/codex-runs/`, plus dashboard-readable status/package artifacts under `data/status/` and `data/reports/` |
 | Document intelligence | Local parsers and parser `.venv`; readable scanned PDFs use a local review-gated OCR bridge | Same local parser boundary before any live agent workflow consumes approved evidence |
-| Dashboard experience | Fully local sample workspace, Guided Demo Mode, screenshots | Live workpapers and story events when the local Codex runner completes agents |
+| Dashboard experience | Fully local sample workspace, Guided Demo Mode, screenshots | Default workflow launches, live workpapers, and story events when the local Codex runner completes agents |
 | Secret handling | No credentials needed | Credentials stay outside the repo; dashboard status returns booleans only and must never expose token/cookie contents |
-| Public positioning | Safe default for README, screenshots, demos, release notes | Optional advanced path for users who understand the data-sharing boundary |
+| Public positioning | Safe fallback for README screenshots, demos, release notes, and CI | Main lane for users who understand the data-sharing boundary |
 
 ## Recommended Evaluation Path
 
 1. Install dependencies with `npm install`.
-2. Generate deterministic artifacts with `npm run demo`.
+2. Check live auth with `npm run codex:status`, or use the dashboard **Login to ChatGPT** button.
 3. Start the dashboard with `npm run dashboard`.
-4. Open `http://localhost:5173` and click **Start Guided Demo**.
-5. Run `npm run verify:v3` before publishing screenshots, docs, or release notes.
-6. Only then evaluate the live path with `npm run codex:status` and a small `npm run codex:smoke` run.
+4. Drop a deal package, review source-backed fields, and launch the selected workflow with the default Codex runtime.
+5. Use `npm run demo` and **Start Guided Demo** only when you need the deterministic sample tour.
+6. Run `npm run verify:v3` before publishing screenshots, docs, or release notes.
 
 ## Safety Notes for Live Runs
 
@@ -36,4 +36,4 @@ The project has two runtime paths. Start with the offline deterministic demo whe
 
 ## Operator Rule of Thumb
 
-If the goal is to understand or demo the product, use the offline demo. If the goal is to test how the specialist prompt catalog behaves with a real model, use live Codex after confirming authentication and data approval.
+If the goal is to operate on a deal or test the specialist prompt catalog with a real model, use Codex after confirming authentication and data approval. If the goal is a stable product tour or CI proof, use the offline demo.
