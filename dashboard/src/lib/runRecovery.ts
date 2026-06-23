@@ -128,6 +128,9 @@ export async function retryFailedAgents(request: RetryFailedAgentsRequest): Prom
       runtimeProvider: 'codex',
       workflowId: request.workflowId,
       scenario: request.scenario ?? 'core-plus',
+      // Keep web search on for the re-run so retried agents have the same capability as the
+      // (default-on) original run rather than silently losing outside-fact lookups.
+      codexSearch: true,
       codexRerunFailed: true,
       codexRerunRunId: request.runId,
     }),

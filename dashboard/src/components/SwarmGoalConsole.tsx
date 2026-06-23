@@ -248,6 +248,8 @@ export default function SwarmGoalConsole({
         runtimeProvider: 'codex',
         codexMaxAgents: null,
         codexConcurrency: 2,
+        // Live swarm runs get web search so agents pull real market/lender/environmental facts.
+        codexSearch: true,
         requireSourceBackedInputs: false,
         reset: false,
         notes: goalInput,

@@ -189,7 +189,9 @@ function createInitialDraft(
       typeof stored.codexConcurrency === 'number' && stored.codexConcurrency > 0
         ? Math.round(stored.codexConcurrency)
         : 2,
-    codexSearch: stored.codexSearch === true,
+    // Web search is on by default for live Codex runs so agents can look up real market/lender/
+    // environmental facts; a stored explicit `false` (user turned it off) is still respected.
+    codexSearch: stored.codexSearch !== false,
     requireSourceBackedInputs:
       defaultRequireSourceBackedInputs
         ? true
@@ -868,6 +870,25 @@ function WorkflowLauncher({
                       }
                       className={inputClassName()}
                     />
+                  </label>
+                  <label className="md:col-span-2 flex items-start gap-3 border border-cre-border bg-black/20 p-4">
+                    <input
+                      data-testid="workflow-codex-search-toggle"
+                      type="checkbox"
+                      checked={draft.codexSearch === true}
+                      onChange={(event) =>
+                        setDraft((current) => ({ ...current, codexSearch: event.target.checked }))
+                      }
+                      className="mt-1 h-4 w-4 accent-cre-accent"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-gray-200">Live web search</span>
+                      <span className="mt-1 block text-xs leading-5 text-gray-500">
+                        Lets agents look up real market, lender, and environmental facts via Codex's built-in
+                        web search (<code>--search</code>). On by default — uses your ChatGPT plan, no API key.
+                        Requires a Codex CLI that supports search; the runner falls back gracefully if not.
+                      </span>
+                    </span>
                   </label>
                   <div
                     data-testid="workflow-codex-auth-card"
