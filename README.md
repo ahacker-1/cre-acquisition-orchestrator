@@ -15,7 +15,7 @@ A few months ago I wrote about [what happens when you point 489 AI agents at a 2
 
 **It is not fully production-ready.** I want to be direct about that. But what is here is the most in-depth open-source framework I have seen for CRE acquisition orchestration because the category barely exists. There are agent frameworks for coding, customer support, research, and data analysis. There is almost nothing that models how a real multifamily acquisition moves across due diligence, underwriting, financing, legal, and closing while preserving data handoffs, review gates, and investment committee evidence.
 
-The default path is intentionally local. You can run the proof path with no API keys, inspect uploaded tables and source rows, review extracted candidate fields with provenance, approve or waive ambiguous values, and export Markdown/JSON for an investment committee starter package. If you want live agents, the optional ChatGPT/Codex path is there, but the offline demo remains the public proof path.
+The project is local-first: you can run the proof path with no API keys, inspect uploaded tables and source rows, review extracted candidate fields with provenance, approve or waive ambiguous values, and export Markdown/JSON for an investment committee starter package. The dashboard's workflow runtime defaults to live ChatGPT/Codex (with web search on) so the team can pull and cite real market, lender, and environmental data, while the deterministic offline demo stays the no-credential public proof path for tours, screenshots, and CI.
 
 Everything in here - the agent prompts, domain skills, schemas, pipeline architecture, dashboard, and demo artifacts - is yours to use as a starting point. Fork it. Build on it. Adapt it to your own deals, investment thesis, and internal acquisition workflow. If this framework helps even one CRE team rethink how they approach acquisitions, it was worth open-sourcing.
 
@@ -32,9 +32,9 @@ Let's bring this industry into the future.
 - **Trace the source-to-IC proof path manually:** use the [Demo Journey](docs/DEMO-JOURNEY.md#source-to-ic-proof-path) to follow a value or red flag from document drop, through uploaded data inspection, extraction review, approved evidence, workpapers, and the IC package references the current artifacts expose.
 - **Use Parkview as the deterministic fallback:** click **Start Guided Demo** when you want a no-upload sample tour through the deal space - the lifecycle spine, the command bar, Your Team, the live feed, and the IC package.
 - **Install from scratch:** follow [Quick Start](#quick-start). The dashboard path is local-first, launches live Codex workflows by default, and keeps the sample tour deterministic.
-- **Choose the right runtime:** read [Offline Demo vs Live Codex Agents](docs/RUNTIME-COMPARISON.md) before sending any real deal context through Codex.
+- **Choose the right runtime:** read [Live Codex Agents vs Offline Demo](docs/RUNTIME-COMPARISON.md) - live Codex is the default launch lane and the offline demo is the no-credential fallback - before sending any real deal context through Codex.
 - **Understand the system:** read [Architecture](docs/ARCHITECTURE.md), [Agent Catalog](docs/AGENT-CATALOG.md), [API Reference](docs/API-REFERENCE.md), and [WebSocket Events](docs/WEBSOCKET-EVENTS.md).
-- **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially legal document parsing, richer live runtime controls, OCR hardening, and additional messy parser fixtures.
+- **See where to contribute next:** review the [Roadmap](ROADMAP.md), especially richer live runtime controls, deeper legal-document parsing coverage beyond the shipped PSA/title/estoppel candidate extraction, OCR hardening, and additional messy parser fixtures.
 
 For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the shortest deterministic demo, use [Quick Demo](docs/QUICK-DEMO.md).
 
@@ -48,7 +48,7 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 - **Human approval gate** - underwriting inputs do not change until the operator approves/applies trusted fields or waives/rejects ambiguous ones.
 - **31-role AI deal team** - 6 orchestrators, 21 acquisition specialists, and 4 document-ingestion roles are defined as markdown prompts.
 - **Visible coordination** - dashboard events show specialist messages, handoffs, dependencies, reviews, workpapers, and package status.
-- **Two runtime paths** - ChatGPT-authenticated Codex CLI is the operator launch lane, with an explicit offline deterministic simulation for demos, screenshots, and CI-safe validation.
+- **Two runtime paths** - live ChatGPT-authenticated Codex is the default workflow runtime (Workflow Launcher, Swarm Goal Console, and presets default to Codex, all agents selected, concurrency 2) and runs with web search on by default so agents look up and cite real comps, rents, cap rates, demographics, and rates; an explicit offline deterministic simulation remains the no-credential fallback for demos, screenshots, and CI-safe validation.
 
 ---
 
@@ -58,7 +58,7 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 |----------|--------|---------|-----------|----------|---------------|
 | 31 | 8 | 27 | 5 | 40 | 13 |
 
-Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 37 curated fixture files under `fixtures/` (messy parser fixtures, legal diligence checklist extraction, scanned OCR coverage, the adversarial real-world-pile smoke set, and the first-deal package); and 11 root `test*` commands tracked by [package.json](package.json).
+Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 40 curated fixture files under `fixtures/` (messy parser fixtures, legal diligence checklist extraction, lean legal-document parsing for PSA/title/estoppel, scanned OCR coverage, the adversarial real-world-pile smoke set, and the first-deal package); and 13 root `test*` commands tracked by [package.json](package.json).
 
 ---
 
@@ -101,10 +101,10 @@ per-deal results, and weaknesses).
 
 ## Current Status
 
-The latest public release is `v3.1.0`. It turns the persistent deal-space dashboard into an evidence-grade source-to-IC workbench: fresh-clone setup prepares parser dependencies, source documents stay review-gated, evidence lineage travels into the IC package, `npm run verify:v3` proves the release surface end to end, and readable scanned PDFs now route through a local OCR bridge. The stable baseline remains local-first and review-first:
+The latest public release is `v3.3.0`. It makes live Codex / ChatGPT the default workflow runtime and gives the agent team real web search, so a launched workflow goes online and pulls cited market, lender, and environmental data instead of reasoning only over local fixtures; the deterministic Simulation runtime stays as the no-credential fallback for demos, screenshots, and CI. It also adds lean legal-document parsing (PSA, title commitment, and estoppel documents into review-gated candidate fields). It builds on `v3.2.0`, which added a production-scale local QA harness (sanitized 150-deal corpus, `npm run test:prod-local-data` regression gate, `docs/QA-INVENTORY.md` + `docs/QA-BUG-LOG.md`, and the `npm run proof` public proof command). The stable baseline remains local-first and review-first:
 
-- **Local by default** - offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
-- **Versioned release baseline** - `v3.1.0` adds the local scanned-PDF OCR bridge on top of `v3.0.0` evidence graph lineage, OCR-ready metadata, legal checklist candidates, proof-path UI, fresh-clone parser setup, CI, and the full `verify:v3` gate.
+- **Local-first** - the offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
+- **Versioned release baseline** - `v3.3.0` makes live Codex / ChatGPT the default workflow runtime with real web search and adds lean legal-document parsing, on top of `v3.2.0`'s production-scale local QA harness (sanitized 150-deal seed, `test:prod-local-data` regression gate, QA inventory/bug-log docs, `npm run proof`), `v3.1.0`'s local scanned-PDF OCR bridge, and `v3.0.0` evidence graph lineage, OCR-ready metadata, legal checklist candidates, proof-path UI, fresh-clone parser setup, CI, and the full `verify:v3` gate.
 - **Honest evaluation** - `npm run eval` scores the orchestrator on an **8-deal** synthetic benchmark and reports honest numbers including where it falls short (see [Honest Evaluation](#honest-evaluation--prove-it)). The live (Codex) layer covers all 8 deals; the documented soft spots are model-dependent returns (~50%) and one borderline IC verdict.
 - **Known limits** - the local OCR bridge supports readable scanned/image-only PDFs for review-backed headline extraction, but not arbitrary image files or fully reliable table reconstruction. Multi-tenant cloud hosting and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are supported.
 
@@ -118,6 +118,20 @@ The latest public release is `v3.1.0`. It turns the persistent deal-space dashbo
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
+
+## What's New in v3.3.0
+
+- **Codex is the main workflow runtime** - the dashboard launches the selected workflow on live Codex / ChatGPT by default. The Workflow Launcher, Swarm Goal Console, and saved presets default to Codex (listed first, all agents selected, concurrency 2), with the deterministic Simulation runtime kept as the no-credential fallback for demos, screenshots, and CI.
+- **Agents actually use web search** - when Codex web search is on, agents are directed to look up and cite real rent/sales comps, submarket rents, occupancy, cap rates, demographics, supply pipeline, and current interest/lender rates. Web search is on by default with a visible toggle, and the Swarm launch and retry-failed-agents paths keep it on.
+- **Lean legal-document parsing** - PSA, title commitment, and estoppel documents parse into review-gated candidate fields with provenance, committed fixtures, and tests.
+- **Intake/extraction/launch UX fixes + e2e/CI stabilization** - the six intake/extraction/launch bug fixes (T12 expense magnitude, source-reconciliation equality, blocked-launch missing-field surfacing, Edit Deal step pills, sample-deal schema alignment, scoped-workflow workpaper index) land alongside dashboard overlay/modal e2e and CI stabilization.
+
+## What's New in v3.2.0
+
+- **Production-scale local QA harness** - `npm run seed:prod-local -- --count 150` creates a sanitized `QA-LOCAL-2026-*` 150-deal corpus with source documents, extraction artifacts, approved fields, criteria, phase state, checkpoint status, and completed-report artifacts under local `data/`.
+- **Production local data regression gate** - `npm run test:prod-local-data` validates schemas, source-hash provenance, local-only output boundaries, idempotent reseeding, and generated-artifact sensitive-token avoidance.
+- **Public proof command** - `npm run proof` regenerates Parkview, starts the dashboard, waits for readiness, and points reviewers to `docs/PROOF-PATH.md` to trace one source-backed fact from upload to IC package.
+- **Full QA documentation** - `docs/QA-INVENTORY.md` documents routes, roles, modals, buttons, inputs, workflows, and acceptance criteria; `docs/QA-BUG-LOG.md` records each production-scale QA defect with reproduction evidence, fix, and verification, with 30 Playwright browser tests passing.
 
 ## What's New in v3.1.0
 
@@ -161,7 +175,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Release Journey
 
-This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, then a credibility-hardened sample package with strict schemas, then a completion pass adding PDF extraction and review-grade workpapers, then real-world drop-flow hardening with an honest evaluation harness, then a redesign into one persistent deal space you drive by summoning agents, and now an evidence-grade source-to-IC workbench with full release verification.
+This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, then a credibility-hardened sample package with strict schemas, then a completion pass adding PDF extraction and review-grade workpapers, then real-world drop-flow hardening with an honest evaluation harness, then a redesign into one persistent deal space you drive by summoning agents, then an evidence-grade source-to-IC workbench with full release verification, then a production-scale local QA harness that exercises the app like a real operator across a sanitized 150-deal corpus, and now a release that makes live Codex / ChatGPT the default workflow runtime with real, cited web search (plus lean legal-document parsing), keeping the deterministic simulation as the no-credential fallback.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -180,6 +194,8 @@ This project has grown from agent architecture into a local-first acquisition wo
 | **v2.8.5 - Deal Workspace Redesign** | Redesigns the operator dashboard into one persistent "deal space" — a lifecycle spine + auto-filling intake (drop documents, edit only what's flagged) + summonable agent panels that stream work and render workpapers — as presentation plus three thin backend hooks, engine and audit trail unchanged, offline demo still the default. | [GitHub Release](https://github.com/ahacker-1/cre-acquisition-orchestrator/releases/tag/v2.8.5) |
 | **v3.0.0 - Evidence-Grade Workbench** | Adds fresh-clone parser setup, OCR-ready metadata, legal checklist candidates, deterministic evidence graph lineage, proof-path dashboard UI, CI, and the full `npm run verify:v3` release gate. | [RELEASE_NOTES_v3.0.0.md](RELEASE_NOTES_v3.0.0.md) |
 | **v3.1.0 - Local OCR Bridge** | Adds local scanned-PDF OCR with PyMuPDF and `tesseract.js`, review-gated OCR candidates, OCR fixture coverage, and setup/docs support. | [RELEASE_NOTES_v3.1.0.md](RELEASE_NOTES_v3.1.0.md) |
+| **v3.2.0 - Production-Scale Local QA Harness** | Adds a sanitized 150-deal local seed (`npm run seed:prod-local`), a `npm run test:prod-local-data` regression gate, a production-scale Playwright inventory, the `npm run proof` public proof command, and QA inventory/bug-log docs, plus workspace reliability fixes. | [RELEASE_NOTES_v3.2.0.md](RELEASE_NOTES_v3.2.0.md) |
+| **v3.3.0 - Codex Main Lane + Live Web Search** | Makes live Codex / ChatGPT the default workflow runtime (Simulation kept as the no-credential fallback), gives agents real, cited web search, adds lean legal-document (PSA / title / estoppel) parsing, and lands the intake/extraction/launch UX fixes and e2e/CI stabilization. | [RELEASE_NOTES_v3.3.0.md](RELEASE_NOTES_v3.3.0.md) |
 
 ---
 
@@ -275,14 +291,14 @@ flowchart LR
     DOCS --> REVIEW[Source-Backed Extraction Review]
     REVIEW --> APPROVED[Approved Inputs]
     APPROVED --> SIM[Offline Deterministic Simulation]
-    APPROVED --> CODEX[Optional Codex Runtime]
+    APPROVED --> CODEX[Default Live Codex Runtime]
     SIM --> WORKPAPERS[Workpapers and Phase Outputs]
     CODEX --> WORKPAPERS
     WORKPAPERS --> PACKAGE[IC Package Export]
     WS --> UI
 ```
 
-The source-to-IC proof path is the public trust loop: local source documents become reviewable candidates, approved inputs shape deterministic/offline or optional live-agent workpapers, and the IC package exports the available decision trail for human review. The offline simulation path stays local after dependencies are installed. The optional live Codex path sends selected prompts and deal context through the user's ChatGPT-authenticated Codex CLI session, then writes raw Codex outputs and dashboard-readable package artifacts back into the local `data/` tree. Authentication is not stored in this repository.
+The source-to-IC proof path is the public trust loop: local source documents become reviewable candidates, approved inputs shape deterministic/offline or live-agent workpapers, and the IC package exports the available decision trail for human review. The offline simulation path stays local after dependencies are installed. The default live Codex path sends selected prompts and deal context through the user's ChatGPT-authenticated Codex CLI session, then writes raw Codex outputs and dashboard-readable package artifacts back into the local `data/` tree. Authentication is not stored in this repository.
 
 ---
 
@@ -540,7 +556,7 @@ npm run codex:smoke
 | **Human approval gate** | The system is designed around operator judgment: candidate fields are accepted, rejected, waived, or left unresolved before workflows consume them. |
 | **Strict schema contracts** | Phase outputs, agent findings, checkpoints, document manifests, and events validate against JSON Schema with shared enums and closed objects. |
 | **Deterministic Parkview demo** | A complete Austin/Travis County sample run produces populated reports and workpapers with no API keys. |
-| **Optional live Codex runtime** | Teams that want live AI execution can use a ChatGPT-authenticated Codex CLI path without making that the default public demo dependency. |
+| **Live Codex runtime (default launch lane)** | Launching a real workflow uses ChatGPT-authenticated Codex CLI execution by default, with web search on so agents cite real facts; the deterministic offline simulation stays the no-credential demo/CI fallback so live AI is never required just to evaluate the system. |
 | **Operator dashboard** | The React workspace is one persistent deal space: a lifecycle spine from Intake to IC, the agents at work on the focused stage, a live feed, a command bar to dispatch the team, and IC package assembly - all in one frame. |
 | **Public validation harness** | Demo verification, parser tests, workspace tests, schema tests, security assertions, docs drift checks, and browser E2E coverage are part of the repo. |
 | **Open, inspectable domain layer** | CRE assumptions live in Markdown skill files and JSON config, so operators can see and change the policy rather than trusting hidden code. |
