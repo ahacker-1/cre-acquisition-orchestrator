@@ -4,6 +4,20 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [3.3.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.2.0...v3.3.0) (2026-06-23)
+
+
+### Features
+
+* **codex:** make web search actually work on the Codex-main lane ([9f3dec2](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/9f3dec2e32ea063bf1f284172b4cc8633b724bd8))
+
+
+### Bug Fixes
+
+* **dashboard:** address Codex review on the bug fixes ([f6a9c17](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/f6a9c178e07c23c6f30b385a23e9a5e23f815946))
+* **dashboard:** correct 6 intake/extraction/launch UX bugs ([a26129f](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/a26129f46b56cb0c2aa2b957dd9570211beaa3ef))
+* **dashboard:** correct 6 intake/extraction/launch UX bugs ([6b8054c](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/6b8054cc622ff91cc27c979309459f11da7dbef8))
+
 ## [3.3.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.2.0...v3.3.0) (2026-06-22)
 
 Makes **live Codex / ChatGPT the default workflow lane** and gives the agent team **real web
