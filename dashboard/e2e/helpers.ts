@@ -191,6 +191,7 @@ export async function launchWorkflowForDeal(
       dealId,
       scenario: 'core-plus',
       speed: 'fast',
+      runtimeProvider: 'simulation',
       reset: false,
     },
   })

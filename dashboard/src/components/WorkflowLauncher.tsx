@@ -23,7 +23,7 @@ interface WorkflowLauncherProps {
   lockDealSelection?: boolean
 }
 
-const DRAFT_STORAGE_KEY = 'cre.workflowLauncher.v1'
+const DRAFT_STORAGE_KEY = 'cre.workflowLauncher.v2'
 
 interface CodexAuthStatus {
   installed: boolean
@@ -61,14 +61,14 @@ const MODES: { value: RunMode; label: string }[] = [
 ]
 
 const RUNTIME_PROVIDERS: { value: RuntimeProvider; label: string }[] = [
-  { value: 'simulation', label: 'Simulation' },
   { value: 'codex', label: 'Codex / ChatGPT' },
+  { value: 'simulation', label: 'Simulation Demo' },
 ]
 
 const CODEX_AGENT_LIMITS: { value: string; label: string }[] = [
+  { value: '', label: 'All selected' },
   { value: '1', label: '1 agent' },
   { value: '2', label: '2 agents' },
-  { value: '', label: 'All selected' },
 ]
 
 function readStoredDraft(): Partial<WorkflowSelectionDraft> {
@@ -179,16 +179,16 @@ function createInitialDraft(
         ? stored.speed
         : 'normal',
     mode: stored.mode === 'fast' ? 'fast' : 'live',
-    runtimeProvider: stored.runtimeProvider === 'codex' ? 'codex' : 'simulation',
+    runtimeProvider: stored.runtimeProvider === 'simulation' ? 'simulation' : 'codex',
     reset: typeof stored.reset === 'boolean' ? stored.reset : false,
     codexMaxAgents:
       typeof stored.codexMaxAgents === 'number' && stored.codexMaxAgents > 0
         ? Math.round(stored.codexMaxAgents)
-        : 1,
+        : null,
     codexConcurrency:
       typeof stored.codexConcurrency === 'number' && stored.codexConcurrency > 0
         ? Math.round(stored.codexConcurrency)
-        : 1,
+        : 2,
     codexSearch: stored.codexSearch === true,
     requireSourceBackedInputs:
       defaultRequireSourceBackedInputs
@@ -227,7 +227,7 @@ function WorkflowLauncher({
   } = useWorkflows()
 
   const [draft, setDraft] = useState<WorkflowSelectionDraft>(() =>
-    createInitialDraft(deals, 'full-acquisition-review', initialDealId, defaultRequireSourceBackedInputs)
+    createInitialDraft(deals, defaultWorkflowId || 'full-acquisition-review', initialDealId, defaultRequireSourceBackedInputs)
   )
   const [activeStep, setActiveStep] = useState<'deal' | 'workflow' | 'review'>('deal')
   const [localMessage, setLocalMessage] = useState<string | null>(null)
@@ -330,8 +330,8 @@ function WorkflowLauncher({
       mode: preset.inputs.mode,
       runtimeProvider: preset.inputs.runtimeProvider,
       reset: preset.inputs.reset,
-      codexMaxAgents: preset.inputs.codexMaxAgents ?? 1,
-      codexConcurrency: preset.inputs.codexConcurrency ?? 1,
+      codexMaxAgents: preset.inputs.codexMaxAgents ?? null,
+      codexConcurrency: preset.inputs.codexConcurrency ?? 2,
       codexSearch: preset.inputs.codexSearch === true,
       requireSourceBackedInputs: preset.inputs.requireSourceBackedInputs === true,
       notes: preset.inputs.notes || '',
@@ -790,7 +790,7 @@ function WorkflowLauncher({
                 </select>
               </label>
               <label className="block">
-                <span className="block text-sm font-medium text-gray-200 mb-2">Simulation Speed</span>
+                <span className="block text-sm font-medium text-gray-200 mb-2">Demo Speed</span>
                 <select
                   data-testid="workflow-speed-select"
                   value={draft.speed}
@@ -808,7 +808,7 @@ function WorkflowLauncher({
                 </select>
               </label>
               <label className="block">
-                <span className="block text-sm font-medium text-gray-200 mb-2">Simulation Mode</span>
+                <span className="block text-sm font-medium text-gray-200 mb-2">Demo Mode</span>
                 <select
                   data-testid="workflow-mode-select"
                   value={draft.mode}
@@ -1047,7 +1047,7 @@ function WorkflowLauncher({
                 <div className="flex justify-between gap-4">
                   <dt className="text-gray-500">Runtime</dt>
                   <dd className="min-w-0 break-words text-right text-gray-200">
-                    {isCodexRun ? 'Codex / ChatGPT' : 'Simulation'}
+                    {isCodexRun ? 'Codex / ChatGPT' : 'Simulation Demo'}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">

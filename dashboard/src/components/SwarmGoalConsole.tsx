@@ -243,11 +243,13 @@ export default function SwarmGoalConsole({
         ...(plannedSwarm.launchRequest ?? {}),
         dealId: dealCheckpoint.dealId,
         workflowId: plannedSwarm.workflowId,
-        mode: 'fast',
+        mode: 'live',
         speed: 'fast',
-        runtimeProvider: 'simulation',
+        runtimeProvider: 'codex',
+        codexMaxAgents: null,
+        codexConcurrency: 2,
         requireSourceBackedInputs: false,
-        reset: true,
+        reset: false,
         notes: goalInput,
       }
       const response = await fetch(`${API_URL}/api/workflows/${encodeURIComponent(plannedSwarm.workflowId)}/launch`, {

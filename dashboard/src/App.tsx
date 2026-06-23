@@ -328,6 +328,9 @@ export default function App() {
         scenario: recommendedScenarioForDeal(match),
         speed: 'normal',
         reset: match.kind === 'sample',
+        runtimeProvider: 'codex',
+        codexMaxAgents: null,
+        codexConcurrency: 2,
       })
       setFrontDoorPinned(false)
       setFrontDoorOpen(false)
@@ -474,7 +477,7 @@ export default function App() {
                 disabled={!canStart}
                 className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {runRequestPending ? 'Working...' : 'Run Demo'}
+                {runRequestPending ? 'Working...' : 'Run Codex'}
               </button>
 
               <button

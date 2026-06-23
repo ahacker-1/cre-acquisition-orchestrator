@@ -16,9 +16,6 @@ function findOnPath(command, extensions) {
 function windowsInvocation(command, args) {
   if (command === 'node') return { file: process.execPath, args };
 
-  const exe = findOnPath(command, ['.exe']);
-  if (exe) return { file: exe, args };
-
   const commandScript = findOnPath(command, ['.cmd', '.bat']);
   if (commandScript) {
     return {
@@ -26,6 +23,9 @@ function windowsInvocation(command, args) {
       args: ['/d', '/c', 'call', commandScript, ...args]
     };
   }
+
+  const exe = findOnPath(command, ['.exe']);
+  if (exe) return { file: exe, args };
 
   return { file: command, args };
 }

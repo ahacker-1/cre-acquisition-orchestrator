@@ -14,6 +14,7 @@ import type {
   LaunchScenario,
   UnitMixRowForm,
 } from '../types/deals'
+import type { RuntimeProvider } from '../types/checkpoint'
 
 interface DealIntakeWizardProps {
   isOpen: boolean
@@ -33,7 +34,14 @@ interface DealIntakeWizardProps {
   ) => Promise<DealRecordResponse>
   onLaunchDeal: (
     dealId: string,
-    options: { scenario: LaunchScenario; speed: 'fast' | 'normal' | 'slow'; reset?: boolean },
+    options: {
+      scenario: LaunchScenario
+      speed: 'fast' | 'normal' | 'slow'
+      reset?: boolean
+      runtimeProvider?: RuntimeProvider
+      codexMaxAgents?: number | null
+      codexConcurrency?: number | null
+    },
   ) => Promise<unknown>
   onSaved: (dealId?: string, intent?: 'draft' | 'launch' | 'documents') => void | Promise<void>
   onLaunched: () => void
@@ -246,6 +254,9 @@ export default function DealIntakeWizard({
         scenario: form.launch.scenario,
         speed: form.launch.speed,
         reset: false,
+        runtimeProvider: 'codex',
+        codexMaxAgents: null,
+        codexConcurrency: 2,
       })
       await onSaved()
       onLaunched()

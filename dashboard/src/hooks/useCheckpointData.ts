@@ -559,8 +559,12 @@ export function useCheckpointData() {
         dealPath: 'config/deal.json',
         mode: 'live',
         speed: 'normal',
-        runtimeProvider: 'simulation',
-        reset: true,
+        workflowId: 'full-acquisition-review',
+        scenario: 'core-plus',
+        runtimeProvider: 'codex',
+        reset: false,
+        codexMaxAgents: null,
+        codexConcurrency: 2,
       }
       const response = await fetch(`${API_URL}/api/run/start`, {
         method: 'POST',

@@ -298,6 +298,21 @@ test('edits a saved deal and starts a run from the wizard', async ({ page, reque
   await expect(page.getByText('Launch Ready')).toBeVisible()
   await expect(page.getByText('0 blocking issue(s), 0 warning(s)')).toBeVisible()
 
+  let capturedLaunchBody: Record<string, unknown> | null = null
+  await page.route(`**/api/deals/${READY_DEAL_ID}/launch`, async (route) => {
+    capturedLaunchBody = route.request().postDataJSON() as Record<string, unknown>
+    await route.continue({
+      postData: JSON.stringify({
+        ...capturedLaunchBody,
+        runtimeProvider: 'simulation',
+      }),
+      headers: {
+        ...route.request().headers(),
+        'content-type': 'application/json',
+      },
+    })
+  })
+
   await page.getByTestId('deal-wizard-save-launch').click()
 
   // The run started (header flipped to Running) and the app navigated to the launched deal —
@@ -306,6 +321,9 @@ test('edits a saved deal and starts a run from the wizard', async ({ page, reque
   // simulation finishes too fast to assert that reliably, so it is not checked here.)
   await expect(page.getByText('Run: Running')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('main').getByRole('heading', { name: READY_DEAL_NAME })).toBeVisible({ timeout: 20_000 })
+  expect(capturedLaunchBody?.runtimeProvider).toBe('codex')
+  expect(capturedLaunchBody?.codexMaxAgents).toBeNull()
+  expect(capturedLaunchBody?.codexConcurrency).toBe(2)
 
   expect(consoleErrors).toEqual([])
 })
@@ -316,6 +334,20 @@ test('launches a shipped sample deal from the library', async ({ page, request }
   await waitForDashboardReady(page)
   await stopActiveRun(request)
   const modal = await openDealLibraryModal(page)
+  let capturedLaunchBody: Record<string, unknown> | null = null
+  await page.route(`**/api/deals/${SAMPLE_DEAL_ID}/launch`, async (route) => {
+    capturedLaunchBody = route.request().postDataJSON() as Record<string, unknown>
+    await route.continue({
+      postData: JSON.stringify({
+        ...capturedLaunchBody,
+        runtimeProvider: 'simulation',
+      }),
+      headers: {
+        ...route.request().headers(),
+        'content-type': 'application/json',
+      },
+    })
+  })
   const launchResponsePromise = page.waitForResponse((response) =>
     isApiResponse(response, 'POST', `/api/deals/${SAMPLE_DEAL_ID}/launch`)
   )
@@ -324,6 +356,9 @@ test('launches a shipped sample deal from the library', async ({ page, request }
   await expectApiOk(launchResponse)
   const launchPayload = (await launchResponse.json()) as { deal?: { dealId?: string } }
   expect(launchPayload.deal?.dealId).toBe(SAMPLE_DEAL_ID)
+  expect(capturedLaunchBody?.runtimeProvider).toBe('codex')
+  expect(capturedLaunchBody?.codexMaxAgents).toBeNull()
+  expect(capturedLaunchBody?.codexConcurrency).toBe(2)
 
   await expect
     .poll(
@@ -548,7 +583,7 @@ test('keeps the embedded workflow launcher scoped to the open deal', async ({ pa
   await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
   await saveLaunchReadyDeal(request, READY_DEAL_ID, READY_DEAL_NAME)
   await page.addInitScript((storedDealId) => {
-    window.localStorage.setItem('cre.workflowLauncher.v1', JSON.stringify({
+    window.localStorage.setItem('cre.workflowLauncher.v2', JSON.stringify({
       dealId: storedDealId,
       workflowId: 'quick-deal-screen',
       scenario: 'core-plus',
@@ -583,9 +618,9 @@ test('loads workflow catalog and saves a reusable preset', async ({ page }) => {
   await expect(modal.getByTestId('workflow-catalog-load')).toContainText('workflows available')
 
   await modal.getByTestId('workflow-step-review').click()
+  await expect(modal.getByTestId('workflow-runtime-provider-select')).toHaveValue('codex')
   await modal.getByTestId('workflow-deal-select').selectOption(SAMPLE_DEAL_ID)
   await modal.getByTestId('workflow-select').selectOption('quick-deal-screen')
-  await modal.getByTestId('workflow-speed-select').selectOption('fast')
   await modal.getByPlaceholder('Preset name').fill('Playwright Quick Screen')
   await modal.getByTestId('workflow-preset-save').click()
 
@@ -600,7 +635,7 @@ test('shows Codex ChatGPT authentication status in workflow launcher', async ({ 
   await page.getByTestId('header-workflows-button').click()
   const modal = page.getByTestId('workflow-launcher-modal')
   await modal.getByTestId('workflow-step-review').click()
-  await modal.getByTestId('workflow-runtime-provider-select').selectOption('codex')
+  await expect(modal.getByTestId('workflow-runtime-provider-select')).toHaveValue('codex')
 
   const authCard = modal.getByTestId('workflow-codex-auth-card')
   await expect(authCard).toContainText('ChatGPT Authentication')
@@ -685,6 +720,7 @@ test('launches full acquisition workflow from the launcher', async ({ page, requ
   await modal.getByTestId('workflow-step-review').click()
   await modal.getByTestId('workflow-deal-select').selectOption(SAMPLE_DEAL_ID)
   await modal.getByTestId('workflow-select').selectOption('full-acquisition-review')
+  await modal.getByTestId('workflow-runtime-provider-select').selectOption('simulation')
   await modal.getByTestId('workflow-speed-select').selectOption('fast')
   await modal.getByTestId('workflow-launch-selected').click()
 
@@ -1002,6 +1038,7 @@ test('operates the deal hub criteria, source documents, extraction, phase covera
 
   await focusStage(page, 'underwriting')
   await stopActiveRun(request)
+  await page.getByTestId('phase-runtime-provider-select-underwriting').selectOption('simulation')
   await page.getByTestId('phase-launch-underwriting').click()
   await expect(page.getByText(/Run: (Starting|Running|Completed)/)).toBeVisible({ timeout: 15_000 })
 
@@ -1100,6 +1137,7 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   await workflowDealSelect.selectOption({ value: SAMPLE_DEAL_ID })
   await expect(workflowDealSelect).toHaveValue(SAMPLE_DEAL_ID)
   await modal.getByTestId('workflow-select').selectOption('quick-deal-screen')
+  await modal.getByTestId('workflow-runtime-provider-select').selectOption('simulation')
   await modal.getByTestId('workflow-speed-select').selectOption('fast')
   await modal.getByTestId('workflow-mode-select').selectOption('fast')
   await expect(workflowDealSelect).toHaveValue(SAMPLE_DEAL_ID)
@@ -1133,9 +1171,26 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   await expect(swarmConsole.getByTestId('swarm-recommended-workflow')).toContainText(/quick-deal-screen|Quick Deal Screen/i)
   await expect(swarmConsole.getByTestId('swarm-agent-roster')).toContainText(/Rent Roll Analyst|Financial Model Builder|IC Memo Writer/)
   await expect(swarmConsole.getByTestId('swarm-launch-button')).toBeVisible()
+  let capturedSwarmLaunchBody: Record<string, unknown> | null = null
+  await page.route('**/api/workflows/quick-deal-screen/launch', async (route) => {
+    capturedSwarmLaunchBody = route.request().postDataJSON() as Record<string, unknown>
+    await route.continue({
+      postData: JSON.stringify({
+        ...capturedSwarmLaunchBody,
+        runtimeProvider: 'simulation',
+      }),
+      headers: {
+        ...route.request().headers(),
+        'content-type': 'application/json',
+      },
+    })
+  })
   await swarmConsole.getByTestId('swarm-launch-button').click()
   await expect(page.getByText(/Run: Running|Run: Completed/)).toBeVisible({ timeout: 15_000 })
   await waitForRunIdle(request)
+  expect(capturedSwarmLaunchBody?.runtimeProvider).toBe('codex')
+  expect(capturedSwarmLaunchBody?.codexMaxAgents).toBeNull()
+  expect(capturedSwarmLaunchBody?.codexConcurrency).toBe(2)
   // Reload after the relaunch is idle so the browser reads the final checkpoint instead of a
   // transient in-progress package render emitted during the run.
   await waitForDashboardReady(page)

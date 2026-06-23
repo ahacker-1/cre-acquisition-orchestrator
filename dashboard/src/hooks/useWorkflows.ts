@@ -150,22 +150,22 @@ function normalizePreset(entry: unknown): WorkflowPreset | null {
           : 'normal',
       mode: rawInputs.mode === 'fast' ? 'fast' : 'live',
       runtimeProvider:
-        rawInputs.runtimeProvider === 'codex' || value.runtimeProvider === 'codex'
-          ? 'codex'
-          : 'simulation',
+        rawInputs.runtimeProvider === 'simulation' || value.runtimeProvider === 'simulation'
+          ? 'simulation'
+          : 'codex',
       reset: typeof rawInputs.reset === 'boolean' ? rawInputs.reset : false,
       codexMaxAgents:
         typeof rawInputs.codexMaxAgents === 'number'
           ? rawInputs.codexMaxAgents
           : typeof value.codexMaxAgents === 'number'
             ? value.codexMaxAgents
-            : 1,
+            : null,
       codexConcurrency:
         typeof rawInputs.codexConcurrency === 'number'
           ? rawInputs.codexConcurrency
           : typeof value.codexConcurrency === 'number'
             ? value.codexConcurrency
-            : 1,
+            : 2,
       codexSearch: rawInputs.codexSearch === true || value.codexSearch === true,
       requireSourceBackedInputs:
         rawInputs.requireSourceBackedInputs === true || value.requireSourceBackedInputs === true,

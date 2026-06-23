@@ -128,7 +128,7 @@ function asMode(value: unknown): RunMode {
 }
 
 function asRuntimeProvider(value: unknown): RuntimeProvider {
-  return value === 'codex' ? 'codex' : 'simulation'
+  return value === 'simulation' ? 'simulation' : 'codex'
 }
 
 function asSeed(value: unknown): number | null {
