@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createWorker } from 'tesseract.js'
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
@@ -41,27 +41,63 @@ function pythonCandidates() {
   return candidates
 }
 
+export function renderPdfFailureMessage({ runnableErrors = [], missingInterpreters = [] } = {}) {
+  const firstRunnableError = runnableErrors.find((message) => typeof message === 'string' && message.trim().length > 0)
+  if (firstRunnableError) return firstRunnableError
+  if (missingInterpreters.length > 0) return 'No Python interpreter could render the PDF for OCR.'
+  return 'No Python interpreter could render the PDF for OCR.'
+}
+
+export function renderPdfCandidateError({ stdout = '', stderr = '', status = 'unknown' } = {}) {
+  const trimmedStdout = String(stdout || '').trim()
+  if (trimmedStdout) {
+    try {
+      const parsed = JSON.parse(trimmedStdout)
+      if (parsed && typeof parsed.error === 'string' && parsed.error.trim().length > 0) {
+        return parsed.error.trim()
+      }
+    } catch {
+      // Fall through to the combined output below.
+    }
+  }
+  const combined = `${stdout || ''}\n${stderr || ''}`.trim()
+  return combined || `exit ${status ?? 'unknown'}`
+}
+
 function renderPdf(filePath, outputDir) {
-  const errors = []
+  const runnableErrors = []
+  const missingInterpreters = []
   for (const candidate of pythonCandidates()) {
     const result = spawnSync(candidate.command, [...candidate.args, renderScript, filePath, outputDir], {
       cwd: projectRoot,
       encoding: 'utf8',
     })
     const combined = `${result.stdout || ''}\n${result.stderr || ''}`.trim()
+    if (result.error) {
+      if (result.error.code === 'ENOENT') {
+        missingInterpreters.push(result.error.message)
+        continue
+      }
+      runnableErrors.push(result.error.message)
+      continue
+    }
     if (!result.error && result.status === 0) {
       try {
         const parsed = JSON.parse(result.stdout || '{}')
         if (parsed.success === true && Array.isArray(parsed.images)) return parsed
-        errors.push(parsed.error || 'PDF render script returned no images.')
+        runnableErrors.push(parsed.error || 'PDF render script returned no images.')
       } catch {
-        errors.push(combined || 'PDF render script returned invalid JSON.')
+        runnableErrors.push(combined || 'PDF render script returned invalid JSON.')
       }
       continue
     }
-    errors.push(result.error?.message || combined || `exit ${result.status ?? 'unknown'}`)
+    runnableErrors.push(renderPdfCandidateError({
+      stdout: result.stdout,
+      stderr: result.stderr,
+      status: result.status ?? 'unknown',
+    }))
   }
-  throw new Error(errors.find(Boolean) || 'No Python interpreter could render the PDF for OCR.')
+  throw new Error(renderPdfFailureMessage({ runnableErrors, missingInterpreters }))
 }
 
 function numberValue(raw) {
@@ -222,4 +258,6 @@ async function main() {
   }
 }
 
-await main()
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  await main()
+}
