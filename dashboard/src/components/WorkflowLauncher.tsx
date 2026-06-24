@@ -451,13 +451,14 @@ function WorkflowLauncher({
       setActiveStep('review')
       return
     }
+    const selectedWorkflowLaunch = workflow.id === draft.workflowId
     try {
       const response = await launchWorkflow(workflow.id, {
         dealId: selectedDeal.dealId,
-        presetId: draft.presetId,
+        presetId: selectedWorkflowLaunch ? draft.presetId : undefined,
         mode: draft.mode,
         speed: draft.speed,
-        scenario: draft.scenario,
+        scenario: selectedWorkflowLaunch ? draft.scenario : workflow.recommendedScenario,
         reset: draft.runtimeProvider === 'codex' ? false : draft.reset,
         runtimeProvider: draft.runtimeProvider,
         codexMaxAgents: draft.runtimeProvider === 'codex' ? draft.codexMaxAgents : undefined,
