@@ -2405,8 +2405,8 @@ export default function DealWorkspace({
   const dealRecordGroups = useMemo(() => {
     const merged = new Map(intakeExtractions)
     if (lastExtraction) merged.set(lastExtraction.documentId, lastExtraction)
-    return buildDealRecordGroups([...merged.values()])
-  }, [intakeExtractions, lastExtraction])
+    return buildDealRecordGroups([...merged.values()], workspace?.approvedFields)
+  }, [intakeExtractions, lastExtraction, workspace?.approvedFields])
   const dealRecordNeedsEye = useMemo(() => countNeedsEye(dealRecordGroups), [dealRecordGroups])
 
   // One-line ingestion-agent status for the Intake stage, derived from document state.
