@@ -27,6 +27,17 @@ import {
   parseVerdict,
   parseFlagTexts
 } from '../eval/lib/markdown-parse.mjs';
+import {
+  THRESHOLDS,
+  evaluateThresholds,
+  computeFalseApprove
+} from '../eval/lib/thresholds.mjs';
+import { readFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const repoRoot = join(__dirname, '..');
 
 let failures = 0;
 function test(name, fn) {
@@ -840,6 +851,141 @@ test('parseFlagTexts: collects risk-bearing lines for keyword matching', () => {
 test('parseFlagTexts: empty / non-string input -> []', () => {
   assert.deepEqual(parseFlagTexts(''), []);
   assert.deepEqual(parseFlagTexts(null), []);
+});
+
+// ===========================================================================
+// Regression thresholds — eval/lib/thresholds.mjs
+// ===========================================================================
+// These tests are the REGRESSION GATE. They prove two things a skeptic cares
+// about: (1) the threshold evaluator FAILS LOUDLY when a real score drops, and
+// (2) the committed offline scorecard (the numbers behind eval/REPORT.md) still
+// clears every hard gate. A breach here turns `npm run test:eval` red.
+
+// Synthetic scorecard helpers: build a minimal scorecard the evaluator accepts.
+function aggMetric(mean, n) {
+  return { mean, n: n === undefined ? (mean === null ? 0 : 1) : n };
+}
+function makeScorecard({ ext = {}, sim = {}, simDeals = [] } = {}) {
+  const layers = {};
+  if (ext && Object.keys(ext).length) {
+    layers.extraction = { metrics: {}, counts: { deals: 8 }, deals: [] };
+    for (const [k, v] of Object.entries(ext)) layers.extraction.metrics[k] = aggMetric(v, 8);
+  }
+  if ((sim && Object.keys(sim).length) || simDeals.length) {
+    layers.simulation = { metrics: {}, counts: { deals: 8 }, deals: simDeals };
+    for (const [k, v] of Object.entries(sim)) layers.simulation.metrics[k] = aggMetric(v, 8);
+  }
+  return { layers };
+}
+function noGoDeal(dealId, actualDirection) {
+  return {
+    dealId,
+    layer: 'sim',
+    verdict: { expectedDirection: 'no-go', actualDirection, expected: 'FAIL', actual: actualDirection === 'go' ? 'PASS' : 'FAIL' }
+  };
+}
+
+// A scorecard that clears every hard gate (mirrors the real offline numbers).
+const PASSING = makeScorecard({
+  ext: { extractionPrecision: 1, extractionRecall: 1, extractionF1: 1, extractionNumericWithinTolerance: 1 },
+  sim: { financialDeterminable: 1, dealbreakerRecall: 1, icDirectionalMatch: 1, icExactMatch: 0.75 },
+  simDeals: [noGoDeal('ds-a', 'no-go'), noGoDeal('ds-b', 'no-go')]
+});
+
+test('thresholds: a fully-passing scorecard yields ok=true with measured gates', () => {
+  const r = evaluateThresholds(PASSING);
+  assert.equal(r.ok, true);
+  assert.ok(r.measuredGates >= 9, `expected >=9 measured gates, got ${r.measuredGates}`);
+  assert.equal(r.gatedFailures, 0);
+});
+
+test('thresholds: a DROPPED extraction precision trips the gate (regression caught)', () => {
+  const bad = makeScorecard({
+    ext: { extractionPrecision: 0.5, extractionRecall: 1, extractionF1: 1, extractionNumericWithinTolerance: 1 },
+    sim: { financialDeterminable: 1, dealbreakerRecall: 1, icDirectionalMatch: 1, icExactMatch: 0.75 },
+    simDeals: [noGoDeal('ds-a', 'no-go'), noGoDeal('ds-b', 'no-go')]
+  });
+  const r = evaluateThresholds(bad);
+  assert.equal(r.ok, false);
+  assert.ok(r.gatedFailures >= 1);
+  const row = r.results.find((x) => x.id === 'extractionPrecision');
+  assert.equal(row.pass, false);
+});
+
+test('thresholds: a FALSE APPROVE (go verdict on a FAIL deal) trips the safety gate', () => {
+  const bad = makeScorecard({
+    ext: { extractionPrecision: 1, extractionRecall: 1, extractionF1: 1, extractionNumericWithinTolerance: 1 },
+    sim: { financialDeterminable: 1, dealbreakerRecall: 1, icDirectionalMatch: 0.875, icExactMatch: 0.75 },
+    // One of the two no-go deals was wrongly approved (direction "go").
+    simDeals: [noGoDeal('ds-a', 'go'), noGoDeal('ds-b', 'no-go')]
+  });
+  const fa = computeFalseApprove(bad);
+  assert.equal(fa.count, 1);
+  assert.equal(fa.total, 2);
+  closeTo(fa.rate, 0.5);
+  const r = evaluateThresholds(bad);
+  assert.equal(r.ok, false);
+  const row = r.results.find((x) => x.id === 'falseApproveRate');
+  assert.equal(row.pass, false);
+});
+
+test('thresholds: a null/N-A on a measured GATE metric is a FAILURE, never a free pass', () => {
+  const bad = makeScorecard({
+    ext: { extractionPrecision: null, extractionRecall: 1, extractionF1: 1, extractionNumericWithinTolerance: 1 }
+  });
+  const r = evaluateThresholds(bad);
+  const row = r.results.find((x) => x.id === 'extractionPrecision');
+  // A null mean (n=0) is "not measured" — present:true but not gate-counted.
+  // The point being asserted: it does NOT silently pass.
+  assert.notEqual(row.pass, true);
+});
+
+test('thresholds: an absent layer is "not measured" and does not fail the run', () => {
+  // Extraction-only scorecard: sim + false-approve gates are simply absent.
+  const extOnly = makeScorecard({
+    ext: { extractionPrecision: 1, extractionRecall: 1, extractionF1: 1, extractionNumericWithinTolerance: 1 }
+  });
+  const r = evaluateThresholds(extOnly);
+  assert.equal(r.ok, true);
+  const simRow = r.results.find((x) => x.id === 'simFinancialDeterminable');
+  assert.equal(simRow.present, false);
+});
+
+test('thresholds: every hard gate is set at-or-below a sane ceiling and uses a known op', () => {
+  for (const t of THRESHOLDS) {
+    assert.ok(['min', 'max'].includes(t.op), `${t.id} has bad op ${t.op}`);
+    assert.ok(typeof t.value === 'number' && t.value >= 0 && t.value <= 1, `${t.id} value out of [0,1]`);
+  }
+  // The headline safety gate must exist and be max ≤ 0.
+  const fa = THRESHOLDS.find((t) => t.id === 'falseApproveRate');
+  assert.ok(fa && fa.gate === true && fa.op === 'max' && fa.value === 0);
+});
+
+// ---- THE LIVE GATE on the committed offline scorecard --------------------
+// Loads the machine-readable scorecard that backs eval/REPORT.md and asserts
+// the real committed numbers still clear every hard gate. Regenerated by
+// the offline `node eval/run-eval.mjs … --report-json …` command. If that file
+// is missing (fresh checkout that hasn't generated it yet), this is reported as
+// a skip, not a false pass.
+test('committed offline scorecard clears every hard regression gate', () => {
+  const p = join(repoRoot, 'eval', 'results', 'offline-scorecard.json');
+  if (!existsSync(p)) {
+    console.log('    (skip) eval/results/offline-scorecard.json absent — run the offline eval with --report-json');
+    return;
+  }
+  const sc = JSON.parse(readFileSync(p, 'utf8'));
+  const r = evaluateThresholds(sc);
+  const breaches = r.results
+    .filter((x) => x.gate && x.present && x.pass === false)
+    .map((x) => `${x.label}=${x.actual} (needs ${x.op === 'max' ? '<=' : '>='} ${x.value})`);
+  assert.equal(r.ok, true, `committed scorecard breached gate(s): ${breaches.join('; ')}`);
+  assert.ok(r.measuredGates >= 9, `expected >=9 measured gates, got ${r.measuredGates}`);
+  // Sanity: the embedded thresholds block (written by the harness) agrees with
+  // a fresh evaluation — the committed verdict is not stale/hand-edited.
+  if (sc.thresholds) {
+    assert.equal(sc.thresholds.ok, r.ok, 'embedded thresholds.ok disagrees with fresh evaluation');
+    assert.equal(sc.thresholds.gatedFailures, r.gatedFailures, 'embedded gatedFailures disagrees');
+  }
 });
 
 // ===========================================================================

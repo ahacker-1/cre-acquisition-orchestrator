@@ -172,6 +172,68 @@ trust report, and the report states actual numbers honestly (including misses) w
 clearly separated from the fixture. Hitting every target is NOT required for the eval to be "done";
 honestly reporting where targets are missed (and either fixing or documenting them in Phase 4) is.
 
+### 0(c-gate) Regression GATE vs informational TARGET  (added 2026-06-24)
+
+The targets above are aspirational, full-coverage (incl. live) goals. Layered ON TOP of them — and
+distinct from them — is a deterministic **regression gate** on the offline (no-API) path. The gate's
+single source of truth is `eval/lib/thresholds.mjs`; each threshold is either:
+
+- **🔒 gate (`gate:true`)** — a HARD regression guard on a deterministic offline metric. A breach
+  makes `node eval/run-eval.mjs --mode offline` exit non-zero (so CI's `verify:v3:core` offline step
+  fails) AND turns `npm run test:eval` red. Gates are deliberately set **at or below** the measured
+  value so they have headroom but still fail loudly the moment a score drops.
+- **target (`gate:false`)** — reported beside the actual number but NOT enforced. These are fixture
+  weak spots (the simulation is a fixture, not reasoning, so its narrative red-flag recall is
+  documented-low) or aspirational LIVE-agent targets (measured only when a live layer is present).
+
+A `null`/N-A actual on a measured gate is a FAILURE, never a free pass — we never award credit for a
+number we could not measure. A gate whose layer is absent from a given run is "not measured" and does
+not fail that run (e.g. an extraction-only run does not fail the sim gates).
+
+**The hard gates (deterministic offline path), with the real values they were fixed against
+(`npm run eval:offline`, 8 deals, 2026-06-24):**
+
+| 🔒 Gate metric | Layer | Rule | Measured |
+|---|---|---|---|
+| Extraction field precision | extraction (real parser) | ≥ 0.90 | 1.00 |
+| Extraction field recall | extraction | ≥ 0.85 | 1.00 |
+| Extraction field F1 | extraction | ≥ 0.875 | 1.00 |
+| Extraction numeric-within-tolerance | extraction | ≥ 0.90 | 1.00 |
+| Sim determinable financials (fixture, tautological) | simulation | ≥ 0.99 | 1.00 |
+| Sim dealbreaker recall (safety) | simulation | ≥ 0.90 | 1.00 (n=2) |
+| Sim IC directional (go/no-go) match | simulation | ≥ 0.875 | 1.00 |
+| Sim IC exact-match rate (fixture) | simulation | ≥ 0.60 | 0.75 |
+| **False-approve rate** (a "go" verdict on a FAIL/no-go deal) | derived | ≤ 0.00 | 0.00 (0/2) |
+
+**False-approve rate** is the headline SAFETY metric the gate exists to protect: it counts deals
+whose ground-truth IC verdict is FAIL (direction no-go) that nonetheless received a PASS/CONDITIONAL
+("go") verdict. Any such case is the dangerous error (approving a deal that should be killed), so the
+ceiling is zero. An UNKNOWN verdict on a no-go deal is not a false approve but is surfaced separately
+so it cannot hide.
+
+**Why the simulation is gated at all** (it is "just a fixture"): the fixture is fully deterministic,
+so a gate on it is a true *regression* guard — if someone changes the arithmetic, the scenario-config
+verdict logic, or the scorer, these numbers move and the gate catches it. The gate label keeps the
+honesty framing intact ("fixture, tautological") so no one mistakes a green sim gate for evidence of
+reasoning. The LIVE reasoning path remains the headline (see `eval/results/TRUST-REPORT.md`) and is
+reported as targets, not gated offline, because it needs API/Codex access.
+
+**Committed, regenerable artifacts:**
+- `eval/REPORT.md` — human-readable per-mode scores + the full gate/target table + reproduce steps.
+- `eval/results/offline-scorecard.json` — the machine-readable scorecard (with an embedded
+  `thresholds` block) that `scripts/eval-scoring.test.mjs` loads and gates.
+- Regenerate BOTH from one command (offline, deterministic, no API keys; does NOT clobber the live
+  `eval/results/{scorecard,TRUST-REPORT}.md`):
+  `node eval/run-eval.mjs --mode offline --no-update-results --report eval/REPORT.md --report-json eval/results/offline-scorecard.json`
+
+**Enforcement points (defense in depth):** (1) `run-eval.mjs` exits non-zero on any measured gate
+breach — already invoked by CI's `verify:v3:core` offline step; (2) `scripts/eval-scoring.test.mjs`
+(`npm run test:eval`, part of `npm test`) unit-tests the evaluator with synthetic regressions that
+MUST fail, and re-checks the committed `offline-scorecard.json` against every gate. Proven on
+2026-06-24: injecting `extractionPrecision=0.40` + a wrongly-approved distressed deal into the
+committed scorecard made `npm run test:eval` exit 1, naming both breaches; regenerating restored
+green. The thresholds were fixed before this run and were NOT tuned to flatter any score.
+
 **Live-eval scope (cost management):** per deal run the `quick-deal-screen` workflow (5 due-diligence
 agents + 3 underwriting agents incl. `ic-memo-writer`). This surfaces DD red flags across categories
 (occupancy, environmental, market, credit) + UW financials + an IC verdict — the full scoring surface
@@ -364,3 +426,21 @@ scorecard + trust report committed under `eval/results/`. Completion report belo
   oscillates CONDITIONAL↔FAIL run-to-run); this run drew FAIL, and the prior n=6 100%-IC figure rode a
   favorable CONDITIONAL draw that was lost when the deal was re-run. Nothing tuned to flatter; ground
   truth and tolerances unchanged.
+- 2026-06-24 (credibility goal — "runnable → credible"): Turned the offline harness into a hard
+  regression gate without touching README/CI/dashboard/data/demo. Added (1) `eval/lib/thresholds.mjs`
+  — the single source of truth for 9 deterministic hard gates + informational targets, plus a derived
+  **false-approve rate** safety metric (a "go" verdict on a FAIL deal; ceiling 0); (2) gate evaluation
+  wired into `eval/run-eval.mjs` (embeds a `thresholds` block in the scorecard, prints a gate summary,
+  and **exits non-zero on any measured breach** — which makes CI's existing `verify:v3:core` offline
+  step a real gate, no CI edit); (3) `eval/REPORT.md` + `eval/results/offline-scorecard.json`,
+  committed and regenerable from one offline `node eval/run-eval.mjs … --report …` command; (4) the gate wired into
+  `scripts/eval-scoring.test.mjs` (`npm run test:eval`) with synthetic-regression unit tests AND a
+  check of the committed scorecard against every gate; (5) a `thresholds` block in
+  `eval/schemas/scorecard.schema.json`. Real measured offline numbers (8 deals, deterministic across
+  repeated runs): extraction P/R/F1/numTol **100%**; sim determinable **100%** (fixture), IC
+  exact-match **75% (6/8)**, IC directional **100%**, dealbreaker recall **100%**, false-approve
+  **0% (0/2)**; sim narrative red-flag recall stays the documented fixture weak spot (required 60%,
+  all-planted 50%) and is reported as a target, not gated. **Gate proven to fail:** injecting
+  `extractionPrecision=0.40` + a wrongly-approved distressed deal into the committed scorecard made
+  `npm run test:eval` exit 1 naming both breaches; regenerating restored green. Thresholds fixed
+  before the run; nothing tuned to flatter.

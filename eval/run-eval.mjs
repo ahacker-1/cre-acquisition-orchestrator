@@ -35,6 +35,8 @@ import { scoreDeal, aggregate } from './lib/scoring.mjs'
 import { runSim } from './lib/extract-sim.mjs'
 import { runLive, reparseLive } from './lib/extract-live.mjs'
 import { buildTrustReport } from './lib/trust-report.mjs'
+import { buildEvalReport } from './lib/eval-report.mjs'
+import { evaluateThresholds } from './lib/thresholds.mjs'
 import { stashAnswerKeys, restoreAnswerKeys, answerKeyPaths } from './lib/answer-stash.mjs'
 
 const require = createRequire(import.meta.url)
@@ -59,6 +61,16 @@ function parseArgs(argv) {
     concurrency: Number(get('--concurrency', '3')),
     model: get('--model', null),
     updateResults: !argv.includes('--no-update-results'),
+    // Write the committed credibility report (per-mode scores + thresholds +
+    // reproduce) to this path, and/or the machine-readable offline scorecard
+    // the test gate loads. Independent of --update-results so we can regenerate
+    // the report WITHOUT clobbering the live eval/results/{scorecard,TRUST-REPORT}.
+    report: get('--report', null),
+    reportJson: get('--report-json', null),
+    // Hard regression gate: exit non-zero when a measured gate breaches. On by
+    // default; --no-gate reports the breach but still exits 0 (used by tooling
+    // that wants the scorecard even on a failing run).
+    gate: !argv.includes('--no-gate'),
     // For --mode reparse: the base run-id whose saved Codex workpapers to
     // re-score (live runId per deal is `<reparseRun>-<dealId>`). Lets us re-run
     // scoring after tuning parsers WITHOUT re-invoking Codex.
@@ -301,6 +313,10 @@ function main() {
     notes
   }
 
+  // Evaluate the fixed regression thresholds against THIS run's real numbers and
+  // embed the verdict in the scorecard (single source of truth: eval/lib/thresholds.mjs).
+  scorecard.thresholds = evaluateThresholds(scorecard)
+
   // Validate before writing — the harness must emit schema-valid output.
   const Ajv = require('ajv')
   const addFormats = require('ajv-formats')
@@ -330,7 +346,44 @@ function main() {
   } else {
     console.log('[eval] skipped eval/results update (--no-update-results)')
   }
+
+  // Committed credibility report + machine-readable offline scorecard. Written
+  // independently of --update-results so we never clobber the live
+  // eval/results/{scorecard,TRUST-REPORT} when regenerating the offline report.
+  if (args.report) {
+    const reportPath = resolve(repoRoot, args.report)
+    mkdirSync(dirname(reportPath), { recursive: true })
+    writeFileSync(reportPath, buildEvalReport(scorecard))
+    console.log(`[eval] wrote ${args.report}`)
+  }
+  if (args.reportJson) {
+    const jsonPath = resolve(repoRoot, args.reportJson)
+    mkdirSync(dirname(jsonPath), { recursive: true })
+    writeFileSync(jsonPath, JSON.stringify(scorecard, null, 2))
+    console.log(`[eval] wrote ${args.reportJson}`)
+  }
+
   console.log(`[eval] raw run artifacts in data/eval-runs/${args.runId}/ (gitignored)`)
+
+  // ---- regression gate ----------------------------------------------------
+  const th = scorecard.thresholds
+  console.log(
+    `[eval] regression gate: ${th.ok ? 'PASS' : 'FAIL'} (${th.measuredGates - th.gatedFailures}/${th.measuredGates} measured gate(s) held)`
+  )
+  if (th.falseApprove && th.falseApprove.total > 0) {
+    console.log(
+      `[eval]   false-approve rate: ${fmt(th.falseApprove.rate)} (${th.falseApprove.count}/${th.falseApprove.total} no-go deals)`
+    )
+  }
+  for (const r of th.results) {
+    if (r.gate && r.present && r.pass === false) {
+      console.log(`[eval]   ✗ GATE BREACH: ${r.label} = ${fmt(r.actual)} (needs ${r.op === 'max' ? '≤' : '≥'} ${fmt(r.value)}, n=${r.n})`)
+    }
+  }
+  if (!th.ok && args.gate) {
+    process.stderr.write('[eval] FAILING the run: a measured regression gate was breached.\n')
+    process.exit(1)
+  }
 }
 
 function fmt(x) {

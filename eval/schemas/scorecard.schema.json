@@ -282,6 +282,49 @@
     "notes": {
       "type": "array",
       "items": { "type": "string" }
+    },
+    "thresholds": {
+      "description": "Regression-threshold evaluation for this run (see eval/lib/thresholds.mjs). gate:true rows are HARD gates the deterministic offline layers must not regress; gate:false rows are informational targets. ok=false means a measured gate failed and the harness exits non-zero.",
+      "type": "object",
+      "required": ["ok", "gatedFailures", "measuredGates", "results"],
+      "additionalProperties": true,
+      "properties": {
+        "ok": { "type": "boolean" },
+        "gatedFailures": { "type": "integer", "minimum": 0 },
+        "measuredGates": { "type": "integer", "minimum": 0 },
+        "falseApprove": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "rate": { "$ref": "#/definitions/ratio" },
+            "count": { "type": "integer", "minimum": 0 },
+            "total": { "type": "integer", "minimum": 0 },
+            "unknownOnNoGo": { "type": "integer", "minimum": 0 },
+            "deals": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "metric", "layer", "op", "value", "gate", "actual", "n", "present", "pass"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string" },
+              "label": { "type": "string" },
+              "layer": { "type": "string" },
+              "metric": { "type": "string" },
+              "op": { "type": "string", "enum": ["min", "max"] },
+              "value": { "type": "number" },
+              "gate": { "type": "boolean" },
+              "actual": { "type": ["number", "null"] },
+              "n": { "type": "integer", "minimum": 0 },
+              "present": { "type": "boolean" },
+              "pass": { "type": ["boolean", "null"] }
+            }
+          }
+        }
+      }
     }
   }
 }
