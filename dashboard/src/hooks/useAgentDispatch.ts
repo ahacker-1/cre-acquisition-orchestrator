@@ -10,8 +10,9 @@ import type { WorkflowLaunchResponse } from '../types/workflows'
 //   - OFFLINE (simulation / no live run): dispatch is a NO-OP that returns a notice telling the
 //     operator to switch to the Codex runtime. The panel still shows the agent's already-recorded
 //     work (replay) via buildAgentPanelView — no new run is started.
-//   - CODEX: POST a one-agent codex run (codexAgents:[agentName], codexMaxAgents:1, reset:false)
-//     to the full-acquisition-review workflow (its '*' wildcard contains every agent).
+//   - CODEX: POST a one-agent codex run (codexAgents:[agentName], codexMaxAgents:1,
+//     reset:false, codexSearch:true) to the full-acquisition-review workflow (its '*'
+//     wildcard contains every agent).
 
 // The workflow whose wildcard phase plan contains every agent — so any single agent can be
 // dispatched into it without the agent being missing from the selected workflow.
@@ -64,6 +65,7 @@ export async function requestAgentDispatch(
           reset: false,
           codexAgents: [agentName],
           codexMaxAgents: 1,
+          codexSearch: true,
           // A follow-up task is recorded as a note on the run snapshot.
           ...(task ? { notes: task } : {}),
           requireSourceBackedInputs: true,
