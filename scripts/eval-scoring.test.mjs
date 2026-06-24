@@ -952,9 +952,11 @@ test('thresholds: a null/N-A on a measured GATE metric is a FAILURE, never a fre
   });
   const r = evaluateThresholds(bad);
   const row = r.results.find((x) => x.id === 'extractionPrecision');
-  // A null mean (n=0) is "not measured" — present:true but not gate-counted.
-  // The point being asserted: it does NOT silently pass.
-  assert.notEqual(row.pass, true);
+  assert.equal(row.present, true);
+  assert.equal(row.pass, false);
+  assert.equal(r.ok, false);
+  assert.ok(r.gatedFailures >= 1);
+  assert.ok(r.measuredGates >= 1);
 });
 
 test('thresholds: an absent layer is "not measured" and does not fail the run', () => {

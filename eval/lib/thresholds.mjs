@@ -139,12 +139,11 @@ export function evaluateThresholds(scorecard) {
       }
     }
 
-    // A metric whose layer ran but produced no contributing deals (mean null,
-    // n 0) is "not measured" for gate purposes — don't fail on an N/A.
-    const measurable = present && isFiniteNumber(actual)
+    // A present hard-gate metric whose layer ran but produced no finite value is
+    // measured as a failure. Only an absent layer is not measured for gate purposes.
     const pass = present ? passes(t.op, actual, t.value) : null
 
-    if (t.gate && measurable) {
+    if (t.gate && present) {
       measuredGates += 1
       if (!pass) gatedFailures += 1
     }
