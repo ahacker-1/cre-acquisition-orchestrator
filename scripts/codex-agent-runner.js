@@ -122,10 +122,16 @@ async function runWithRetry(fn, options = {}) {
     } catch (error) {
       lastError = error;
       const transient = isTransient(error);
+      const willRetry = transient && attempt < maxRetries;
       if (onAttempt) {
-        onAttempt({ attempt: attemptNumber, outcome: transient ? 'transient-error' : 'permanent-error', error });
+        onAttempt({
+          attempt: attemptNumber,
+          outcome: transient ? 'transient-error' : 'permanent-error',
+          willRetry,
+          error
+        });
       }
-      if (!transient || attempt >= maxRetries) {
+      if (!willRetry) {
         const wrapped = error instanceof Error ? error : new Error(String(error));
         wrapped.attempts = attemptNumber;
         throw wrapped;
@@ -243,6 +249,7 @@ function parseArgs() {
     // W70: per-agent retry/backoff (default 2 retries, 1000ms base)
     maxRetries: Math.max(0, Number(getArg('--max-retries', '2')) || 0),
     retryBaseMs: Math.max(0, Number(getArg('--retry-base-ms', '1000')) || 0),
+    agentTimeoutMs: Math.max(0, Number(getArg('--agent-timeout-ms', '600000')) || 0),
     // W71: rerun only the failed agents from a prior run's manifest
     rerunFailed
   };
@@ -630,10 +637,15 @@ async function runAgentTask({
       cwd: BASE_DIR,
       input: prompt,
       logFile: logPath,
+      timeoutMs: options.agentTimeoutMs,
       redact: redactSecrets
     });
     if (!(result.code === 0 && fs.existsSync(outputPath))) {
-      const reason = redactSecrets(result.stderr || result.stdout || 'Codex did not produce an output file').slice(0, 2000);
+      const reason = redactSecrets(
+        result.timedOut
+          ? `Codex agent timed out after ${options.agentTimeoutMs}ms.`
+          : result.stderr || result.stdout || 'Codex did not produce an output file'
+      ).slice(0, 2000);
       const error = new Error(reason);
       error.exitCode = result.code;
       throw error;
@@ -647,8 +659,8 @@ async function runAgentTask({
       baseBackoffMs: options.retryBaseMs,
       sleep: options.sleep, // injectable for tests; defaults to real timer
       isTransient: () => true,
-      onAttempt: ({ attempt, outcome }) => {
-        if (outcome === 'transient-error') {
+      onAttempt: ({ attempt, outcome, willRetry }) => {
+        if (outcome === 'transient-error' && willRetry) {
           console.warn(`[codex-run] ${task.agentName} attempt ${attempt} failed; retrying.`);
         }
       }
@@ -658,6 +670,13 @@ async function runAgentTask({
   }
 
   const ok = result.code === 0 && fs.existsSync(outputPath);
+  const errorMessage = ok
+    ? null
+    : redactSecrets(
+        result.timedOut
+          ? `Codex agent timed out after ${options.agentTimeoutMs}ms.`
+          : result.stderr || result.stdout || 'Codex did not produce an output file'
+      ).slice(0, 2000);
   console.log(`[codex-run] ${ok ? 'Complete' : 'Failed'} ${task.phaseMeta.label} / ${task.agentName} (attempts: ${attempts})`);
   if (ok) {
     const extracted = extractAgentVerdict(outputPath);
@@ -689,7 +708,8 @@ async function runAgentTask({
       status: 'FAIL',
       exitCode: result.code,
       attempts,
-      error: redactSecrets(result.stderr || result.stdout || 'Codex did not produce an output file').slice(0, 2000)
+      timedOut: Boolean(result.timedOut),
+      error: errorMessage
     });
   }
   return {
@@ -702,7 +722,8 @@ async function runAgentTask({
     outputPath: ok ? toRepoPath(outputPath) : null,
     logPath: toRepoPath(logPath),
     exitCode: result.code,
-    error: ok ? null : redactSecrets(result.stderr || result.stdout || 'Codex did not produce an output file').slice(0, 2000)
+    timedOut: Boolean(result.timedOut),
+    error: errorMessage
   };
 }
 
@@ -809,6 +830,7 @@ async function main() {
     dryRun: options.dryRun,
     maxRetries: options.maxRetries,
     retryBaseMs: options.retryBaseMs,
+    agentTimeoutMs: options.agentTimeoutMs,
     rerunFailed: options.rerunFailed,
     runOutcome: null,
     failedAgents: [],

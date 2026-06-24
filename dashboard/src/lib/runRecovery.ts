@@ -111,13 +111,26 @@ export interface RetryFailedAgentsResult {
   [key: string]: unknown
 }
 
+export type RetryFailedAgentsFetch = (
+  input: string,
+  init: RequestInit,
+) => Promise<{ ok: boolean; json: () => Promise<unknown> }>
+
+export interface RetryFailedAgentsOptions {
+  fetchImpl?: RetryFailedAgentsFetch
+}
+
 /**
  * Re-run only the failed agents from a prior codex run. Backward-compatible with the
  * run API: sets `codexRerunFailed` + `codexRerunRunId` so the runner reuses the prior
  * run's manifest and re-executes its `failedAgents` only.
  */
-export async function retryFailedAgents(request: RetryFailedAgentsRequest): Promise<RetryFailedAgentsResult> {
-  const response = await fetch(`${API_URL}/api/run/start`, {
+export async function retryFailedAgents(
+  request: RetryFailedAgentsRequest,
+  options: RetryFailedAgentsOptions = {},
+): Promise<RetryFailedAgentsResult> {
+  const fetchImpl = options.fetchImpl ?? (fetch as RetryFailedAgentsFetch)
+  const response = await fetchImpl(`${API_URL}/api/run/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

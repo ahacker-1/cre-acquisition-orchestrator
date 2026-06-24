@@ -137,10 +137,33 @@ function runStreaming(command, args = [], options = {}) {
 
     let stdout = '';
     let stderr = '';
+    let timedOut = false;
+    let settled = false;
+    const timeoutMs = Number.isFinite(Number(options.timeoutMs)) && Number(options.timeoutMs) > 0
+      ? Number(options.timeoutMs)
+      : 0;
 
     function writeLog(chunk) {
       if (logFile) fs.appendFileSync(logFile, chunk);
     }
+
+    function appendStderr(text) {
+      const redacted = redact(text);
+      stderr += redacted;
+      writeLog(redacted);
+      if (options.onStderr) options.onStderr(redacted);
+    }
+
+    const timeout = timeoutMs > 0
+      ? setTimeout(() => {
+          timedOut = true;
+          appendStderr(`\n[timeout] Process exceeded ${timeoutMs}ms and was terminated.\n`);
+          child.kill('SIGTERM');
+          setTimeout(() => {
+            if (!settled && child.exitCode === null) child.kill('SIGKILL');
+          }, 2000).unref();
+        }, timeoutMs)
+      : null;
 
     child.stdout.on('data', (data) => {
       const text = redact(data.toString());
@@ -150,20 +173,17 @@ function runStreaming(command, args = [], options = {}) {
     });
 
     child.stderr.on('data', (data) => {
-      const text = redact(data.toString());
-      stderr += text;
-      writeLog(text);
-      if (options.onStderr) options.onStderr(text);
+      appendStderr(data.toString());
     });
 
     child.on('error', (error) => {
-      const text = redact(error.message);
-      stderr += text;
-      writeLog(text);
+      appendStderr(error.message);
     });
 
-    child.on('close', (code) => {
-      resolve({ code, stdout, stderr });
+    child.on('close', (code, signal) => {
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      resolve({ code, signal, stdout, stderr, timedOut });
     });
 
     if (options.input) {
