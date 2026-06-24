@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { saveUserDeal } from '../dashboard/server/deal-service.ts'
+import { saveWorkflowPreset } from '../dashboard/server/workflow-service.ts'
 import {
   AUTO_APPLY_MIN_CONFIDENCE,
   applyOperatorFieldEdit,
@@ -36,6 +37,33 @@ function fixturePayload(fileName) {
 }
 
 try {
+  const codexDefaultSearchPreset = saveWorkflowPreset(context, {
+    name: 'Codex Default Search Preset',
+    dealId: 'preset-deal',
+    workflowId: 'quick-deal-screen',
+    runtimeProvider: 'codex',
+  })
+  assert.equal(codexDefaultSearchPreset.codexSearch, true, 'Codex presets default web search on')
+  assert.equal(codexDefaultSearchPreset.inputs.codexSearch, true, 'nested preset inputs keep Codex search on')
+
+  const codexSearchOffPreset = saveWorkflowPreset(context, {
+    name: 'Codex Search Off Preset',
+    dealId: 'preset-deal',
+    workflowId: 'quick-deal-screen',
+    runtimeProvider: 'codex',
+    codexSearch: false,
+  })
+  assert.equal(codexSearchOffPreset.codexSearch, false, 'explicit Codex search opt-out is preserved')
+  assert.equal(codexSearchOffPreset.inputs.codexSearch, false, 'nested explicit Codex search opt-out is preserved')
+
+  const simulationPreset = saveWorkflowPreset(context, {
+    name: 'Simulation Preset',
+    dealId: 'preset-deal',
+    workflowId: 'quick-deal-screen',
+    runtimeProvider: 'simulation',
+  })
+  assert.equal(simulationPreset.codexSearch, false, 'simulation presets do not imply Codex search')
+
   const baseDeal = JSON.parse(readFileSync(join(projectRoot, 'config', 'deal.json'), 'utf8'))
   const dealId = 'test-source-backed-review'
   const deal = {
