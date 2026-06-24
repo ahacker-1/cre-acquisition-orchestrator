@@ -29,9 +29,16 @@ import {
 } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
+import { createHash } from 'node:crypto'
 
-const STASH_ROOT = join(tmpdir(), 'cre-eval-answer-stash')
-const MANIFEST = join(STASH_ROOT, 'manifest.json')
+export function stashRootForRepo(repoRoot) {
+  const hash = createHash('sha256').update(String(repoRoot || process.cwd())).digest('hex').slice(0, 12)
+  return join(tmpdir(), `cre-eval-answer-stash-${hash}`)
+}
+
+function manifestPath(repoRoot) {
+  return join(stashRootForRepo(repoRoot), 'manifest.json')
+}
 
 // Move that tolerates cross-volume (EXDEV) by falling back to copy+remove.
 function safeMove(from, to) {
@@ -70,30 +77,33 @@ export function answerKeyPaths(repoRoot) {
 
 // Move the given absolute paths into the stash and write a manifest. Returns the
 // number stashed. Call restoreAnswerKeys() (always, in a finally) to undo.
-export function stashAnswerKeys(items) {
-  mkdirSync(STASH_ROOT, { recursive: true })
+export function stashAnswerKeys(items, repoRoot = process.cwd()) {
+  const stashRoot = stashRootForRepo(repoRoot)
+  const manifest = manifestPath(repoRoot)
+  mkdirSync(stashRoot, { recursive: true })
   // If a prior stash is still present, restore it first so we never double-stash.
-  if (existsSync(MANIFEST)) restoreAnswerKeys()
+  if (existsSync(manifest)) restoreAnswerKeys(repoRoot)
   const records = []
   let i = 0
   for (const original of items) {
     if (!existsSync(original)) continue
-    const stashed = join(STASH_ROOT, `item-${i++}-${original.split(/[\\/]/).pop()}`)
+    const stashed = join(stashRoot, `item-${i++}-${original.split(/[\\/]/).pop()}`)
     safeMove(original, stashed)
     records.push({ original, stashed })
   }
-  writeFileSync(MANIFEST, JSON.stringify({ stashedAt: new Date().toISOString(), records }, null, 2))
+  writeFileSync(manifest, JSON.stringify({ stashedAt: new Date().toISOString(), repoRoot, records }, null, 2))
   return records.length
 }
 
 // Restore everything recorded in the manifest back to its original path. Safe to
 // call when nothing is stashed (no-op). Returns the number restored.
-export function restoreAnswerKeys() {
-  if (!existsSync(MANIFEST)) return 0
+export function restoreAnswerKeys(repoRoot = process.cwd()) {
+  const manifest = manifestPath(repoRoot)
+  if (!existsSync(manifest)) return 0
   let restored = 0
   let records = []
   try {
-    records = JSON.parse(readFileSync(MANIFEST, 'utf8')).records || []
+    records = JSON.parse(readFileSync(manifest, 'utf8')).records || []
   } catch {
     records = []
   }
@@ -105,7 +115,7 @@ export function restoreAnswerKeys() {
     restored++
   }
   try {
-    rmSync(MANIFEST, { force: true })
+    rmSync(manifest, { force: true })
   } catch {
     /* ignore */
   }
