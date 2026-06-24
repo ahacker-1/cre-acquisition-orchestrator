@@ -7,7 +7,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'fs'
-import { basename, dirname, extname, join } from 'path'
+import { dirname, extname, join } from 'path'
 import { createHash, randomUUID } from 'crypto'
 import {
   getDealRecord,
@@ -980,6 +980,27 @@ function operatorGuideSections(context: ServiceContext): PhaseDefinition[] {
 
 function safeSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').slice(0, 120)
+}
+
+function normalizeUploadedFileName(fileName: string): string {
+  const pathBase = fileName.replace(/\\/g, '/').split('/').filter(Boolean).pop() ?? ''
+  const controlFree = pathBase.split(/[\u0000-\u001f\u007f]/)[0] ?? ''
+  const normalized = controlFree.replace(/\s+/g, ' ').trim()
+  if (!normalized || normalized === '.' || normalized === '..') return 'source-document'
+  return normalized.slice(0, 180)
+}
+
+function safeDocumentBaseName(fileName: string): string {
+  const stem = safeSegment(fileName)
+    .replace(/\.[^.]+$/, '')
+    .replace(/^[-._]+|[-._]+$/g, '')
+    .toLowerCase()
+  return stem || 'source-document'
+}
+
+function safeDocumentExtension(fileName: string): string {
+  const extension = extname(fileName).toLowerCase()
+  return /^\.[a-z0-9]{1,12}$/.test(extension) ? extension : '.bin'
 }
 
 function safeId(value: string, label: string): string {
@@ -2748,8 +2769,9 @@ export function saveSourceDocument(
   payload: Record<string, unknown>,
 ): { document: SourceDocument; documents: SourceDocument[] } {
   if (!getDealRecord(context, dealId)) throw new Error(`Deal not found: ${dealId}`)
-  const fileName = asString(payload.fileName)
-  if (!fileName) throw new Error('Missing required field: fileName')
+  const rawFileName = asString(payload.fileName)
+  if (!rawFileName.trim()) throw new Error('Missing required field: fileName')
+  const fileName = normalizeUploadedFileName(rawFileName)
   const content = extractBase64(payload)
   const mime = inferMime(fileName, payload.mime)
   // P5: give the classifier a text sample so tabular content (rent roll / T12) is
@@ -2757,10 +2779,9 @@ export function saveSourceDocument(
   const type = classifyDocument(fileName, content.subarray(0, 8192).toString('utf8'))
   const docType = DOCUMENT_TYPES[type] ?? DOCUMENT_TYPES.other
   const now = new Date().toISOString()
-  const baseName = basename(fileName)
-  const safeBaseName = safeSegment(baseName).replace(/\.[^.]+$/, '').toLowerCase() || 'source-document'
+  const safeBaseName = safeDocumentBaseName(fileName)
   const documentId = `doc_${Date.now()}_${randomUUID().slice(0, 8)}_${safeBaseName}`
-  const storedName = `${documentId}${extname(baseName) || '.bin'}`
+  const storedName = `${documentId}${safeDocumentExtension(fileName)}`
   const targetDir = documentsDir(context, dealId)
   ensureDir(targetDir)
   const targetPath = join(targetDir, storedName)
@@ -2769,7 +2790,7 @@ export function saveSourceDocument(
   const extractionStatus = initialExtractionStatus(fileName, mime)
   const document: SourceDocument = {
     documentId,
-    fileName: baseName,
+    fileName,
     storedName,
     path: targetPath,
     mime,
