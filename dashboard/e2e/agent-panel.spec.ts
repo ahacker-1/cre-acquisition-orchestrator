@@ -37,7 +37,7 @@ test.describe.configure({ mode: 'serial' })
 
 // Write a completed deal checkpoint + a COMPLETE agent checkpoint before connecting, so they
 // arrive in the initial WebSocket payload and drive this deal's recorded view.
-function writeRecordedAgentCheckpoint(): void {
+function writeRecordedAgentCheckpoint(runtimeProvider: 'simulation' | 'codex' = 'simulation'): void {
   const updatedAt = '2099-03-01T00:00:00.000Z'
   const checkpoint = {
     dealId: PANEL_DEAL_ID,
@@ -46,7 +46,7 @@ function writeRecordedAgentCheckpoint(): void {
     status: 'COMPLETE',
     workflowId: 'underwriting-refresh',
     workflowName: 'Underwriting Refresh',
-    runtimeProvider: 'simulation',
+    runtimeProvider,
     overallProgress: 100,
     startedAt: updatedAt,
     lastUpdatedAt: updatedAt,
@@ -142,10 +142,14 @@ test.afterEach(async ({ request }) => {
 
 // Open the seeded deal's workspace, then seed its recorded story events (after connect) and
 // focus Underwriting where the agent is staffed.
-async function openSeededDealAtUnderwriting(page: Page, request: Parameters<typeof saveLaunchReadyDeal>[0]): Promise<void> {
+async function openSeededDealAtUnderwriting(
+  page: Page,
+  request: Parameters<typeof saveLaunchReadyDeal>[0],
+  runtimeProvider: 'simulation' | 'codex' = 'simulation',
+): Promise<void> {
   await saveLaunchReadyDeal(request, PANEL_DEAL_ID, PANEL_DEAL_NAME)
   // Checkpoints before connect (initial payload); deal status file marks the deal complete.
-  writeRecordedAgentCheckpoint()
+  writeRecordedAgentCheckpoint(runtimeProvider)
   await stopActiveRun(request)
   await openWorkspaceFromRecentDeals(page, PANEL_DEAL_ID, PANEL_DEAL_NAME)
   // Story events after connect (broadcast as the ndjson file is added).
@@ -181,6 +185,41 @@ test('summons an agent from the Your Team rail and replays its recorded work (of
 
   await page.getByTestId('agent-panel-close').click()
   await expect(panel).toBeHidden()
+})
+
+test('single-agent Codex follow-up keeps live web search enabled', async ({ page, request }) => {
+  await openSeededDealAtUnderwriting(page, request, 'codex')
+
+  const railAgent = page.getByTestId(`team-agent-${PANEL_AGENT_ID}`)
+  await expect(railAgent).toBeVisible()
+  await railAgent.click()
+
+  const panel = page.getByTestId('agent-panel')
+  await expect(panel).toBeVisible()
+  await expect(panel.getByRole('heading', { name: PANEL_AGENT_NAME })).toBeVisible()
+  const input = page.getByTestId('agent-followup-input')
+  await expect(input).toBeEnabled()
+
+  let capturedBody: Record<string, unknown> | null = null
+  await page.route('**/api/workflows/full-acquisition-review/launch', async (route) => {
+    capturedBody = route.request().postDataJSON() as Record<string, unknown>
+    await route.fulfill({
+      status: 202,
+      contentType: 'application/json',
+      body: JSON.stringify({ runId: 'run-single-agent-live', status: 'starting', state: 'STARTING' }),
+    })
+  })
+
+  await input.fill('Refresh lender terms with current market context')
+  await input.press('Enter')
+
+  await expect.poll(() => capturedBody).not.toBeNull()
+  expect(capturedBody!.runtimeProvider).toBe('codex')
+  expect(capturedBody!.codexAgents).toEqual([PANEL_AGENT_ID])
+  expect(capturedBody!.codexMaxAgents).toBe(1)
+  expect(capturedBody!.codexSearch).toBe(true)
+  expect(capturedBody!.reset).toBe(false)
+  expect(capturedBody!.notes).toBe('Refresh lender terms with current market context')
 })
 
 test('a command-bar chip opens the right agent panel', async ({ page, request }) => {
