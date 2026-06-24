@@ -7,7 +7,7 @@ The project has two runtime paths. The dashboard's operator launch lane is live 
 | Best for | Screenshots, docs, local product demo, CI-safe validation | Main operator workflow and testing the markdown agent catalog against a real LLM runtime |
 | Requires API keys? | No | No repo-stored API keys; uses the user's local Codex CLI / ChatGPT login |
 | Requires ChatGPT/Codex login? | No | Yes, via `codex login` / dashboard **Login to ChatGPT** |
-| External network calls during run? | No AI calls during the demo run | Yes, selected prompts and deal context are sent through the authenticated Codex CLI session |
+| External network calls during run? | No AI calls during the demo run | Yes, selected prompts and deal context are sent through the authenticated Codex CLI session; dashboard workflow launches keep live web search on by default and API launches can pass `codexSearch: true` to forward `--search` |
 | Deterministic? | Yes: sample Parkview deal, fixed scenario, fixed seed | No: model output can vary by run |
 | Default command | `npm run demo` | `npm run codex:smoke`, `npm run codex:run`, or dashboard-launched Codex workflows |
 | Strong validation command | `npm run verify:v3` | `npm run codex:status` first, then inspect run manifests and package artifacts |
@@ -29,6 +29,7 @@ The project has two runtime paths. The dashboard's operator launch lane is live 
 ## Safety Notes for Live Runs
 
 - Do not run live Codex workflows on confidential deal data unless that data is approved for the user's Codex / ChatGPT environment.
+- When live web search is enabled, agents may query external sources through the Codex CLI in addition to sending selected prompts and approved deal context.
 - Do not commit runtime artifacts from `data/`; they are local outputs and may contain deal context.
 - Keep authentication outside the repository. If a future integration needs credentials, document the storage boundary before adding code.
 - Redact tokens, cookies, connection strings, or secrets from logs, screenshots, issue bodies, and sample artifacts.
