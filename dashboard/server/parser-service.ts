@@ -790,6 +790,7 @@ function extractResponsibleParty(text: string): string | undefined {
 export function checklistItemFromLine(line: string, lineNumber: number): ChecklistCandidate | null {
   const raw = line.trim()
   if (!raw) return null
+  if (/^#{1,6}\s+/.test(raw)) return null
   const normalized = raw.replace(/^[-*]\s+/, '').replace(/^\d+[.)]\s+/, '').trim()
   const hasChecklistSignal =
     /\b(checklist|deliverable|required|missing|received|waived|due|title|survey|environmental|insurance|closing|psa|estoppel|snda)\b/i.test(normalized) ||

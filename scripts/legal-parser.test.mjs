@@ -31,6 +31,17 @@ function parsePdf(fileName, type) {
   })
 }
 
+function parseText(fileName, type) {
+  return runDocumentParser({
+    documentId: fileName.replace(/\W+/g, '-'),
+    fileName,
+    filePath: resolve(fixturesRoot, fileName),
+    mime: 'text/markdown',
+    type,
+    projectRoot,
+  })
+}
+
 function fieldByPath(preview, path) {
   return preview.fields.find((entry) => entry.path === path)
 }
@@ -112,6 +123,38 @@ check('estoppel.pdf extracts per-tenant lease terms', () => {
   assert.equal(fieldByPath(preview, 'legal.estoppel.leaseStartDate')?.value, 'March 1, 2025', 'estoppel.leaseStartDate')
   assert.equal(fieldByPath(preview, 'legal.estoppel.leaseEndDate')?.value, 'February 28, 2026', 'estoppel.leaseEndDate')
   assert.equal(fieldByPath(preview, 'legal.estoppel.securityDeposit')?.value, 1850, 'estoppel.securityDeposit')
+})
+
+// --- Legal diligence checklist -------------------------------------------
+check('legal-diligence-checklist.md extracts reviewable checklist rows without headings', () => {
+  const preview = parseText('legal-diligence-checklist.md', 'legal')
+  assertExtracted(preview, 'legal checklist')
+  assert.equal(preview.metrics?.reviewOnly, true, 'checklist candidates must be review-only')
+  assert.equal(preview.metrics?.checklistCandidateCount, 5, 'expected 5 checklist rows')
+  assert.equal(preview.fields.length, 5, 'markdown heading must not become a checklist item')
+
+  const items = preview.fields.map((field) => field.value)
+  assert.deepEqual(
+    items.map((item) => item.item),
+    [
+      'PSA amendment package',
+      'Title commitment and exception documents',
+      'ALTA survey update',
+      'Phase I ESA reliance letter',
+      'Insurance binder review',
+    ],
+  )
+  assert.deepEqual(items.map((item) => item.status), ['received', 'missing', 'open', 'received', 'open'])
+
+  const titleCommitment = preview.fields[1]
+  assert.equal(titleCommitment.path, 'diligence.checklistItems')
+  assert.equal(titleCommitment.reviewStatus, 'candidate')
+  assert.equal(titleCommitment.value.category, 'title')
+  assert.equal(titleCommitment.value.dueDate, '2026-07-03')
+  assert.equal(titleCommitment.value.responsibleParty, 'Title company')
+  assert.equal(titleCommitment.sourceRef?.location?.line, 4, 'checklist row keeps line provenance')
+  assert.ok(titleCommitment.sourceRef?.fileHash, 'checklist row keeps file hash provenance')
+  assert.match(titleCommitment.sourceRef?.raw ?? '', /Title commitment/)
 })
 
 // --- Regression: a non-legal type still uses the headline matchers ----------
