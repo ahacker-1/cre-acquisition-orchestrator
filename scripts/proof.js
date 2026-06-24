@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 const { spawn, spawnSync } = require('child_process');
+const net = require('net');
 const path = require('path');
 const process = require('process');
 const packageManifest = require('../package.json');
 
 const UI_URL = 'http://localhost:5173/';
 const API_HEALTH_URL = 'http://127.0.0.1:8081/api/health';
+const WS_HOST = '127.0.0.1';
+const WS_PORT = 8080;
 const DEFAULT_TIMEOUT_MS = 90_000;
 const PROBE_TIMEOUT_MS = 2500;
 
@@ -137,23 +140,42 @@ async function apiHealthReady() {
   }
 }
 
+function tcpReady(host, port) {
+  return new Promise((resolve) => {
+    let settled = false;
+    let timeout = null;
+    const socket = net.createConnection({ host, port });
+    const finish = (ready) => {
+      if (settled) return;
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      socket.destroy();
+      resolve(ready);
+    };
+    timeout = setTimeout(() => finish(false), PROBE_TIMEOUT_MS);
+    socket.once('connect', () => finish(true));
+    socket.once('error', () => finish(false));
+  });
+}
+
 async function waitForEndpoints(timeoutMs) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
-    const { uiReady, apiReady } = await localReadiness();
+    const { uiReady, apiReady, wsReady } = await localReadiness();
 
-    if (uiReady && apiReady) return true;
+    if (uiReady && apiReady && wsReady) return true;
     await sleep(1000);
   }
   return false;
 }
 
 async function localReadiness() {
-  const [uiReady, apiReady] = await Promise.all([
+  const [uiReady, apiReady, wsReady] = await Promise.all([
     fetchOk(UI_URL),
-    apiHealthReady()
+    apiHealthReady(),
+    tcpReady(WS_HOST, WS_PORT)
   ]);
-  return { uiReady, apiReady };
+  return { uiReady, apiReady, wsReady };
 }
 
 function samePath(left, right) {
@@ -167,7 +189,7 @@ function samePath(left, right) {
 
 function printReadyMessage(reusedExisting, smoke) {
   if (smoke) {
-    console.log('[proof] Local dashboard/API reached readiness for the public proof path.');
+    console.log('[proof] Local dashboard/API/WebSocket reached readiness for the public proof path.');
     return;
   }
 
@@ -270,7 +292,7 @@ async function main() {
   }
 
   const initialReadiness = await localReadiness();
-  if (initialReadiness.uiReady && initialReadiness.apiReady) {
+  if (initialReadiness.uiReady && initialReadiness.apiReady && initialReadiness.wsReady) {
     printReadyMessage(true, options.smoke);
     if (!options.noOpen) {
       openBrowser(UI_URL);
@@ -281,8 +303,8 @@ async function main() {
     return;
   }
 
-  if (initialReadiness.uiReady || initialReadiness.apiReady) {
-    throw new Error(`Partial local app state detected before startup. UI ready=${initialReadiness.uiReady}; API ready=${initialReadiness.apiReady}. Stop stale listeners on ports 5173/8081 or run npm run dashboard manually.`);
+  if (initialReadiness.uiReady || initialReadiness.apiReady || initialReadiness.wsReady) {
+    throw new Error(`Partial local app state detected before startup. UI ready=${initialReadiness.uiReady}; API ready=${initialReadiness.apiReady}; WebSocket ready=${initialReadiness.wsReady}. Stop stale listeners on ports 5173/8080/8081 or run npm run dashboard manually.`);
   }
 
   console.log('[proof] Starting the dashboard. Press Ctrl+C to stop it.');
@@ -315,7 +337,7 @@ async function main() {
   ]);
   if (ready !== true) {
     cleanup();
-    throw new Error(`Timed out waiting for ${UI_URL} and ${API_HEALTH_URL}`);
+    throw new Error(`Timed out waiting for ${UI_URL}, ${API_HEALTH_URL}, and ws://${WS_HOST}:${WS_PORT}`);
   }
 
   printReadyMessage(false, options.smoke);
