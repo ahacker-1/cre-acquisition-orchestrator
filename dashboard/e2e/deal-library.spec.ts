@@ -324,6 +324,7 @@ test('edits a saved deal and starts a run from the wizard', async ({ page, reque
   expect(capturedLaunchBody?.runtimeProvider).toBe('codex')
   expect(capturedLaunchBody?.codexMaxAgents).toBeNull()
   expect(capturedLaunchBody?.codexConcurrency).toBe(2)
+  expect(capturedLaunchBody?.codexSearch).toBe(true)
 
   expect(consoleErrors).toEqual([])
 })
@@ -359,6 +360,7 @@ test('launches a shipped sample deal from the library', async ({ page, request }
   expect(capturedLaunchBody?.runtimeProvider).toBe('codex')
   expect(capturedLaunchBody?.codexMaxAgents).toBeNull()
   expect(capturedLaunchBody?.codexConcurrency).toBe(2)
+  expect(capturedLaunchBody?.codexSearch).toBe(true)
 
   await expect
     .poll(
