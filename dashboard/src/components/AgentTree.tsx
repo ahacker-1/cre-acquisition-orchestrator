@@ -99,8 +99,8 @@ function StatusDot({ status }: { status: string }) {
       : status === 'failed'
       ? 'bg-cre-danger'
       : status === 'skipped'
-      ? 'bg-gray-500'
-      : 'bg-gray-600'
+      ? 'bg-[#6b7280]'
+      : 'bg-[#4b5563]'
 
   return (
     <span

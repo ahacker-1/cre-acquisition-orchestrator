@@ -239,7 +239,7 @@ export default function FinancingDetail({ dealCheckpoint }: Props) {
                               ? 'bg-cre-success/20 text-cre-success'
                               : isDisqualified
                                 ? 'bg-cre-danger/20 text-cre-danger'
-                                : 'bg-gray-600/20 text-gray-400'
+                                : 'bg-[#4b5563]/20 text-gray-400'
                           }`}
                         >
                           {status.toUpperCase() || '--'}

@@ -38,9 +38,9 @@ function getStatusColor(status: string): string {
     case 'blocked':
       return 'bg-cre-warning'
     case 'skipped':
-      return 'bg-gray-500'
+      return 'bg-[#6b7280]'
     default:
-      return 'bg-gray-600'
+      return 'bg-[#4b5563]'
   }
 }
 
@@ -53,7 +53,7 @@ function getStatusBorderClass(status: string): string {
     case 'failed':
       return 'border-cre-danger/50'
     case 'skipped':
-      return 'border-gray-600/60'
+      return 'border-[#4b5563]/60'
     default:
       return 'border-cre-border'
   }

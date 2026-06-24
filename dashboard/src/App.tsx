@@ -365,6 +365,19 @@ export default function App() {
     }
   }, [dealCheckpoint, runActive, workspaceCheckpoint])
 
+  // Dialog a11y: let keyboard users dismiss the header overlays (deal library / workflow
+  // launcher) with Escape, matching the role="dialog" + aria-modal semantics they carry.
+  useEffect(() => {
+    if (!libraryOpen && !workflowOpen) return
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key !== 'Escape') return
+      setLibraryOpen(false)
+      setWorkflowOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [libraryOpen, workflowOpen])
+
   const visibleDealCheckpoint = frontDoorOpen ? null : workspaceCheckpoint ?? dealCheckpoint
   const showingManualWorkspace = Boolean(workspaceCheckpoint)
   // W72: the partial-failure recovery panel reads the LIVE checkpoint + live agent
@@ -399,8 +412,9 @@ export default function App() {
           {/* Run status + controls are run-time concerns — hidden on the clean front door (no
               deal open and nothing running) so a newcomer is not shown inert chrome or jargon. */}
           {(visibleDealCheckpoint || runActive) && (
-            <div className="flex min-w-0 items-center gap-2 text-sm">
+            <div className="flex min-w-0 items-center gap-2 text-sm" role="status" aria-live="polite">
               <span
+                aria-hidden="true"
                 className={`inline-block w-2.5 h-2.5 rounded-full ${
                   runStatus.state === 'RUNNING' || runStatus.state === 'STARTING'
                     ? 'bg-cre-info'
@@ -408,7 +422,7 @@ export default function App() {
                       ? 'bg-cre-danger'
                       : runStatus.state === 'COMPLETED'
                         ? 'bg-cre-success'
-                        : 'bg-gray-500'
+                        : 'bg-[#6b7280]'
                 }`}
               />
               <span className="min-w-0 break-words text-gray-400">
@@ -418,8 +432,9 @@ export default function App() {
           )}
 
           {/* Connection Status */}
-          <div className="flex min-w-0 items-center gap-2 text-sm">
+          <div className="flex min-w-0 items-center gap-2 text-sm" role="status" aria-live="polite">
             <span
+              aria-hidden="true"
               className={`inline-block w-2.5 h-2.5 rounded-full ${
                 connected ? 'bg-cre-success' : 'bg-cre-danger'
               }`}
@@ -494,8 +509,8 @@ export default function App() {
 
       {/* Reconnection Banner */}
       {!connected && reconnectAttempt > 0 && (
-        <div className="bg-amber-900/60 border-b border-amber-700/50 px-6 py-2.5 flex items-center justify-center gap-3 text-sm">
-          <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+        <div className="bg-amber-900/60 border-b border-amber-700/50 px-6 py-2.5 flex items-center justify-center gap-3 text-sm" role="status" aria-live="polite">
+          <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" aria-hidden="true" />
           <span className="text-amber-200">
             Reconnecting{reconnectIn > 0 ? ` in ${reconnectIn}s` : '...'}{' '}
             <span className="text-amber-400/80">
@@ -584,6 +599,9 @@ export default function App() {
           <div className="min-h-full flex items-start justify-center p-6 lg:p-10">
             <div
               data-testid="deal-library-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="deal-library-title"
               className="w-full max-w-6xl border border-cre-border bg-cre-surface shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
             >
               <div className="border-b border-cre-border px-6 py-5 flex items-start justify-between gap-4">
@@ -591,14 +609,14 @@ export default function App() {
                   <p className="text-xs uppercase tracking-[0.24em] text-cre-accent font-semibold">
                     Deal Library
                   </p>
-                  <h2 className="text-2xl font-bold text-white mt-2">Saved and Sample Deals</h2>
+                  <h2 id="deal-library-title" className="text-2xl font-bold text-white mt-2">Saved and Sample Deals</h2>
                 </div>
                 <button
                   onClick={() => setLibraryOpen(false)}
                   className="rounded-full p-2 text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
                   aria-label="Close deal library"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                  <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
                     <path d="M5 5L15 15M15 5L5 15" strokeWidth="1.8" strokeLinecap="round" />
                   </svg>
                 </button>
@@ -628,6 +646,9 @@ export default function App() {
           <div className="min-h-full flex items-start justify-center p-6 lg:p-10">
             <div
               data-testid="workflow-launcher-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="workflow-launcher-title"
               className="w-full max-w-6xl border border-cre-border bg-cre-surface shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
             >
               <div className="border-b border-cre-border px-6 py-5 flex items-start justify-between gap-4">
@@ -635,14 +656,14 @@ export default function App() {
                   <p className="text-xs uppercase tracking-[0.24em] text-cre-accent font-semibold">
                     Advanced Orchestration Controls
                   </p>
-                  <h2 className="text-2xl font-bold text-white mt-2">Launch Orchestration</h2>
+                  <h2 id="workflow-launcher-title" className="text-2xl font-bold text-white mt-2">Launch Orchestration</h2>
                 </div>
                 <button
                   onClick={() => setWorkflowOpen(false)}
                   className="rounded-full p-2 text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
                   aria-label="Close workflow launcher"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                  <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
                     <path d="M5 5L15 15M15 5L5 15" strokeWidth="1.8" strokeLinecap="round" />
                   </svg>
                 </button>
