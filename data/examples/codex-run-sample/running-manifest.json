@@ -1,0 +1,43 @@
+{
+  "runId": "codex-sample-running-redacted",
+  "startedAt": "2026-05-20T14:02:11.000Z",
+  "completedAt": null,
+  "status": "RUNNING",
+  "runOutcome": null,
+  "codexVersion": "codex-cli 0.0.0 (sample)",
+  "codexLoginStatus": "Logged in (sample)",
+  "workflowId": "quick-deal-screen",
+  "workflowName": "Quick Deal Screen",
+  "scenarioName": "core-plus",
+  "dealId": "sample-deal-0001",
+  "dealPath": "config/deal.json",
+  "inputSnapshotPath": "data/runs/sample-deal-0001/codex-sample-running-redacted/input-snapshot.json",
+  "inputSnapshotSummary": {
+    "sourceDocumentCount": 2,
+    "approvedFieldCount": 8
+  },
+  "concurrency": 2,
+  "sandbox": "read-only",
+  "search": true,
+  "dryRun": false,
+  "maxRetries": 2,
+  "retryBaseMs": 1000,
+  "rerunFailed": false,
+  "failedAgents": [],
+  "selectedAgents": [
+    {
+      "phase": "underwriting",
+      "phaseLabel": "Underwriting",
+      "agentName": "financial-model-builder",
+      "promptFile": "agents/underwriting/financial-model-builder.md"
+    },
+    {
+      "phase": "underwriting",
+      "phaseLabel": "Underwriting",
+      "agentName": "scenario-analyst",
+      "promptFile": "agents/underwriting/scenario-analyst.md"
+    }
+  ],
+  "results": [],
+  "logExcerpt": null
+}

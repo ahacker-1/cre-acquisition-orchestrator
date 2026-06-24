@@ -15,8 +15,8 @@
     "runId": { "type": "string", "minLength": 1 },
     "startedAt": { "type": "string", "format": "date-time" },
     "completedAt": { "type": ["string", "null"], "format": "date-time" },
-    "status": { "type": "string", "enum": ["COMPLETE", "FAILED", "DRY_RUN"] },
-    "runOutcome": { "type": "string", "enum": ["success", "partial", "failed"] },
+    "status": { "type": "string", "enum": ["RUNNING", "COMPLETE", "FAILED", "DRY_RUN"] },
+    "runOutcome": { "type": ["string", "null"], "enum": ["success", "partial", "failed", null] },
     "codexVersion": { "type": ["string", "null"] },
     "codexLoginStatus": { "type": ["string", "null"] },
     "workflowId": { "type": "string", "minLength": 1 },
@@ -85,5 +85,27 @@
     },
     "logExcerpt": { "type": ["string", "null"] }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "RUNNING" }
+        }
+      },
+      "then": {
+        "properties": {
+          "completedAt": { "type": "null" },
+          "runOutcome": { "type": "null" }
+        }
+      },
+      "else": {
+        "properties": {
+          "completedAt": { "type": "string", "format": "date-time" },
+          "runOutcome": { "type": "string", "enum": ["success", "partial", "failed"] },
+          "results": { "type": "array", "minItems": 1 }
+        }
+      }
+    }
+  ],
   "additionalProperties": false
 }
