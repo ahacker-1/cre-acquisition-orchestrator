@@ -4,6 +4,7 @@ const path = require('path');
 const { validateFile, readJson } = require('./lib/schema-validator');
 const { PHASES } = require('./lib/runtime-core');
 const { getWorkflowById, createWorkflowRunPlan } = require('./lib/workflow-catalog');
+const { resolveCodexRunArtifactPath } = require('./lib/codex-manifest-paths');
 
 const BASE_DIR = path.resolve(__dirname, '..');
 
@@ -66,8 +67,24 @@ function validateCodexRun(runId) {
       if (!['PASS', 'FAIL', 'DRY_RUN'].includes(result.status)) {
         errors.push(`result ${index} has invalid status: ${result.status}`);
       }
+      for (const key of ['promptPath', 'logPath']) {
+        if (result[key]) {
+          try {
+            resolveCodexRunArtifactPath(BASE_DIR, runDir, result[key], `result ${index} ${key}`);
+          } catch (error) {
+            errors.push(error.message);
+          }
+        }
+      }
       if (result.status === 'PASS') {
-        const outputPath = result.outputPath ? path.join(BASE_DIR, result.outputPath) : null;
+        let outputPath = null;
+        if (result.outputPath) {
+          try {
+            outputPath = resolveCodexRunArtifactPath(BASE_DIR, runDir, result.outputPath, `result ${index} outputPath`);
+          } catch (error) {
+            errors.push(error.message);
+          }
+        }
         if (!outputPath || !fs.existsSync(outputPath)) {
           errors.push(`result ${index} missing output file: ${result.outputPath || 'none'}`);
         }

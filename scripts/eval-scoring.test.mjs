@@ -37,10 +37,11 @@ import {
   restoreAnswerKeys,
   stashRootForRepo
 } from '../eval/lib/answer-stash.mjs';
+import { parseLiveRunDir } from '../eval/lib/extract-live.mjs';
 import { readFileSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -874,6 +875,69 @@ test('parseFlagTexts: preserves leading metric values after bullet/list markers'
 test('parseFlagTexts: empty / non-string input -> []', () => {
   assert.deepEqual(parseFlagTexts(''), []);
   assert.deepEqual(parseFlagTexts(null), []);
+});
+
+// ===========================================================================
+// extract-live — manifest artifact containment
+// ===========================================================================
+
+test('parseLiveRunDir: ignores PASS workpapers outside the run directory', () => {
+  const runDir = mkdtempSync(join(repoRoot, 'tmp-live-run-'));
+  const outsideDir = mkdtempSync(join(repoRoot, 'tmp-live-outside-'));
+  const outsideWorkpaper = join(outsideDir, 'financial-model-builder.md');
+  try {
+    writeFileSync(
+      outsideWorkpaper,
+      [
+        '## Agent Verdict',
+        'PASS.',
+        '## Metrics',
+        'NOI: $9,999,999',
+        'Going-in DSCR: 0.50x',
+        '## Red Flags',
+        '- DSCR is below the 0.80x minimum.'
+      ].join('\n')
+    );
+    writeFileSync(
+      join(runDir, 'manifest.json'),
+      JSON.stringify(
+        {
+          runId: 'containment-test',
+          status: 'COMPLETE',
+          runOutcome: 'success',
+          failedAgents: [],
+          results: [
+            {
+              status: 'PASS',
+              phase: 'underwriting',
+              phaseLabel: 'Underwriting',
+              agentName: 'financial-model-builder',
+              attempts: 1,
+              outputPath: relative(repoRoot, outsideWorkpaper).replace(/\\/g, '/')
+            }
+          ]
+        },
+        null,
+        2
+      )
+    );
+
+    const parsed = parseLiveRunDir({
+      runDir,
+      dealId: 'containment-test',
+      runId: 'containment-test'
+    });
+
+    assert.equal(parsed.systemAnswer.metrics.noi, null, 'outside workpaper NOI must not be read');
+    assert.equal(parsed.systemAnswer.metrics.dscr, null, 'outside workpaper DSCR must not be read');
+    assert.deepEqual(parsed.systemAnswer.flagTexts, [], 'outside workpaper flags must not be credited');
+    assert.deepEqual(parsed.systemAnswer.partialFailure.failedAgents, ['financial-model-builder']);
+    assert.match(parsed.systemAnswer.partialFailure.note, /untrusted or missing live workpapers/);
+    assert.equal(parsed.meta.untrustedArtifactCount, 1);
+  } finally {
+    rmSync(runDir, { recursive: true, force: true });
+    rmSync(outsideDir, { recursive: true, force: true });
+  }
 });
 
 // ===========================================================================
