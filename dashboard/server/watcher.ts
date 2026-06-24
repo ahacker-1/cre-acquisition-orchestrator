@@ -263,6 +263,10 @@ function asOptionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
 }
 
+function hasOwnKey(value: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+
 function readCodexStatus(): Record<string, unknown> {
   const status = codexCli.getCodexStatus(projectRoot);
   return {
@@ -1348,10 +1352,12 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         typeof body.requireSourceBackedInputs === 'boolean'
           ? body.requireSourceBackedInputs
           : preset?.requireSourceBackedInputs === true;
+      const bodyHasCodexMaxAgents = hasOwnKey(body, 'codexMaxAgents');
+      const bodyHasCodexConcurrency = hasOwnKey(body, 'codexConcurrency');
 
       const startRequest: StartRunRequest = {
         dealPath: record.item.dealPath,
-        mode: body.mode === 'fast' ? 'fast' : 'live',
+        mode: body.mode === 'fast' || (!hasOwnKey(body, 'mode') && preset?.mode === 'fast') ? 'fast' : 'live',
         speed:
           body.speed === 'fast' || body.speed === 'slow' || body.speed === 'normal'
             ? body.speed
@@ -1361,15 +1367,15 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
             ? body.scenario
             : preset?.scenario || workflow.recommendedScenario,
         seed: typeof body.seed === 'number' ? body.seed : preset?.seed ?? undefined,
-        reset: typeof body.reset === 'boolean' ? body.reset : false,
+        reset: typeof body.reset === 'boolean' ? body.reset : preset?.reset ?? false,
         workflowId: workflow.id,
         runtimeProvider: asRuntimeProvider(body.runtimeProvider ?? preset?.runtimeProvider),
         presetId: preset?.presetId || presetId || undefined,
-        codexMaxAgents: asPositiveInteger(body.codexMaxAgents),
-        codexConcurrency: asPositiveInteger(body.codexConcurrency),
+        codexMaxAgents: asPositiveInteger(bodyHasCodexMaxAgents ? body.codexMaxAgents : preset?.codexMaxAgents),
+        codexConcurrency: asPositiveInteger(bodyHasCodexConcurrency ? body.codexConcurrency : preset?.codexConcurrency),
         codexSandbox: asOptionalString(body.codexSandbox),
         codexModel: asOptionalString(body.codexModel),
-        codexSearch: body.codexSearch === true,
+        codexSearch: typeof body.codexSearch === 'boolean' ? body.codexSearch : preset?.codexSearch === true,
         // A1: single-agent dispatch — forwarded to the codex runner as `--agent` flags
         // (run-manager re-sanitizes the list; ignored for simulation runs).
         codexAgents: Array.isArray(body.codexAgents) ? (body.codexAgents as string[]) : undefined,
