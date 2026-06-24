@@ -32,7 +32,13 @@ import {
   evaluateThresholds,
   computeFalseApprove
 } from '../eval/lib/thresholds.mjs';
-import { readFileSync, existsSync } from 'node:fs';
+import {
+  stashAnswerKeys,
+  restoreAnswerKeys,
+  stashRootForRepo
+} from '../eval/lib/answer-stash.mjs';
+import { readFileSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -868,6 +874,45 @@ test('parseFlagTexts: preserves leading metric values after bullet/list markers'
 test('parseFlagTexts: empty / non-string input -> []', () => {
   assert.deepEqual(parseFlagTexts(''), []);
   assert.deepEqual(parseFlagTexts(null), []);
+});
+
+// ===========================================================================
+// Answer-key stash — eval/lib/answer-stash.mjs
+// ===========================================================================
+
+test('answer stash: isolates manifests by repo root', () => {
+  const repoA = mkdtempSync(join(tmpdir(), 'cre-answer-stash-a-'));
+  const repoB = mkdtempSync(join(tmpdir(), 'cre-answer-stash-b-'));
+  const answerA = join(repoA, 'EVAL-PLAN.md');
+  const answerB = join(repoB, 'EVAL-PLAN.md');
+  const stashA = stashRootForRepo(repoA);
+  const stashB = stashRootForRepo(repoB);
+  try {
+    rmSync(stashA, { recursive: true, force: true });
+    rmSync(stashB, { recursive: true, force: true });
+    writeFileSync(answerA, 'answer-a');
+    writeFileSync(answerB, 'answer-b');
+
+    assert.notEqual(stashA, stashB, 'different repo roots must not share one stash manifest');
+    assert.equal(stashAnswerKeys([answerA], repoA), 1);
+    assert.equal(stashAnswerKeys([answerB], repoB), 1);
+    assert.equal(existsSync(answerA), false);
+    assert.equal(existsSync(answerB), false);
+
+    assert.equal(restoreAnswerKeys(repoA), 1);
+    assert.equal(readFileSync(answerA, 'utf8'), 'answer-a');
+    assert.equal(existsSync(answerB), false, 'restoring repo A must not restore repo B');
+
+    assert.equal(restoreAnswerKeys(repoB), 1);
+    assert.equal(readFileSync(answerB, 'utf8'), 'answer-b');
+  } finally {
+    restoreAnswerKeys(repoA);
+    restoreAnswerKeys(repoB);
+    rmSync(stashA, { recursive: true, force: true });
+    rmSync(stashB, { recursive: true, force: true });
+    rmSync(repoA, { recursive: true, force: true });
+    rmSync(repoB, { recursive: true, force: true });
+  }
 });
 
 // ===========================================================================

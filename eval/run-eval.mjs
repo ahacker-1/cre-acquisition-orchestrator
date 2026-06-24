@@ -144,7 +144,7 @@ function runExtractionLayer(deals) {
 function main() {
   // Crash recovery: if a previous live run was killed mid-stash, the answer
   // keys are sitting in the OS temp stash — put them back before doing anything.
-  const recovered = restoreAnswerKeys()
+  const recovered = restoreAnswerKeys(repoRoot)
   if (recovered > 0) console.log(`[eval] recovered ${recovered} answer-key path(s) from a prior interrupted run`)
 
   const args = parseArgs(process.argv.slice(2))
@@ -227,7 +227,7 @@ function main() {
     // read-only access to the whole repo) for the duration of the run. Ground
     // truth is already loaded into memory above, so scoring is unaffected.
     if (!reparse) {
-      const hidden = stashAnswerKeys(answerKeyPaths(repoRoot))
+      const hidden = stashAnswerKeys(answerKeyPaths(repoRoot), repoRoot)
       console.log(`[eval] hid ${hidden} answer-key path(s) from the live agents for the duration of the run`)
       // Remove THIS eval's OWN prior artifacts so the live agents can't read a
       // previous run's verdicts/sim numbers (the per-deal cleanup in
@@ -290,7 +290,7 @@ function main() {
       }
     } finally {
       if (!reparse) {
-        const restored = restoreAnswerKeys()
+        const restored = restoreAnswerKeys(repoRoot)
         console.log(`[eval] restored ${restored} answer-key path(s)`)
       }
     }
