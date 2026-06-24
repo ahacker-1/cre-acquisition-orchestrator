@@ -331,6 +331,7 @@ export default function App() {
         runtimeProvider: 'codex',
         codexMaxAgents: null,
         codexConcurrency: 2,
+        codexSearch: true,
       })
       setFrontDoorPinned(false)
       setFrontDoorOpen(false)

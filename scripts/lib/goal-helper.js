@@ -172,6 +172,7 @@ function suggestSwarmGoal({ goal, catalog, registry, phaseMetadata, dealSummary 
       speed: 'fast',
       mode: 'fast',
       runtimeProvider: 'codex',
+      codexSearch: true,
       requireSourceBackedInputs: true,
       reset: true,
     },

@@ -565,6 +565,7 @@ export function useCheckpointData() {
         reset: false,
         codexMaxAgents: null,
         codexConcurrency: 2,
+        codexSearch: true,
       }
       const response = await fetch(`${API_URL}/api/run/start`, {
         method: 'POST',

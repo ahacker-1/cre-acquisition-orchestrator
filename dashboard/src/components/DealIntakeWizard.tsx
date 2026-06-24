@@ -41,6 +41,7 @@ interface DealIntakeWizardProps {
       runtimeProvider?: RuntimeProvider
       codexMaxAgents?: number | null
       codexConcurrency?: number | null
+      codexSearch?: boolean
     },
   ) => Promise<unknown>
   onSaved: (dealId?: string, intent?: 'draft' | 'launch' | 'documents') => void | Promise<void>
@@ -273,6 +274,7 @@ export default function DealIntakeWizard({
         runtimeProvider: 'codex',
         codexMaxAgents: null,
         codexConcurrency: 2,
+        codexSearch: true,
       })
       await onSaved()
       onLaunched()
