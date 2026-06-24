@@ -214,6 +214,45 @@ async function waitForApi(timeoutMs) {
   return false
 }
 
+async function probeWebSocketProxy(host, port) {
+  return new Promise((resolveProbe) => {
+    let settled = false
+    let buffer = ''
+    let timeout = null
+    const socket = connect(port, host)
+    const finish = (ok, detail) => {
+      if (settled) return
+      settled = true
+      if (timeout) clearTimeout(timeout)
+      socket.destroy()
+      resolveProbe({ ok, detail })
+    }
+
+    timeout = setTimeout(() => finish(false, 'timeout waiting for upgrade response'), 2500)
+    socket.once('connect', () => {
+      socket.write(
+        [
+          'GET /ws HTTP/1.1',
+          `Host: ${host}:${port}`,
+          'Connection: Upgrade',
+          'Upgrade: websocket',
+          'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==',
+          'Sec-WebSocket-Version: 13',
+          '',
+          '',
+        ].join('\r\n'),
+      )
+    })
+    socket.on('data', (chunk) => {
+      buffer += chunk.toString('utf8')
+      if (!buffer.includes('\r\n\r\n')) return
+      const statusLine = buffer.split('\r\n')[0] || ''
+      finish(/^HTTP\/1\.1 101\b/.test(statusLine), statusLine || 'missing HTTP status line')
+    })
+    socket.once('error', (err) => finish(false, err.message))
+  })
+}
+
 async function killWatcher(child) {
   if (!child || child.killed) return
   if (isWindows && child.pid) {
@@ -231,12 +270,13 @@ async function killWatcher(child) {
 }
 
 // ---------------------------------------------------------------------------
-// Smoke check: fetch served index.html (expect 200 + HTML) and /api/run/status
-// (expect 200 + JSON), then shut everything down cleanly.
+// Smoke check: fetch served index.html (expect 200 + HTML), /api/run/status
+// (expect 200 + JSON), and /ws (expect WebSocket 101 upgrade), then shut down.
 // ---------------------------------------------------------------------------
 
 async function runSmoke(staticServer, watcher) {
-  const base = `http://${STATIC_HOST === '0.0.0.0' ? '127.0.0.1' : STATIC_HOST}:${STATIC_PORT}`
+  const probeHost = STATIC_HOST === '0.0.0.0' ? '127.0.0.1' : STATIC_HOST
+  const base = `http://${probeHost}:${STATIC_PORT}`
   let failed = false
 
   // 1. index.html
@@ -270,6 +310,16 @@ async function runSmoke(staticServer, watcher) {
     if (!ok) failed = true
   } catch (err) {
     log('smoke', `GET ${base}/api/run/status FAILED: ${err.message}`)
+    failed = true
+  }
+
+  // 3. /ws (proxied WebSocket upgrade to loopback watcher)
+  try {
+    const result = await probeWebSocketProxy(probeHost, STATIC_PORT)
+    log('smoke', `GET ws://${probeHost}:${STATIC_PORT}/ws -> ${result.detail}`)
+    if (!result.ok) failed = true
+  } catch (err) {
+    log('smoke', `GET ws://${probeHost}:${STATIC_PORT}/ws FAILED: ${err.message}`)
     failed = true
   }
 

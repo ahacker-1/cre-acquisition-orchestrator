@@ -96,7 +96,8 @@ npm run serve
 
 The serve entry has a built-in smoke check that starts everything on loopback,
 fetches the served `index.html` (expects `200` + HTML) and `GET /api/run/status`
-(expects `200` + JSON), then shuts down cleanly:
+(expects `200` + JSON), verifies the `/ws` WebSocket proxy returns a `101`
+upgrade response, then shuts down cleanly:
 
 ```bash
 node scripts/serve-prod.mjs --smoke
@@ -109,6 +110,7 @@ Expected output (abridged):
 [serve] API/WS server ready at http://127.0.0.1:8081
 [smoke] GET http://127.0.0.1:4174/ -> 200 text/html; charset=utf-8
 [smoke] GET http://127.0.0.1:4174/api/run/status -> 200 application/json
+[smoke] GET ws://127.0.0.1:4174/ws -> HTTP/1.1 101 Switching Protocols
 [smoke] RESULT: PASS
 ```
 
