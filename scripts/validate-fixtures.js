@@ -30,7 +30,7 @@ function schemaForFixture(filePath) {
       rootName: 'documentsManifest'
     };
   }
-  if (/(^|\/)codex-run-sample\/manifest\.json$/.test(rel)) {
+  if (/(^|\/)codex-run-sample\/(?:manifest|running-manifest)\.json$/.test(rel)) {
     return {
       schemaPath: path.join(BASE_DIR, 'schemas', 'codex', 'run-manifest.schema.json'),
       rootName: 'codexRunManifest'
