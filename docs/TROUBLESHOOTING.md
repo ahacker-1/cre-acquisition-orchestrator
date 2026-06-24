@@ -9,7 +9,7 @@ Symptom-based troubleshooting guide for the CRE Acquisition Orchestration System
 | Symptom | Likely Cause | Fix |
 |---------|-------------|-----|
 | Pipeline won't start | Invalid or incomplete `deal.json` | Run pre-flight validation. Ensure all REQUIRED fields are populated. See [Deal Configuration](DEAL-CONFIGURATION.md) for field-by-field requirements. |
-| Agent hangs / never completes | Context window exhaustion, a stalled live Codex run, or an interrupted deterministic run | For deterministic runs, resume with `node scripts/orchestrate.js --deal config/deal.json --resume`. For live Codex runs, inspect `data/codex-runs/{runId}/` and rerun the selected workflow. |
+| Agent hangs / never completes | Context window exhaustion, a stalled live Codex run, or an interrupted deterministic run | For deterministic runs, resume with `node scripts/orchestrate.js --deal config/deal.json --resume`. For live Codex runs, inspect `data/codex-runs/{runId}/manifest.json`, `summary.md`, and the agent log before rerunning with a fresh run ID. |
 | Dashboard shows no data | Watcher process not started or no run has been generated yet | Run `npm run demo`, then start the dashboard with `npm run dashboard`. |
 | Dashboard shows "Disconnected" | WebSocket connection lost between browser and watcher | Refresh the browser. If the issue persists, restart the watcher with `npm run dashboard`. |
 | Source-backed XLSX/PDF/OCR extraction reports parser dependencies unavailable | `.venv` is missing or does not have `pandas`, `openpyxl`, `pdfplumber`, and `PyMuPDF` installed | Run `npm run setup`. For a read-only check, run `npm run setup -- --check`. If you intentionally only need the dashboard shell, rerun setup with `--skip-python-install`. |
@@ -287,6 +287,8 @@ After a live smoke run, validate the Codex output and dashboard package contract
 npm run codex:smoke
 npm run validate:codex
 ```
+
+If validation reports a missing `summary.md`, missing agent memo, or a `RUNNING` manifest, treat the live Codex run as incomplete rather than successful. Check `data/codex-runs/codex-smoke/{phase}/{agent}.log` for the last Codex activity, confirm whether the `codex exec` process is still running, and rerun with a fresh run ID after stopping or interrupting the stale process.
 
 ---
 
