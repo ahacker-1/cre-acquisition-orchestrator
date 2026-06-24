@@ -1056,7 +1056,7 @@ function ExtractionPreviewPanel({
                 <span className="font-semibold text-gray-300">{field.label}</span>
                 <span className="min-w-0 text-gray-500">
                   <span className="break-words">{field.currentValue !== undefined ? fieldValue(field.currentValue) : 'empty'}</span>
-                  <span className="px-2 text-gray-700">to</span>
+                  <span className="px-2 text-gray-400">to</span>
                   <span className="break-words text-white">{fieldValue(field.value)}</span>
                 </span>
               </div>
@@ -2318,6 +2318,7 @@ export default function DealWorkspace({
   const [guidedDemoStep, setGuidedDemoStep] = useState(0)
   const [packageExportMessage, setPackageExportMessage] = useState<string | null>(null)
   const [advancedOpen, setAdvancedOpen] = useState(false)
+  const advancedDrawerRef = useRef<HTMLDivElement | null>(null)
   // Owned here (not in IntakeStage) so the intake detailed-review disclosure survives the stage
   // body re-mounting whenever a workspace refresh flips `loading` (extract / apply / field edit).
   const [intakeReviewOpen, setIntakeReviewOpen] = useState(false)
@@ -2429,11 +2430,14 @@ export default function DealWorkspace({
     void extractDocument(pending.documentId)
   }, [documents, working, extractDocument])
 
-  // Advanced-drawer a11y (Phase-1 gate finding): lock body scroll + close on Escape while open.
+  // Advanced-drawer a11y (Phase-1 gate finding): lock body scroll + close on Escape while open,
+  // move focus into the drawer on open, and restore it to the opener on close.
   useEffect(() => {
     if (!advancedOpen) return
     const previousOverflow = document.body.style.overflow
+    const previouslyFocused = document.activeElement as HTMLElement | null
     document.body.style.overflow = 'hidden'
+    advancedDrawerRef.current?.focus()
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key === 'Escape') setAdvancedOpen(false)
     }
@@ -2441,6 +2445,7 @@ export default function DealWorkspace({
     return () => {
       window.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = previousOverflow
+      previouslyFocused?.focus?.()
     }
   }, [advancedOpen])
 
@@ -2837,7 +2842,9 @@ export default function DealWorkspace({
 
       {advancedOpen && (
         <div
-          className="fixed inset-0 z-40 overflow-y-auto bg-black/70 backdrop-blur-sm"
+          ref={advancedDrawerRef}
+          tabIndex={-1}
+          className="fixed inset-0 z-40 overflow-y-auto bg-black/70 backdrop-blur-sm focus:outline-none"
           data-testid="advanced-drawer"
           role="dialog"
           aria-modal="true"

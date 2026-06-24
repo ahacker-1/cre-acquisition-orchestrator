@@ -28,7 +28,7 @@ function agentStatusColor(status: string): string {
     return 'bg-cre-danger/20 text-cre-danger'
   if (upper === 'RUNNING' || upper === 'IN_PROGRESS')
     return 'bg-cre-info/20 text-cre-info'
-  return 'bg-gray-600/20 text-gray-400'
+  return 'bg-[#4b5563]/20 text-gray-400'
 }
 
 function AgentFindingCard({

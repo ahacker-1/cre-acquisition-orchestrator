@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
   createEmptyDealForm,
   createEmptyUnitMixRow,
@@ -154,6 +154,22 @@ export default function DealIntakeWizard({
   const [validation, setValidation] = useState<DealValidationResult | null>(null)
   const [workingState, setWorkingState] = useState<'saving' | 'launching' | 'checking' | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const modalRef = useRef<HTMLDivElement | null>(null)
+
+  // Dialog a11y: move focus into the wizard on open, restore it on close, and close on Escape.
+  useEffect(() => {
+    if (!isOpen) return
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    modalRef.current?.focus()
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      previouslyFocused?.focus?.()
+    }
+  }, [isOpen, onClose])
 
   useLayoutEffect(() => {
     if (!isOpen) return
@@ -298,15 +314,20 @@ export default function DealIntakeWizard({
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm overflow-y-auto">
       <div className="min-h-full flex items-start justify-center p-6 lg:p-10">
         <div
+          ref={modalRef}
+          tabIndex={-1}
           data-testid="deal-wizard-modal"
-          className="w-full max-w-6xl border border-cre-border bg-cre-surface shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="deal-wizard-title"
+          className="w-full max-w-6xl border border-cre-border bg-cre-surface shadow-[0_24px_80px_rgba(0,0,0,0.45)] focus:outline-none"
         >
           <div className="border-b border-cre-border px-6 py-5 flex items-start justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-cre-accent font-semibold">
                 Deal Details
               </p>
-              <h2 className="text-2xl font-bold text-white mt-2">
+              <h2 id="deal-wizard-title" className="text-2xl font-bold text-white mt-2">
                 {editingDealId ? 'Edit Deal' : 'Create a Deal'}
               </h2>
               <p className="text-sm text-gray-500 mt-2 max-w-2xl">
@@ -319,7 +340,7 @@ export default function DealIntakeWizard({
               className="rounded-full p-2 text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
               aria-label="Close wizard"
             >
-              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
                 <path d="M5 5L15 15M15 5L5 15" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
             </button>

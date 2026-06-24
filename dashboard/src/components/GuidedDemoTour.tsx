@@ -93,6 +93,16 @@ export default function GuidedDemoTour({
     scrollTargetIntoView(step.targetTestId)
   }, [active, onFocusStage, step.stage, step.targetTestId])
 
+  // Keyboard dismissal: let users close the guided tour with Escape.
+  useEffect(() => {
+    if (!active) return
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [active, onClose])
+
   if (!active) return null
 
   return (

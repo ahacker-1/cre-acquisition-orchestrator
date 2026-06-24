@@ -30,7 +30,7 @@ function agentStatusColor(status: string): string {
     return 'bg-cre-success/20 text-cre-success'
   if (upper === 'FAILED' || upper === 'ERROR')
     return 'bg-cre-danger/20 text-cre-danger'
-  return 'bg-gray-600/20 text-gray-400'
+  return 'bg-[#4b5563]/20 text-gray-400'
 }
 
 export default function LegalClosing({ dealCheckpoint }: Props) {

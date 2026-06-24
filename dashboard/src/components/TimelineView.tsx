@@ -116,7 +116,7 @@ export default function TimelineView({
     return (
       <div className="card flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="text-3xl text-gray-700 mb-3">---</div>
+          <div className="text-3xl text-gray-400 mb-3" aria-hidden="true">---</div>
           <p className="text-gray-500">
             Timeline will populate as agents run
           </p>

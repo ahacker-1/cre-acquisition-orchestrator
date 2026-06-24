@@ -65,7 +65,7 @@ export default function RiskAssessment({ dealCheckpoint }: Props) {
     const upper = priority.toUpperCase()
     if (upper === 'HIGH') return 'bg-cre-danger/20 text-cre-danger'
     if (upper === 'MEDIUM') return 'bg-cre-warning/20 text-cre-warning'
-    return 'bg-gray-600/20 text-gray-400'
+    return 'bg-[#4b5563]/20 text-gray-400'
   }
 
   return (
@@ -299,7 +299,7 @@ export default function RiskAssessment({ dealCheckpoint }: Props) {
                       className="border-b border-cre-border/30 last:border-b-0"
                     >
                       <td className="py-2.5">
-                        <div className="w-5 h-5 rounded border-2 border-gray-500 flex items-center justify-center">
+                        <div className="w-5 h-5 rounded border-2 border-[#6b7280] flex items-center justify-center">
                           <span className="text-[10px] text-gray-600 font-mono">
                             {i + 1}
                           </span>

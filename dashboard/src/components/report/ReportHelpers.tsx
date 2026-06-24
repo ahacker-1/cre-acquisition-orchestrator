@@ -95,14 +95,14 @@ export const PHASE_LABELS: Record<string, string> = {
 
 /** Returns a Tailwind class string for verdict badge background + text color */
 export function verdictColor(v: string | null | undefined): string {
-  if (!v) return 'bg-gray-600/20 text-gray-400'
+  if (!v) return 'bg-[#4b5563]/20 text-gray-400'
   const upper = v.toUpperCase()
   if (upper === 'PASS') return 'bg-cre-success/20 text-cre-success'
   if (upper === 'FAIL') return 'bg-cre-danger/20 text-cre-danger'
   if (upper.includes('CONDITIONAL') || upper.includes('MITIGATION'))
     return 'bg-cre-warning/20 text-cre-warning'
   if (upper === 'NEEDS_REVIEW') return 'bg-cre-info/20 text-cre-info'
-  return 'bg-gray-600/20 text-gray-400'
+  return 'bg-[#4b5563]/20 text-gray-400'
 }
 
 /** Human-friendly verdict label */

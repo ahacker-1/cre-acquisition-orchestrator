@@ -16,7 +16,7 @@ function VerdictBadge({ verdict }: { verdict: PhaseInfo['outputs']['phaseVerdict
       ? 'bg-cre-danger/20 text-cre-danger'
       : verdict === 'CONDITIONAL'
       ? 'bg-cre-warning/20 text-cre-warning'
-      : 'bg-gray-600/20 text-gray-400'
+      : 'bg-[#4b5563]/20 text-gray-400'
 
   return <span className={`status-badge ${classes}`}>{verdict}</span>
 }
@@ -71,7 +71,7 @@ export default function PhaseDetail({
               : phase.status === 'complete'
               ? 'bg-cre-success'
               : phase.status === 'skipped'
-              ? 'bg-gray-500'
+              ? 'bg-[#6b7280]'
               : 'bg-cre-accent'
           }`}
           style={{ width: `${progressPercent}%` }}
@@ -128,8 +128,8 @@ export default function PhaseDetail({
                         : agent.status === 'failed'
                         ? 'bg-cre-danger'
                         : agent.status === 'skipped'
-                        ? 'bg-gray-500'
-                        : 'bg-gray-600'
+                        ? 'bg-[#6b7280]'
+                        : 'bg-[#4b5563]'
                     }`}
                   />
                   <span className="text-sm text-gray-300">{agent.agentName}</span>
@@ -190,7 +190,7 @@ export default function PhaseDetail({
                         ? 'bg-cre-danger/30 text-cre-danger'
                         : flag.severity === 'MEDIUM'
                         ? 'bg-cre-warning/30 text-cre-warning'
-                        : 'bg-gray-600/30 text-gray-400'
+                        : 'bg-[#4b5563]/30 text-gray-400'
                     }`}
                   >
                     {flag.severity}

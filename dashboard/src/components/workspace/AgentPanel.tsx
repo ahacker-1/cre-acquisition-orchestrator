@@ -78,15 +78,44 @@ export default function AgentPanel({
   const [followUp, setFollowUp] = useState('')
   const panelRef = useRef<HTMLDivElement | null>(null)
 
-  // Dialog a11y: focus the panel on open, close on Escape.
+  // Dialog a11y: focus the panel on open, restore focus to the opener on close, close on
+  // Escape, and trap Tab focus inside the panel so keyboard users can't wander behind the scrim.
   useEffect(() => {
     if (!open) return
+    const previouslyFocused = document.activeElement as HTMLElement | null
     panelRef.current?.focus()
     function onKeyDown(event: KeyboardEvent): void {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const panel = panelRef.current
+      if (!panel) return
+      const focusable = panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      if (focusable.length === 0) {
+        event.preventDefault()
+        panel.focus()
+        return
+      }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+      if (event.shiftKey && (active === first || active === panel)) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
     window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      previouslyFocused?.focus?.()
+    }
   }, [open, onClose])
 
   if (!open) return null
@@ -155,7 +184,7 @@ export default function AgentPanel({
               {status === 'queued' ? 'Queued — waiting to start.' : 'No activity recorded yet.'}
             </p>
           ) : (
-            <ul className="mt-3 space-y-1">
+            <ul className="mt-3 space-y-1" role="log" aria-live="polite" aria-label="Agent reasoning, live">
               {streamLines.map((line) => (
                 <li
                   key={line.id}

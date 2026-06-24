@@ -63,7 +63,13 @@ export default function LiveFeed({ storyEvents, limit = 40 }: LiveFeedProps) {
           No team activity yet. Summon an agent or run a stage to watch the team work.
         </p>
       ) : (
-        <ul className="mt-3 space-y-2">
+        <ul
+          className="mt-3 space-y-2"
+          role="log"
+          aria-live="polite"
+          aria-relevant="additions"
+          aria-label="Team activity, newest first"
+        >
           {rows.map((event) => (
             <li
               key={`${event.runId}-${event.seq}`}

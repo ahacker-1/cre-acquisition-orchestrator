@@ -71,6 +71,7 @@ function FieldRow({
         <input
           autoFocus
           data-testid={`record-field-input-${field.fieldId}`}
+          aria-label={`Edit ${field.label}`}
           value={draft}
           disabled={saving}
           onChange={(event) => setDraft(event.target.value)}
@@ -115,7 +116,7 @@ function FieldRow({
 
       {field.flagged && field.flagReason && (
         <p className="col-span-3 text-[11px] leading-5 text-cre-warning" data-testid={`record-field-flag-${field.fieldId}`}>
-          ⚠ {field.flagReason}
+          <span aria-hidden="true">⚠</span> {field.flagReason}
         </p>
       )}
       {showProvenance && field.provenance && (

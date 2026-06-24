@@ -1094,6 +1094,7 @@ function WorkflowLauncher({
                   }
                   className={`${inputClassName()} flex-1 min-w-0`}
                   placeholder="Preset name"
+                  aria-label="Preset name"
                 />
                 <button
                   type="button"

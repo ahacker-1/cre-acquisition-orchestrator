@@ -97,8 +97,9 @@ export default function LogStream({ logEntries }: LogStreamProps) {
       <div className="flex items-center gap-4 px-4 py-3 border-b border-cre-border bg-cre-surface flex-wrap">
         {/* Agent filter */}
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-500 uppercase tracking-wider">Agent</label>
+          <label htmlFor="logstream-agent-filter" className="text-xs text-gray-500 uppercase tracking-wider">Agent</label>
           <select
+            id="logstream-agent-filter"
             value={agentFilter}
             onChange={(e) => setAgentFilter(e.target.value)}
             className="bg-cre-bg border border-cre-border rounded px-2 py-1 text-sm text-gray-300 outline-none focus:border-cre-accent"
@@ -150,6 +151,9 @@ export default function LogStream({ logEntries }: LogStreamProps) {
       {/* Log entries */}
       <div
         ref={scrollRef}
+        role="log"
+        aria-live="polite"
+        aria-label="Agent log stream"
         className="h-[500px] overflow-y-auto bg-black/40 font-mono"
         onScroll={() => {
           if (!scrollRef.current) return
