@@ -65,6 +65,20 @@ try {
   assert.equal(simulationPreset.codexSearch, false, 'simulation presets do not imply Codex search')
 
   const baseDeal = JSON.parse(readFileSync(join(projectRoot, 'config', 'deal.json'), 'utf8'))
+
+  const filenameDealId = 'test-upload-filename-normalization'
+  saveUserDeal(context, { deal: { ...baseDeal, dealId: filenameDealId, dealName: 'Upload Filename Normalization' }, mode: 'draft' })
+  const suspiciousDocument = saveSourceDocument(context, filenameDealId, {
+    fileName: '..\\..\\rent-roll.csv\n# injected-heading',
+    mime: '',
+    contentBase64: Buffer.from('Unit Type,Market Rent\n1BR,$1,200\n').toString('base64'),
+  }).document
+  assert.equal(suspiciousDocument.fileName, 'rent-roll.csv')
+  assert.equal(suspiciousDocument.mime, 'text/csv')
+  assert.equal(suspiciousDocument.type, 'rent_roll')
+  assert.match(suspiciousDocument.storedName, /^doc_\d+_[a-f0-9-]+_rent-roll\.csv$/)
+  assert.ok(!/[\\/\r\n]/.test(suspiciousDocument.storedName), 'stored upload names must not carry paths or controls')
+
   const dealId = 'test-source-backed-review'
   const deal = {
     ...baseDeal,
