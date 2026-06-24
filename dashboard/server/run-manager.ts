@@ -1,6 +1,6 @@
 import { spawn, spawnSync, type ChildProcessByStdio } from 'child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'fs'
-import { join } from 'path'
+import { isAbsolute, join, relative, resolve } from 'path'
 import type { Readable } from 'stream'
 
 export type RunMode = 'live' | 'fast'
@@ -102,11 +102,6 @@ function sanitizeMode(mode: unknown): RunMode {
   return mode === 'fast' ? 'fast' : 'live'
 }
 
-function sanitizeDealPath(dealPath: unknown): string {
-  if (typeof dealPath !== 'string' || dealPath.trim().length === 0) return 'config/deal.json'
-  return dealPath
-}
-
 function sanitizeScenario(scenario: unknown): string {
   if (typeof scenario !== 'string' || scenario.trim().length === 0) return 'core-plus'
   return scenario
@@ -124,11 +119,6 @@ function sanitizeRuntimeProvider(runtimeProvider: unknown): RuntimeProvider {
 function sanitizePresetId(presetId: unknown): string | null {
   if (typeof presetId !== 'string' || presetId.trim().length === 0) return null
   return presetId.trim()
-}
-
-function sanitizeInputSnapshotPath(inputSnapshotPath: unknown): string | null {
-  if (typeof inputSnapshotPath !== 'string' || inputSnapshotPath.trim().length === 0) return null
-  return inputSnapshotPath.trim()
 }
 
 function sanitizeSeed(seed: unknown): number | null {
@@ -181,6 +171,27 @@ function speedToDelayMs(speed: RunSpeed): number {
   if (speed === 'fast') return 500
   if (speed === 'slow') return 5000
   return 2000
+}
+
+function assertProjectRelativePath(projectRoot: string, rawPath: string, label: string): string {
+  const resolvedRoot = resolve(projectRoot)
+  const resolvedPath = resolve(resolvedRoot, rawPath)
+  const relativePath = relative(resolvedRoot, resolvedPath)
+  const insideProject = relativePath === '' || (!relativePath.startsWith('..') && !isAbsolute(relativePath))
+  if (!insideProject) {
+    throw new Error(`Unsafe ${label}: resolved path escapes project root`)
+  }
+  return relativePath.replace(/\\/g, '/')
+}
+
+function sanitizeDealPath(projectRoot: string, dealPath: unknown): string {
+  const rawPath = typeof dealPath === 'string' && dealPath.trim().length > 0 ? dealPath.trim() : 'config/deal.json'
+  return assertProjectRelativePath(projectRoot, rawPath, 'deal path')
+}
+
+function sanitizeInputSnapshotPath(projectRoot: string, inputSnapshotPath: unknown): string | null {
+  if (typeof inputSnapshotPath !== 'string' || inputSnapshotPath.trim().length === 0) return null
+  return assertProjectRelativePath(projectRoot, inputSnapshotPath.trim(), 'input snapshot path')
 }
 
 export class RunManager {
@@ -285,15 +296,26 @@ export class RunManager {
       }
     }
 
+    let dealPath: string
+    let inputSnapshotPath: string | null
+    try {
+      dealPath = sanitizeDealPath(this.projectRoot, request.dealPath)
+      inputSnapshotPath = sanitizeInputSnapshotPath(this.projectRoot, request.inputSnapshotPath)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      return {
+        statusCode: 400,
+        body: { error: message },
+      }
+    }
+
     const mode = sanitizeMode(request.mode)
     const speed = sanitizeSpeed(request.speed)
-    const dealPath = sanitizeDealPath(request.dealPath)
     const scenario = sanitizeScenario(request.scenario)
     const seed = sanitizeSeed(request.seed)
     const workflowId = sanitizeWorkflowId(request.workflowId)
     const runtimeProvider = sanitizeRuntimeProvider(request.runtimeProvider)
     const presetId = sanitizePresetId(request.presetId)
-    const inputSnapshotPath = sanitizeInputSnapshotPath(request.inputSnapshotPath)
     const codexMaxAgents = sanitizePositiveInteger(request.codexMaxAgents)
     const codexConcurrency = sanitizePositiveInteger(request.codexConcurrency, 2) ?? 2
     const codexSandbox = sanitizeOptionalString(request.codexSandbox) || 'read-only'

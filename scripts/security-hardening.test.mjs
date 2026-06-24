@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runDocumentParser, sanitizeCsvCell } from '../dashboard/server/parser-service.ts'
+import { RunManager } from '../dashboard/server/run-manager.ts'
 import safePaths from './lib/safe-paths.js'
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
@@ -16,6 +17,25 @@ assert.throws(
 )
 assert.equal(safePaths.assertSafeSegment('parkview-2026-001', 'deal ID'), 'parkview-2026-001')
 assert.throws(() => safePaths.assertSafeSegment('../parkview', 'deal ID'), /Invalid deal ID/)
+
+const runManager = new RunManager({
+  projectRoot,
+  dataRoot: join(projectRoot, 'data'),
+  onEvent: () => {},
+})
+const unsafeDealResponse = runManager.start({
+  runtimeProvider: 'codex',
+  dealPath: resolve(projectRoot, '..', 'outside-deal.json'),
+})
+assert.equal(unsafeDealResponse.statusCode, 400)
+assert.match(String(unsafeDealResponse.body.error), /Unsafe deal path/)
+
+const unsafeSnapshotResponse = runManager.start({
+  runtimeProvider: 'simulation',
+  inputSnapshotPath: resolve(projectRoot, '..', 'outside-snapshot.json'),
+})
+assert.equal(unsafeSnapshotResponse.statusCode, 400)
+assert.match(String(unsafeSnapshotResponse.body.error), /Unsafe input snapshot path/)
 
 assert.equal(sanitizeCsvCell('=HYPERLINK("http://example.com")'), '\'=HYPERLINK("http://example.com")')
 assert.equal(sanitizeCsvCell('+SUM(A1:A2)'), "'+SUM(A1:A2)")
