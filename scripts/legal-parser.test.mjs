@@ -130,8 +130,8 @@ check('legal-diligence-checklist.md extracts reviewable checklist rows without h
   const preview = parseText('legal-diligence-checklist.md', 'legal')
   assertExtracted(preview, 'legal checklist')
   assert.equal(preview.metrics?.reviewOnly, true, 'checklist candidates must be review-only')
-  assert.equal(preview.metrics?.checklistCandidateCount, 5, 'expected 5 checklist rows')
-  assert.equal(preview.fields.length, 5, 'markdown heading must not become a checklist item')
+  assert.equal(preview.metrics?.checklistCandidateCount, 6, 'expected 6 checklist rows')
+  assert.equal(preview.fields.length, 6, 'markdown heading must not become a checklist item')
 
   const items = preview.fields.map((field) => field.value)
   assert.deepEqual(
@@ -142,9 +142,10 @@ check('legal-diligence-checklist.md extracts reviewable checklist rows without h
       'ALTA survey update',
       'Phase I ESA reliance letter',
       'Insurance binder review',
+      'SNDA package',
     ],
   )
-  assert.deepEqual(items.map((item) => item.status), ['received', 'missing', 'open', 'received', 'open'])
+  assert.deepEqual(items.map((item) => item.status), ['received', 'missing', 'open', 'received', 'open', 'missing'])
 
   const titleCommitment = preview.fields[1]
   assert.equal(titleCommitment.path, 'diligence.checklistItems')
@@ -155,6 +156,12 @@ check('legal-diligence-checklist.md extracts reviewable checklist rows without h
   assert.equal(titleCommitment.sourceRef?.location?.line, 4, 'checklist row keeps line provenance')
   assert.ok(titleCommitment.sourceRef?.fileHash, 'checklist row keeps file hash provenance')
   assert.match(titleCommitment.sourceRef?.raw ?? '', /Title commitment/)
+
+  const sndaPackage = preview.fields[5]
+  assert.equal(sndaPackage.value.status, 'missing', '"not received" must map to missing, not received')
+  assert.equal(sndaPackage.value.category, 'legal')
+  assert.equal(sndaPackage.value.dueDate, '2026-07-12')
+  assert.equal(sndaPackage.value.responsibleParty, 'Lender counsel')
 })
 
 // --- Regression: a non-legal type still uses the headline matchers ----------

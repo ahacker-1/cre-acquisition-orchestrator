@@ -5,3 +5,4 @@
 - ALTA survey update | status: open | due: 2026-07-08 | owner: Surveyor
 - Phase I ESA reliance letter | status: received | due: 2026-07-05 | owner: Environmental consultant
 - Insurance binder review | status: open | due: 2026-07-10 | owner: Buyer counsel
+- SNDA package | status: not received | due: 2026-07-12 | owner: Lender counsel

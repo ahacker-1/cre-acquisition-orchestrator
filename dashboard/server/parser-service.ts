@@ -752,10 +752,10 @@ interface ChecklistCandidate {
 function checklistStatusFromText(text: string): ChecklistStatus {
   const normalized = text.toLowerCase()
   if (/\b(status\s*[:=-]\s*)?open\b/.test(normalized)) return 'open'
+  if (/\bmissing|not received|outstanding|needed|required\b/.test(normalized)) return 'missing'
   if (/\b(received|delivered|provided|uploaded|complete|completed)\b/.test(normalized)) {
     return /\bcomplete|completed\b/.test(normalized) ? 'complete' : 'received'
   }
-  if (/\bmissing|not received|outstanding|needed|required\b/.test(normalized)) return 'missing'
   if (/\bwaived|n\/a|not applicable\b/.test(normalized)) return 'waived'
   return 'open'
 }
@@ -766,9 +766,9 @@ function checklistCategoryFromText(text: string): ChecklistCategory {
   if (/\b(title|commitment|endorsement|lien)\b/.test(normalized)) return 'title'
   if (/\b(survey|alta|boundary|zoning)\b/.test(normalized)) return 'survey'
   if (/\b(insurance|binder|policy|coverage)\b/.test(normalized)) return 'insurance'
-  if (/\b(loan|lender|financing|debt|term sheet)\b/.test(normalized)) return 'financing'
   if (/\b(closing|escrow|settlement|funds flow)\b/.test(normalized)) return 'closing'
   if (/\b(psa|legal|contract|lease|estoppel|snda|counsel|entity|opinion)\b/.test(normalized)) return 'legal'
+  if (/\b(loan|lender|financing|debt|term sheet)\b/.test(normalized)) return 'financing'
   return 'general'
 }
 
