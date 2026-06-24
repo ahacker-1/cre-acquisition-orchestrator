@@ -2634,6 +2634,14 @@ export default function DealWorkspace({
     routeAndAct(text, text)
   }
 
+  function handleStartDiligenceFromRecord(): void {
+    if (dealRecordNeedsEye > 0) {
+      setIntakeReviewOpen(true)
+      return
+    }
+    setActiveTab('due-diligence')
+  }
+
   // The agent panel's data feed (Hook 3): a pure selector over the existing checkpoint / story /
   // artifact data. Offline = replay of recorded work; codex live = the same selector over the
   // live WS feed. "Open full workpaper" opens the workpaper's file path.
@@ -2677,7 +2685,7 @@ export default function DealWorkspace({
             onEditField={(path, value) => {
               void editField(path, coerceEditValue(path, value), path).catch(() => undefined)
             }}
-            onStartDiligence={() => setActiveTab('due-diligence')}
+            onStartDiligence={handleStartDiligenceFromRecord}
             saving={working}
             agentsLine={intakeAgentsLine}
             detailedReviewOpen={intakeReviewOpen}
