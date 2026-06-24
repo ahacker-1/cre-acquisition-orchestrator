@@ -39,7 +39,7 @@ This document covers common issues you may encounter when running the CRE Acquis
    ```powershell
    # Look at terminal output for errors
    # If errors exist, try:
-   npm install
+   npm run setup
    npm run dashboard
    ```
 
@@ -66,14 +66,16 @@ This document covers common issues you may encounter when running the CRE Acquis
 
 1. **Verify the server is running:**
    ```powershell
-   # Terminal should show Vite dev server running
+   # Terminal should show Vite on 5173,
+   # watcher WebSocket on 8080, and REST API on 8081
    # If not, restart:
    npm run dashboard
    ```
 
-2. **Check the port:**
+2. **Check the dashboard ports:**
    ```powershell
-   # See what's using port 5173
+   # Clear the watcher/API ports first; clear 5173 if the UI is also stuck
+   npx kill-port 8080 8081
    npx kill-port 5173
    # Restart server
    npm run dashboard
@@ -81,7 +83,8 @@ This document covers common issues you may encounter when running the CRE Acquis
 
 3. **Check firewall/antivirus:**
    - Temporarily disable firewall
-   - Add exception for localhost:5173
+   - Add exceptions for localhost:8080 and localhost:8081
+   - Add localhost:5173 if the dashboard page itself will not load
    - Check corporate VPN settings
 
 4. **Try different browser:**
