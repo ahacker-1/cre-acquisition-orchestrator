@@ -22,6 +22,9 @@ function main() {
     process.exit(1);
   }
 
+  console.log(`ChatGPT auth: ${status.usingChatGpt ? 'confirmed' : 'not confirmed'}`);
+  console.log(`Live agents ready: ${status.usingChatGpt ? 'yes' : 'no'}`);
+
   if (!status.usingChatGpt) {
     console.warn('Codex is logged in, but the status did not confirm ChatGPT auth.');
     console.warn('For subscription-based usage, run codex logout, then codex login and choose ChatGPT.');

@@ -229,8 +229,10 @@ function ensureCodex(options) {
   }
   console.log(`[setup] Codex auth OK: ${status.loginStatus}`);
   if (!status.usingChatGpt) {
-    console.warn('[setup] Codex is logged in, but status did not explicitly say ChatGPT.');
-    console.warn('[setup] Subscription-based usage should use codex login with ChatGPT.');
+    const message = 'Codex login is not confirmed as ChatGPT. Run: codex logout, then codex login and choose ChatGPT.';
+    if (options.requireCodex) fail(message);
+    console.warn(`[setup] Optional live Codex runtime not ready: ${message}`);
+    return false;
   }
   return true;
 }
