@@ -3,6 +3,19 @@
   "$id": "https://cre-acquisition-orchestrator.local/schemas/codex/run-manifest.schema.json",
   "title": "Codex Live-Run Manifest",
   "type": "object",
+  "definitions": {
+    "repoRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "nullableRepoRelativePath": {
+      "anyOf": [
+        { "$ref": "#/definitions/repoRelativePath" },
+        { "type": "null" }
+      ]
+    }
+  },
   "required": [
     "runId",
     "status",
@@ -23,8 +36,8 @@
     "workflowName": { "type": ["string", "null"] },
     "scenarioName": { "type": ["string", "null"] },
     "dealId": { "type": ["string", "null"] },
-    "dealPath": { "type": ["string", "null"] },
-    "inputSnapshotPath": { "type": ["string", "null"] },
+    "dealPath": { "$ref": "#/definitions/nullableRepoRelativePath" },
+    "inputSnapshotPath": { "$ref": "#/definitions/nullableRepoRelativePath" },
     "inputSnapshotSummary": { "type": ["object", "string", "null"] },
     "concurrency": { "type": "integer", "minimum": 1 },
     "sandbox": { "type": "string", "minLength": 1 },
@@ -58,7 +71,7 @@
           "phase": { "type": "string", "minLength": 1 },
           "phaseLabel": { "type": "string" },
           "agentName": { "type": "string", "minLength": 1 },
-          "promptFile": { "type": "string", "minLength": 1 }
+          "promptFile": { "$ref": "#/definitions/repoRelativePath" }
         },
         "additionalProperties": false
       }
@@ -74,9 +87,9 @@
           "phaseLabel": { "type": "string" },
           "agentName": { "type": "string", "minLength": 1 },
           "attempts": { "type": "integer", "minimum": 0 },
-          "promptPath": { "type": ["string", "null"] },
-          "outputPath": { "type": ["string", "null"] },
-          "logPath": { "type": ["string", "null"] },
+          "promptPath": { "$ref": "#/definitions/nullableRepoRelativePath" },
+          "outputPath": { "$ref": "#/definitions/nullableRepoRelativePath" },
+          "logPath": { "$ref": "#/definitions/nullableRepoRelativePath" },
           "exitCode": { "type": ["integer", "null"] },
           "error": { "type": ["string", "null"] }
         },

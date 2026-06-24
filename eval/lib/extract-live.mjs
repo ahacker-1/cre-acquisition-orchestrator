@@ -23,9 +23,11 @@ import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseFinancials, parseFlagTexts, parseVerdict } from './markdown-parse.mjs'
 import { normalizeVerdict } from './scoring.mjs'
+import codexManifestPaths from '../../scripts/lib/codex-manifest-paths.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = resolve(__dirname, '..', '..')
+const { resolveCodexRunArtifactPath } = codexManifestPaths
 
 const ARCHETYPE_TO_SCENARIO = {
   'core-plus': 'core-plus',
@@ -189,13 +191,30 @@ export function parseLiveRunDir({
   const manifest = readJsonIfExists(join(runDir, 'manifest.json')) || {}
   const results = Array.isArray(manifest.results) ? manifest.results : []
   const failedAgents = Array.isArray(manifest.failedAgents) ? manifest.failedAgents : []
+  const artifactFailures = []
 
   const workpaperByAgent = {}
-  for (const r of results) {
+  for (const [index, r] of results.entries()) {
     if (!r || !r.agentName) continue
-    // outputPath in the manifest is repo-relative.
-    const outPath = r.outputPath ? join(repoRoot, r.outputPath) : null
+    // outputPath in the manifest is repo-relative and must stay inside this
+    // run's directory. Treat forged/escaping paths as missing workpapers.
+    let outPath = null
+    let unsafeOutputPath = false
+    if (r.outputPath) {
+      try {
+        outPath = resolveCodexRunArtifactPath(repoRoot, runDir, r.outputPath, `result ${index} outputPath`)
+      } catch (error) {
+        unsafeOutputPath = true
+        artifactFailures.push({ agentName: r.agentName, reason: error.message })
+      }
+    }
     const md = outPath ? readIfExists(outPath) : null
+    if (r.status === 'PASS' && !unsafeOutputPath && !md) {
+      artifactFailures.push({
+        agentName: r.agentName,
+        reason: r.outputPath ? `missing or unreadable outputPath: ${r.outputPath}` : 'missing outputPath'
+      })
+    }
     workpaperByAgent[r.agentName] = { status: r.status, markdown: md }
   }
 
@@ -227,12 +246,16 @@ export function parseLiveRunDir({
   // Partial-failure accounting. A run that exited non-zero with NO results is a
   // hard runner failure; failed individual agents are listed honestly.
   const failedNames = failedAgents.map((f) => f && f.agentName).filter(Boolean)
+  const artifactFailureNames = artifactFailures.map((f) => f && f.agentName).filter(Boolean)
+  const allFailedNames = [...new Set([...failedNames, ...artifactFailureNames])]
   const hardRunnerFail = runExitCode !== 0 && results.length === 0
   const partialFailure =
-    failedNames.length > 0 || runExitCode !== 0
+    allFailedNames.length > 0 || runExitCode !== 0
       ? {
-          failedAgents: failedNames.length ? failedNames : ['runner'],
-          note: failedNames.length
+          failedAgents: allFailedNames.length ? allFailedNames : ['runner'],
+          note: artifactFailures.length
+            ? `untrusted or missing live workpapers: ${artifactFailureNames.join(', ')}`
+            : failedNames.length
             ? `agents failed: ${failedNames.join(', ')}`
             : hardRunnerFail
               ? `runner exit ${runExitCode} (0 agents ran)`
@@ -255,7 +278,8 @@ export function parseLiveRunDir({
     model: model || manifest.model || null,
     agentCount: results.length,
     passCount: results.filter((r) => r && r.status === 'PASS').length,
-    failedAgents: failedNames,
+    failedAgents: allFailedNames,
+    untrustedArtifactCount: artifactFailures.length,
     stderrTail: String(runStderr || '')
       .split(/\r?\n/)
       .filter(Boolean)

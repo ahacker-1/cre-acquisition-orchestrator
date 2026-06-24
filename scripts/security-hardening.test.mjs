@@ -5,9 +5,11 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runDocumentParser, sanitizeCsvCell } from '../dashboard/server/parser-service.ts'
 import { RunManager } from '../dashboard/server/run-manager.ts'
+import codexManifestPaths from './lib/codex-manifest-paths.js'
 import safePaths from './lib/safe-paths.js'
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
+const { resolveCodexRunArtifactPath, resolveRepoRelativePath } = codexManifestPaths
 
 const insidePath = safePaths.assertWithinBase(projectRoot, join(projectRoot, 'data', 'status'), 'inside test')
 assert.equal(insidePath, resolve(projectRoot, 'data', 'status'))
@@ -17,6 +19,41 @@ assert.throws(
 )
 assert.equal(safePaths.assertSafeSegment('parkview-2026-001', 'deal ID'), 'parkview-2026-001')
 assert.throws(() => safePaths.assertSafeSegment('../parkview', 'deal ID'), /Invalid deal ID/)
+
+const codexRunDir = join(projectRoot, 'data', 'codex-runs', 'safe-run')
+assert.equal(
+  resolveCodexRunArtifactPath(
+    projectRoot,
+    codexRunDir,
+    'data/codex-runs/safe-run/underwriting/agent.md',
+    'codex output path',
+  ),
+  join(codexRunDir, 'underwriting', 'agent.md'),
+)
+assert.throws(
+  () => resolveRepoRelativePath(projectRoot, '/tmp/agent.md', 'absolute codex output path'),
+  /absolute paths are not allowed/,
+)
+assert.throws(
+  () =>
+    resolveCodexRunArtifactPath(
+      projectRoot,
+      codexRunDir,
+      'data/codex-runs/safe-run/../other-run/agent.md',
+      'escaping codex output path',
+    ),
+  /must not contain "\.\." segments/,
+)
+assert.throws(
+  () =>
+    resolveCodexRunArtifactPath(
+      projectRoot,
+      codexRunDir,
+      'data/status/parkview/agent.md',
+      'wrong-root codex output path',
+    ),
+  /escapes/,
+)
 
 const runManager = new RunManager({
   projectRoot,
