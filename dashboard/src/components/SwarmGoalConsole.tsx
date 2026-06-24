@@ -197,8 +197,10 @@ export default function SwarmGoalConsole({
   const workflow = plannedSwarm
     ? { id: plannedSwarm.workflowId, label: plannedSwarm.workflowName || titleize(plannedSwarm.workflowId), status: plannedSwarm.readiness || 'planned' }
     : getRecommendedWorkflow(workspace, dealCheckpoint)
+  const sampleDeal = workspace?.deal?.item?.kind === 'sample'
   const agents = agentsFromPlan(plannedSwarm, buildSwarmAgents(workspace, agentCheckpoints))
   const blockers = buildBlockers(workspace, plannedSwarm)
+  const swarmLaunchBlocked = Boolean(plannedSwarm && blockers.length > 0 && !sampleDeal)
   const handoffLine = buildHandoffLine(workspace, storyEvents, plannedSwarm)
   const nextAction = plannedSwarm?.nextAction
     ? {
@@ -235,6 +237,10 @@ export default function SwarmGoalConsole({
 
   async function handleLaunchSwarm() {
     if (!plannedSwarm?.workflowId) return
+    if (swarmLaunchBlocked) {
+      setError('Resolve source-backed blockers before launching this swarm.')
+      return
+    }
     setWorking(true)
     setError(null)
     setMessage(null)
@@ -250,7 +256,7 @@ export default function SwarmGoalConsole({
         codexConcurrency: 2,
         // Live swarm runs get web search so agents pull real market/lender/environmental facts.
         codexSearch: true,
-        requireSourceBackedInputs: false,
+        requireSourceBackedInputs: sampleDeal ? false : true,
         reset: false,
         notes: goalInput,
       }
@@ -297,7 +303,7 @@ export default function SwarmGoalConsole({
               {working ? 'Working...' : 'Plan Swarm'}
             </button>
             {plannedSwarm && (
-              <button type="button" className="portal-button portal-button-primary" data-testid="swarm-launch-button" onClick={handleLaunchSwarm} disabled={working}>
+              <button type="button" className="portal-button portal-button-primary" data-testid="swarm-launch-button" onClick={handleLaunchSwarm} disabled={working || swarmLaunchBlocked}>
                 Launch This Swarm
               </button>
             )}
