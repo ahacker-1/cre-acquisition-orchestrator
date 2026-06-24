@@ -20,6 +20,20 @@ function runNodeScript(scriptName, args = [], expectedExit = 0) {
   }
 }
 
+function runNodeScriptCapture(scriptName, args = [], expectedExit = 0) {
+  const scriptPath = path.join(BASE_DIR, 'scripts', scriptName);
+  const result = spawnSync('node', [scriptPath, ...args], {
+    cwd: BASE_DIR,
+    encoding: 'utf8',
+  });
+  const code = typeof result.status === 'number' ? result.status : 1;
+  const output = `${result.stdout || ''}${result.stderr || ''}`;
+  if (code !== expectedExit) {
+    throw new Error(`${scriptName} exited with ${code}, expected ${expectedExit}\n${output}`);
+  }
+  return output;
+}
+
 function cleanRuntime() {
   const runtimeDirs = ['logs', 'normalized', 'phase-outputs', 'reports', 'status'];
   for (const dir of runtimeDirs) {
@@ -45,6 +59,25 @@ function readNdjson(filePath) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function runLaunchDealCommandHintTest() {
+  cleanRuntime();
+  const output = runNodeScriptCapture('launch-deal.js', ['--deal', DEAL_PATH, '--phases', 'all']);
+  const expectedCommand =
+    'node scripts/codex-agent-runner.js --deal config/deal.json --workflow full-acquisition-review --concurrency 2 --search';
+  assert(
+    output.includes(expectedCommand),
+    `launch-deal should print the deal-specific live Codex command: ${expectedCommand}`
+  );
+  assert(
+    !output.includes('npm run codex:run'),
+    'launch-deal should not point at the generic codex:run script after a deal-specific launch'
+  );
+  assert(
+    fs.existsSync(path.join(BASE_DIR, 'data', 'status', DEAL_ID, 'launch-prompt.md')),
+    'launch-deal should still write the generated prompt'
+  );
 }
 
 function summarizeRun(runId, scenarioName) {
@@ -190,6 +223,9 @@ function runFailureResumeTest() {
 }
 
 function main() {
+  console.log('[system-test] Running launch-deal command hint check...');
+  runLaunchDealCommandHintTest();
+
   console.log('[system-test] Running scenario matrix...');
   const matrix = runScenarioMatrix();
 
