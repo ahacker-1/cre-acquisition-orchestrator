@@ -16,6 +16,7 @@ const {
   computeRunOutcome,
   selectFailedAgentSelectors
 } = require('./codex-agent-runner.js')
+const { runStreaming } = require('./lib/codex-cli.js')
 
 let passed = 0
 function test(name, fn) {
@@ -161,6 +162,28 @@ async function main() {
     assert.equal(sleeps, 0, 'permanent failure must not sleep')
   })
 
+  await test('W70 reports willRetry=false on a final transient failure', async () => {
+    const attempts = []
+    await assert.rejects(
+      runWithRetry(
+        async () => {
+          throw new Error('transient but final')
+        },
+        {
+          maxRetries: 0,
+          baseBackoffMs: 0,
+          isTransient: () => true,
+          sleep: async () => {},
+          onAttempt: (event) => attempts.push(event)
+        }
+      ),
+      /transient but final/
+    )
+    assert.equal(attempts.length, 1)
+    assert.equal(attempts[0].outcome, 'transient-error')
+    assert.equal(attempts[0].willRetry, false)
+  })
+
   await test('W70 stops after maxRetries when always transient', async () => {
     let calls = 0
     let error
@@ -192,6 +215,17 @@ async function main() {
     assert.equal(result.attempts, 1)
     assert.equal(result.value, 'ok')
     assert.equal(sleeps, 0)
+  })
+
+  await test('W70 runStreaming terminates a hung live child on timeout', async () => {
+    const result = await runStreaming(
+      process.execPath,
+      ['-e', 'setInterval(() => {}, 1000)'],
+      { timeoutMs: 50 }
+    )
+    assert.equal(result.timedOut, true)
+    assert.notEqual(result.code, 0)
+    assert.match(result.stderr, /exceeded 50ms/)
   })
 
   // -------------------------------------------------------------------------

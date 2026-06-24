@@ -27,6 +27,11 @@ import {
   checkpointStatusToRunStatus,
   inferStatusFromEvents,
 } from '../dashboard/src/lib/agentView.ts'
+import {
+  collectFailedAgents,
+  recoveryRunId,
+  retryFailedAgents,
+} from '../dashboard/src/lib/runRecovery.ts'
 import { routeIntent } from '../dashboard/src/lib/intentRouting.ts'
 import { suggestionsForStage as suggestionsForStageRouting } from '../dashboard/src/lib/commandModel.ts'
 import { requestAgentDispatch, DISPATCH_WORKFLOW_ID } from '../dashboard/src/hooks/useAgentDispatch.ts'
@@ -669,6 +674,136 @@ check('buildAgentPanelView: red flags + data gaps surface as an impact-weighted 
   assert.match(caveats.value, /1 data gap/)
   assert.equal(caveats.impact, true)
 })
+
+console.log('runRecovery:')
+
+check('collectFailedAgents dedupes checkpoints, phase statuses, and story failures', () => {
+  const failed = collectFailedAgents(
+    {
+      phases: {
+        underwriting: {
+          agentStatuses: {
+            'scenario analyst': 'FAILED',
+            'ic-memo-writer': 'failed',
+          },
+        },
+      },
+    },
+    new Map([
+      [
+        'scenario-analyst',
+        {
+          agentName: 'scenario-analyst',
+          phase: 'underwriting',
+          status: 'failed',
+          errors: [{ message: 'Timed out after retries' }],
+        },
+      ],
+      [
+        'lender-outreach',
+        {
+          agentName: 'lender-outreach',
+          phase: 'financing',
+          status: 'completed',
+          errors: [],
+        },
+      ],
+    ]),
+    [
+      {
+        kind: 'agent_failed',
+        agent: 'scenario_analyst',
+        phase: 'underwriting',
+        summary: 'Duplicate failure signal',
+      },
+      {
+        kind: 'agent_failed',
+        fromAgent: 'quote-comparator',
+        phase: 'financing',
+        title: 'Quote parser failed',
+      },
+    ],
+  )
+  assert.deepEqual(failed.map((agent) => agent.agentName).sort(), [
+    'Ic Memo Writer',
+    'Quote Comparator',
+    'Scenario Analyst',
+  ])
+  assert.equal(
+    failed.find((agent) => agent.agentName === 'Scenario Analyst')?.reason,
+    'Timed out after retries',
+    'checkpoint reason should survive duplicate story/deal signals',
+  )
+})
+
+check('recoveryRunId prefers failed run id, then latest event, then checkpoint', () => {
+  assert.equal(
+    recoveryRunId(
+      [
+        { kind: 'agent_completed', runId: 'run-latest' },
+        { kind: 'agent_failed', runId: 'run-failed' },
+        { kind: 'agent_completed', runId: 'run-newer-success' },
+      ],
+      { runId: 'checkpoint-run' },
+    ),
+    'run-failed',
+  )
+  assert.equal(recoveryRunId([{ kind: 'agent_completed', runId: 'run-only' }], { runId: 'checkpoint-run' }), 'run-only')
+  assert.equal(recoveryRunId([], { runId: 'checkpoint-run' }), 'checkpoint-run')
+  assert.equal(recoveryRunId([], null), null)
+})
+
+await (async () => {
+  const calls = []
+  const fetchImpl = async (url, init) => {
+    calls.push({ url, init })
+    return {
+      ok: true,
+      json: async () => ({ runId: 'rerun-1', status: 'started' }),
+    }
+  }
+  const result = await retryFailedAgents(
+    {
+      dealPath: 'data/deals/test/deal.json',
+      runId: 'run-prior',
+      workflowId: 'quick-deal-screen',
+    },
+    { fetchImpl },
+  )
+  assert.deepEqual(result, { runId: 'rerun-1', status: 'started' })
+  assert.equal(calls.length, 1)
+  assert.ok(calls[0].url.endsWith('/api/run/start'))
+  assert.equal(calls[0].init.method, 'POST')
+  const body = JSON.parse(calls[0].init.body)
+  assert.equal(body.dealPath, 'data/deals/test/deal.json')
+  assert.equal(body.mode, 'live')
+  assert.equal(body.runtimeProvider, 'codex')
+  assert.equal(body.workflowId, 'quick-deal-screen')
+  assert.equal(body.scenario, 'core-plus')
+  assert.equal(body.reset, false)
+  assert.equal(body.codexSearch, true)
+  assert.equal(body.codexRerunFailed, true)
+  assert.equal(body.codexRerunRunId, 'run-prior')
+  passed += 1
+  console.log('  ok - retryFailedAgents posts rerun-only Codex request with search preserved')
+})()
+
+await (async () => {
+  await assert.rejects(
+    retryFailedAgents(
+      { dealPath: 'data/deals/test/deal.json', runId: 'run-prior' },
+      {
+        fetchImpl: async () => ({
+          ok: false,
+          json: async () => ({ error: 'No failed agents found' }),
+        }),
+      },
+    ),
+    /No failed agents found/,
+  )
+  passed += 1
+  console.log('  ok - retryFailedAgents surfaces server error payloads')
+})()
 
 console.log('intentRouting:')
 
