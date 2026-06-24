@@ -111,6 +111,41 @@ function logError(message) {
   console.error(colorize(`  ERROR: ${message}`, 'red'));
 }
 
+function repoRelative(filePath) {
+  return path.relative(BASE_DIR, filePath).replace(/\\/g, '/') || '.';
+}
+
+function shellQuote(value) {
+  if (/^[A-Za-z0-9_./:=@-]+$/.test(value)) return value;
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+function workflowForPhases(phases) {
+  const phaseSet = new Set(phases);
+  if (phases.length === ALL_PHASES.length) return 'full-acquisition-review';
+  if (phases.length === 1 && phaseSet.has('underwriting')) return 'underwriting-refresh';
+  if (phases.length === 1 && phaseSet.has('legal')) return 'legal-psa-review';
+  if (phaseSet.has('due-diligence') && phaseSet.has('underwriting') && phases.length === 2) return 'quick-deal-screen';
+  if (phaseSet.has('underwriting') && phaseSet.has('financing') && phases.length === 2) return 'financing-package';
+  return 'full-acquisition-review';
+}
+
+function buildCodexCommand(dealConfigPath, phases) {
+  const workflowId = workflowForPhases(phases);
+  const command = [
+    'node',
+    'scripts/codex-agent-runner.js',
+    '--deal',
+    repoRelative(dealConfigPath),
+    '--workflow',
+    workflowId,
+    '--concurrency',
+    '2',
+    '--search'
+  ];
+  return command.map(shellQuote).join(' ');
+}
+
 // ------------------------------------------------------------------
 // Validation
 // ------------------------------------------------------------------
@@ -606,7 +641,7 @@ function main() {
   console.log(colorize('  Next step:', 'cyan') + ' Use the generated prompt in your preferred agent runtime, or run Codex directly:');
   console.log('');
   console.log(`    Read data/status/${dealId}/launch-prompt.md`);
-  console.log('    npm run codex:run');
+  console.log(`    ${buildCodexCommand(dealPath, phases)}`);
   console.log('');
 
   // Output prompt length info
