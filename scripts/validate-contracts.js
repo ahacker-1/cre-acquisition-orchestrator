@@ -40,9 +40,15 @@ function validateCodexRun(runId) {
   if (errors.length > 0) return { item: `codex-run-${runId}`, valid: false, errors };
 
   const manifest = readJson(manifestPath);
+  const manifestSchemaPath = path.join(BASE_DIR, 'schemas', 'codex', 'run-manifest.schema.json');
+  const manifestSchema = validateFile(manifestSchemaPath, manifest, 'codexRunManifest');
+  if (!manifestSchema.valid) {
+    errors.push(...manifestSchema.errors.map((error) => `manifest schema: ${error}`));
+  }
+
   if (manifest.runId !== runId) errors.push(`manifest runId mismatch: ${manifest.runId}`);
   if (!manifest.dealId) errors.push('manifest.dealId is required');
-  if (!['RUNNING', 'COMPLETE', 'FAILED'].includes(manifest.status)) {
+  if (!['COMPLETE', 'FAILED', 'DRY_RUN'].includes(manifest.status)) {
     errors.push(`manifest.status is invalid: ${manifest.status}`);
   }
   if (manifest.codexLoginStatus && !String(manifest.codexLoginStatus).includes('Logged in')) {
