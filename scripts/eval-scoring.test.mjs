@@ -848,6 +848,23 @@ test('parseFlagTexts: collects risk-bearing lines for keyword matching', () => {
   assert.ok(texts.every((t) => !t.startsWith('-')));
 });
 
+test('parseFlagTexts: preserves leading metric values after bullet/list markers', () => {
+  const md = [
+    '## Red Flags',
+    '- 0.76x DSCR is below the 0.80x minimum.',
+    '1. 62% occupancy collapse leaves debt service uncovered.',
+    '2) 1.13x DSCR below lender floor.',
+    '## Notes',
+    '- This section should not be included.'
+  ].join('\n');
+  const texts = parseFlagTexts(md);
+  assert.deepEqual(texts, [
+    '0.76x DSCR is below the 0.80x minimum.',
+    '62% occupancy collapse leaves debt service uncovered.',
+    '1.13x DSCR below lender floor.'
+  ]);
+});
+
 test('parseFlagTexts: empty / non-string input -> []', () => {
   assert.deepEqual(parseFlagTexts(''), []);
   assert.deepEqual(parseFlagTexts(null), []);

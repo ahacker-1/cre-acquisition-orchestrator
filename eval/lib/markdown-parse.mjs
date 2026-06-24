@@ -207,6 +207,12 @@ export function parseVerdict(markdown) {
   return m ? m[1].toUpperCase() : 'UNKNOWN';
 }
 
+function cleanFlagLine(line) {
+  return line
+    .replace(/^\s*(?:[-*•]\s+|\d+[.)]\s+|#{1,6}\s+)/, '')
+    .trim();
+}
+
 // Collects flag/finding text for keyword matching by the scorer. Pulls the
 // Red Flags, Data Gaps, Key Findings and Agent Verdict sections (where a
 // competent agent would name a risk), one entry per non-empty line. Falls back
@@ -221,13 +227,13 @@ export function parseFlagTexts(markdown) {
     if (!wanted.some((w) => heading.includes(w))) continue;
     foundAny = true;
     for (const line of body.split(/\r?\n/)) {
-      const cleaned = line.replace(/^[\s*\-•\d.]+/, '').trim();
+      const cleaned = cleanFlagLine(line);
       if (cleaned) texts.push(cleaned);
     }
   }
   if (!foundAny) {
     for (const line of markdown.split(/\r?\n/)) {
-      const cleaned = line.replace(/^[\s*\-•\d.#]+/, '').trim();
+      const cleaned = cleanFlagLine(line);
       if (cleaned) texts.push(cleaned);
     }
   }
