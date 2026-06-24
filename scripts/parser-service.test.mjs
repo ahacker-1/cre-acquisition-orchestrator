@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'no
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { fileHash, runDocumentParser } from '../dashboard/server/parser-service.ts'
+import { renderPdfCandidateError, renderPdfFailureMessage } from './ocr_pdf.mjs'
 
 // The oversized-CSV fixture is generated at test time, not committed (a ~35 MB
 // file does not belong in git). Any file exceeding the parser's 25 MB cap
@@ -417,6 +418,32 @@ assert.ok(
 assert.ok(
   !scannedPdf.error || /ocr|scan|image|supported fields/i.test(scannedPdf.error),
   'image-only PDF must not crash with a generic parse error',
+)
+
+assert.equal(
+  renderPdfFailureMessage({
+    missingInterpreters: ['spawnSync /repo/.venv/bin/python ENOENT'],
+    runnableErrors: ['Missing dependency. Install with: pip install PyMuPDF'],
+  }),
+  'Missing dependency. Install with: pip install PyMuPDF',
+  'OCR renderer diagnostics should prefer the runnable Python failure over a missing optional .venv',
+)
+assert.equal(
+  renderPdfFailureMessage({
+    missingInterpreters: ['spawnSync /repo/.venv/bin/python ENOENT'],
+    runnableErrors: [],
+  }),
+  'No Python interpreter could render the PDF for OCR.',
+  'OCR renderer diagnostics should only report no interpreter when every candidate is missing',
+)
+assert.equal(
+  renderPdfCandidateError({
+    stdout: '{"success": false, "error": "Missing dependency. Install with: pip install PyMuPDF"}',
+    stderr: '',
+    status: 1,
+  }),
+  'Missing dependency. Install with: pip install PyMuPDF',
+  'OCR renderer diagnostics should unwrap structured renderer failures',
 )
 
 const scannedOcrPdf = parsePdf('scanned-offering-memo-ocr.pdf', 'offering_memo')
