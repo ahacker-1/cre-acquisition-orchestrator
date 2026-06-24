@@ -92,6 +92,9 @@ test('workflow card launch uses the clicked workflow inputs, not stale selected 
   await page.getByTestId('header-workflows-button').click()
   const modal = page.getByTestId('workflow-launcher-modal')
   await expect(modal).toBeVisible()
+  await modal.getByTestId('workflow-step-deal').click()
+  await modal.getByRole('button', { name: /Playwright Workflow Card Deal\s+DEAL-2099-910/ }).click()
+
   await modal.getByTestId('workflow-step-workflow').click()
   await expect(modal.getByTestId('workflow-launch-underwriting-refresh')).toBeEnabled()
 
