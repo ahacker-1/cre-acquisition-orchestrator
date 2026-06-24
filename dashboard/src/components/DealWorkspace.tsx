@@ -2462,6 +2462,7 @@ export default function DealWorkspace({
         reset: false,
         codexMaxAgents: phaseRuntimeProvider === 'codex' ? phaseCodexMaxAgents : undefined,
         codexConcurrency: phaseRuntimeProvider === 'codex' ? phaseCodexConcurrency : undefined,
+        codexSearch: phaseRuntimeProvider === 'codex' ? true : undefined,
         requireSourceBackedInputs: true,
         notes: criteria?.notes,
       })
