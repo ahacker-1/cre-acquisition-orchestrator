@@ -326,6 +326,7 @@ export interface DealWorkspace {
   deal: DealRecord
   criteria: DealCriteria
   documents: SourceDocument[]
+  approvedFields: ApprovedFieldManifest
   phases: PhaseWorkspaceStatus[]
   launchReadiness: LaunchReadinessResult[]
   progressionGuide: DealProgressionGuide
@@ -2640,6 +2641,7 @@ export function getDealWorkspace(context: ServiceContext, dealId: string): DealW
   const deal = getDealRecord(context, dealId)
   if (!deal) throw new Error(`Deal not found: ${dealId}`)
   const documents = readManifest(context, dealId).documents
+  const approvedFields = approvedFieldManifestWithCurrentEvidence(readApprovedFields(context, dealId), documents)
   const launchReadiness = workflowIdsForReadiness(context).map((workflowId) =>
     evaluateLaunchReadiness(context, dealId, workflowId),
   )
@@ -2651,6 +2653,7 @@ export function getDealWorkspace(context: ServiceContext, dealId: string): DealW
     deal,
     criteria: readCriteria(context, deal),
     documents,
+    approvedFields,
     phases: buildPhaseWorkspaces(context, dealId, documents, deal.deal, launchReadiness),
     launchReadiness,
     progressionGuide: {

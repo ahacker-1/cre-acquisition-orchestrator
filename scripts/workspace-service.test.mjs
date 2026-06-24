@@ -13,6 +13,7 @@ import {
   exportIcStarterPackage,
   extractSourceDocument,
   getFieldDecisionHistory,
+  getDealWorkspace,
   getSourceExtraction,
   isAutoApplyTrusted,
   reviewSourceExtraction,
@@ -652,6 +653,13 @@ try {
   assert.ok(editApproved, 'operator edit is recorded in the approved-fields manifest')
   assert.equal(editApproved.value, 184)
   assert.equal(editApproved.provenance, 'operator-edited')
+
+  const editWorkspace = getDealWorkspace(context, editDealId)
+  const workspaceApproved = editWorkspace.approvedFields.fields.find((field) => field.path === 'property.totalUnits')
+  assert.ok(workspaceApproved, 'workspace response includes current approved operator edit')
+  assert.equal(workspaceApproved.value, 184)
+  assert.equal(workspaceApproved.provenance, 'operator-edited')
+  assert.equal(workspaceApproved.sourceRef, undefined)
 
   // operator-edit audit entry recorded in the same decision history as parser actions.
   const editHistory = getFieldDecisionHistory(context, editDealId, 'property.totalUnits')

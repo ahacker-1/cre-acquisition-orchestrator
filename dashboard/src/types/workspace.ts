@@ -457,6 +457,7 @@ export interface DealWorkspace {
   deal: DealRecordResponse
   criteria: DealCriteria
   documents: SourceDocument[]
+  approvedFields: ApprovedFieldManifest
   phases: PhaseWorkspaceStatus[]
   launchReadiness: LaunchReadinessResult[]
   progressionGuide: DealProgressionGuide

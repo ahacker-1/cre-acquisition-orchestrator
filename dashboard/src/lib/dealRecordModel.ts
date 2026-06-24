@@ -1,4 +1,4 @@
-import type { ExtractionField, ExtractionPreview, SourceReference } from '../types/workspace'
+import type { ApprovedField, ApprovedFieldManifest, ExtractionField, ExtractionPreview, SourceReference } from '../types/workspace'
 import type { RecordField, RecordGroup, FieldConfidence } from '../components/workspace/stages/DealRecord'
 
 // Phase 2 intake adapter: aggregate the source-backed ExtractionField[] across every dropped
@@ -153,7 +153,7 @@ function formatPercent(value: number): string {
 
 // Human-format a field value using its semantic unit and path. Currency -> $1.42M / $24,500;
 // percent ratios -> 93.5%; integers -> comma-grouped; arrays (unit mix) -> "N types".
-export function formatFieldValue(field: ExtractionField): string {
+export function formatFieldValue(field: Pick<ExtractionField | ApprovedField, 'path' | 'unit' | 'value' | 'valueType'>): string {
   const { value, unit, path, valueType } = field
   if (value === null || value === undefined) return '--'
 
@@ -236,14 +236,50 @@ function toRecordField(field: ExtractionField, conflictWith?: ExtractionField): 
   }
 }
 
+function operatorEditedFields(approvedFields?: ApprovedFieldManifest): ApprovedField[] {
+  return (approvedFields?.fields ?? []).filter(
+    (field) => field?.provenance === 'operator-edited' && typeof field.path === 'string',
+  )
+}
+
+function preferApprovedField(a: ApprovedField, b: ApprovedField): ApprovedField {
+  const aTime = a.appliedAt ?? a.approvedAt ?? ''
+  const bTime = b.appliedAt ?? b.approvedAt ?? ''
+  return bTime >= aTime ? b : a
+}
+
+function operatorProvenanceText(field: ApprovedField): string {
+  const parts = ['Operator edit']
+  if (field.appliedAt) parts.push(field.appliedAt)
+  if (field.previousValue !== undefined) parts.push(`Previous value: ${formatRawValue(field.previousValue)}`)
+  return parts.join('\n')
+}
+
+function toOperatorRecordField(field: ApprovedField): RecordField {
+  return {
+    fieldId: field.path,
+    path: field.path,
+    label: field.label,
+    value: formatFieldValue(field),
+    source: 'Operator edit',
+    confidence: 'high',
+    flagged: false,
+    provenance: operatorProvenanceText(field),
+  }
+}
+
 /**
  * Aggregate ExtractionField[] across all provided document extractions into the grouped,
  * display-formatted RecordGroups the DealRecord renders. Dedupes by path (prefers an applied
  * read, else highest confidence), groups via the documented path→group map, and orders groups
  * Property → Operations → Deal Terms → Other. Empty groups are omitted.
  */
-export function buildDealRecordGroups(extractions: ExtractionPreview[], _deal?: unknown): RecordGroup[] {
+export function buildDealRecordGroups(
+  extractions: ExtractionPreview[],
+  approvedFields?: ApprovedFieldManifest,
+): RecordGroup[] {
   const byPath = new Map<string, ExtractionField>()
+  const operatorEditsByPath = new Map<string, ApprovedField>()
   // Capture a conflict that disappears after dedupe: if any read of a path conflicts, the
   // surviving field should still surface the conflict flag.
   const conflictPaths = new Set<string>()
@@ -269,13 +305,34 @@ export function buildDealRecordGroups(extractions: ExtractionPreview[], _deal?: 
     }
   }
 
+  for (const field of operatorEditedFields(approvedFields)) {
+    const existing = operatorEditsByPath.get(field.path)
+    operatorEditsByPath.set(field.path, existing ? preferApprovedField(existing, field) : field)
+  }
+
   const grouped = new Map<RecordGroupLabel, RecordField[]>()
   for (const field of byPath.values()) {
+    const operatorEdit = operatorEditsByPath.get(field.path)
+    if (operatorEdit) {
+      const groupLabel = groupForPath(operatorEdit.path)
+      const list = grouped.get(groupLabel) ?? []
+      list.push(toOperatorRecordField(operatorEdit))
+      grouped.set(groupLabel, list)
+      operatorEditsByPath.delete(field.path)
+      continue
+    }
     const effective: ExtractionField =
       conflictPaths.has(field.path) && field.conflict !== true ? { ...field, conflict: true } : field
     const groupLabel = groupForPath(effective.path)
     const list = grouped.get(groupLabel) ?? []
     list.push(toRecordField(effective, conflictFieldByPath.get(field.path)))
+    grouped.set(groupLabel, list)
+  }
+
+  for (const field of operatorEditsByPath.values()) {
+    const groupLabel = groupForPath(field.path)
+    const list = grouped.get(groupLabel) ?? []
+    list.push(toOperatorRecordField(field))
     grouped.set(groupLabel, list)
   }
 

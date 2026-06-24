@@ -351,6 +351,53 @@ check('buildDealRecordGroups: a conflict on any read survives dedupe', () => {
   assert.match(price.flagReason, /disagree/i)
 })
 
+check('buildDealRecordGroups: operator-edited approved fields override stale parser rows', () => {
+  const groups = buildDealRecordGroups(
+    [
+      preview([
+        extractionField({
+          path: 'property.totalUnits',
+          label: 'Total Units',
+          value: 7,
+          confidence: 0.95,
+          unit: 'count',
+          reviewStatus: 'applied',
+          conflict: true,
+          currentValue: 184,
+          source: 'rent-roll.xlsx',
+        }),
+      ]),
+    ],
+    {
+      version: 1,
+      dealId: 'deal-1',
+      updatedAt: '2026-06-24T00:00:00.000Z',
+      fields: [
+        {
+          fieldId: 'operator-edit:property.totalUnits',
+          path: 'property.totalUnits',
+          label: 'Total Units',
+          value: 184,
+          previousValue: 7,
+          valueType: 'integer',
+          unit: 'count',
+          approvedAt: '2026-06-24T00:00:00.000Z',
+          appliedAt: '2026-06-24T00:00:00.000Z',
+          documentId: 'operator-edit',
+          confidence: 1,
+          provenance: 'operator-edited',
+        },
+      ],
+    },
+  )
+  const units = groups.flatMap((g) => g.fields).find((f) => f.path === 'property.totalUnits')
+  assert.equal(units.value, '184')
+  assert.equal(units.source, 'Operator edit')
+  assert.equal(units.flagged, false)
+  assert.match(units.provenance, /Previous value: 7/)
+  assert.equal(countNeedsEye(groups), 0)
+})
+
 check('buildDealRecordGroups: empty input yields no groups', () => {
   assert.deepEqual(buildDealRecordGroups([]), [])
   assert.equal(countNeedsEye([]), 0)
