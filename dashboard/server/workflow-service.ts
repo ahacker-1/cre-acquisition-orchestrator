@@ -131,6 +131,24 @@ function asRuntimeProvider(value: unknown): RuntimeProvider {
   return value === 'simulation' ? 'simulation' : 'codex'
 }
 
+function hasOwn(value: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key)
+}
+
+function asCodexSearch(
+  input: Record<string, unknown>,
+  nestedInputs: Record<string, unknown>,
+  runtimeProvider: RuntimeProvider,
+): boolean {
+  const value = hasOwn(input, 'codexSearch')
+    ? input.codexSearch
+    : hasOwn(nestedInputs, 'codexSearch')
+      ? nestedInputs.codexSearch
+      : undefined
+  if (runtimeProvider === 'codex') return value !== false
+  return value === true
+}
+
 function asSeed(value: unknown): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null
   return Math.round(value)
@@ -195,6 +213,8 @@ export function saveWorkflowPreset(
   const presetId =
     existing?.presetId ||
     `${slugify(name) || 'workflow-preset'}-${timestamp.replace(/[:.]/g, '-')}`
+  const runtimeProvider = asRuntimeProvider(input.runtimeProvider ?? nestedInputs.runtimeProvider)
+  const codexSearch = asCodexSearch(input as Record<string, unknown>, nestedInputs, runtimeProvider)
 
   const preset: WorkflowPreset = {
     presetId,
@@ -204,11 +224,11 @@ export function saveWorkflowPreset(
     scenario: asScenario(input.scenario ?? nestedInputs.scenario, workflow.recommendedScenario || 'core-plus'),
     speed: asSpeed(input.speed ?? nestedInputs.speed),
     mode: asMode(input.mode ?? nestedInputs.mode),
-    runtimeProvider: asRuntimeProvider(input.runtimeProvider ?? nestedInputs.runtimeProvider),
+    runtimeProvider,
     reset: input.reset === true || nestedInputs.reset === true,
     codexMaxAgents: asPositiveInteger(input.codexMaxAgents ?? nestedInputs.codexMaxAgents, null),
     codexConcurrency: asPositiveInteger(input.codexConcurrency ?? nestedInputs.codexConcurrency, 1),
-    codexSearch: input.codexSearch === true || nestedInputs.codexSearch === true,
+    codexSearch,
     requireSourceBackedInputs: input.requireSourceBackedInputs === true || nestedInputs.requireSourceBackedInputs === true,
     notes:
       typeof input.notes === 'string'
@@ -220,11 +240,11 @@ export function saveWorkflowPreset(
       scenario: asScenario(input.scenario ?? nestedInputs.scenario, workflow.recommendedScenario || 'core-plus'),
       speed: asSpeed(input.speed ?? nestedInputs.speed),
       mode: asMode(input.mode ?? nestedInputs.mode),
-      runtimeProvider: asRuntimeProvider(input.runtimeProvider ?? nestedInputs.runtimeProvider),
+      runtimeProvider,
       reset: input.reset === true || nestedInputs.reset === true,
       codexMaxAgents: asPositiveInteger(input.codexMaxAgents ?? nestedInputs.codexMaxAgents, null),
       codexConcurrency: asPositiveInteger(input.codexConcurrency ?? nestedInputs.codexConcurrency, 1),
-      codexSearch: input.codexSearch === true || nestedInputs.codexSearch === true,
+      codexSearch,
       requireSourceBackedInputs: input.requireSourceBackedInputs === true || nestedInputs.requireSourceBackedInputs === true,
       notes:
         typeof input.notes === 'string'

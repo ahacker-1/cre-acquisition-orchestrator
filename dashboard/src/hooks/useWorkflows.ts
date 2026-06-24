@@ -116,6 +116,24 @@ function normalizeWorkflow(entry: unknown): WorkflowDefinition | null {
   }
 }
 
+function hasOwn(value: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key)
+}
+
+function normalizeCodexSearch(
+  value: Record<string, unknown>,
+  rawInputs: Record<string, unknown>,
+  runtimeProvider: 'simulation' | 'codex',
+): boolean {
+  const rawCodexSearch = hasOwn(rawInputs, 'codexSearch')
+    ? rawInputs.codexSearch
+    : hasOwn(value, 'codexSearch')
+      ? value.codexSearch
+      : undefined
+  if (runtimeProvider === 'codex') return rawCodexSearch !== false
+  return rawCodexSearch === true
+}
+
 function normalizePreset(entry: unknown): WorkflowPreset | null {
   if (!entry || typeof entry !== 'object') return null
   const value = entry as Record<string, unknown>
@@ -130,6 +148,11 @@ function normalizePreset(entry: unknown): WorkflowPreset | null {
   const rawInputs = value.inputs && typeof value.inputs === 'object'
     ? (value.inputs as Record<string, unknown>)
     : {}
+  const runtimeProvider =
+    rawInputs.runtimeProvider === 'simulation' || value.runtimeProvider === 'simulation'
+      ? 'simulation'
+      : 'codex'
+  const codexSearch = normalizeCodexSearch(value, rawInputs, runtimeProvider)
   return {
     id,
     name: typeof value.name === 'string' ? value.name : id,
@@ -149,10 +172,7 @@ function normalizePreset(entry: unknown): WorkflowPreset | null {
             ? value.speed
           : 'normal',
       mode: rawInputs.mode === 'fast' ? 'fast' : 'live',
-      runtimeProvider:
-        rawInputs.runtimeProvider === 'simulation' || value.runtimeProvider === 'simulation'
-          ? 'simulation'
-          : 'codex',
+      runtimeProvider,
       reset: typeof rawInputs.reset === 'boolean' ? rawInputs.reset : false,
       codexMaxAgents:
         typeof rawInputs.codexMaxAgents === 'number'
@@ -166,7 +186,7 @@ function normalizePreset(entry: unknown): WorkflowPreset | null {
           : typeof value.codexConcurrency === 'number'
             ? value.codexConcurrency
             : 2,
-      codexSearch: rawInputs.codexSearch === true || value.codexSearch === true,
+      codexSearch,
       requireSourceBackedInputs:
         rawInputs.requireSourceBackedInputs === true || value.requireSourceBackedInputs === true,
       notes: typeof rawInputs.notes === 'string' ? rawInputs.notes : undefined,
