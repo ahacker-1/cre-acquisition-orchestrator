@@ -101,12 +101,15 @@ Expected behavior:
 4. The agent reads local prompts and deal files.
 5. Raw output lands in `data/codex-runs/codex-smoke/`.
 6. Dashboard package artifacts land in `data/status/{dealId}/run-codex-smoke-*.{ndjson,json}`.
+7. The run is terminal only after `manifest.json` leaves `RUNNING` and `summary.md` exists.
 
 Read the summary:
 
 ```powershell
 Get-Content data/codex-runs/codex-smoke/summary.md
 ```
+
+If `summary.md` is missing or the manifest still says `RUNNING`, the live smoke is not complete. Inspect the agent log under `data/codex-runs/codex-smoke/{phase}/{agent}.log`, confirm the `codex exec` process is still active before waiting longer, and use a fresh run ID for the next attempt after interruption.
 
 ---
 
@@ -200,6 +203,8 @@ After `npm run codex:smoke`, validate the Codex output contract too:
 ```powershell
 npm run validate:codex
 ```
+
+`npm run validate:codex` should pass only after terminal Codex artifacts exist: `manifest.json`, `summary.md`, agent memo files for passing agents, and dashboard package files under `data/status/{dealId}/run-codex-smoke-*`.
 
 Full system test:
 
