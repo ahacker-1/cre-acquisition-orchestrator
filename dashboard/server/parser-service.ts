@@ -256,10 +256,21 @@ function parseCsvRows(raw: string): string[][] {
 }
 
 function numberFromCell(value: string): number | null {
-  const normalized = value.replace(/^'/, '').replace(/[$,%]/g, '').replace(/,/g, '').trim()
+  let normalized = value.replace(/^'/, '').replace(/[$,%]/g, '').replace(/,/g, '').trim()
+  if (!normalized) return null
+  // Accounting-style parenthesized negatives, e.g. "(525,000)" -> -525000. T12s
+  // and operating statements routinely report expenses this way; without this
+  // the surrounding "$,%" strip leaves a "(525000)" token that Number() rejects,
+  // and the line is SILENTLY dropped instead of extracted.
+  let negative = false
+  if (/^\(.*\)$/.test(normalized)) {
+    negative = true
+    normalized = normalized.slice(1, -1).trim()
+  }
   if (!normalized) return null
   const parsed = Number(normalized)
-  return Number.isFinite(parsed) ? parsed : null
+  if (!Number.isFinite(parsed)) return null
+  return negative ? -parsed : parsed
 }
 
 function slug(value: string): string {
@@ -450,16 +461,61 @@ function average(values: number[]): number | null {
   return values.length > 0 ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null
 }
 
+// Locate the real rent-roll header row. Exported rent rolls frequently carry a
+// banner / "AS OF <date>" title line or a merged grouping row ABOVE the column
+// labels, so the header is not guaranteed to be row 0. Scans the first rows for
+// the first one that looks like a rent-roll header (a unit-type column plus at
+// least one rent/sqft/status column); falls back to row 0 when none is found so
+// the existing "no recognizable header" path still reports cleanly. Mirrors the
+// header scan parseT12 already performs.
+function findRentRollHeaderIndex(rows: string[][]): number {
+  const limit = Math.min(rows.length, 15)
+  for (let index = 0; index < limit; index += 1) {
+    const row = rows[index]
+    const hasUnitType = row.some((cell) => /unit type|bed\/bath|floorplan/i.test(cell))
+    const hasData = row.some((cell) =>
+      /sqft|square|market rent|asking rent|current rent|contract rent|in-place|status|occupancy/i.test(cell),
+    )
+    if (hasUnitType && hasData) return index
+  }
+  return 0
+}
+
+// A totals / subtotals / averages footer row holds an aggregate label instead of
+// a real unit in its unit-id (column 0) or unit-type cell. These sit at the
+// bottom of many exported rent rolls and must NOT be mistaken for malformed unit
+// rows that fail the whole file. Kept narrow (start-anchored, word-bounded
+// keywords) so a numeric unit id or a "1BR/1BA" unit type is never matched; any
+// excluded row is also surfaced in the parser notes, so the exclusion is never
+// silent.
+function isRentRollFooterRow(row: string[], unitTypeIndex: number): boolean {
+  const cells = [row[0] ?? '', unitTypeIndex >= 0 ? row[unitTypeIndex] ?? '' : '']
+  return cells.some((cell) =>
+    /^(grand\s+total|portfolio\s+total|sub-?total|totals?|averages?|avg|summary)\b/i.test(cell.trim()),
+  )
+}
+
 function parseRentRoll(input: ParserInput, rows: string[][], hash: string): ParserExtractionPreview {
   const parserId = 'rent-roll-csv-parser'
-  const header = rows[0] ?? []
-  const records = rows.slice(1)
-  const uploadedData = buildUploadedDataProfile(input, 'Rent Roll Rows', header, records)
+  const headerIndex = findRentRollHeaderIndex(rows)
+  const header = rows[headerIndex] ?? []
   const unitTypeIndex = header.findIndex((cell) => /unit type|bed\/bath|floorplan/i.test(cell))
   const sqftIndex = header.findIndex((cell) => /sqft|square/i.test(cell))
   const marketRentIndex = header.findIndex((cell) => /market rent|asking rent/i.test(cell))
   const currentRentIndex = header.findIndex((cell) => /current rent|contract rent|in-place/i.test(cell))
   const statusIndex = header.findIndex((cell) => /status|occupancy/i.test(cell))
+  // Everything after the detected header. Footer/aggregate rows are partitioned
+  // out of the unit records (but still shown in the uploaded-data inspector).
+  const rawRecords = rows.slice(headerIndex + 1)
+  const footerRows = rawRecords.filter((row) => isRentRollFooterRow(row, unitTypeIndex))
+  const records = rawRecords.filter((row) => !isRentRollFooterRow(row, unitTypeIndex))
+  const footerNote = footerRows.length > 0
+    ? `Excluded ${footerRows.length} totals/footer row(s) from unit aggregation.`
+    : null
+  const uploadedData = buildUploadedDataProfile(input, 'Rent Roll Rows', header, rawRecords, {
+    headerRow: headerIndex + 1,
+    firstDataRow: headerIndex + 2,
+  })
   const hasRentRollHeader =
     unitTypeIndex >= 0 &&
     [sqftIndex, marketRentIndex, currentRentIndex, statusIndex].some((index) => index >= 0)
@@ -562,8 +618,8 @@ function parseRentRoll(input: ParserInput, rows: string[][], hash: string): Pars
     status: fields.length > 0 ? 'extracted' : 'unsupported',
     extractedAt: new Date().toISOString(),
     fields,
-    metrics: { rows: records.length, columns: header, occupied },
-    notes: [`Parsed ${records.length} rent roll rows`],
+    metrics: { rows: records.length, columns: header, occupied, footerRowsExcluded: footerRows.length },
+    notes: [`Parsed ${records.length} rent roll rows`, ...(footerNote ? [footerNote] : [])],
     parserId,
     parserVersion: PARSER_VERSION,
     sourceHash: hash,
@@ -613,9 +669,30 @@ function parseT12(input: ParserInput, rows: string[][], hash: string): ParserExt
   }
 }
 
+// A numeric headline match whose source token runs INTO digit-confusable
+// letters (O->0, l/I->1, S->5, B->8, Z->2, G->6) is almost certainly OCR
+// garbage, e.g. "$2,815,OOO" would otherwise be truncated at the comma and yield
+// 2815 — a silently WRONG number presented as a plausible candidate. Such tokens
+// are suppressed (no field emitted) and surfaced as a review note instead, so
+// OCR noise can never quietly feed a bad value into the deal.
+function numericTokenLooksOcrCorrupted(raw: string, tokenStart: number): boolean {
+  if (tokenStart < 0) return false
+  let sawDigit = false
+  let sawLetter = false
+  for (let index = tokenStart; index < raw.length; index += 1) {
+    const ch = raw[index]
+    if (/[0-9]/.test(ch)) { sawDigit = true; continue }
+    if (/[OoIilSsBbZzGg]/.test(ch)) { sawLetter = true; continue }
+    if (ch === ',' || ch === '.') continue // separators inside the number token
+    break // any other character ends the contiguous numeric run
+  }
+  return sawDigit && sawLetter
+}
+
 function parseOfferingMemo(input: ParserInput, raw: string, hash: string): ParserExtractionPreview {
   const parserId = 'offering-memo-text-parser'
   const fields: ParserExtractionField[] = []
+  const suppressed: string[] = []
   const uploadedData = buildTextUploadedDataProfile(input, raw, 'Offering Memo Lines')
   const addMatch = (
     regex: RegExp,
@@ -629,6 +706,12 @@ function parseOfferingMemo(input: ParserInput, raw: string, hash: string): Parse
     if (!match) return
     const offset = match.index ?? 0
     const line = raw.slice(0, offset).split(/\r?\n/).length
+    const tokenStart = raw.indexOf(match[1], offset)
+    if (numericTokenLooksOcrCorrupted(raw, tokenStart)) {
+      const snippet = raw.slice(tokenStart, tokenStart + 24).split(/\r?\n/)[0]
+      suppressed.push(`Skipped a likely OCR-corrupted "${label}" value ("${snippet}") — re-OCR or review the source before relying on it.`)
+      return
+    }
     fields.push(field(input, hash, parserId, path, label, transform(match[1]), confidence, unit, { line }, match[0]))
   }
   addMatch(/(?:offering price|asking price)[:\s#*$]+([\d,]+)/i, 'financials.askingPrice', 'Asking Price', 0.86, 'usd')
@@ -642,8 +725,8 @@ function parseOfferingMemo(input: ParserInput, raw: string, hash: string): Parse
     status: fields.length > 0 ? 'extracted' : 'unsupported',
     extractedAt: new Date().toISOString(),
     fields,
-    metrics: { characterCount: raw.length },
-    notes: fields.length > 0 ? ['Extracted offering memo headline metrics'] : ['No headline metrics found in memo text'],
+    metrics: { characterCount: raw.length, ...(suppressed.length > 0 ? { ocrSuppressedFields: suppressed.length } : {}) },
+    notes: (fields.length > 0 ? ['Extracted offering memo headline metrics'] : ['No headline metrics found in memo text']).concat(suppressed),
     parserId,
     parserVersion: PARSER_VERSION,
     sourceHash: hash,

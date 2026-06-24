@@ -584,4 +584,191 @@ assert.ok(!/[/]usr[/]|[/]home[/]/.test(corruptText), `corrupt error must not lea
 // The message should still describe a real file/parse problem.
 assert.ok(corrupt.error && corrupt.error.trim().length > 0, 'corrupt parse_failed must carry an error message')
 
+// ---------------------------------------------------------------------------
+// W50 - Messy real-world fixtures for the in-process CSV/text parsers. Each
+// asserts EITHER correct extraction OR a correctly-flagged review-gated result.
+// The failure these prevent is a SILENT WRONG VALUE, so every expected number
+// below was read from the actual parser output, never assumed.
+//
+// These fixtures are GENERATED at test time into the gitignored generated dir
+// (the same pattern as the oversized / inspector CSVs above) so they do not add
+// to the committed fixture count tracked by scripts/verify-doc-counts.js.
+// ---------------------------------------------------------------------------
+
+const MESSY_FIXTURES = {
+  // Multi-row header: a banner / "AS OF" title line and a merged-style grouping
+  // row ABOVE the real column header.
+  'rent-roll-multirow-header.csv': [
+    'RENT ROLL — AS OF 06/01/2026,,,,,',
+    'Property,,Rent,Rent,,',
+    'Unit,Unit Type,SqFt,Market Rent,Current Rent,Status',
+    '101,1BR/1BA,720,1650,1575,Occupied',
+    '102,1BR/1BA,720,1650,0,Vacant',
+    '201,2BR/2BA,1050,2250,2025,Occupied',
+    '202,2BR/2BA,1050,2250,2025,Occupied',
+  ].join('\n'),
+  // Totals / footer rows at the bottom.
+  'rent-roll-totals-footer.csv': [
+    'Unit,Unit Type,SqFt,Market Rent,Current Rent,Status',
+    '101,1BR/1BA,720,1650,1575,Occupied',
+    '102,1BR/1BA,720,1650,0,Vacant',
+    '201,2BR/2BA,1050,2250,2025,Occupied',
+    'Total,,2490,5550,3600,',
+    'Average/Unit,,830,1850,1800,',
+  ].join('\n'),
+  // SAFETY: a footer row plus a genuinely incomplete unit row (missing rents).
+  'rent-roll-footer-plus-bad-row.csv': [
+    'Unit,Unit Type,SqFt,Market Rent,Current Rent,Status',
+    '101,1BR/1BA,720,1650,1575,Occupied',
+    '102,1BR/1BA,720,,,Occupied',
+    'Total,,1440,1650,1575,',
+  ].join('\n'),
+  // Inconsistent currency/units formatting in the same columns.
+  'rent-roll-currency-units-mixed.csv': [
+    'Unit,Unit Type,SqFt,Market Rent,Current Rent,Status',
+    '101,1BR/1BA,720,"$1,650.00","$1,575.00",Occupied',
+    '102,1BR/1BA,720,1650,0,Vacant',
+    '201,2BR/2BA,"1,050","$2,250.00","2,025.00",Occupied',
+  ].join('\n'),
+  // T12 with accounting-style parenthesized negatives + a banner preamble.
+  't12-parentheses-negatives.csv': [
+    'TRAILING 12-MONTH OPERATING STATEMENT — Maple Grove',
+    '',
+    'Line Item,T12 Total',
+    'Effective Gross Income,"$1,250,000"',
+    'Total Operating Expenses,"($525,000)"',
+    'Net Operating Income,"$725,000"',
+  ].join('\n'),
+  // Offering memo with OCR noise: the letter "O" misread for the digit "0"
+  // inside the Asking Price and NOI numbers.
+  'offering-memo-ocr-noise.txt': [
+    'OFFERING MEMORANDUM — Maple Grove Apartments',
+    '',
+    'Offering Price: $42,5OO,OOO',
+    'The property is a 240-unit garden-style community.',
+    '94.5% occupancy as of June 2026.',
+    'Net Operating Income: $2,815,OOO',
+    'Year Built 1998',
+  ].join('\n'),
+  // Tricky legal diligence checklist (PSA / title / estoppel / SNDA) with
+  // inconsistent delimiters and an em-dash.
+  'legal-diligence-checklist-messy.md': [
+    'DUE DILIGENCE CHECKLIST — Project Maple',
+    '',
+    '[x] Purchase & Sale Agreement (PSA), fully executed | status: received | owner: Seller counsel',
+    '[ ] Title commitment and exception documents | status: missing | due 07/15/2026 | owner: Title company',
+    '- Estoppel certificates from all tenants — outstanding, due 2026-08-01; responsible: Property manager',
+    '* SNDA agreements for anchor tenants  (waived per lender)',
+    '[ ] ALTA survey update — needed before closing',
+    'Phase I Environmental Site Assessment ....... received',
+  ].join('\n'),
+}
+for (const [name, contents] of Object.entries(MESSY_FIXTURES)) {
+  writeGeneratedFixture(resolve(generatedFixturesRoot, name), contents)
+}
+const parseMessy = (name, type) => parseFile(generatedFixturesRoot, name, type)
+
+// W50.1 - Multi-row header: a banner / "AS OF" title line and a merged-style
+// grouping row sit ABOVE the real column header. Before the header scan this
+// returned 'unsupported' (header assumed to be row 0); now the real header is
+// located and the four units extract.
+const multiRowHeader = parseMessy('rent-roll-multirow-header.csv', 'rent_roll')
+assert.equal(multiRowHeader.status, 'extracted', 'multi-row-header rent roll must extract once the real header is located')
+assert.equal(multiRowHeader.parserId, 'rent-roll-csv-parser')
+assert.equal(fieldByPath(multiRowHeader, 'property.totalUnits').value, 4)
+assert.equal(fieldByPath(multiRowHeader, 'financials.inPlaceOccupancy').value, 0.75)
+const multiRowMix = unitMixByType(multiRowHeader)
+assert.equal(multiRowMix.get('1BR/1BA').inPlaceRent, 1575, '1BR in-place rent averages occupied-only')
+assert.equal(multiRowMix.get('1BR/1BA').marketRent, 1650)
+assert.equal(multiRowMix.get('2BR/2BA').count, 2)
+assert.equal(multiRowMix.get('2BR/2BA').inPlaceRent, 2025)
+
+// W50.2 - Totals/footer rows at the bottom. Before this fix a single non-unit
+// "Total" row made the WHOLE document parse_failed; now footer rows are set
+// aside (and surfaced in a note), the genuine units extract, and the footer is
+// NOT counted as a unit.
+const totalsFooter = parseMessy('rent-roll-totals-footer.csv', 'rent_roll')
+assert.equal(totalsFooter.status, 'extracted', 'a totals/footer row must not fail the whole rent roll')
+assert.equal(fieldByPath(totalsFooter, 'property.totalUnits').value, 3, 'footer rows must not be counted as units')
+assert.equal(totalsFooter.metrics?.footerRowsExcluded, 2)
+assert.ok(
+  totalsFooter.notes.some((note) => /excluded 2 totals\/footer row/i.test(note)),
+  'footer exclusion must be surfaced in the notes (never a silent drop)',
+)
+assert.equal(unitMixByType(totalsFooter).get('1BR/1BA').count, 2)
+assert.equal(fieldByPath(totalsFooter, 'financials.inPlaceOccupancy').value, 0.6667)
+
+// W50.2b - SAFETY: footer exclusion must NOT mask a genuinely incomplete unit
+// row. A real unit missing its rent values still gates to parse_failed even
+// though a totals footer is present.
+const footerPlusBadRow = parseMessy('rent-roll-footer-plus-bad-row.csv', 'rent_roll')
+assert.equal(
+  footerPlusBadRow.status,
+  'parse_failed',
+  'an incomplete unit row must still gate to parse_failed even when a footer row is present',
+)
+assert.ok(/1 row\(s\)/.test(footerPlusBadRow.error || ''), 'only the real unit row counts as malformed, not the footer')
+
+// W50.3 - Inconsistent currency/units formatting ($, commas, quoted decimals)
+// across cells of the same column must still parse to clean numbers.
+const currencyMixed = parseMessy('rent-roll-currency-units-mixed.csv', 'rent_roll')
+assert.equal(currencyMixed.status, 'extracted')
+const currencyMix = unitMixByType(currencyMixed)
+assert.equal(currencyMix.get('1BR/1BA').inPlaceRent, 1575, '"$1,575.00" must parse to 1575')
+assert.equal(currencyMix.get('1BR/1BA').marketRent, 1650)
+assert.equal(currencyMix.get('2BR/2BA').avgSqFt, 1050, '"1,050" must parse to 1050')
+assert.equal(currencyMix.get('2BR/2BA').inPlaceRent, 2025, '"2,025.00" must parse to 2025')
+
+// W50.4 - T12 expenses in accounting-style parentheses, "($525,000)". Before
+// this fix the parenthesized token was silently dropped (Number() rejected it)
+// and the Trailing T12 Expenses field never appeared; now it extracts (the T12
+// mapper takes the absolute value).
+const parenT12 = parseMessy('t12-parentheses-negatives.csv', 't12')
+assert.equal(parenT12.status, 'extracted')
+assert.equal(fieldByPath(parenT12, 'financials.trailingT12Revenue').value, 1250000)
+assert.equal(fieldByPath(parenT12, 'financials.trailingT12Expenses').value, 525000, 'parenthesized expenses must extract, not be silently dropped')
+assert.equal(fieldByPath(parenT12, 'financials.currentNOI').value, 725000)
+
+// W50.5 - OCR-noise offering memo (letter "O" misread for "0" inside numbers).
+// The corrupt Asking Price and NOI tokens must be SUPPRESSED (no silent wrong
+// value like NOI=2815) and surfaced as review notes, while clean fields still
+// extract. This is the review-gate: OCR noise never quietly feeds a bad number.
+const ocrMemo = parseMessy('offering-memo-ocr-noise.txt', 'offering_memo')
+assert.equal(ocrMemo.status, 'extracted')
+assert.equal(ocrMemo.fields.find((field) => field.path === 'financials.askingPrice'), undefined, 'OCR-corrupted asking price must NOT be emitted')
+assert.equal(ocrMemo.fields.find((field) => field.path === 'financials.currentNOI'), undefined, 'OCR-corrupted NOI must NOT be emitted as 2815')
+assert.equal(ocrMemo.metrics?.ocrSuppressedFields, 2, 'both OCR-corrupted numbers must be counted as suppressed')
+assert.ok(
+  ocrMemo.notes.some((note) => /OCR-corrupted "Current NOI"/i.test(note)),
+  'a review note must explain the suppressed NOI',
+)
+// Clean fields in the same memo still extract normally.
+assert.equal(fieldByPath(ocrMemo, 'property.totalUnits').value, 240)
+assert.equal(fieldByPath(ocrMemo, 'financials.inPlaceOccupancy').value, 0.945)
+assert.equal(fieldByPath(ocrMemo, 'property.yearBuilt').value, 1998)
+
+// W50.6 - Tricky legal diligence checklist (PSA / title / estoppel / SNDA) with
+// inconsistent delimiters and an em-dash. Every candidate must stay review-only
+// (confidence 0.64, reviewStatus 'candidate'); nothing here auto-applies to a
+// deal. Categories, statuses, and dates extract correctly.
+const messyChecklist = parseMessy('legal-diligence-checklist-messy.md', 'legal')
+assert.equal(messyChecklist.status, 'extracted')
+assert.equal(messyChecklist.parserId, 'legal-diligence-checklist-parser')
+assert.equal(messyChecklist.metrics?.reviewOnly, true)
+assert.ok(
+  messyChecklist.fields.every((field) => field.path === 'diligence.checklistItems' && field.reviewStatus === 'candidate' && field.confidence === 0.64),
+  'every legal checklist candidate must stay a low-confidence review-only candidate',
+)
+const psaItem = messyChecklist.fields.find((field) => /Purchase & Sale Agreement/.test(field.value?.item))
+assert.ok(psaItem, 'expected the PSA checklist candidate')
+assert.equal(psaItem.value.category, 'legal')
+assert.equal(psaItem.value.status, 'received')
+const titleItem = messyChecklist.fields.find((field) => /Title commitment/.test(field.value?.item))
+assert.equal(titleItem.value.category, 'title')
+assert.equal(titleItem.value.status, 'missing')
+assert.equal(titleItem.value.dueDate, '2026-07-15')
+const estoppelItem = messyChecklist.fields.find((field) => /Estoppel certificates/.test(field.value?.item))
+assert.equal(estoppelItem.value.status, 'missing')
+assert.equal(estoppelItem.value.dueDate, '2026-08-01')
+
 console.log('[parser-service-test] PASS')
