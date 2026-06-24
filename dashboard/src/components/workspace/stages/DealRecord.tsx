@@ -131,7 +131,8 @@ function FieldRow({
 /**
  * The auto-filled deal record: everything was read from the dropped documents (nothing typed
  * by hand). The operator edits only what's off; flagged values (source conflicts / low-confidence
- * reads) are highlighted. One forward action advances the deal to Diligence.
+ * reads) are highlighted. Once those flagged values are resolved, one forward
+ * action advances the deal to Diligence.
  */
 export default function DealRecord({
   groups,
@@ -141,6 +142,8 @@ export default function DealRecord({
   saving,
 }: DealRecordProps) {
   const hasFields = groups.some((group) => group.fields.length > 0)
+  const startBlocked = needsEyeCount > 0
+  const startDisabled = startBlocked || saving === true
 
   return (
     <section data-testid="deal-record" className="portal-panel">
@@ -183,8 +186,10 @@ export default function DealRecord({
             <button
               type="button"
               data-testid="start-diligence"
+              disabled={startDisabled}
               onClick={onStartDiligence}
               className="portal-button portal-button-primary"
+              title={startBlocked ? 'Resolve flagged values before starting Diligence' : undefined}
             >
               Looks right → start Diligence
             </button>
