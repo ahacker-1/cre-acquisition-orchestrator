@@ -32,12 +32,12 @@ Status values:
 
 | Step | Status | Evidence |
 | --- | --- | --- |
-| accept candidate fields | UNVERIFIED | Pending real source-gate/dashboard verification. |
-| reject candidate fields | UNVERIFIED | Pending real source-gate/dashboard verification. |
-| waive candidate fields | UNVERIFIED | Pending real source-gate/dashboard verification. |
-| provenance trail | UNVERIFIED | Pending real source-gate/dashboard verification. |
-| flagged-field gating | UNVERIFIED | Pending real source-gate/dashboard verification. |
-| operator-edit precedence | UNVERIFIED | Pending real source-gate/dashboard verification. |
+| accept candidate fields | PASSED | `npm --prefix dashboard run test:e2e -- deal-library.spec.ts -g "operates the deal hub criteria, source documents, extraction, phase coverage, and phase launch"` on 2026-06-25 applied selected rent-roll, T12, and offering-memo candidate fields through the dashboard `apply-extraction` path after conflict confirmation. Result: `1 passed (5.0s)`. |
+| reject candidate fields | PASSED | `npm run test:workspace` on 2026-06-25 passed. Read assertions cover rejecting a conflicting candidate through `reviewSourceFields(... reviewStatus: 'rejected')`, then applying the remaining source after the conflict is resolved. Result: `[workspace-service-test] PASS`. |
+| waive candidate fields | PASSED | Same deal-library E2E waived the offering-memo NOI candidate with an operator note via `/review-extraction` and asserted `waived`; `npm run test:workspace` also records waive decision history. Results: `1 passed (5.0s)`, `[workspace-service-test] PASS`. |
+| provenance trail | PASSED | Same deal-library E2E reopened applied rent-roll evidence, expanded source drilldown, and asserted source file plus sheet/row location; `npm run test:workspace` asserts approved fields retain `sourceRef.fileHash`. Results: `1 passed (5.0s)`, `[workspace-service-test] PASS`. |
+| flagged-field gating | PASSED | `npm --prefix dashboard run test:e2e -- workspace-frame.spec.ts -g "blocks diligence start while intake record fields need review"` on 2026-06-25 seeded a low-confidence flagged field, asserted `start-diligence` disabled, forced a click, and confirmed the spine stayed on Intake; then seeded a clean deal and confirmed Diligence could start. Result: `1 passed (3.5s)`. |
+| operator-edit precedence | PASSED | Same deal-library E2E edited occupancy through `/field-edit` and confirmed the saved deal stored `0.95`; `cd dashboard && npm exec tsx ../scripts/dashboard-lib.test.mjs` asserts operator-edited approved fields override stale parser rows; `npm run test:workspace` asserts operator-edited provenance/audit persistence. Results: `1 passed (5.0s)`, `dashboard-lib: 45 checks passed`, `[workspace-service-test] PASS`. |
 
 ## Phase 3 - Due Diligence
 
@@ -129,3 +129,5 @@ Status values:
 - 2026-06-25: Broader `npm test` regression passed after Phase 1 verification, but `scripts/system-test.js` deleted the ignored ledger because it resets `data/status`.
 - 2026-06-25: Added ledger preservation to `scripts/system-test.js` and `dashboard/server/run-manager.ts`.
 - 2026-06-25: `npm --prefix dashboard run typecheck` and `npm test` passed after the preservation fix; the ledger survived the `system-test.js` runtime reset.
+- 2026-06-25: Phase 2 source review passed through workspace service tests, dashboard-lib tests, and serial Playwright dashboard paths. One attempted parallel E2E run hit fixed-port collision; rerun serially passed.
+- 2026-06-25: Broader `npm test` regression passed after Phase 2 verification.
