@@ -36,10 +36,15 @@ function runNodeScriptCapture(scriptName, args = [], expectedExit = 0) {
 
 function cleanRuntime() {
   const runtimeDirs = ['logs', 'normalized', 'phase-outputs', 'reports', 'status'];
+  const ledgerPath = path.join(BASE_DIR, 'data', 'status', 'pipeline-verification-ledger.md');
+  const ledger = fs.existsSync(ledgerPath) ? fs.readFileSync(ledgerPath, 'utf8') : null;
   for (const dir of runtimeDirs) {
     const fullPath = path.join(BASE_DIR, 'data', dir);
     fs.rmSync(fullPath, { recursive: true, force: true });
     fs.mkdirSync(fullPath, { recursive: true });
+  }
+  if (ledger !== null) {
+    fs.writeFileSync(ledgerPath, ledger);
   }
 }
 

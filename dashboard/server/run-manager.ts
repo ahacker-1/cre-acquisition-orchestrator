@@ -1,5 +1,5 @@
 import { spawn, spawnSync, type ChildProcessByStdio } from 'child_process'
-import { existsSync, mkdirSync, readFileSync, rmSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { isAbsolute, join, relative, resolve } from 'path'
 import type { Readable } from 'stream'
 
@@ -677,12 +677,17 @@ export class RunManager {
 
   private resetRuntimeArtifacts(): void {
     const runtimeDirs = ['logs', 'normalized', 'phase-outputs', 'reports', 'status']
+    const ledgerPath = join(this.dataRoot, 'status', 'pipeline-verification-ledger.md')
+    const ledger = existsSync(ledgerPath) ? readFileSync(ledgerPath, 'utf8') : null
     for (const name of runtimeDirs) {
       const fullPath = join(this.dataRoot, name)
       if (existsSync(fullPath)) {
         rmSync(fullPath, { recursive: true, force: true })
       }
       mkdirSync(fullPath, { recursive: true })
+    }
+    if (ledger !== null) {
+      writeFileSync(ledgerPath, ledger)
     }
     if (this.onReset) this.onReset()
   }
