@@ -4,6 +4,63 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [3.4.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.3.0...v3.4.0) (2026-06-25)
+
+Turns the post-3.3.0 hardening work into a verified release. Every acquisition phase now has recorded
+pipeline proof, the live Codex runtime has fresh smoke/full/eval evidence, and the public trust report
+reflects a new all-8-deal live run.
+
+### Features
+
+* **Pipeline verification ledger:** adds a checked ledger covering document intake, source review,
+  due diligence, underwriting, financing, legal, closing, IC package export, offline gates, and live
+  Codex gates.
+* **First-class phase artifacts:** underwriting now writes and validates the 27-scenario matrix and
+  IC memo side artifacts; closing now writes and validates a structured wire schedule; IC package
+  export now includes first-class document manifest and review decision trail fields.
+* **Fresh live Codex evaluation:** live agents ran all 8 synthetic benchmark deals with IC exact and
+  directional match at 100%, determinable financial accuracy at 100%, required red-flag recall at
+  100%, dealbreaker recall at 100%, and 0 partial failures. Model-dependent returns remain the
+  documented weak spot at 25%.
+
+### Bug Fixes
+
+* **Intake gating:** flagged source-backed intake fields now block diligence advancement until
+  reviewed.
+* **Operator edit precedence:** operator-edited approved fields continue to override stale parser
+  reads in the deal record.
+* **Live manifest validation:** the Codex run manifest schema now accepts current runner fields,
+  including root `agentTimeoutMs` and per-result `timedOut`.
+* **Runtime containment:** live Codex artifact paths are contained, escaping run paths are rejected,
+  answer-key stashes are isolated, live agent hangs are bounded, and production websocket proxy
+  readiness is smoke-tested.
+* **Codex launch controls:** Codex search defaults are preserved across presets, direct launches,
+  phase launches, agent dispatch, swarm launch, and retry-failed-agent flows.
+
+### Documentation
+
+* README headline evaluation numbers now match the June 25 live run: Codex CLI 0.142.0, all 8 deals,
+  100% IC exact/directional match, 100% determinable financials, 100% required red-flag recall, 100%
+  dealbreaker recall, and model-dependent returns at 25%.
+* `EVAL-PLAN.md` now marks the live eval as complete and records the full 2026-06-25 live
+  verification sequence.
+* `eval/results/scorecard.json` and `eval/results/TRUST-REPORT.md` were refreshed from the saved live
+  workpapers while preserving the full extraction + simulation + live report shape.
+
+### Verification
+
+* `npm test`
+* `npm run verify:v3:core`
+* `npm run test:e2e`
+* `npm run validate:docs`
+* `npm run validate:guides`
+* `npm run validate:codex`
+* `npm run codex:status`
+* `npm run codex:smoke`
+* `npm run codex:run:full`
+* `npm run eval:live`
+* `node eval/run-eval.mjs --mode all --reparse-run eval-2026-06-25T18-44-12-814Z`
+
 ## [3.3.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.2.0...v3.3.0) (2026-06-22)
 
 Makes **live Codex / ChatGPT the default workflow lane** and gives the agent team **real web
@@ -235,7 +292,7 @@ backward-compatible.
 * **Real-world drop-flow hardening:** a messy real-world pile (T12s, rent rolls, offering memos, plus junk files) now flows through classify → extract → review → workflow → export with no crashes, silent skips, or confidently-wrong numbers. Vacant `$0` rent rows no longer deflate in-place rent averages (Excel and CSV paths); rent roll vs T12 is classified by document content, not just filename; oversized CSVs and corrupt/unreadable workbooks degrade to a graceful `parse_failed` (no hangs); local filesystem paths are redacted from parser errors; and Python-interpreter selection falls back resiliently. An automated smoke test (`npm run test:pile`) drives the nasty pile through the real parser and asserts a typed per-file outcome.
 * **Threshold-driven IC verdict:** the deterministic engine now consults `config/thresholds.json` for dealbreakers (instead of scenario-baked text) and uses a deal-specific exit cap — fixing a clean deal that was wrongly marked FAIL.
 * **Open evaluation harness (`npm run eval`):** scores the orchestrator on a benchmark of 8 synthetic deals (core-plus / value-add / distressed, with both determinable and narrative document-buried planted risks) against committed ground truth, and writes an honest trust report to `eval/results/{scorecard.json,TRUST-REPORT.md}`. An `npm run eval:offline` mode runs the no-API extraction + simulation layers. The report measures three non-equivalent layers — deterministic extraction, the simulation *fixture* (not reasoning), and live Codex agent reasoning — and reports where the system falls short.
-* **Live narrative-risk proof + full 8/8 coverage:** the live (Codex) layer is proven on the hard, document-buried deals — it genuinely flags tenant concentration, insurance understatement, and missing Phase I that the deterministic fixture is structurally blind to. The live layer covers **all 8 deals**: **narrative red-flag recall 100%, determinable financial 100%, dealbreaker recall 100%, IC verdict 88% exact (7 of 8)**. Two honest soft spots remain: **model-dependent returns (IRR / equity multiple) at 50%** — genuinely assumption-driven, with the agents diverging from the reference model in both directions (some deals more optimistic, some more conservative) — and one borderline deal (`cp-insurance-understated`) whose verdict oscillates CONDITIONAL↔FAIL across runs. Nothing was tuned to flatter; ground truth is fixed and committed. See [eval/results/TRUST-REPORT.md](eval/results/TRUST-REPORT.md).
+* **Live narrative-risk proof + full 8/8 coverage:** at v2.8.0 release time, the live (Codex) layer was proven on the hard, document-buried deals — it genuinely flagged tenant concentration, insurance understatement, and missing Phase I that the deterministic fixture was structurally blind to. That historical run covered **all 8 deals** with narrative red-flag recall 100%, determinable financial 100%, dealbreaker recall 100%, and IC verdict 88% exact (7 of 8). The current mutable trust report is refreshed by later releases; see the latest changelog entry for current live-eval numbers.
 
 ### Bug Fixes
 

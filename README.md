@@ -98,10 +98,10 @@ per-deal results, and weaknesses).
 
 ## Current Status
 
-The latest public release is `v3.3.0`. It makes live Codex / ChatGPT the default workflow runtime and gives the agent team real web search, so a launched workflow goes online and pulls cited market, lender, and environmental data instead of reasoning only over local fixtures; the deterministic Simulation runtime stays as the no-credential fallback for demos, screenshots, and CI. It also adds lean legal-document parsing (PSA, title commitment, and estoppel documents into review-gated candidate fields). It builds on `v3.2.0`, which added a production-scale local QA harness (sanitized 150-deal corpus, `npm run test:prod-local-data` regression gate, `docs/QA-INVENTORY.md` + `docs/QA-BUG-LOG.md`, and the `npm run proof` public proof command). The stable baseline remains local-first and review-first:
+The latest public release is `v3.4.0`. It turns the post-3.3.0 hardening work into a verified release: every acquisition phase has recorded pipeline proof, live Codex smoke/full/eval gates passed, and the public trust report reflects a fresh all-8-deal live run. It builds on `v3.3.0`, which made live Codex / ChatGPT the default workflow runtime with real web search and added lean legal-document parsing. The stable baseline remains local-first and review-first:
 
 - **Local-first** - the offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
-- **Versioned release baseline** - `v3.3.0` makes live Codex / ChatGPT the default workflow runtime with real web search and adds lean legal-document parsing, on top of `v3.2.0`'s production-scale local QA harness (sanitized 150-deal seed, `test:prod-local-data` regression gate, QA inventory/bug-log docs, `npm run proof`), `v3.1.0`'s local scanned-PDF OCR bridge, and `v3.0.0` evidence graph lineage, OCR-ready metadata, legal checklist candidates, proof-path UI, fresh-clone parser setup, CI, and the full `verify:v3` gate.
+- **Versioned release baseline** - `v3.4.0` adds the pipeline verification ledger, live Codex proof gates, refreshed all-8-deal live eval, phase artifact validation, and manifest/schema hardening on top of `v3.3.0`'s live Codex main lane with web search, `v3.2.0`'s production-scale local QA harness, `v3.1.0`'s local scanned-PDF OCR bridge, and `v3.0.0`'s evidence-grade source-to-IC workbench.
 - **Honest evaluation** - `npm run eval` scores the orchestrator on an **8-deal** synthetic benchmark and reports honest numbers including where it falls short (see [Honest Evaluation](#honest-evaluation--prove-it)). The live (Codex) layer covers all 8 deals; the current verified live run hit 100% IC exact/directional match, 100% determinable financial accuracy, 100% required red-flag recall, and 100% dealbreaker recall. The documented soft spot is model-dependent returns (~25%).
 - **Known limits** - the local OCR bridge supports readable scanned/image-only PDFs for review-backed headline extraction, but not arbitrary image files or fully reliable table reconstruction. Multi-tenant cloud hosting and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are supported.
 
@@ -115,6 +115,14 @@ The latest public release is `v3.3.0`. It makes live Codex / ChatGPT the default
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
+
+## What's New in v3.4.0
+
+- **Pipeline verification ledger** - document intake, source review, due diligence, underwriting, financing, legal, closing, IC package export, offline gates, and live Codex gates now have recorded proof in `data/status/pipeline-verification-ledger.md`.
+- **Live Codex proof gates** - `npm run codex:status`, `npm run codex:smoke`, `npm run codex:run:full`, `npm run validate:codex`, and `npm run eval:live` were run and recorded; the full live workflow completed with 21/21 agents passing on first attempt.
+- **All-8-deal live eval refresh** - live Codex agents matched all 8 benchmark IC verdicts exactly and directionally, with 100% determinable financial accuracy, 100% required red-flag recall, 100% dealbreaker recall, and 0 partial failures.
+- **Phase artifact hardening** - underwriting writes/validates the 27-scenario matrix and IC memo; closing writes/validates the wire schedule; IC package export includes a first-class document manifest and review decision trail.
+- **Live manifest schema hardening** - current Codex manifests validate root `agentTimeoutMs` and per-result `timedOut`, so smoke/full live runs are covered by the same contract gate.
 
 ## What's New in v3.3.0
 
@@ -172,7 +180,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Release Journey
 
-This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, then a credibility-hardened sample package with strict schemas, then a completion pass adding PDF extraction and review-grade workpapers, then real-world drop-flow hardening with an honest evaluation harness, then a redesign into one persistent deal space you drive by summoning agents, then an evidence-grade source-to-IC workbench with full release verification, then a production-scale local QA harness that exercises the app like a real operator across a sanitized 150-deal corpus, and now a release that makes live Codex / ChatGPT the default workflow runtime with real, cited web search (plus lean legal-document parsing), keeping the deterministic simulation as the no-credential fallback.
+This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, then a credibility-hardened sample package with strict schemas, then a completion pass adding PDF extraction and review-grade workpapers, then real-world drop-flow hardening with an honest evaluation harness, then a redesign into one persistent deal space you drive by summoning agents, then an evidence-grade source-to-IC workbench with full release verification, then a production-scale local QA harness that exercises the app like a real operator across a sanitized 150-deal corpus, then live Codex / ChatGPT as the default workflow runtime with real, cited web search, and now a release that records end-to-end pipeline proof and a fresh all-8-deal live Codex eval.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -193,6 +201,7 @@ This project has grown from agent architecture into a local-first acquisition wo
 | **v3.1.0 - Local OCR Bridge** | Adds local scanned-PDF OCR with PyMuPDF and `tesseract.js`, review-gated OCR candidates, OCR fixture coverage, and setup/docs support. | [RELEASE_NOTES_v3.1.0.md](RELEASE_NOTES_v3.1.0.md) |
 | **v3.2.0 - Production-Scale Local QA Harness** | Adds a sanitized 150-deal local seed (`npm run seed:prod-local`), a `npm run test:prod-local-data` regression gate, a production-scale Playwright inventory, the `npm run proof` public proof command, and QA inventory/bug-log docs, plus workspace reliability fixes. | [RELEASE_NOTES_v3.2.0.md](RELEASE_NOTES_v3.2.0.md) |
 | **v3.3.0 - Codex Main Lane + Live Web Search** | Makes live Codex / ChatGPT the default workflow runtime (Simulation kept as the no-credential fallback), gives agents real, cited web search, adds lean legal-document (PSA / title / estoppel) parsing, and lands the intake/extraction/launch UX fixes and e2e/CI stabilization. | [RELEASE_NOTES_v3.3.0.md](RELEASE_NOTES_v3.3.0.md) |
+| **v3.4.0 - Pipeline Verification + Live Eval Proof** | Records end-to-end pipeline verification, hardens phase artifacts and live Codex manifest validation, refreshes the all-8-deal live eval, and updates the public trust report to the June 25 live run. | [RELEASE_NOTES_v3.4.0.md](RELEASE_NOTES_v3.4.0.md) |
 
 ---
 
