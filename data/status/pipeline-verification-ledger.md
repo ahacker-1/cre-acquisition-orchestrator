@@ -53,14 +53,14 @@ Status values:
 
 | Step | Status | Evidence |
 | --- | --- | --- |
-| model builder | UNVERIFIED | Pending real phase output and schema verification. |
-| scenario analyst | UNVERIFIED | Pending real phase output and schema verification. |
-| 27-scenario matrix | UNVERIFIED | Pending real phase output and schema verification. |
-| IC memo writer | UNVERIFIED | Pending real phase output and schema verification. |
-| DSCR | UNVERIFIED | Pending real phase output and schema verification. |
-| IRR | UNVERIFIED | Pending real phase output and schema verification. |
-| equity multiple | UNVERIFIED | Pending real phase output and schema verification. |
-| 10-year pro forma | UNVERIFIED | Pending real phase output and schema verification. |
+| model builder | PASSED | `npm run simulate` on 2026-06-25 completed canonical `config/deal.json` / `core-plus` / seed `42`; read `agentFindings` with `financial-model-builder`, and `financial-model-builder-workpaper-v1.md` summary `Base-case model calibrated and validated.` `npm run validate` passed `phase-underwriting`. |
+| scenario analyst | PASSED | Same canonical run produced `scenario-analyst` in `agentFindings` and `scenario-analyst-workpaper-v1.md` summary `9/27 sensitivity scenarios pass constraints.` `npm run validate` passed. |
+| 27-scenario matrix | PASSED | Initial inspection found `scenarioMatrixPath` pointed to missing `data/phase-outputs/parkview-2026-001/underwriting-scenarios.json`; added artifact writing in `scripts/orchestrate.js` and a validator check in `scripts/validate-contracts.js`. Re-ran `npm run simulate && npm run validate`; validation now reports `PASS phase-underwriting-artifacts`. Read generated matrix file: 27 rows, matching `underwriting-output.json`, with 9 passing scenarios. |
+| IC memo writer | PASSED | Initial inspection found `icMemoPath` pointed to missing `data/reports/parkview-2026-001/ic-memo.md`; added generated IC memo writing and validation. Re-ran `npm run simulate && npm run validate`; read `ic-memo.md` with `# IC Memo`, `## Recommendation`, return metrics, red flags, data gaps, and scenario summary. |
+| DSCR | PASSED | Read `baseCase.targetDSCR: 0.947` and 10-year pro forma DSCR values from 1.082 in year 1 to 1.567 in year 10; generated IC memo shows Target DSCR 0.95x. `npm run validate` passed. |
+| IRR | PASSED | Read `baseCase.leveragedIRR: 0.1895`; return metrics show `Leveraged IRR: 19% vs target 15%`; scenario summary best/median/worst IRR 25.2% / 18.9% / 12.5%. `npm run validate` passed. |
+| equity multiple | PASSED | Read `baseCase.equityMultiple: 2.305`; return metrics show `Equity Multiple: 2.31x vs target 1.8x`; scenario rows include per-case equity multiples. `npm run validate` passed. |
+| 10-year pro forma | PASSED | Read `proForma` with 10 rows; year 1 revenue/expenses/NOI/debt service/DSCR/cash flow are `3414000/1725500/1688500/1560000/1.082/128500`, and year 10 ends at NOI `2852846`, DSCR `1.567`, cash flow `1032490`. `npm run validate` passed. |
 
 ## Phase 5 - Financing
 
@@ -133,3 +133,5 @@ Status values:
 - 2026-06-25: Broader `npm test` regression passed after Phase 2 verification.
 - 2026-06-25: Phase 3 due diligence passed via canonical simulation output inspection and `npm run validate`.
 - 2026-06-25: Broader `npm test` regression passed after Phase 3 verification.
+- 2026-06-25: Phase 4 underwriting initially failed artifact proof because `underwriting-scenarios.json` and `ic-memo.md` were referenced but missing. Added side-artifact writing plus validator coverage, then `npm run simulate && npm run validate` passed with `phase-underwriting-artifacts`.
+- 2026-06-25: Broader `npm test` regression passed after Phase 4 fix; system-test now validates `phase-underwriting-artifacts` across core-plus, value-add, distressed, and failure-resume runs.

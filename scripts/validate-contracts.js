@@ -5,6 +5,7 @@ const { validateFile, readJson } = require('./lib/schema-validator');
 const { PHASES } = require('./lib/runtime-core');
 const { getWorkflowById, createWorkflowRunPlan } = require('./lib/workflow-catalog');
 const { resolveCodexRunArtifactPath } = require('./lib/codex-manifest-paths');
+const { assertWithinBase } = require('./lib/safe-paths');
 
 const BASE_DIR = path.resolve(__dirname, '..');
 
@@ -24,6 +25,62 @@ function parseArgs() {
 function fail(message) {
   console.error(message);
   process.exit(1);
+}
+
+function resolveRepoArtifactPath(relPath, label) {
+  if (typeof relPath !== 'string' || relPath.trim().length === 0) {
+    throw new Error(`${label} is missing`);
+  }
+  return assertWithinBase(BASE_DIR, path.resolve(BASE_DIR, relPath), label);
+}
+
+function validateUnderwritingArtifacts(phaseOutput) {
+  const errors = [];
+  let scenarioMatrixPath = null;
+  let icMemoPath = null;
+
+  try {
+    scenarioMatrixPath = resolveRepoArtifactPath(phaseOutput.scenarioMatrixPath, 'underwriting scenarioMatrixPath');
+  } catch (error) {
+    errors.push(error.message);
+  }
+  try {
+    icMemoPath = resolveRepoArtifactPath(phaseOutput.icMemoPath, 'underwriting icMemoPath');
+  } catch (error) {
+    errors.push(error.message);
+  }
+
+  if (scenarioMatrixPath) {
+    if (!fs.existsSync(scenarioMatrixPath)) {
+      errors.push(`missing underwriting scenario matrix: ${scenarioMatrixPath}`);
+    } else {
+      const scenarios = readJson(scenarioMatrixPath);
+      if (!Array.isArray(scenarios)) {
+        errors.push('underwriting scenario matrix artifact must be an array');
+      } else if (scenarios.length !== 27) {
+        errors.push(`underwriting scenario matrix artifact expected 27 rows, received ${scenarios.length}`);
+      }
+      if (Array.isArray(phaseOutput.scenarioMatrix) && scenarios.length !== phaseOutput.scenarioMatrix.length) {
+        errors.push('underwriting scenario matrix artifact row count does not match phase output');
+      }
+    }
+  }
+
+  if (icMemoPath) {
+    if (!fs.existsSync(icMemoPath)) {
+      errors.push(`missing underwriting IC memo: ${icMemoPath}`);
+    } else {
+      const memo = fs.readFileSync(icMemoPath, 'utf8');
+      if (!memo.includes('# IC Memo')) errors.push('underwriting IC memo artifact missing IC Memo heading');
+      if (!memo.includes('## Recommendation')) errors.push('underwriting IC memo artifact missing recommendation section');
+    }
+  }
+
+  return {
+    item: 'phase-underwriting-artifacts',
+    valid: errors.length === 0,
+    errors
+  };
 }
 
 function validateCodexRun(runId) {
@@ -194,6 +251,9 @@ function main() {
       item: `phase-${phase.slug}`,
       ...validateFile(schemaPath, phaseOutput, phase.key)
     });
+    if (phase.key === 'underwriting') {
+      results.push(validateUnderwritingArtifacts(phaseOutput));
+    }
   });
 
   if (checkpoint.workflowId) {

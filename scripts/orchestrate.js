@@ -139,6 +139,98 @@ function renderPhaseReport(phaseMeta, phaseState) {
   return `${lines.join('\n')}\n`;
 }
 
+function renderUnderwritingIcMemo(phaseData, deal) {
+  const base = phaseData.baseCase || {};
+  const summary = phaseData.scenarioSummary || {};
+  const returnMetrics = Array.isArray(phaseData.returnMetrics) ? phaseData.returnMetrics : [];
+  const redFlags = Array.isArray(phaseData.redFlags) ? phaseData.redFlags : [];
+  const dataGaps = Array.isArray(phaseData.dataGaps) ? phaseData.dataGaps : [];
+  const lines = [];
+  lines.push(`# IC Memo - ${deal.dealName || deal.dealId}`);
+  lines.push('');
+  lines.push(`- Deal ID: ${deal.dealId}`);
+  lines.push(`- Property: ${deal.property?.address || 'N/A'}`);
+  lines.push(`- Purchase Price: ${formatCurrency(base.purchasePrice)}`);
+  lines.push(`- Total Basis: ${formatCurrency(base.totalBasis)}`);
+  lines.push(`- Year 1 NOI: ${formatCurrency(base.year1NOI)}`);
+  lines.push(`- Stabilized NOI: ${formatCurrency(base.stabilizedNOI)}`);
+  lines.push(`- Target DSCR: ${typeof base.targetDSCR === 'number' ? `${base.targetDSCR.toFixed(2)}x` : 'N/A'}`);
+  lines.push(`- Leveraged IRR: ${formatPercent(base.leveragedIRR)}`);
+  lines.push(`- Equity Multiple: ${typeof base.equityMultiple === 'number' ? `${base.equityMultiple.toFixed(2)}x` : 'N/A'}`);
+  lines.push(`- Scenario Pass Rate: ${formatPercent(summary.passRate)}`);
+  lines.push('');
+  lines.push('## Recommendation');
+  lines.push(phaseData.verdict === 'PASS'
+    ? '- Proceed, subject to final lender, tax, and diligence confirmations.'
+    : '- Proceed only with explicit mitigations for open underwriting issues.');
+  lines.push('');
+  lines.push('## Return Metrics');
+  if (returnMetrics.length === 0) lines.push('- No return metrics recorded.');
+  returnMetrics.forEach((metric) => {
+    lines.push(`- ${metric.metric}: ${metric.value} vs target ${metric.target}`);
+  });
+  lines.push('');
+  lines.push('## Red Flags');
+  if (redFlags.length === 0) lines.push('- None');
+  redFlags.forEach((flag) => {
+    lines.push(`- ${flag.severity || 'MEDIUM'} | ${flag.category || 'UNDERWRITING'} | ${flag.message || 'Flag'}`);
+  });
+  lines.push('');
+  lines.push('## Data Gaps');
+  if (dataGaps.length === 0) lines.push('- None');
+  dataGaps.forEach((gap) => {
+    lines.push(`- ${gap.severity || 'MEDIUM'} | ${gap.message || 'Data gap'}`);
+  });
+  lines.push('');
+  lines.push('## Scenario Summary');
+  lines.push(`- Best IRR: ${formatPercent(summary.bestIRR)}`);
+  lines.push(`- Median IRR: ${formatPercent(summary.medianIRR)}`);
+  lines.push(`- Worst IRR: ${formatPercent(summary.worstIRR)}`);
+  lines.push(`- DSCR Range: ${summary.dscrRange ? `${summary.dscrRange.min}x - ${summary.dscrRange.max}x` : 'N/A'}`);
+  lines.push('');
+  return `${lines.join('\n')}\n`;
+}
+
+function writeUnderwritingSideArtifacts(phaseData, deal, storyEngine) {
+  if (!phaseData || !Array.isArray(phaseData.scenarioMatrix)) return;
+
+  const scenarioMatrixPath = assertWithinBase(
+    BASE_DIR,
+    path.resolve(BASE_DIR, phaseData.scenarioMatrixPath || `data/phase-outputs/${deal.dealId}/underwriting-scenarios.json`),
+    'underwriting scenario matrix path'
+  );
+  writeJson(scenarioMatrixPath, phaseData.scenarioMatrix);
+
+  const icMemoPath = assertWithinBase(
+    BASE_DIR,
+    path.resolve(BASE_DIR, phaseData.icMemoPath || `data/reports/${deal.dealId}/ic-memo.md`),
+    'underwriting IC memo path'
+  );
+  fs.mkdirSync(path.dirname(icMemoPath), { recursive: true });
+  fs.writeFileSync(icMemoPath, renderUnderwritingIcMemo(phaseData, deal));
+
+  storyEngine.registerExternalDocument({
+    phase: 'underwriting',
+    agent: 'scenario-analyst',
+    title: 'Underwriting Scenario Matrix',
+    docType: 'underwriting-scenarios',
+    absolutePath: scenarioMatrixPath,
+    summary: '27-case underwriting sensitivity matrix',
+    mime: 'application/json',
+    tags: ['underwriting', 'scenario-matrix']
+  });
+  storyEngine.registerExternalDocument({
+    phase: 'underwriting',
+    agent: 'ic-memo-writer',
+    title: 'Underwriting IC Memo',
+    docType: 'ic-memo',
+    absolutePath: icMemoPath,
+    summary: 'Investment committee memo drafted from underwriting output',
+    mime: 'text/markdown',
+    tags: ['underwriting', 'ic-memo']
+  });
+}
+
 function renderFinalReport(checkpoint) {
   const lines = [];
   const phases = checkpoint.phases || {};
@@ -666,6 +758,9 @@ async function main() {
 
     const phaseReportPath = path.join(paths.reportsDir, `${phaseMeta.slug}-report.md`);
     fs.writeFileSync(phaseReportPath, renderPhaseReport(phaseMeta, phaseState));
+    if (phaseMeta.key === 'underwriting') {
+      writeUnderwritingSideArtifacts(phaseData, deal, storyEngine);
+    }
     storyEngine.registerExternalDocument({
       phase: phaseMeta.key,
       agent: 'phase-orchestrator',
