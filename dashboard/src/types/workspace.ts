@@ -319,6 +319,44 @@ export interface IcStarterPackageExport {
       confidence: number
       sourceRef?: SourceReference
     }>
+    documentManifest?: {
+      version: 1
+      dealId: string
+      generatedAt: string
+      sourceDocuments: Array<{
+        documentId: string
+        fileName: string
+        typeLabel: string
+        status: string
+        extractionStatus: string
+        uploadedAt: string
+        extractedAt?: string
+        reviewedAt?: string
+        appliedAt?: string
+        parserId?: string
+        parserVersion?: string
+        sourceHash?: string
+      }>
+      packageFiles: Array<{
+        format: 'json' | 'markdown'
+        fileName: string
+        path: string
+      }>
+    }
+    decisionTrail?: Array<{
+      decisionId: string
+      fieldId: string
+      path: string
+      label: string
+      action: string
+      reviewStatus: string
+      documentId: string
+      decidedAt: string
+      note?: string
+      conflict?: boolean
+      value?: unknown
+      previousValue?: unknown
+    }>
     assumptions: string[]
     openQuestions: string[]
     redFlags: string[]

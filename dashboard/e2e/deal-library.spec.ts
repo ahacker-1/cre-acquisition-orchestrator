@@ -1242,6 +1242,8 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   await expect(packageView).toContainText('Scoped workflow completed. Review the package outputs before expanding to a full closing run.')
   await expect(packageView).toContainText('Phase Outcomes')
   await expect(packageView).toContainText('Workpapers')
+  await expect(packageView).toContainText('Decision Log')
+  await expect(packageView).toContainText(/Verdict|decision events/)
   await expect(packageView).toContainText('Final Recommendation Package')
   await expect(packageView).toContainText('Priority Flags')
 

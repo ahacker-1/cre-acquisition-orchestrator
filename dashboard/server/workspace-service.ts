@@ -7,7 +7,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'fs'
-import { dirname, extname, join } from 'path'
+import { basename, dirname, extname, isAbsolute, join, relative } from 'path'
 import { createHash, randomUUID } from 'crypto'
 import {
   getDealRecord,
@@ -400,6 +400,33 @@ export interface IcStarterPackageSourceDocument {
   sourceHash?: string
 }
 
+export interface IcStarterPackageDocumentManifest {
+  version: 1
+  dealId: string
+  generatedAt: string
+  sourceDocuments: IcStarterPackageSourceDocument[]
+  packageFiles: Array<{
+    format: 'json' | 'markdown'
+    fileName: string
+    path: string
+  }>
+}
+
+export interface IcStarterPackageDecisionTrailEntry {
+  decisionId: string
+  fieldId: string
+  path: string
+  label: string
+  action: FieldDecisionAction
+  reviewStatus: ExtractionReviewStatus
+  documentId: string
+  decidedAt: string
+  note?: string
+  conflict?: boolean
+  value?: unknown
+  previousValue?: unknown
+}
+
 export interface IcStarterPackage {
   version: number
   generatedAt: string
@@ -412,6 +439,8 @@ export interface IcStarterPackage {
   readiness: Pick<LaunchReadinessResult, 'status' | 'blockers' | 'warnings' | 'requiredApprovedFields' | 'approvedFields' | 'missingApprovedFields'>
   approvedInputs: IcStarterPackageApprovedInput[]
   sourceDocuments: IcStarterPackageSourceDocument[]
+  documentManifest: IcStarterPackageDocumentManifest
+  decisionTrail: IcStarterPackageDecisionTrailEntry[]
   assumptions: string[]
   openQuestions: string[]
   redFlags: string[]
@@ -1078,6 +1107,18 @@ function packageVersionHistoryPath(context: ServiceContext, dealId: string, work
 
 function packagesDir(context: ServiceContext, dealId: string): string {
   return join(dealWorkspaceRoot(context, dealId), 'packages')
+}
+
+function packageManifestPath(context: ServiceContext, filePath: string): string {
+  const dataRelative = relative(context.dataRoot, filePath)
+  if (dataRelative && !dataRelative.startsWith('..') && !isAbsolute(dataRelative)) {
+    return `data/${dataRelative.replace(/\\/g, '/')}`
+  }
+  const projectRelative = relative(context.projectRoot, filePath)
+  if (projectRelative && !projectRelative.startsWith('..') && !isAbsolute(projectRelative)) {
+    return projectRelative.replace(/\\/g, '/')
+  }
+  return basename(filePath)
 }
 
 function rollbackDir(context: ServiceContext, dealId: string): string {
@@ -2480,6 +2521,16 @@ function renderIcStarterPackageMarkdown(packageJson: IcStarterPackage): string {
         `| ${markdownCell(document.fileName)} | ${markdownCell(document.typeLabel)} | ${markdownCell(document.status)} | ${markdownCell(document.extractionStatus)} |`
       )
     : ['| No source documents uploaded yet |  |  |  |']
+  const packageFileRows = packageJson.documentManifest.packageFiles.length > 0
+    ? packageJson.documentManifest.packageFiles.map((file) =>
+        `| ${markdownCell(file.format)} | ${markdownCell(file.fileName)} | ${markdownCell(file.path)} |`
+      )
+    : ['| No package files written yet |  |  |']
+  const decisionRows = packageJson.decisionTrail.length > 0
+    ? packageJson.decisionTrail.map((decision) =>
+        `| ${markdownCell(decision.decidedAt)} | ${markdownCell(decision.label)} | ${markdownCell(decision.action)} | ${markdownCell(decision.reviewStatus)} | ${markdownCell(decision.documentId)} | ${markdownCell(decision.note ?? '')} |`
+      )
+    : ['| No source-review decisions recorded yet |  |  |  |  |  |']
   // W63: source drilldown rows.
   const drilldownRows = packageJson.sourceDrilldown.length > 0
     ? packageJson.sourceDrilldown.map((entry) =>
@@ -2545,10 +2596,22 @@ function renderIcStarterPackageMarkdown(packageJson: IcStarterPackage): string {
       : ['- Pending: no source document -> approved input links yet.']),
     ...evidenceGapRows,
     '',
+    '## Document Manifest',
+    `Manifest version: ${packageJson.documentManifest.version}`,
+    `Source documents: ${packageJson.documentManifest.sourceDocuments.length}`,
+    '| Package File | Name | Path |',
+    '| --- | --- | --- |',
+    ...packageFileRows,
+    '',
     '## Source Documents',
     '| File | Type | Review Status | Extraction Status |',
     '| --- | --- | --- | --- |',
     ...documentRows,
+    '',
+    '## Review Decision Trail',
+    '| Decided At | Field | Action | Status | Document | Note |',
+    '| --- | --- | --- | --- | --- | --- |',
+    ...decisionRows,
     '',
     '## Assumptions',
     ...packageJson.assumptions.map((item) => `- ${item}`),
@@ -3454,6 +3517,10 @@ export function exportIcStarterPackage(
   const readiness = evaluateLaunchReadiness(context, dealId, workflowId, { enforceSourceBackedInputs: true })
   const criteria = readCriteria(context, record)
   const generatedAt = new Date().toISOString()
+  const outputDir = packagesDir(context, dealId)
+  const safeWorkflow = safeSegment(workflowId)
+  const jsonPath = join(outputDir, `${safeWorkflow}-ic-starter-package.json`)
+  const markdownPath = join(outputDir, `${safeWorkflow}-ic-starter-package.md`)
 
   // W63: incrementing package version + version history.
   const versionHistoryPath = packageVersionHistoryPath(context, dealId, workflowId)
@@ -3499,6 +3566,52 @@ export function exportIcStarterPackage(
       raw: sourceRef.raw,
     }
   })
+  const sourceDocuments: IcStarterPackageSourceDocument[] = documents.map((document) => ({
+    documentId: document.documentId,
+    fileName: document.fileName,
+    typeLabel: document.typeLabel,
+    status: document.status,
+    extractionStatus: document.extractionStatus,
+    uploadedAt: document.uploadedAt,
+    extractedAt: document.extractedAt,
+    reviewedAt: document.reviewedAt,
+    appliedAt: document.appliedAt,
+    parserId: document.parserId,
+    parserVersion: document.parserVersion,
+    sourceHash: document.sourceHash,
+  }))
+  const documentManifest: IcStarterPackageDocumentManifest = {
+    version: 1,
+    dealId,
+    generatedAt,
+    sourceDocuments,
+    packageFiles: [
+      {
+        format: 'json',
+        fileName: basename(jsonPath),
+        path: packageManifestPath(context, jsonPath),
+      },
+      {
+        format: 'markdown',
+        fileName: basename(markdownPath),
+        path: packageManifestPath(context, markdownPath),
+      },
+    ],
+  }
+  const decisionTrail: IcStarterPackageDecisionTrailEntry[] = readDecisionHistory(context, dealId).entries.map((entry) => ({
+    decisionId: entry.decisionId,
+    fieldId: entry.fieldId,
+    path: entry.path,
+    label: entry.label,
+    action: entry.action,
+    reviewStatus: entry.reviewStatus,
+    documentId: entry.documentId,
+    decidedAt: entry.decidedAt,
+    note: entry.note,
+    conflict: entry.conflict,
+    value: entry.value,
+    previousValue: entry.previousValue,
+  }))
 
   // W61: per-phase evidence completeness scoring.
   const approvedPathSet = new Set(approvedFields.fields.map((field) => field.path))
@@ -3560,20 +3673,9 @@ export function exportIcStarterPackage(
       appliedAt: field.appliedAt,
       sourceRef: field.sourceRef,
     })),
-    sourceDocuments: documents.map((document) => ({
-      documentId: document.documentId,
-      fileName: document.fileName,
-      typeLabel: document.typeLabel,
-      status: document.status,
-      extractionStatus: document.extractionStatus,
-      uploadedAt: document.uploadedAt,
-      extractedAt: document.extractedAt,
-      reviewedAt: document.reviewedAt,
-      appliedAt: document.appliedAt,
-      parserId: document.parserId,
-      parserVersion: document.parserVersion,
-      sourceHash: document.sourceHash,
-    })),
+    sourceDocuments,
+    documentManifest,
+    decisionTrail,
     assumptions,
     openQuestions,
     redFlags,
@@ -3590,11 +3692,7 @@ export function exportIcStarterPackage(
     evidenceGraph,
   }
   const markdown = renderIcStarterPackageMarkdown(packageJson)
-  const outputDir = packagesDir(context, dealId)
   ensureDir(outputDir)
-  const safeWorkflow = safeSegment(workflowId)
-  const jsonPath = join(outputDir, `${safeWorkflow}-ic-starter-package.json`)
-  const markdownPath = join(outputDir, `${safeWorkflow}-ic-starter-package.md`)
   writeJsonAtomic(jsonPath, packageJson)
   writeFileSync(markdownPath, markdown)
   // W63: persist the incrementing version history for subsequent re-exports.

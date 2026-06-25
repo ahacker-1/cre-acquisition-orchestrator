@@ -288,6 +288,32 @@ try {
   assert.ok(quickPackage.markdown.includes('Source Coverage'))
   assert.ok(existsSync(quickPackage.files.json))
   assert.ok(existsSync(quickPackage.files.markdown))
+  assert.ok(quickPackage.packageJson.documentManifest)
+  assert.equal(quickPackage.packageJson.documentManifest.dealId, dealId)
+  assert.equal(
+    quickPackage.packageJson.documentManifest.sourceDocuments.length,
+    quickPackage.packageJson.sourceDocuments.length,
+    'document manifest should mirror exported source documents',
+  )
+  assert.ok(
+    quickPackage.packageJson.documentManifest.packageFiles.some((file) => file.format === 'json' && file.fileName.endsWith('ic-starter-package.json')),
+    'document manifest should name the JSON package artifact',
+  )
+  assert.ok(
+    quickPackage.packageJson.documentManifest.packageFiles.some((file) => file.format === 'markdown' && file.fileName.endsWith('ic-starter-package.md')),
+    'document manifest should name the Markdown package artifact',
+  )
+  assert.ok(
+    quickPackage.packageJson.documentManifest.packageFiles.every((file) => file.path.startsWith('data/')),
+    'document manifest package paths should be portable data-relative paths',
+  )
+  assert.ok(Array.isArray(quickPackage.packageJson.decisionTrail))
+  assert.ok(
+    quickPackage.packageJson.decisionTrail.some((entry) => entry.action === 'apply' && entry.path === 'financials.currentNOI'),
+    'decision trail should include the source-review apply decision for current NOI',
+  )
+  assert.ok(quickPackage.markdown.includes('## Document Manifest'))
+  assert.ok(quickPackage.markdown.includes('## Review Decision Trail'))
 
   // W63: richer IC export — source drilldown references for each approved input.
   assert.ok(Array.isArray(quickPackage.packageJson.sourceDrilldown))

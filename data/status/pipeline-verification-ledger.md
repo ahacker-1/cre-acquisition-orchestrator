@@ -97,10 +97,10 @@ Status values:
 
 | Step | Status | Evidence |
 | --- | --- | --- |
-| markdown package | UNVERIFIED | Pending real dashboard/report verification. |
-| JSON export | UNVERIFIED | Pending real dashboard/report verification. |
-| manifest | UNVERIFIED | Pending real dashboard/report verification. |
-| review/decision trail | UNVERIFIED | Pending real dashboard/report verification. |
+| markdown package | PASSED | `npm run test:workspace` passed package export assertions and confirmed the markdown includes `## Document Manifest`, `## Review Decision Trail`, `## Evidence Chain`, source drilldowns, quality gate, reviewer signoff, and version history. Targeted Playwright export path passed via `package-export-markdown` with `ic-starter-package.md` download. |
+| JSON export | PASSED | `npm run test:workspace` verified `exportIcStarterPackage` writes JSON and Markdown files and returns package JSON with source drilldown, evidence graph, quality gate, reviewer signoff, evidence completeness, and version history. Targeted Playwright export path passed via `package-export-json` with `ic-starter-package.json` download. |
+| manifest | PASSED | Added first-class `documentManifest` to the IC package JSON. Temporary exporter proof produced package files `quick-deal-screen-ic-starter-package.json` and `quick-deal-screen-ic-starter-package.md`, `sourceDocuments: 2`, and evidence graph `26` nodes / `29` edges. Workspace test asserts the manifest mirrors exported source documents and names both package files. |
+| review/decision trail | PASSED | Added first-class `decisionTrail` to package JSON and `## Review Decision Trail` to markdown. Temporary exporter proof produced decisions for `property.totalUnits` (`needs-review`, `apply`) and `financials.currentNOI` (`apply`). Targeted Playwright package view passed with `Decision Log`, final recommendation, document manifest/workpapers, and decision-event summary visible. `npm test` passed after the Phase 8 changes. |
 
 ## Offline Gate
 
@@ -142,3 +142,5 @@ Status values:
 - 2026-06-25: Phase 7 closing initially failed artifact proof because `wireSchedule` was not emitted or validated. Added structured wire schedule output, schema requirements, report rendering, and `phase-closing-artifacts` validation.
 - 2026-06-25: Phase 7 closing passed via canonical simulation output inspection and `npm run validate`; `phase-closing-artifacts` ties senior loan and buyer equity wires back to funds-flow sources.
 - 2026-06-25: Broader `npm test` regression passed after Phase 7 fix; system-test now validates `phase-closing-artifacts` across core-plus, value-add, distressed, and failure-resume runs.
+- 2026-06-25: Phase 8 package export initially lacked first-class manifest and decision-trail fields in the exported JSON/markdown. Added `documentManifest`, `decisionTrail`, markdown sections, workspace assertions, and a dashboard package-view Decision Log assertion.
+- 2026-06-25: Phase 8 IC package passed `npm run test:workspace`, dashboard typecheck, targeted Playwright package export, targeted Playwright package view, temporary exporter artifact inspection, and broader `npm test`.
