@@ -107,8 +107,8 @@ Status values:
 | Gate | Status | Evidence |
 | --- | --- | --- |
 | `npm test` | PASSED | `npm test` on 2026-06-25 completed with all bundled checks green after the ledger-preservation fix, including fixture validation, production local data, runtime lock, security hardening, real-world pile, legal parser, dashboard-lib, system-test, codex runtime, codex legal docs, and eval scoring. Result included `[system-test] PASS`, `[codex-runtime] PASS 27 assertions/tests`, `[eval-scoring-test] PASS`. Ledger file still existed after the run. |
-| `npm run verify:v3:core` | UNVERIFIED | Pending. |
-| `npm run test:e2e` | UNVERIFIED | Pending. |
+| `npm run verify:v3:core` | PASSED | Passed on 2026-06-25. Gate included `release:check`, `npm test`, parser/workspace tests, dashboard typecheck/build, root and dashboard audits with `0 vulnerabilities`, offline eval with regression gate `PASS (9/9 measured gate(s) held)`, and production static/API/WS smoke with `[smoke] RESULT: PASS`. |
+| `npm run test:e2e` | PASSED | Passed on 2026-06-25 after refreshing the local dashboard install for declared `@axe-core/playwright`; full Playwright suite completed `42 passed (1.9m)`, including a11y, agent panel, source review/export, package view/decision log, red flag drilldown, source gate, workflow launcher, workspace frame, and mobile smoke. |
 
 ## Live Codex Gate
 
@@ -144,3 +144,5 @@ Status values:
 - 2026-06-25: Broader `npm test` regression passed after Phase 7 fix; system-test now validates `phase-closing-artifacts` across core-plus, value-add, distressed, and failure-resume runs.
 - 2026-06-25: Phase 8 package export initially lacked first-class manifest and decision-trail fields in the exported JSON/markdown. Added `documentManifest`, `decisionTrail`, markdown sections, workspace assertions, and a dashboard package-view Decision Log assertion.
 - 2026-06-25: Phase 8 IC package passed `npm run test:workspace`, dashboard typecheck, targeted Playwright package export, targeted Playwright package view, temporary exporter artifact inspection, and broader `npm test`.
+- 2026-06-25: Offline gate `npm run verify:v3:core` passed, including release check, audits, dashboard production build, offline eval regression gate, and production smoke.
+- 2026-06-25: Offline gate `npm run test:e2e` initially failed because the locally installed dashboard `node_modules` lacked already-declared `@axe-core/playwright`; `npm --prefix dashboard install` restored the dependency without manifest changes, then the full suite passed `42 passed`.
