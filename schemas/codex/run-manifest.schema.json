@@ -45,6 +45,7 @@
     "dryRun": { "type": "boolean" },
     "maxRetries": { "type": "integer", "minimum": 0 },
     "retryBaseMs": { "type": "integer", "minimum": 0 },
+    "agentTimeoutMs": { "type": "integer", "minimum": 1 },
     "rerunFailed": { "type": "boolean" },
     "failedAgents": {
       "type": "array",
@@ -91,6 +92,7 @@
           "outputPath": { "$ref": "#/definitions/nullableRepoRelativePath" },
           "logPath": { "$ref": "#/definitions/nullableRepoRelativePath" },
           "exitCode": { "type": ["integer", "null"] },
+          "timedOut": { "type": "boolean" },
           "error": { "type": ["string", "null"] }
         },
         "additionalProperties": false

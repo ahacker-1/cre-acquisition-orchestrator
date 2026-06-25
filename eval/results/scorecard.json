@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-25T18:09:01.115Z",
-  "runId": "final8",
+  "generatedAt": "2026-06-25T20:32:58.413Z",
+  "runId": "eval-2026-06-25T20-32-52-043Z",
   "model": null,
-  "codexVersion": "codex-cli 0.132.0",
+  "codexVersion": "codex-cli 0.142.0",
   "evalVersion": "1.0.0",
   "layers": {
     "extraction": {
@@ -2444,7 +2444,7 @@
           "n": 8
         },
         "financialModelDependent": {
-          "mean": 0.5,
+          "mean": 0.25,
           "n": 8
         },
         "redFlagRecall": {
@@ -2456,7 +2456,7 @@
           "n": 5
         },
         "redFlagPrecision": {
-          "mean": 0.21786546059277828,
+          "mean": 0.20555607068434986,
           "n": 8
         },
         "dealbreakerRecall": {
@@ -2464,11 +2464,11 @@
           "n": 2
         },
         "icExactMatch": {
-          "mean": 0.875,
+          "mean": 1,
           "n": 8
         },
         "icDirectionalMatch": {
-          "mean": 0.875,
+          "mean": 1,
           "n": 8
         }
       },
@@ -2527,7 +2527,7 @@
                 {
                   "key": "dscr",
                   "expected": 1.29,
-                  "actual": 1.32,
+                  "actual": 1.29,
                   "class": "determinable",
                   "matched": true,
                   "tolerance": {
@@ -2538,16 +2538,16 @@
               ]
             },
             "modelDependent": {
-              "withinTolerance": 0,
+              "withinTolerance": 2,
               "total": 2,
-              "ratio": 0,
+              "ratio": 1,
               "perMetric": [
                 {
                   "key": "irr",
                   "expected": 0.0922,
-                  "actual": 0.129,
+                  "actual": 0.09300000000000001,
                   "class": "model-dependent",
-                  "matched": false,
+                  "matched": true,
                   "tolerance": {
                     "type": "absolute",
                     "abs": 0.03
@@ -2556,9 +2556,9 @@
                 {
                   "key": "equityMultiple",
                   "expected": 1.52,
-                  "actual": 1.77,
+                  "actual": 1.52,
                   "class": "model-dependent",
-                  "matched": false,
+                  "matched": true,
                   "tolerance": {
                     "type": "absolute",
                     "abs": 0.2
@@ -2603,7 +2603,7 @@
               {
                 "key": "dscr",
                 "expected": 1.29,
-                "actual": 1.32,
+                "actual": 1.29,
                 "class": "determinable",
                 "matched": true,
                 "tolerance": {
@@ -2614,9 +2614,9 @@
               {
                 "key": "irr",
                 "expected": 0.0922,
-                "actual": 0.129,
+                "actual": 0.09300000000000001,
                 "class": "model-dependent",
-                "matched": false,
+                "matched": true,
                 "tolerance": {
                   "type": "absolute",
                   "abs": 0.03
@@ -2625,9 +2625,9 @@
               {
                 "key": "equityMultiple",
                 "expected": 1.52,
-                "actual": 1.77,
+                "actual": 1.52,
                 "class": "model-dependent",
-                "matched": false,
+                "matched": true,
                 "tolerance": {
                   "type": "absolute",
                   "abs": 0.2
@@ -2638,18 +2638,18 @@
           "redFlags": {
             "recall": 1,
             "requiredRecall": 1,
-            "precision": 0.2914285714285714,
+            "precision": 0.24581005586592178,
             "total": 1,
             "detected": 1,
             "requiredTotal": 1,
             "requiredDetected": 1,
-            "falsePositiveCount": 124,
+            "falsePositiveCount": 135,
             "perFlag": [
               {
                 "id": "tenant-concentration",
                 "required": true,
                 "detected": true,
-                "matchedText": "CONDITIONAL. Foundry Yard clears the hard financial screens on T12 NOI: 60.0% LTV, 1.29x amortizing DSCR, and 9.41% debt yield, with no threshold dealbreaker. The rent roll also supports 94.17% physical occupancy and only modest 3.0% loss-to-lease. The condition is the revenue-quality risk: the OM says approximately 60% of residents work for Carolina Logistics, and current rent roll billing is $305k above T12 EGI, so the team needs employer-concentration and collections reconciliation before treating this as a clean core-plus proceed."
+                "matchedText": "CONDITIONAL. Foundry Yard passes the core-plus going-in debt screens on actual deal terms: 60.0% LTV, 1.29x amortizing DSCR, and 9.41% debt yield, with no hard threshold dealbreaker. The condition is rent-roll quality and concentration: the OM says ~60% of residents work for Carolina Logistics, while the rent roll lacks tenant/employer and lease-expiration detail needed to quantify correlated vacancy risk. Revenue also needs reconciliation because current rent roll billing annualizes materially above T-12 EGI."
               }
             ]
           },
@@ -2716,7 +2716,7 @@
                 {
                   "key": "dscr",
                   "expected": 1.23,
-                  "actual": 1.23,
+                  "actual": 1.25,
                   "class": "determinable",
                   "matched": true,
                   "tolerance": {
@@ -2734,7 +2734,7 @@
                 {
                   "key": "irr",
                   "expected": 0.0998,
-                  "actual": 0.064,
+                  "actual": null,
                   "class": "model-dependent",
                   "matched": false,
                   "tolerance": {
@@ -2745,7 +2745,7 @@
                 {
                   "key": "equityMultiple",
                   "expected": 1.57,
-                  "actual": 1.34,
+                  "actual": null,
                   "class": "model-dependent",
                   "matched": false,
                   "tolerance": {
@@ -2792,7 +2792,7 @@
               {
                 "key": "dscr",
                 "expected": 1.23,
-                "actual": 1.23,
+                "actual": 1.25,
                 "class": "determinable",
                 "matched": true,
                 "tolerance": {
@@ -2803,7 +2803,7 @@
               {
                 "key": "irr",
                 "expected": 0.0998,
-                "actual": 0.064,
+                "actual": null,
                 "class": "model-dependent",
                 "matched": false,
                 "tolerance": {
@@ -2814,7 +2814,7 @@
               {
                 "key": "equityMultiple",
                 "expected": 1.57,
-                "actual": 1.34,
+                "actual": null,
                 "class": "model-dependent",
                 "matched": false,
                 "tolerance": {
@@ -2827,18 +2827,18 @@
           "redFlags": {
             "recall": 1,
             "requiredRecall": 1,
-            "precision": 0.3114754098360656,
+            "precision": 0.2937853107344633,
             "total": 1,
             "detected": 1,
             "requiredTotal": 1,
             "requiredDetected": 1,
-            "falsePositiveCount": 126,
+            "falsePositiveCount": 125,
             "perFlag": [
               {
                 "id": "insurance-understated",
                 "required": true,
                 "detected": true,
-                "matchedText": "CONDITIONAL. Rent-roll fundamentals are workable: 120 units tie to the deal file, physical occupancy is 94.17%, and stated in-place rents are only 3.21% below market. The condition is economic cushion: going-in amortizing DSCR is 1.23x, below the 1.25x pass threshold though above the core-plus 1.20x strategy floor, and T12 EGI trails implied occupied scheduled rent by about $253K. No rent-roll dealbreaker is present, but proceed only after reconciling revenue leakage and re-cutting leverage after the known insurance issue is normalized."
+                "matchedText": "CONDITIONAL. The rent roll itself is acceptable: all 120 units are accounted for, physical occupancy is 94.17%, and loss-to-lease is modest at 3.21% of occupied market rent. The condition is not a rent-roll dealbreaker; it is that current scheduled rent does not reconcile cleanly to T12 EGI, and the offering memo/T12 flag an understated insurance line that could compress NOI. At the deal-file 6.00% amortizing debt rate, DSCR is 1.23x, above the core-plus 1.20x strategy minimum but below the general 1.25x pass threshold, so this is fixable through revenue reconciliation, corrected insurance, and final debt sizing."
               }
             ]
           },
@@ -2849,12 +2849,12 @@
             "perDealbreaker": []
           },
           "verdict": {
-            "exactMatch": false,
-            "directionalMatch": false,
+            "exactMatch": true,
+            "directionalMatch": true,
             "expected": "CONDITIONAL",
-            "actual": "FAIL",
+            "actual": "CONDITIONAL",
             "expectedDirection": "go",
-            "actualDirection": "no-go"
+            "actualDirection": "go"
           },
           "partialFailure": null
         },
@@ -2923,7 +2923,7 @@
                 {
                   "key": "irr",
                   "expected": 0.1099,
-                  "actual": 0.10300000000000001,
+                  "actual": 0.099,
                   "class": "model-dependent",
                   "matched": true,
                   "tolerance": {
@@ -2934,7 +2934,7 @@
                 {
                   "key": "equityMultiple",
                   "expected": 1.63,
-                  "actual": 1.58,
+                  "actual": 1.55,
                   "class": "model-dependent",
                   "matched": true,
                   "tolerance": {
@@ -2992,7 +2992,7 @@
               {
                 "key": "irr",
                 "expected": 0.1099,
-                "actual": 0.10300000000000001,
+                "actual": 0.099,
                 "class": "model-dependent",
                 "matched": true,
                 "tolerance": {
@@ -3003,7 +3003,7 @@
               {
                 "key": "equityMultiple",
                 "expected": 1.63,
-                "actual": 1.58,
+                "actual": 1.55,
                 "class": "model-dependent",
                 "matched": true,
                 "tolerance": {
@@ -3203,7 +3203,7 @@
             "detected": 0,
             "requiredTotal": 0,
             "requiredDetected": 0,
-            "falsePositiveCount": 192,
+            "falsePositiveCount": 188,
             "perFlag": []
           },
           "dealbreakers": {
@@ -3215,7 +3215,7 @@
                 "id": "dscr-sub-080",
                 "required": true,
                 "detected": true,
-                "matchedText": "FAIL. Sterling Mill Lofts fails on current rent-roll-supported economics: 70.83% physical occupancy, estimated 56.55% economic occupancy vs market GPR, 0.57x going-in DSCR on amortizing debt, 4.64% debt yield, and a 3.48% going-in cap rate. The pro forma could work if the 35 vacant units are leased and the capital stack is rebuilt, but the current package does not show a funded lease-up or bridge structure, and occupied-unit loss-to-lease is only moderate."
+                "matchedText": "CONDITIONAL. The rent roll supports an opportunistic turnaround thesis, but not a clean proceed: current occupancy is only 70.83%, going-in amortizing DSCR is 0.57x at the proposed 75% LTV, and the identified loss-to-lease is moderate rather than enough by itself to fix coverage. This is not a rent-roll PASS until the team verifies a funded lease-up / bridge structure and reconciles the rent roll to actual collections."
               }
             ]
           },
@@ -3287,16 +3287,16 @@
               ]
             },
             "modelDependent": {
-              "withinTolerance": 2,
+              "withinTolerance": 0,
               "total": 2,
-              "ratio": 1,
+              "ratio": 0,
               "perMetric": [
                 {
                   "key": "irr",
                   "expected": -0.99,
-                  "actual": -0.99,
+                  "actual": null,
                   "class": "model-dependent",
-                  "matched": true,
+                  "matched": false,
                   "tolerance": {
                     "type": "absolute",
                     "abs": 0.03
@@ -3305,9 +3305,9 @@
                 {
                   "key": "equityMultiple",
                   "expected": -2.38,
-                  "actual": -2.38,
+                  "actual": null,
                   "class": "model-dependent",
-                  "matched": true,
+                  "matched": false,
                   "tolerance": {
                     "type": "absolute",
                     "abs": 0.2
@@ -3363,9 +3363,9 @@
               {
                 "key": "irr",
                 "expected": -0.99,
-                "actual": -0.99,
+                "actual": null,
                 "class": "model-dependent",
-                "matched": true,
+                "matched": false,
                 "tolerance": {
                   "type": "absolute",
                   "abs": 0.03
@@ -3374,9 +3374,9 @@
               {
                 "key": "equityMultiple",
                 "expected": -2.38,
-                "actual": -2.38,
+                "actual": null,
                 "class": "model-dependent",
-                "matched": true,
+                "matched": false,
                 "tolerance": {
                   "type": "absolute",
                   "abs": 0.2
@@ -3387,18 +3387,18 @@
           "redFlags": {
             "recall": 1,
             "requiredRecall": null,
-            "precision": 0.12041884816753927,
+            "precision": 0.11764705882352941,
             "total": 1,
             "detected": 1,
             "requiredTotal": 0,
             "requiredDetected": 0,
-            "falsePositiveCount": 168,
+            "falsePositiveCount": 165,
             "perFlag": [
               {
                 "id": "deferred-maintenance",
                 "required": false,
                 "detected": true,
-                "matchedText": "FAIL. Harborview is a no-go as structured: the rent roll supports 62.0% physical occupancy, and the deal file explicitly says the asset is financed with permanent debt and no bridge/lease-up capital. That directly hits the threshold dealbreaker for occupancy below 70% without a committed bridge structure or funded lease-up plan, and the going-in amortizing DSCR is only 0.10x."
+                "matchedText": "FAIL. Harborview Terrace hits a defined dealbreaker in `config/thresholds.json`: occupancy below 70% without a committed bridge structure or funded lease-up plan. The local rent roll confirms 62.0% occupancy, and the deal file explicitly states permanent debt with no bridge/lease-up capital. On current NOI, going-in amortizing DSCR is only 0.10x, so the rent-roll upside is not enough to make this proceedable as structured."
               }
             ]
           },
@@ -3411,7 +3411,7 @@
                 "id": "occupancy-collapse-no-bridge",
                 "required": true,
                 "detected": true,
-                "matchedText": "FAIL. Harborview is a no-go as structured: the rent roll supports 62.0% physical occupancy, and the deal file explicitly says the asset is financed with permanent debt and no bridge/lease-up capital. That directly hits the threshold dealbreaker for occupancy below 70% without a committed bridge structure or funded lease-up plan, and the going-in amortizing DSCR is only 0.10x."
+                "matchedText": "FAIL. Harborview Terrace hits a defined dealbreaker in `config/thresholds.json`: occupancy below 70% without a committed bridge structure or funded lease-up plan. The local rent roll confirms 62.0% occupancy, and the deal file explicitly states permanent debt with no bridge/lease-up capital. On current NOI, going-in amortizing DSCR is only 0.10x, so the rent-roll upside is not enough to make this proceedable as structured."
               }
             ]
           },
@@ -3472,7 +3472,7 @@
                 {
                   "key": "dscr",
                   "expected": 1.15,
-                  "actual": 1.11,
+                  "actual": 1.15,
                   "class": "determinable",
                   "matched": true,
                   "tolerance": {
@@ -3483,16 +3483,16 @@
               ]
             },
             "modelDependent": {
-              "withinTolerance": 2,
+              "withinTolerance": 0,
               "total": 2,
-              "ratio": 1,
+              "ratio": 0,
               "perMetric": [
                 {
                   "key": "irr",
                   "expected": 0.1069,
-                  "actual": 0.106,
+                  "actual": null,
                   "class": "model-dependent",
-                  "matched": true,
+                  "matched": false,
                   "tolerance": {
                     "type": "absolute",
                     "abs": 0.03
@@ -3501,9 +3501,9 @@
                 {
                   "key": "equityMultiple",
                   "expected": 1.63,
-                  "actual": 1.62,
+                  "actual": null,
                   "class": "model-dependent",
-                  "matched": true,
+                  "matched": false,
                   "tolerance": {
                     "type": "absolute",
                     "abs": 0.2
@@ -3548,7 +3548,7 @@
               {
                 "key": "dscr",
                 "expected": 1.15,
-                "actual": 1.11,
+                "actual": 1.15,
                 "class": "determinable",
                 "matched": true,
                 "tolerance": {
@@ -3559,9 +3559,9 @@
               {
                 "key": "irr",
                 "expected": 0.1069,
-                "actual": 0.106,
+                "actual": null,
                 "class": "model-dependent",
-                "matched": true,
+                "matched": false,
                 "tolerance": {
                   "type": "absolute",
                   "abs": 0.03
@@ -3570,9 +3570,9 @@
               {
                 "key": "equityMultiple",
                 "expected": 1.63,
-                "actual": 1.62,
+                "actual": null,
                 "class": "model-dependent",
-                "matched": true,
+                "matched": false,
                 "tolerance": {
                   "type": "absolute",
                   "abs": 0.2
@@ -3594,13 +3594,13 @@
                 "id": "missing-phase-1-esa",
                 "required": true,
                 "detected": true,
-                "matchedText": "Phase I ESA is missing per the deal context and no Phase I document was found in the deal documents."
+                "matchedText": "CONDITIONAL. The rent roll supports a real value-add thesis, but not an unconditional pass: 89.84% occupancy is just under the 90% acceptable occupancy threshold, going-in amortizing DSCR is 1.15x against the 1.25x pass threshold, and debt yield is 8.53% against the 9.0% pass threshold. This is not a dealbreaker because LTV is clean at 70%, DSCR is above the 1.10x conditional band and far above the 0.80 dealbreaker level, and pro forma NOI would support a 1.44x amortizing DSCR if lease-up/rent capture is verified. Missing snapshot/source artifacts lower confidence, but the verdict is conditional because current coverage and revenue validation are marginal."
               },
               {
                 "id": "om-t12-noi-conflict",
                 "required": true,
                 "detected": true,
-                "matchedText": "CONDITIONAL. Cedar Industrial Lofts is not a rent-roll dealbreaker: 89.84% occupancy is just below the 90% acceptable threshold but well above distress levels, LTV is clean at 70%, and going-in amortizing DSCR is 1.15x, inside the conditional band rather than fail territory. The value-add thesis is plausible because occupied rents are 6.58% below stated market rent, but the deal needs revenue reconciliation before proceeding because the current rent-roll run-rate is materially higher than T12 EGI."
+                "matchedText": "CONDITIONAL. The rent roll supports a real value-add thesis, but not an unconditional pass: 89.84% occupancy is just under the 90% acceptable occupancy threshold, going-in amortizing DSCR is 1.15x against the 1.25x pass threshold, and debt yield is 8.53% against the 9.0% pass threshold. This is not a dealbreaker because LTV is clean at 70%, DSCR is above the 1.10x conditional band and far above the 0.80 dealbreaker level, and pro forma NOI would support a 1.44x amortizing DSCR if lease-up/rent capture is verified. Missing snapshot/source artifacts lower confidence, but the verdict is conditional because current coverage and revenue validation are marginal."
               }
             ]
           },
@@ -3678,16 +3678,16 @@
               ]
             },
             "modelDependent": {
-              "withinTolerance": 2,
+              "withinTolerance": 0,
               "total": 2,
-              "ratio": 1,
+              "ratio": 0,
               "perMetric": [
                 {
                   "key": "irr",
                   "expected": 0.0691,
-                  "actual": 0.0691,
+                  "actual": null,
                   "class": "model-dependent",
-                  "matched": true,
+                  "matched": false,
                   "tolerance": {
                     "type": "absolute",
                     "abs": 0.03
@@ -3696,9 +3696,9 @@
                 {
                   "key": "equityMultiple",
                   "expected": 1.42,
-                  "actual": 1.42,
+                  "actual": null,
                   "class": "model-dependent",
-                  "matched": true,
+                  "matched": false,
                   "tolerance": {
                     "type": "absolute",
                     "abs": 0.2
@@ -3754,9 +3754,9 @@
               {
                 "key": "irr",
                 "expected": 0.0691,
-                "actual": 0.0691,
+                "actual": null,
                 "class": "model-dependent",
-                "matched": true,
+                "matched": false,
                 "tolerance": {
                   "type": "absolute",
                   "abs": 0.03
@@ -3765,9 +3765,9 @@
               {
                 "key": "equityMultiple",
                 "expected": 1.42,
-                "actual": 1.42,
+                "actual": null,
                 "class": "model-dependent",
-                "matched": true,
+                "matched": false,
                 "tolerance": {
                   "type": "absolute",
                   "abs": 0.2
@@ -3778,18 +3778,18 @@
           "redFlags": {
             "recall": 1,
             "requiredRecall": 1,
-            "precision": 0.20108695652173914,
+            "precision": 0.1443850267379679,
             "total": 1,
             "detected": 1,
             "requiredTotal": 1,
             "requiredDetected": 1,
-            "falsePositiveCount": 147,
+            "falsePositiveCount": 160,
             "perFlag": [
               {
                 "id": "over-levered-ltv",
                 "required": true,
                 "detected": true,
-                "matchedText": "CONDITIONAL. Crestline Park has a real but moderate rent-roll upside story: 91.0% physical occupancy, $204,480 of annual occupied-unit loss-to-lease, and another $288,960 of vacant-unit market rent potential. The issue is not the rent roll by itself; it is the leverage placed on it. At 82% LTV, going-in DSCR is only 0.85x on amortizing debt and 0.99x interest-only, while debt yield is 6.36%. Because this is a value-add deal with a stated pro forma NOI that would support coverage if achieved, this is not a FAIL, but proceeds should be re-cut or conditioned on verified collections, lease-up, and lower leverage."
+                "matchedText": "CONDITIONAL — Crestline Park has a real but moderate rent-roll value-add case: 91.03% physical occupancy, $204,480 annual occupied-unit loss-to-lease, and pro forma NOI rising to $1.56M. The deal is not a FAIL under the stated rule because it has a clear value-add thesis and going-in amortizing DSCR is above the 0.80 dealbreaker line, but the 82% LTV, 0.85x amortizing DSCR, 0.99x IO DSCR, and weak EGI capture require a financing recut and rent-roll/T12 reconciliation before proceeding."
               }
             ]
           },
@@ -3856,7 +3856,7 @@
                 {
                   "key": "dscr",
                   "expected": 1.13,
-                  "actual": 1.1,
+                  "actual": 1.13,
                   "class": "determinable",
                   "matched": true,
                   "tolerance": {
@@ -3874,7 +3874,7 @@
                 {
                   "key": "irr",
                   "expected": 0.1124,
-                  "actual": 0.18899999999999997,
+                  "actual": null,
                   "class": "model-dependent",
                   "matched": false,
                   "tolerance": {
@@ -3885,7 +3885,7 @@
                 {
                   "key": "equityMultiple",
                   "expected": 1.67,
-                  "actual": 2.27,
+                  "actual": null,
                   "class": "model-dependent",
                   "matched": false,
                   "tolerance": {
@@ -3932,7 +3932,7 @@
               {
                 "key": "dscr",
                 "expected": 1.13,
-                "actual": 1.1,
+                "actual": 1.13,
                 "class": "determinable",
                 "matched": true,
                 "tolerance": {
@@ -3943,7 +3943,7 @@
               {
                 "key": "irr",
                 "expected": 0.1124,
-                "actual": 0.18899999999999997,
+                "actual": null,
                 "class": "model-dependent",
                 "matched": false,
                 "tolerance": {
@@ -3954,7 +3954,7 @@
               {
                 "key": "equityMultiple",
                 "expected": 1.67,
-                "actual": 2.27,
+                "actual": null,
                 "class": "model-dependent",
                 "matched": false,
                 "tolerance": {
@@ -3967,18 +3967,18 @@
           "redFlags": {
             "recall": 1,
             "requiredRecall": 1,
-            "precision": 0.21195652173913043,
+            "precision": 0.23626373626373626,
             "total": 1,
             "detected": 1,
             "requiredTotal": 1,
             "requiredDetected": 1,
-            "falsePositiveCount": 145,
+            "falsePositiveCount": 139,
             "perFlag": [
               {
                 "id": "dscr-sub-120",
                 "required": true,
                 "detected": true,
-                "matchedText": "CONDITIONAL - Brookhaven Flats has a valid value-add rent-roll thesis, not a rent-roll dealbreaker: 150 units reconcile, occupancy is 87.33%, LTV is 72%, and going-in amortizing DSCR is 1.13x, which is conditional but above the value-add minimum and well above the 0.80 dealbreaker line. The issue is execution risk: current occupancy is below the 90% acceptable benchmark, scenario stress pushes it to 84.33%, and the provided rent roll is too skeletal to validate lease rollover, concessions, tenant quality, or the full EGI bridge."
+                "matchedText": "CONDITIONAL. Brookhaven Flats clears the hard rent-roll thresholds: 87.33% physical occupancy is above the 70% dealbreaker line, 72.0% LTV is within pass range, and going-in amortizing DSCR is 1.13x, which is thin but above the value-add minimum and not a fail. The deal depends on proving the 19-unit lease-up, reconciling T-12 EGI to current scheduled rent, and validating market rents; absent those, the rent-roll thesis is plausible but not clean enough for PASS."
               }
             ]
           },
@@ -6407,7 +6407,7 @@
             {
               "key": "dscr",
               "expected": 1.29,
-              "actual": 1.32,
+              "actual": 1.29,
               "class": "determinable",
               "matched": true,
               "tolerance": {
@@ -6418,16 +6418,16 @@
           ]
         },
         "modelDependent": {
-          "withinTolerance": 0,
+          "withinTolerance": 2,
           "total": 2,
-          "ratio": 0,
+          "ratio": 1,
           "perMetric": [
             {
               "key": "irr",
               "expected": 0.0922,
-              "actual": 0.129,
+              "actual": 0.09300000000000001,
               "class": "model-dependent",
-              "matched": false,
+              "matched": true,
               "tolerance": {
                 "type": "absolute",
                 "abs": 0.03
@@ -6436,9 +6436,9 @@
             {
               "key": "equityMultiple",
               "expected": 1.52,
-              "actual": 1.77,
+              "actual": 1.52,
               "class": "model-dependent",
-              "matched": false,
+              "matched": true,
               "tolerance": {
                 "type": "absolute",
                 "abs": 0.2
@@ -6483,7 +6483,7 @@
           {
             "key": "dscr",
             "expected": 1.29,
-            "actual": 1.32,
+            "actual": 1.29,
             "class": "determinable",
             "matched": true,
             "tolerance": {
@@ -6494,9 +6494,9 @@
           {
             "key": "irr",
             "expected": 0.0922,
-            "actual": 0.129,
+            "actual": 0.09300000000000001,
             "class": "model-dependent",
-            "matched": false,
+            "matched": true,
             "tolerance": {
               "type": "absolute",
               "abs": 0.03
@@ -6505,9 +6505,9 @@
           {
             "key": "equityMultiple",
             "expected": 1.52,
-            "actual": 1.77,
+            "actual": 1.52,
             "class": "model-dependent",
-            "matched": false,
+            "matched": true,
             "tolerance": {
               "type": "absolute",
               "abs": 0.2
@@ -6518,18 +6518,18 @@
       "redFlags": {
         "recall": 1,
         "requiredRecall": 1,
-        "precision": 0.2914285714285714,
+        "precision": 0.24581005586592178,
         "total": 1,
         "detected": 1,
         "requiredTotal": 1,
         "requiredDetected": 1,
-        "falsePositiveCount": 124,
+        "falsePositiveCount": 135,
         "perFlag": [
           {
             "id": "tenant-concentration",
             "required": true,
             "detected": true,
-            "matchedText": "CONDITIONAL. Foundry Yard clears the hard financial screens on T12 NOI: 60.0% LTV, 1.29x amortizing DSCR, and 9.41% debt yield, with no threshold dealbreaker. The rent roll also supports 94.17% physical occupancy and only modest 3.0% loss-to-lease. The condition is the revenue-quality risk: the OM says approximately 60% of residents work for Carolina Logistics, and current rent roll billing is $305k above T12 EGI, so the team needs employer-concentration and collections reconciliation before treating this as a clean core-plus proceed."
+            "matchedText": "CONDITIONAL. Foundry Yard passes the core-plus going-in debt screens on actual deal terms: 60.0% LTV, 1.29x amortizing DSCR, and 9.41% debt yield, with no hard threshold dealbreaker. The condition is rent-roll quality and concentration: the OM says ~60% of residents work for Carolina Logistics, while the rent roll lacks tenant/employer and lease-expiration detail needed to quantify correlated vacancy risk. Revenue also needs reconciliation because current rent roll billing annualizes materially above T-12 EGI."
           }
         ]
       },
@@ -6596,7 +6596,7 @@
             {
               "key": "dscr",
               "expected": 1.23,
-              "actual": 1.23,
+              "actual": 1.25,
               "class": "determinable",
               "matched": true,
               "tolerance": {
@@ -6614,7 +6614,7 @@
             {
               "key": "irr",
               "expected": 0.0998,
-              "actual": 0.064,
+              "actual": null,
               "class": "model-dependent",
               "matched": false,
               "tolerance": {
@@ -6625,7 +6625,7 @@
             {
               "key": "equityMultiple",
               "expected": 1.57,
-              "actual": 1.34,
+              "actual": null,
               "class": "model-dependent",
               "matched": false,
               "tolerance": {
@@ -6672,7 +6672,7 @@
           {
             "key": "dscr",
             "expected": 1.23,
-            "actual": 1.23,
+            "actual": 1.25,
             "class": "determinable",
             "matched": true,
             "tolerance": {
@@ -6683,7 +6683,7 @@
           {
             "key": "irr",
             "expected": 0.0998,
-            "actual": 0.064,
+            "actual": null,
             "class": "model-dependent",
             "matched": false,
             "tolerance": {
@@ -6694,7 +6694,7 @@
           {
             "key": "equityMultiple",
             "expected": 1.57,
-            "actual": 1.34,
+            "actual": null,
             "class": "model-dependent",
             "matched": false,
             "tolerance": {
@@ -6707,18 +6707,18 @@
       "redFlags": {
         "recall": 1,
         "requiredRecall": 1,
-        "precision": 0.3114754098360656,
+        "precision": 0.2937853107344633,
         "total": 1,
         "detected": 1,
         "requiredTotal": 1,
         "requiredDetected": 1,
-        "falsePositiveCount": 126,
+        "falsePositiveCount": 125,
         "perFlag": [
           {
             "id": "insurance-understated",
             "required": true,
             "detected": true,
-            "matchedText": "CONDITIONAL. Rent-roll fundamentals are workable: 120 units tie to the deal file, physical occupancy is 94.17%, and stated in-place rents are only 3.21% below market. The condition is economic cushion: going-in amortizing DSCR is 1.23x, below the 1.25x pass threshold though above the core-plus 1.20x strategy floor, and T12 EGI trails implied occupied scheduled rent by about $253K. No rent-roll dealbreaker is present, but proceed only after reconciling revenue leakage and re-cutting leverage after the known insurance issue is normalized."
+            "matchedText": "CONDITIONAL. The rent roll itself is acceptable: all 120 units are accounted for, physical occupancy is 94.17%, and loss-to-lease is modest at 3.21% of occupied market rent. The condition is not a rent-roll dealbreaker; it is that current scheduled rent does not reconcile cleanly to T12 EGI, and the offering memo/T12 flag an understated insurance line that could compress NOI. At the deal-file 6.00% amortizing debt rate, DSCR is 1.23x, above the core-plus 1.20x strategy minimum but below the general 1.25x pass threshold, so this is fixable through revenue reconciliation, corrected insurance, and final debt sizing."
           }
         ]
       },
@@ -6729,12 +6729,12 @@
         "perDealbreaker": []
       },
       "verdict": {
-        "exactMatch": false,
-        "directionalMatch": false,
+        "exactMatch": true,
+        "directionalMatch": true,
         "expected": "CONDITIONAL",
-        "actual": "FAIL",
+        "actual": "CONDITIONAL",
         "expectedDirection": "go",
-        "actualDirection": "no-go"
+        "actualDirection": "go"
       },
       "partialFailure": null
     },
@@ -6803,7 +6803,7 @@
             {
               "key": "irr",
               "expected": 0.1099,
-              "actual": 0.10300000000000001,
+              "actual": 0.099,
               "class": "model-dependent",
               "matched": true,
               "tolerance": {
@@ -6814,7 +6814,7 @@
             {
               "key": "equityMultiple",
               "expected": 1.63,
-              "actual": 1.58,
+              "actual": 1.55,
               "class": "model-dependent",
               "matched": true,
               "tolerance": {
@@ -6872,7 +6872,7 @@
           {
             "key": "irr",
             "expected": 0.1099,
-            "actual": 0.10300000000000001,
+            "actual": 0.099,
             "class": "model-dependent",
             "matched": true,
             "tolerance": {
@@ -6883,7 +6883,7 @@
           {
             "key": "equityMultiple",
             "expected": 1.63,
-            "actual": 1.58,
+            "actual": 1.55,
             "class": "model-dependent",
             "matched": true,
             "tolerance": {
@@ -7083,7 +7083,7 @@
         "detected": 0,
         "requiredTotal": 0,
         "requiredDetected": 0,
-        "falsePositiveCount": 192,
+        "falsePositiveCount": 188,
         "perFlag": []
       },
       "dealbreakers": {
@@ -7095,7 +7095,7 @@
             "id": "dscr-sub-080",
             "required": true,
             "detected": true,
-            "matchedText": "FAIL. Sterling Mill Lofts fails on current rent-roll-supported economics: 70.83% physical occupancy, estimated 56.55% economic occupancy vs market GPR, 0.57x going-in DSCR on amortizing debt, 4.64% debt yield, and a 3.48% going-in cap rate. The pro forma could work if the 35 vacant units are leased and the capital stack is rebuilt, but the current package does not show a funded lease-up or bridge structure, and occupied-unit loss-to-lease is only moderate."
+            "matchedText": "CONDITIONAL. The rent roll supports an opportunistic turnaround thesis, but not a clean proceed: current occupancy is only 70.83%, going-in amortizing DSCR is 0.57x at the proposed 75% LTV, and the identified loss-to-lease is moderate rather than enough by itself to fix coverage. This is not a rent-roll PASS until the team verifies a funded lease-up / bridge structure and reconciles the rent roll to actual collections."
           }
         ]
       },
@@ -7167,16 +7167,16 @@
           ]
         },
         "modelDependent": {
-          "withinTolerance": 2,
+          "withinTolerance": 0,
           "total": 2,
-          "ratio": 1,
+          "ratio": 0,
           "perMetric": [
             {
               "key": "irr",
               "expected": -0.99,
-              "actual": -0.99,
+              "actual": null,
               "class": "model-dependent",
-              "matched": true,
+              "matched": false,
               "tolerance": {
                 "type": "absolute",
                 "abs": 0.03
@@ -7185,9 +7185,9 @@
             {
               "key": "equityMultiple",
               "expected": -2.38,
-              "actual": -2.38,
+              "actual": null,
               "class": "model-dependent",
-              "matched": true,
+              "matched": false,
               "tolerance": {
                 "type": "absolute",
                 "abs": 0.2
@@ -7243,9 +7243,9 @@
           {
             "key": "irr",
             "expected": -0.99,
-            "actual": -0.99,
+            "actual": null,
             "class": "model-dependent",
-            "matched": true,
+            "matched": false,
             "tolerance": {
               "type": "absolute",
               "abs": 0.03
@@ -7254,9 +7254,9 @@
           {
             "key": "equityMultiple",
             "expected": -2.38,
-            "actual": -2.38,
+            "actual": null,
             "class": "model-dependent",
-            "matched": true,
+            "matched": false,
             "tolerance": {
               "type": "absolute",
               "abs": 0.2
@@ -7267,18 +7267,18 @@
       "redFlags": {
         "recall": 1,
         "requiredRecall": null,
-        "precision": 0.12041884816753927,
+        "precision": 0.11764705882352941,
         "total": 1,
         "detected": 1,
         "requiredTotal": 0,
         "requiredDetected": 0,
-        "falsePositiveCount": 168,
+        "falsePositiveCount": 165,
         "perFlag": [
           {
             "id": "deferred-maintenance",
             "required": false,
             "detected": true,
-            "matchedText": "FAIL. Harborview is a no-go as structured: the rent roll supports 62.0% physical occupancy, and the deal file explicitly says the asset is financed with permanent debt and no bridge/lease-up capital. That directly hits the threshold dealbreaker for occupancy below 70% without a committed bridge structure or funded lease-up plan, and the going-in amortizing DSCR is only 0.10x."
+            "matchedText": "FAIL. Harborview Terrace hits a defined dealbreaker in `config/thresholds.json`: occupancy below 70% without a committed bridge structure or funded lease-up plan. The local rent roll confirms 62.0% occupancy, and the deal file explicitly states permanent debt with no bridge/lease-up capital. On current NOI, going-in amortizing DSCR is only 0.10x, so the rent-roll upside is not enough to make this proceedable as structured."
           }
         ]
       },
@@ -7291,7 +7291,7 @@
             "id": "occupancy-collapse-no-bridge",
             "required": true,
             "detected": true,
-            "matchedText": "FAIL. Harborview is a no-go as structured: the rent roll supports 62.0% physical occupancy, and the deal file explicitly says the asset is financed with permanent debt and no bridge/lease-up capital. That directly hits the threshold dealbreaker for occupancy below 70% without a committed bridge structure or funded lease-up plan, and the going-in amortizing DSCR is only 0.10x."
+            "matchedText": "FAIL. Harborview Terrace hits a defined dealbreaker in `config/thresholds.json`: occupancy below 70% without a committed bridge structure or funded lease-up plan. The local rent roll confirms 62.0% occupancy, and the deal file explicitly states permanent debt with no bridge/lease-up capital. On current NOI, going-in amortizing DSCR is only 0.10x, so the rent-roll upside is not enough to make this proceedable as structured."
           }
         ]
       },
@@ -7352,7 +7352,7 @@
             {
               "key": "dscr",
               "expected": 1.15,
-              "actual": 1.11,
+              "actual": 1.15,
               "class": "determinable",
               "matched": true,
               "tolerance": {
@@ -7363,16 +7363,16 @@
           ]
         },
         "modelDependent": {
-          "withinTolerance": 2,
+          "withinTolerance": 0,
           "total": 2,
-          "ratio": 1,
+          "ratio": 0,
           "perMetric": [
             {
               "key": "irr",
               "expected": 0.1069,
-              "actual": 0.106,
+              "actual": null,
               "class": "model-dependent",
-              "matched": true,
+              "matched": false,
               "tolerance": {
                 "type": "absolute",
                 "abs": 0.03
@@ -7381,9 +7381,9 @@
             {
               "key": "equityMultiple",
               "expected": 1.63,
-              "actual": 1.62,
+              "actual": null,
               "class": "model-dependent",
-              "matched": true,
+              "matched": false,
               "tolerance": {
                 "type": "absolute",
                 "abs": 0.2
@@ -7428,7 +7428,7 @@
           {
             "key": "dscr",
             "expected": 1.15,
-            "actual": 1.11,
+            "actual": 1.15,
             "class": "determinable",
             "matched": true,
             "tolerance": {
@@ -7439,9 +7439,9 @@
           {
             "key": "irr",
             "expected": 0.1069,
-            "actual": 0.106,
+            "actual": null,
             "class": "model-dependent",
-            "matched": true,
+            "matched": false,
             "tolerance": {
               "type": "absolute",
               "abs": 0.03
@@ -7450,9 +7450,9 @@
           {
             "key": "equityMultiple",
             "expected": 1.63,
-            "actual": 1.62,
+            "actual": null,
             "class": "model-dependent",
-            "matched": true,
+            "matched": false,
             "tolerance": {
               "type": "absolute",
               "abs": 0.2
@@ -7474,13 +7474,13 @@
             "id": "missing-phase-1-esa",
             "required": true,
             "detected": true,
-            "matchedText": "Phase I ESA is missing per the deal context and no Phase I document was found in the deal documents."
+            "matchedText": "CONDITIONAL. The rent roll supports a real value-add thesis, but not an unconditional pass: 89.84% occupancy is just under the 90% acceptable occupancy threshold, going-in amortizing DSCR is 1.15x against the 1.25x pass threshold, and debt yield is 8.53% against the 9.0% pass threshold. This is not a dealbreaker because LTV is clean at 70%, DSCR is above the 1.10x conditional band and far above the 0.80 dealbreaker level, and pro forma NOI would support a 1.44x amortizing DSCR if lease-up/rent capture is verified. Missing snapshot/source artifacts lower confidence, but the verdict is conditional because current coverage and revenue validation are marginal."
           },
           {
             "id": "om-t12-noi-conflict",
             "required": true,
             "detected": true,
-            "matchedText": "CONDITIONAL. Cedar Industrial Lofts is not a rent-roll dealbreaker: 89.84% occupancy is just below the 90% acceptable threshold but well above distress levels, LTV is clean at 70%, and going-in amortizing DSCR is 1.15x, inside the conditional band rather than fail territory. The value-add thesis is plausible because occupied rents are 6.58% below stated market rent, but the deal needs revenue reconciliation before proceeding because the current rent-roll run-rate is materially higher than T12 EGI."
+            "matchedText": "CONDITIONAL. The rent roll supports a real value-add thesis, but not an unconditional pass: 89.84% occupancy is just under the 90% acceptable occupancy threshold, going-in amortizing DSCR is 1.15x against the 1.25x pass threshold, and debt yield is 8.53% against the 9.0% pass threshold. This is not a dealbreaker because LTV is clean at 70%, DSCR is above the 1.10x conditional band and far above the 0.80 dealbreaker level, and pro forma NOI would support a 1.44x amortizing DSCR if lease-up/rent capture is verified. Missing snapshot/source artifacts lower confidence, but the verdict is conditional because current coverage and revenue validation are marginal."
           }
         ]
       },
@@ -7558,16 +7558,16 @@
           ]
         },
         "modelDependent": {
-          "withinTolerance": 2,
+          "withinTolerance": 0,
           "total": 2,
-          "ratio": 1,
+          "ratio": 0,
           "perMetric": [
             {
               "key": "irr",
               "expected": 0.0691,
-              "actual": 0.0691,
+              "actual": null,
               "class": "model-dependent",
-              "matched": true,
+              "matched": false,
               "tolerance": {
                 "type": "absolute",
                 "abs": 0.03
@@ -7576,9 +7576,9 @@
             {
               "key": "equityMultiple",
               "expected": 1.42,
-              "actual": 1.42,
+              "actual": null,
               "class": "model-dependent",
-              "matched": true,
+              "matched": false,
               "tolerance": {
                 "type": "absolute",
                 "abs": 0.2
@@ -7634,9 +7634,9 @@
           {
             "key": "irr",
             "expected": 0.0691,
-            "actual": 0.0691,
+            "actual": null,
             "class": "model-dependent",
-            "matched": true,
+            "matched": false,
             "tolerance": {
               "type": "absolute",
               "abs": 0.03
@@ -7645,9 +7645,9 @@
           {
             "key": "equityMultiple",
             "expected": 1.42,
-            "actual": 1.42,
+            "actual": null,
             "class": "model-dependent",
-            "matched": true,
+            "matched": false,
             "tolerance": {
               "type": "absolute",
               "abs": 0.2
@@ -7658,18 +7658,18 @@
       "redFlags": {
         "recall": 1,
         "requiredRecall": 1,
-        "precision": 0.20108695652173914,
+        "precision": 0.1443850267379679,
         "total": 1,
         "detected": 1,
         "requiredTotal": 1,
         "requiredDetected": 1,
-        "falsePositiveCount": 147,
+        "falsePositiveCount": 160,
         "perFlag": [
           {
             "id": "over-levered-ltv",
             "required": true,
             "detected": true,
-            "matchedText": "CONDITIONAL. Crestline Park has a real but moderate rent-roll upside story: 91.0% physical occupancy, $204,480 of annual occupied-unit loss-to-lease, and another $288,960 of vacant-unit market rent potential. The issue is not the rent roll by itself; it is the leverage placed on it. At 82% LTV, going-in DSCR is only 0.85x on amortizing debt and 0.99x interest-only, while debt yield is 6.36%. Because this is a value-add deal with a stated pro forma NOI that would support coverage if achieved, this is not a FAIL, but proceeds should be re-cut or conditioned on verified collections, lease-up, and lower leverage."
+            "matchedText": "CONDITIONAL — Crestline Park has a real but moderate rent-roll value-add case: 91.03% physical occupancy, $204,480 annual occupied-unit loss-to-lease, and pro forma NOI rising to $1.56M. The deal is not a FAIL under the stated rule because it has a clear value-add thesis and going-in amortizing DSCR is above the 0.80 dealbreaker line, but the 82% LTV, 0.85x amortizing DSCR, 0.99x IO DSCR, and weak EGI capture require a financing recut and rent-roll/T12 reconciliation before proceeding."
           }
         ]
       },
@@ -7736,7 +7736,7 @@
             {
               "key": "dscr",
               "expected": 1.13,
-              "actual": 1.1,
+              "actual": 1.13,
               "class": "determinable",
               "matched": true,
               "tolerance": {
@@ -7754,7 +7754,7 @@
             {
               "key": "irr",
               "expected": 0.1124,
-              "actual": 0.18899999999999997,
+              "actual": null,
               "class": "model-dependent",
               "matched": false,
               "tolerance": {
@@ -7765,7 +7765,7 @@
             {
               "key": "equityMultiple",
               "expected": 1.67,
-              "actual": 2.27,
+              "actual": null,
               "class": "model-dependent",
               "matched": false,
               "tolerance": {
@@ -7812,7 +7812,7 @@
           {
             "key": "dscr",
             "expected": 1.13,
-            "actual": 1.1,
+            "actual": 1.13,
             "class": "determinable",
             "matched": true,
             "tolerance": {
@@ -7823,7 +7823,7 @@
           {
             "key": "irr",
             "expected": 0.1124,
-            "actual": 0.18899999999999997,
+            "actual": null,
             "class": "model-dependent",
             "matched": false,
             "tolerance": {
@@ -7834,7 +7834,7 @@
           {
             "key": "equityMultiple",
             "expected": 1.67,
-            "actual": 2.27,
+            "actual": null,
             "class": "model-dependent",
             "matched": false,
             "tolerance": {
@@ -7847,18 +7847,18 @@
       "redFlags": {
         "recall": 1,
         "requiredRecall": 1,
-        "precision": 0.21195652173913043,
+        "precision": 0.23626373626373626,
         "total": 1,
         "detected": 1,
         "requiredTotal": 1,
         "requiredDetected": 1,
-        "falsePositiveCount": 145,
+        "falsePositiveCount": 139,
         "perFlag": [
           {
             "id": "dscr-sub-120",
             "required": true,
             "detected": true,
-            "matchedText": "CONDITIONAL - Brookhaven Flats has a valid value-add rent-roll thesis, not a rent-roll dealbreaker: 150 units reconcile, occupancy is 87.33%, LTV is 72%, and going-in amortizing DSCR is 1.13x, which is conditional but above the value-add minimum and well above the 0.80 dealbreaker line. The issue is execution risk: current occupancy is below the 90% acceptable benchmark, scenario stress pushes it to 84.33%, and the provided rent roll is too skeletal to validate lease rollover, concessions, tenant quality, or the full EGI bridge."
+            "matchedText": "CONDITIONAL. Brookhaven Flats clears the hard rent-roll thresholds: 87.33% physical occupancy is above the 70% dealbreaker line, 72.0% LTV is within pass range, and going-in amortizing DSCR is 1.13x, which is thin but above the value-add minimum and not a fail. The deal depends on proving the 19-unit lease-up, reconciling T-12 EGI to current scheduled rent, and validating market rents; absent those, the rent-roll thesis is plausible but not clean enough for PASS."
           }
         ]
       },
@@ -7880,6 +7880,241 @@
     }
   ],
   "notes": [
-    "Live path: Codex codex-cli 0.132.0 (Logged in using ChatGPT); workflow quick-deal-screen; runs 2026-05-25T13:51:08.798Z .. 2026-05-25T18:07:03.127Z."
-  ]
+    "Live path: Codex codex-cli 0.142.0 (Logged in using ChatGPT); workflow quick-deal-screen; runs 2026-06-25T18:44:12.917Z .. 2026-06-25T20:31:00.809Z."
+  ],
+  "thresholds": {
+    "results": [
+      {
+        "id": "extractionPrecision",
+        "label": "Extraction field precision",
+        "layer": "extraction",
+        "metric": "extractionPrecision",
+        "op": "min",
+        "value": 0.9,
+        "gate": true,
+        "actual": 1,
+        "n": 8,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "extractionRecall",
+        "label": "Extraction field recall",
+        "layer": "extraction",
+        "metric": "extractionRecall",
+        "op": "min",
+        "value": 0.85,
+        "gate": true,
+        "actual": 1,
+        "n": 8,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "extractionF1",
+        "label": "Extraction field F1",
+        "layer": "extraction",
+        "metric": "extractionF1",
+        "op": "min",
+        "value": 0.875,
+        "gate": true,
+        "actual": 1,
+        "n": 8,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "extractionNumericWithinTolerance",
+        "label": "Extraction numeric-within-tolerance",
+        "layer": "extraction",
+        "metric": "extractionNumericWithinTolerance",
+        "op": "min",
+        "value": 0.9,
+        "gate": true,
+        "actual": 1,
+        "n": 8,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "simFinancialDeterminable",
+        "label": "Sim determinable financials (fixture, tautological)",
+        "layer": "simulation",
+        "metric": "financialDeterminable",
+        "op": "min",
+        "value": 0.99,
+        "gate": true,
+        "actual": 1,
+        "n": 8,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "simDealbreakerRecall",
+        "label": "Sim dealbreaker recall (safety)",
+        "layer": "simulation",
+        "metric": "dealbreakerRecall",
+        "op": "min",
+        "value": 0.9,
+        "gate": true,
+        "actual": 1,
+        "n": 2,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "simIcDirectionalMatch",
+        "label": "Sim IC directional (go/no-go) match",
+        "layer": "simulation",
+        "metric": "icDirectionalMatch",
+        "op": "min",
+        "value": 0.875,
+        "gate": true,
+        "actual": 1,
+        "n": 8,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "simIcExactMatch",
+        "label": "Sim IC exact-match rate (fixture)",
+        "layer": "simulation",
+        "metric": "icExactMatch",
+        "op": "min",
+        "value": 0.6,
+        "gate": true,
+        "actual": 0.75,
+        "n": 8,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "falseApproveRate",
+        "label": "False-approve rate (go verdict on a FAIL deal)",
+        "layer": "derived",
+        "metric": "falseApproveRate",
+        "op": "max",
+        "value": 0,
+        "gate": true,
+        "actual": 0,
+        "n": 2,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "simRedFlagRequiredRecall",
+        "label": "Sim required red-flag recall (fixture weak spot)",
+        "layer": "simulation",
+        "metric": "redFlagRequiredRecall",
+        "op": "min",
+        "value": 0.7,
+        "gate": false,
+        "actual": 0.6,
+        "n": 5,
+        "present": true,
+        "pass": false
+      },
+      {
+        "id": "simRedFlagRecall",
+        "label": "Sim all-planted red-flag recall (fixture weak spot)",
+        "layer": "simulation",
+        "metric": "redFlagRecall",
+        "op": "min",
+        "value": 0.7,
+        "gate": false,
+        "actual": 0.5,
+        "n": 6,
+        "present": true,
+        "pass": false
+      },
+      {
+        "id": "simFinancialModelDependent",
+        "label": "Sim model-dependent financials",
+        "layer": "simulation",
+        "metric": "financialModelDependent",
+        "op": "min",
+        "value": 0.5,
+        "gate": false,
+        "actual": 0.5,
+        "n": 8,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "liveFinancialDeterminable",
+        "label": "Live determinable financials",
+        "layer": "live",
+        "metric": "financialDeterminable",
+        "op": "min",
+        "value": 0.85,
+        "gate": false,
+        "actual": 1,
+        "n": 8,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "liveRedFlagRequiredRecall",
+        "label": "Live required red-flag recall",
+        "layer": "live",
+        "metric": "redFlagRequiredRecall",
+        "op": "min",
+        "value": 0.7,
+        "gate": false,
+        "actual": 1,
+        "n": 5,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "liveDealbreakerRecall",
+        "label": "Live dealbreaker recall",
+        "layer": "live",
+        "metric": "dealbreakerRecall",
+        "op": "min",
+        "value": 0.9,
+        "gate": false,
+        "actual": 1,
+        "n": 2,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "liveIcExactMatch",
+        "label": "Live IC exact-match rate",
+        "layer": "live",
+        "metric": "icExactMatch",
+        "op": "min",
+        "value": 0.6,
+        "gate": false,
+        "actual": 1,
+        "n": 8,
+        "present": true,
+        "pass": true
+      },
+      {
+        "id": "liveIcDirectionalMatch",
+        "label": "Live IC directional match",
+        "layer": "live",
+        "metric": "icDirectionalMatch",
+        "op": "min",
+        "value": 0.8,
+        "gate": false,
+        "actual": 1,
+        "n": 8,
+        "present": true,
+        "pass": true
+      }
+    ],
+    "falseApprove": {
+      "rate": 0,
+      "count": 0,
+      "total": 2,
+      "unknownOnNoGo": 0,
+      "deals": []
+    },
+    "ok": true,
+    "gatedFailures": 0,
+    "measuredGates": 9
+  }
 }
