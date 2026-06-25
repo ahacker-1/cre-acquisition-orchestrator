@@ -43,11 +43,11 @@ Status values:
 
 | Step | Status | Evidence |
 | --- | --- | --- |
-| 7 specialist agents | UNVERIFIED | Pending real phase output and schema verification. |
-| unit mix | UNVERIFIED | Pending real phase output and schema verification. |
-| rent-roll analysis | UNVERIFIED | Pending real phase output and schema verification. |
-| OpEx notes | UNVERIFIED | Pending real phase output and schema verification. |
-| diligence flags | UNVERIFIED | Pending real phase output and schema verification. |
+| 7 specialist agents | PASSED | `npm run simulate` on 2026-06-25 completed canonical `config/deal.json` / `core-plus` / seed `42` and wrote due-diligence output. Read `agentFindings` keys: `environmental-review`, `legal-title-review`, `market-study`, `opex-analyst`, `physical-inspection`, `rent-roll-analyst`, `tenant-credit`. Workpapers exist for all seven in `data/reports/parkview-2026-001/due-diligence/`. `npm run validate` passed `phase-due-diligence` and all agent checkpoints. |
+| unit mix | PASSED | Read `data/phase-outputs/parkview-2026-001/due-diligence-output.json`: `unitMix` has 4 rows totaling 200 units with type/count/avgSqFt/marketRent/inPlaceRent values. `npm run validate` passed `phase-due-diligence`. |
+| rent-roll analysis | PASSED | Read due-diligence `rentRoll`: `totalUnits: 200`, `occupancy: 0.94`, `avgRent: 1513`, `avgMarketRent: 1665`, `lossToLease: 341777`, `lossToLeasePercent: 0.091`; rent-roll workpaper summary states it validated 200 units and rent strata. `npm run validate` passed. |
+| OpEx notes | PASSED | Read due-diligence `expenses`: `totalOpEx: 1725500`, `opExPerUnit: 8628`, `opExRatio: 0.5054`; `opexBenchmark: "50.5% expense ratio"` and `opexBreakdown` has 6 rows. OpEx workpaper includes the expense stack. `npm run validate` passed. |
+| diligence flags | PASSED | Read due-diligence output: `redFlagCount: 0`, `dataGapCount: 0`, `riskScore: 82`, with `redFlags: []` and `dataGaps: []`; schema validation accepted the explicit zero-count/empty-list flag state. `npm run validate` passed. |
 
 ## Phase 4 - Underwriting
 
@@ -131,3 +131,5 @@ Status values:
 - 2026-06-25: `npm --prefix dashboard run typecheck` and `npm test` passed after the preservation fix; the ledger survived the `system-test.js` runtime reset.
 - 2026-06-25: Phase 2 source review passed through workspace service tests, dashboard-lib tests, and serial Playwright dashboard paths. One attempted parallel E2E run hit fixed-port collision; rerun serially passed.
 - 2026-06-25: Broader `npm test` regression passed after Phase 2 verification.
+- 2026-06-25: Phase 3 due diligence passed via canonical simulation output inspection and `npm run validate`.
+- 2026-06-25: Broader `npm test` regression passed after Phase 3 verification.
