@@ -6,6 +6,7 @@
   "required": [
     "preClosingStatus",
     "fundsFlow",
+    "wireSchedule",
     "purchasePrice",
     "loanAmount",
     "equityRequired",
@@ -139,6 +140,65 @@
         }
       },
       "additionalProperties": false
+    },
+    "wireSchedule": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "wireId",
+          "source",
+          "beneficiary",
+          "amount",
+          "direction",
+          "dueDate",
+          "status",
+          "control"
+        ],
+        "properties": {
+          "wireId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "beneficiary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amount": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "INBOUND",
+              "OUTBOUND"
+            ]
+          },
+          "dueDate": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "READY",
+              "HOLD_FOR_FINAL_STATEMENT",
+              "BLOCKED"
+            ]
+          },
+          "control": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
     },
     "keyMerits": {
       "type": "array",

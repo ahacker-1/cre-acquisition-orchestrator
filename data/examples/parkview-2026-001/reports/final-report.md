@@ -124,6 +124,13 @@ Matrix dimensions: 3 rent cases x 3 vacancy cases x 3 exit-cap cases. Rent, vaca
 | Buyer Return at Close | $50,556 |
 - Balanced: yes.
 
+## Closing Wire Schedule
+| Wire ID | Source | Beneficiary | Direction | Amount | Due | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| WIRE-001 | Senior Loan Proceeds | Acquisition Closing Desk | INBOUND | $24,000,000 | 2026-03-31 | READY |
+| WIRE-002 | Buyer Equity | Acquisition Closing Desk | INBOUND | $8,960,000 | 2026-03-31 | READY |
+| WIRE-003 | Closing Statement True-Up | Buyer Treasury | OUTBOUND | $50,556 | 2026-03-31 | HOLD_FOR_FINAL_STATEMENT |
+
 ## Recommendation Conditions
 - Reduce debt proceeds or secure an interest reserve until stabilized NOI supports permanent debt.
 - Validate Travis County tax assessment, appeal assumptions, and annual protest budget.

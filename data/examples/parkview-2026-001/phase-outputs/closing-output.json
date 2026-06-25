@@ -61,6 +61,38 @@
     "totalUses": 33058685,
     "balanced": true
   },
+  "wireSchedule": [
+    {
+      "wireId": "WIRE-001",
+      "source": "Senior Loan Proceeds",
+      "beneficiary": "Acquisition Closing Desk",
+      "amount": 24000000,
+      "direction": "INBOUND",
+      "dueDate": "2026-03-31",
+      "status": "READY",
+      "control": "Lender funding authorization matched to final settlement statement."
+    },
+    {
+      "wireId": "WIRE-002",
+      "source": "Buyer Equity",
+      "beneficiary": "Acquisition Closing Desk",
+      "amount": 8960000,
+      "direction": "INBOUND",
+      "dueDate": "2026-03-31",
+      "status": "READY",
+      "control": "Dual approval required after independent call-back of escrow wire instructions."
+    },
+    {
+      "wireId": "WIRE-003",
+      "source": "Closing Statement True-Up",
+      "beneficiary": "Buyer Treasury",
+      "amount": 50556,
+      "direction": "OUTBOUND",
+      "dueDate": "2026-03-31",
+      "status": "HOLD_FOR_FINAL_STATEMENT",
+      "control": "Release only after title company confirms balanced final funds flow."
+    }
+  ],
   "keyMerits": [
     "Funding stack reconciled and balanced",
     "Legal and financing requirements aligned",

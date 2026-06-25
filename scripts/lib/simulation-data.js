@@ -870,6 +870,43 @@ function generateClosingData(deal, dd, uw, fin, legal, scenario, rng) {
     });
   }
   const finalUses = uses.reduce((sum, row) => sum + safeNumber(row.amount, 0), 0);
+  const closingDate = safeString(deal?.timeline?.closingDate, 'TBD');
+  const buyerReturnAtClose = uses.find((row) => row.item === 'Buyer Return at Close')?.amount || 0;
+  const additionalEquityTrueUp = uses.find((row) => row.item === 'Additional Equity True-Up')?.amount || 0;
+  const wireSchedule = [
+    {
+      wireId: 'WIRE-001',
+      source: 'Senior Loan Proceeds',
+      beneficiary: 'Acquisition Closing Desk',
+      amount: loanAmount,
+      direction: 'INBOUND',
+      dueDate: closingDate,
+      status: 'READY',
+      control: 'Lender funding authorization matched to final settlement statement.'
+    },
+    {
+      wireId: 'WIRE-002',
+      source: 'Buyer Equity',
+      beneficiary: 'Acquisition Closing Desk',
+      amount: equityRequired + additionalEquityTrueUp,
+      direction: 'INBOUND',
+      dueDate: closingDate,
+      status: 'READY',
+      control: 'Dual approval required after independent call-back of escrow wire instructions.'
+    }
+  ];
+  if (buyerReturnAtClose > 0) {
+    wireSchedule.push({
+      wireId: 'WIRE-003',
+      source: 'Closing Statement True-Up',
+      beneficiary: 'Buyer Treasury',
+      amount: buyerReturnAtClose,
+      direction: 'OUTBOUND',
+      dueDate: closingDate,
+      status: 'HOLD_FOR_FINAL_STATEMENT',
+      control: 'Release only after title company confirms balanced final funds flow.'
+    });
+  }
 
   const redFlags = [];
   const dataGaps = [];
@@ -921,6 +958,7 @@ function generateClosingData(deal, dd, uw, fin, legal, scenario, rng) {
       totalUses: finalUses,
       balanced: round(totalSources, 0) === round(finalUses, 0)
     },
+    wireSchedule,
     keyMerits: [
       'Funding stack reconciled and balanced',
       'Legal and financing requirements aligned',

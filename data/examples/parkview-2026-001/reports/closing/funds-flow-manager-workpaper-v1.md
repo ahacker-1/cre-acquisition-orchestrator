@@ -85,6 +85,13 @@ Primary finding: Sources and uses are balanced.
 | Buyer Return at Close | $50,556 |
 - Funds flow balanced: yes.
 
+### Wire Schedule
+| Wire ID | Source | Beneficiary | Direction | Amount | Due | Status | Control |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| WIRE-001 | Senior Loan Proceeds | Acquisition Closing Desk | INBOUND | $24,000,000 | 2026-03-31 | READY | Lender funding authorization matched to final settlement statement. |
+| WIRE-002 | Buyer Equity | Acquisition Closing Desk | INBOUND | $8,960,000 | 2026-03-31 | READY | Dual approval required after independent call-back of escrow wire instructions. |
+| WIRE-003 | Closing Statement True-Up | Buyer Treasury | OUTBOUND | $50,556 | 2026-03-31 | HOLD_FOR_FINAL_STATEMENT | Release only after title company confirms balanced final funds flow. |
+
 ## 10-Year Pro Forma
 Debt service uses the stated 2-year interest-only period, then 30-year amortization.
 | Year | Revenue | Expenses | NOI | Debt Service | DSCR | Cash Flow |

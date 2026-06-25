@@ -87,11 +87,11 @@ Status values:
 
 | Step | Status | Evidence |
 | --- | --- | --- |
-| closing coordinator | UNVERIFIED | Pending real phase output and schema verification. |
-| funds-flow manager | UNVERIFIED | Pending real phase output and schema verification. |
-| prorations | UNVERIFIED | Pending real phase output and schema verification. |
-| wire schedule | UNVERIFIED | Pending real phase output and schema verification. |
-| funds-flow workpaper | UNVERIFIED | Pending real phase output and schema verification. |
+| closing coordinator | PASSED | `npm run simulate && npm run validate` on 2026-06-25 passed canonical `config/deal.json` / `core-plus` / seed `42`; read `preClosingStatus` as `6/6` complete with no pending items, `closingAgent: Acquisition Closing Desk`, and `agentFindings.closing-coordinator.status: COMPLETE`. Workpaper summary says `Closing checklist is complete.` |
+| funds-flow manager | PASSED | Same run produced `agentFindings.funds-flow-manager.status: COMPLETE` with finding `Sources and uses are balanced.` Read `fundsFlow.totalSources: 33058685`, `totalUses: 33058685`, and `balanced: true`; `npm run validate` passed `phase-closing`. |
+| prorations | PASSED | Read structured prorations in `closing-output.json`: tax proration `$38,227` and insurance proration `$9,902`; those values also appear in closing sources/uses. |
+| wire schedule | PASSED | Initial validation after tightening the schema failed because old closing output lacked `wireSchedule`. Added structured `wireSchedule` generation, schema requirements, and `phase-closing-artifacts` validation. Regenerated output includes `WIRE-001` senior loan `$24,000,000`, `WIRE-002` buyer equity `$8,960,000`, and `WIRE-003` buyer true-up `$50,556`, all due `2026-03-31` with control language; `npm run validate` passed `phase-closing-artifacts`. |
+| funds-flow workpaper | PASSED | `closing-coordinator-workpaper-v1.md`, `funds-flow-manager-workpaper-v1.md`, and `final-report.md` now render the wire schedule and closing sources/uses. `npm test` passed, and `system-test` validated `phase-closing-artifacts` across core-plus, value-add, distressed, and failure-resume runs. |
 
 ## Phase 8 - IC Package
 
@@ -139,3 +139,6 @@ Status values:
 - 2026-06-25: Broader `npm test` regression passed after Phase 5 verification.
 - 2026-06-25: Phase 6 legal passed via canonical simulation output inspection, `npm run validate`, `npm run test:legal`, and `npm run test:codex-legal`.
 - 2026-06-25: Broader `npm test` regression passed after Phase 6 verification.
+- 2026-06-25: Phase 7 closing initially failed artifact proof because `wireSchedule` was not emitted or validated. Added structured wire schedule output, schema requirements, report rendering, and `phase-closing-artifacts` validation.
+- 2026-06-25: Phase 7 closing passed via canonical simulation output inspection and `npm run validate`; `phase-closing-artifacts` ties senior loan and buyer equity wires back to funds-flow sources.
+- 2026-06-25: Broader `npm test` regression passed after Phase 7 fix; system-test now validates `phase-closing-artifacts` across core-plus, value-add, distressed, and failure-resume runs.

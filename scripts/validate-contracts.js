@@ -83,6 +83,51 @@ function validateUnderwritingArtifacts(phaseOutput) {
   };
 }
 
+function validateClosingArtifacts(phaseOutput) {
+  const errors = [];
+  const wires = Array.isArray(phaseOutput.wireSchedule) ? phaseOutput.wireSchedule : [];
+  const sources = Array.isArray(phaseOutput.fundsFlow?.sources) ? phaseOutput.fundsFlow.sources : [];
+
+  function sourceAmount(name) {
+    return sources.find((source) => source.item === name)?.amount;
+  }
+
+  function wireAmount(name) {
+    return wires.find((wire) => wire.source === name)?.amount;
+  }
+
+  if (wires.length < 2) {
+    errors.push('closing wire schedule must include at least senior loan and buyer equity wires');
+  }
+
+  ['Senior Loan Proceeds', 'Buyer Equity'].forEach((sourceName) => {
+    const expected = sourceAmount(sourceName);
+    const actual = wireAmount(sourceName);
+    if (typeof expected !== 'number') {
+      errors.push(`closing funds flow missing source: ${sourceName}`);
+    } else if (typeof actual !== 'number') {
+      errors.push(`closing wire schedule missing wire for source: ${sourceName}`);
+    } else if (Math.round(expected) !== Math.round(actual)) {
+      errors.push(`closing wire schedule ${sourceName} amount ${actual} does not match funds flow source ${expected}`);
+    }
+  });
+
+  wires.forEach((wire, index) => {
+    if (!wire.control || String(wire.control).trim().length < 10) {
+      errors.push(`closing wire ${index + 1} missing control detail`);
+    }
+    if (!wire.dueDate || String(wire.dueDate).trim().length === 0) {
+      errors.push(`closing wire ${index + 1} missing dueDate`);
+    }
+  });
+
+  return {
+    item: 'phase-closing-artifacts',
+    valid: errors.length === 0,
+    errors
+  };
+}
+
 function validateCodexRun(runId) {
   const errors = [];
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(runId) || runId.includes('..')) {
@@ -253,6 +298,9 @@ function main() {
     });
     if (phase.key === 'underwriting') {
       results.push(validateUnderwritingArtifacts(phaseOutput));
+    }
+    if (phase.key === 'closing') {
+      results.push(validateClosingArtifacts(phaseOutput));
     }
   });
 

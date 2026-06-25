@@ -425,6 +425,25 @@ function appendAgentAnalysis(lines, { agentName, deal, phaseData }) {
       (fundsFlow.uses || []).map((use) => [use.item, formatCurrency(use.amount)])
     );
     lines.push(`- Funds flow balanced: ${fundsFlow.balanced ? 'yes' : 'no'}.`);
+    const wireSchedule = Array.isArray(phaseData.wireSchedule) ? phaseData.wireSchedule : [];
+    if (wireSchedule.length > 0) {
+      lines.push('');
+      lines.push('### Wire Schedule');
+      table(
+        lines,
+        ['Wire ID', 'Source', 'Beneficiary', 'Direction', 'Amount', 'Due', 'Status', 'Control'],
+        wireSchedule.map((wire) => [
+          wire.wireId,
+          wire.source,
+          wire.beneficiary,
+          wire.direction,
+          formatCurrency(wire.amount),
+          wire.dueDate,
+          wire.status,
+          wire.control
+        ])
+      );
+    }
   } else {
     lines.push('### Phase-Specific Structured Output');
     Object.entries(phaseData || {})
@@ -758,6 +777,26 @@ function renderFinalAcquisitionReport(checkpoint, phasesMetadata = []) {
   lines.push('');
   table(lines, ['Use', 'Amount'], (fundsFlow.uses || []).map((row) => [row.item, formatCurrency(row.amount)]));
   lines.push(`- Balanced: ${fundsFlow.balanced ? 'yes' : 'no'}.`);
+  lines.push('');
+  lines.push('## Closing Wire Schedule');
+  const wireSchedule = Array.isArray(closing.wireSchedule) ? closing.wireSchedule : [];
+  if (wireSchedule.length === 0) {
+    lines.push('- No wire schedule generated.');
+  } else {
+    table(
+      lines,
+      ['Wire ID', 'Source', 'Beneficiary', 'Direction', 'Amount', 'Due', 'Status'],
+      wireSchedule.map((row) => [
+        row.wireId,
+        row.source,
+        row.beneficiary,
+        row.direction,
+        formatCurrency(row.amount),
+        row.dueDate,
+        row.status
+      ])
+    );
+  }
   lines.push('');
   lines.push('## Recommendation Conditions');
   [
