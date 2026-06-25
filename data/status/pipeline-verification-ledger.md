@@ -66,10 +66,10 @@ Status values:
 
 | Step | Status | Evidence |
 | --- | --- | --- |
-| lender outreach | UNVERIFIED | Pending real phase output and schema verification. |
-| quote comparator | UNVERIFIED | Pending real phase output and schema verification. |
-| term-sheet builder | UNVERIFIED | Pending real phase output and schema verification. |
-| loan sizing | UNVERIFIED | Pending real phase output and schema verification. |
+| lender outreach | PASSED | `npm run simulate && npm run validate` on 2026-06-25 passed canonical `config/deal.json` / `core-plus` / seed `42`; read `agentFindings` with `lender-outreach`, `quotesReceived: 5`, and `lender-outreach-workpaper-v1.md` summary `Collected 5 lender indications.` |
+| quote comparator | PASSED | Same run produced `quote-comparator` in `agentFindings`; read `lenderComparison` with 5 ranked quotes and selected `Freddie Mac` as rank 1 / `SELECTED`; `quote-comparator-workpaper-v1.md` summary `Selected Freddie Mac based on weighted ranking.` `npm run validate` passed `phase-financing`. |
+| term-sheet builder | PASSED | Same run produced `term-sheet-builder` in `agentFindings`; read term sheet fields `rateType: Fixed`, `term: 10`, `amortization: 30`, `interestOnlyMonths: 24`, `prepayment: Yield maintenance`, `recourse: Non-recourse`, and reserve amounts. Workpaper summary: `Term sheet generated with covenant and timeline package.` |
+| loan sizing | PASSED | Read financing output loan sizing: `loanAmount: 24000000`, `ltv: 0.75`, `rate: 0.061`, `annualDebtServiceIO: 1464000`, `annualDebtServiceAmort: 1745265`, `dscrIO: 1.153`, `dscrAmort: 0.967`, `dscrCovenant: 1.2`; `bestQuote` also records Freddie Mac quote amount `23507200` and DSCR `1.193`. `npm run validate` passed. |
 
 ## Phase 6 - Legal
 
@@ -135,3 +135,5 @@ Status values:
 - 2026-06-25: Broader `npm test` regression passed after Phase 3 verification.
 - 2026-06-25: Phase 4 underwriting initially failed artifact proof because `underwriting-scenarios.json` and `ic-memo.md` were referenced but missing. Added side-artifact writing plus validator coverage, then `npm run simulate && npm run validate` passed with `phase-underwriting-artifacts`.
 - 2026-06-25: Broader `npm test` regression passed after Phase 4 fix; system-test now validates `phase-underwriting-artifacts` across core-plus, value-add, distressed, and failure-resume runs.
+- 2026-06-25: Phase 5 financing passed via canonical simulation output inspection and `npm run validate`.
+- 2026-06-25: Broader `npm test` regression passed after Phase 5 verification.
