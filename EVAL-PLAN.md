@@ -38,7 +38,7 @@ The orchestrator has **two execution paths** and the eval measures **three hones
 | Path | Entry | Output | What it proves |
 |---|---|---|---|
 | **Deterministic simulation** | `npm run simulate` → `scripts/orchestrate.js` | structured JSON in `data/phase-outputs/<dealId>/*-output.json` + `data/status/<dealId>.json` | Arithmetic on `deal.json`. Financials are REAL formulas; **IC verdict is a fixture** (`scenario.expectedVerdict` + hardcoded recommendation text in `workpaper-renderer.js:701`). **NOT reasoning.** |
-| **Live agent path** | `npm run codex:run` → `scripts/codex-agent-runner.js --deal <path> --workflow <id>` | free-text **markdown workpapers** in `data/codex-runs/<runId>/<phase>/<agent>.md` with sections `## Agent Verdict`, `## Key Findings`, `## Red Flags`, `## Data Gaps` | **Real LLM reasoning. The number that counts.** Codex CLI 0.132.0, logged in via ChatGPT (verified). Must parse markdown to score. |
+| **Live agent path** | `npm run codex:run` → `scripts/codex-agent-runner.js --deal <path> --workflow <id>` | free-text **markdown workpapers** in `data/codex-runs/<runId>/<phase>/<agent>.md` with sections `## Agent Verdict`, `## Key Findings`, `## Red Flags`, `## Data Gaps` | **Real LLM reasoning. The number that counts.** Latest full verification used Codex CLI 0.142.0, logged in via ChatGPT (verified). Must parse markdown to score. |
 
 **Three measured layers:**
 
@@ -273,28 +273,30 @@ Planned deals (issues planted to make detection measurable). All 8 specs are def
 
 ---
 
-## PHASE 2 — Eval harness  (STATUS: PASS — built; extraction+sim verified, live in progress)
+## PHASE 2 — Eval harness  (STATUS: PASS — built; extraction+sim+live verified)
 
-**Built + verified (offline layers).** Files: `eval/run-eval.mjs` (runner, AJV-validates scorecard
-before writing), `eval/lib/scoring.mjs` (pure, 46 unit tests via `scripts/eval-scoring.test.mjs`),
+**Built + verified (all layers).** Files: `eval/run-eval.mjs` (runner, AJV-validates scorecard
+before writing), `eval/lib/scoring.mjs` (pure, covered by `scripts/eval-scoring.test.mjs`),
 `eval/lib/markdown-parse.mjs` (pure live-workpaper parser, tested), `eval/lib/extract-extraction.mjs`
 (tsx → real parser-service), `eval/lib/extract-sim.mjs`, `eval/lib/extract-live.mjs`,
 `eval/lib/trust-report.mjs`, `eval/schemas/scorecard.schema.json`. Wired `npm run eval` (+
-`eval:extraction|sim|live`); `test:eval` in `npm test` (README Tests 8→9; validate:docs green).
+`eval:extraction|sim|live`); `test:eval` in `npm test`.
 
 Verified smoke runs:
-- `node scripts/eval-scoring.test.mjs` → 46 ok, `[eval-scoring-test] PASS`.
+- `node scripts/eval-scoring.test.mjs` → `[eval-scoring-test] PASS`.
 - `npm run eval -- --mode extraction` → schema-valid scorecard; extraction P/R/F1/numTol = **100%**
   on all 8 deals (parser genuinely recovers every planted field — honest; extraction is not where it
   breaks).
 - `npm run eval -- --mode sim` → schema-valid; determinable financials **100%** (tautological,
-  fixture); IC verdict matches only **3/8** (sim threshold logic says FAIL on the clean PASS deal +
-  most CONDITIONALs); red-flag recall spotty (0% insurance/concentration/occupancy — no logic; 100%
-  DSCR/LTV threshold triggers). Confirms: the simulation is a fixture, not reasoning.
-- Live path: validated end-to-end on real Codex 0.132.0 (va-sub120-dscr, quick-deal-screen, 8/8 agents
-  PASS). verdict CONDITIONAL = exact match; NOI $958K ✓, cap 6.18% ✓, DSCR 1.13x ✓ (determinable 75%);
-  DSCR red flag caught (required recall 100%). EGI/IRR/EM = null (honest — the live UW agents declined
-  to compute IRR/EM without a scenario matrix and didn't label EGI).
+  fixture); IC verdict exact match is **75% (6/8)** and directional match is **100%**; narrative red-flag
+  recall remains spotty (required 60%, all-planted 50%). Confirms: the simulation is a fixture, not reasoning.
+- Live path: validated end-to-end on real Codex 0.142.0 across all 8 benchmark deals with
+  `npm run eval:live` (`eval-2026-06-25T18-44-12-814Z`). The committed all-layer report was regenerated
+  by `node eval/run-eval.mjs --mode all --reparse-run eval-2026-06-25T18-44-12-814Z`, preserving the live
+  workpapers while re-running extraction/sim. Live metrics: determinable financials **100% (n=8)**,
+  required red-flag recall **100% (n=5)**, dealbreaker recall **100% (n=2)**, IC exact match
+  **100% (8/8)**, IC directional match **100% (8/8)**, partial failures **0**. Model-dependent returns
+  remain weak at **25%**.
 
 **Critical harness fixes found by inspecting REAL live output (the eval finding its own bugs):**
 1. **Stale-sim contamination:** live agents read `data/reports/<id>/final-report.md` from a prior sim
@@ -306,7 +308,8 @@ Verified smoke runs:
    (8 ground-truth.json + EVAL-PLAN.md + eval/README.md + eval/generators + eval/results) OUT of the
    repo during live runs, restores after, crash-safe startup recovery. Verified: no more citations.
 3. **Financial parser misreads:** unit-blind regex grabbed "6.5%" (rate) as DSCR and "27" (from
-   "27-scenario") as IRR/EM. Fixed: unit-aware bidirectional matcher + threshold guard. 52 tests green.
+   "27-scenario") as IRR/EM. Fixed: unit-aware bidirectional matcher + threshold guard, with regression
+   coverage in `scripts/eval-scoring.test.mjs`.
 4. **`--reparse` mode:** re-score saved workpapers without re-running Codex — used to validate 1–3 fast.
 5. **Sim-leftover leak (in `--mode all`):** the sim phase writes per-agent checkpoints to
    `data/status/<id>/agents/` and `data/logs/<id>/master.log` (the 27-scenario "0/27" fixture). A live
@@ -318,7 +321,7 @@ Verified smoke runs:
    live run, remove THIS eval's own prior `data/eval-runs/*` and per-deal `data/codex-runs/<run>-<id>`
    dirs (scoped to this eval's artifacts only — never unrelated runtime).
 
-**HONEST RESULT — `cp-insurance-understated`, fully clean run (Codex 0.132.0, verified zero leakage):**
+**HISTORICAL SINGLE-DEAL RESULT — `cp-insurance-understated`, fully clean run (Codex 0.132.0, verified zero leakage):**
 | Layer | Result |
 |---|---|
 | **Extraction** (deterministic parser) | precision/recall/F1/numeric-tolerance = **100%** |
@@ -342,26 +345,28 @@ IRR/equity-multiple not produced in the quick screen.
 - Emits `eval/results/scorecard.json` (validated against `eval/schemas/scorecard.schema.json`) +
   `eval/results/TRUST-REPORT.md`. Runtime working files under `data/eval-runs/<runId>/` (gitignored).
 - Scorer logic = pure functions in `eval/lib/scoring.mjs`, covered by `scripts/eval-scoring.test.mjs`
-  (synthetic known inputs → known scores), wired into `npm test`; README Tests count bumped to match.
+  (synthetic known inputs → known scores), wired into `npm test`.
 
 ---
 
-## PHASE 3 — Honest baseline  (STATUS: pending)
-Run `npm run eval --mode all` for real. Record REAL extraction, sim, and LIVE numbers below,
-including every miss/failure. No fixing yet.
+## PHASE 3 — Honest baseline  (STATUS: PASS)
+Current committed all-layer report was generated from extraction + simulation plus reparse of the saved
+2026-06-25 live workpapers. `node eval/run-eval.mjs --mode all --reparse-run
+eval-2026-06-25T18-44-12-814Z` emitted a schema-valid scorecard and passed `PASS (9/9 measured gate(s)
+held)`.
 
 ## PHASE 4 — Fix worst gaps, re-measure  (STATUS: PASS — fixes applied + known limit documented)
 The "worst gaps" the eval exposed were CONTAMINATION bugs in the eval itself (4 vectors: stale sim
 reports, answer-key leak, sim-leftover checkpoints/logs, prior-run workpapers) — all found by
 inspecting real live output, all fixed, and each fix re-measured via `--reparse` (turning a wrong
 contaminated FAIL into the correct CONDITIONAL). Documented KNOWN-LIMIT: the live `quick-deal-screen`
-agents do not compute IRR / equity-multiple (model-dependent metrics) — they transparently decline
-without a scenario matrix, so live model-dependent accuracy is 0%. The deterministic simulation's
-IC-verdict unreliability (3/8 match) is by-design fixture behavior, reported as such, not a fixable bug.
+agents often do not compute IRR / equity-multiple (model-dependent metrics) without a full scenario
+matrix, so live model-dependent accuracy is currently **25%**. The deterministic simulation's
+IC-verdict exact-match limit (**75%**) is by-design fixture behavior, reported as such, not a fixable bug.
 
 ## PHASE 5 — Publish proof  (STATUS: PASS)
 `npm run eval` wired; `eval/README.md` (methodology + how to extend) committed; README headline numbers
-+ links added (honest, incl. the 1/8 live scope and weaknesses); full validation gate green;
++ links added (honest, incl. all 8 live deals and the model-dependent returns weakness); full validation gate green;
 scorecard + trust report committed under `eval/results/`. Completion report below.
 
 ---
@@ -372,10 +377,10 @@ scorecard + trust report committed under `eval/results/`. Completion report belo
 |---|---|---|---|
 | A | `npm run eval` reproducibly scores benchmark → schema-valid scorecard + trust report | PASS | `npm run eval` → "scorecard schema-valid ✓" + writes `eval/results/{scorecard.json,TRUST-REPORT.md}`; AJV-validated in-runner before write |
 | B | ≥3 realistic synthetic deals w/ committed ground truth; generators reproducible | PASS | (Original 2026-05-21 run) 8 deals in `eval/benchmark/deals/`; `python eval/generators/generate_deals.py` deterministic (40 files byte-identical x2 runs); all 8 deal.json valid vs config/deal-schema.json. **2026-05-24: benchmark trimmed to the 3 active deals (15 files) — see Work log. 2026-05-25: re-expanded back to the full 8 deals (40 files) for the narrative-risk goal — see Work log.** |
-| C | Trust report shows REAL live-agent metrics (model + date) incl. failures, separated from sim | PASS (live scope = 1/8 by user direction) | TRUST-REPORT.md: live = Codex CLI 0.132.0, run 2026-05-21, `cp-insurance-understated` IC exact-match + 100% determinable fin + 100% red-flag recall; live clearly separated from the sim fixture; live coverage honestly labeled 1 of 8 (user scoped the costly live runs to one deal; harness runs all 8 via `npm run eval`) |
-| D | Worst baseline gaps fixed-and-re-measured OR documented as known limits | PASS | 4 contamination bugs fixed + re-measured via `--reparse` (wrong FAIL → correct CONDITIONAL); live IRR/EM gap documented as KNOWN-LIMIT |
-| E | README surfaces honest headline numbers + link; no inflated/fabricated figures | PASS | README "Honest Evaluation — Prove It" section: extraction 100% (8/8), sim fixture IC-match 3/8, live exact-match (1 deal), links to eval/README.md + TRUST-REPORT.md; explicit 1/8 live scope |
-| F | Full existing validation gate passes; no regressions; counts/docs consistent | PASS | npm test PASS; release:check all-green; validate:docs/guides/fixtures PASS; test:parsers/test:workspace PASS; npm audit 0 vulns; README counts consistent (31/8/27/5/20/9 as of this 2026-05-21 run; fixtures/tests later grew to 36/10 with the drop-flow pass) |
+| C | Trust report shows REAL live-agent metrics (model + date) incl. failures, separated from sim | PASS | TRUST-REPORT.md: live = Codex CLI 0.142.0, run 2026-06-25, all 8 benchmark deals, IC exact/directional match 100%, determinable financials 100%, required red-flag recall 100%, dealbreaker recall 100%, partial failures 0; live clearly separated from the sim fixture. |
+| D | Worst baseline gaps fixed-and-re-measured OR documented as known limits | PASS | Contamination bugs fixed + re-measured via `--reparse`; live IRR/EM/model-dependent returns gap documented as KNOWN-LIMIT at 25%. |
+| E | README surfaces honest headline numbers + link; no inflated/fabricated figures | PASS | README "Honest Evaluation — Prove It" section: extraction 100% (8/8), sim fixture IC exact-match 75%, live exact/directional IC match 100% (8/8), model-dependent returns 25%, links to eval/README.md + TRUST-REPORT.md. |
+| F | Full existing validation gate passes; no regressions; counts/docs consistent | PASS | 2026-06-25 `npm test` PASS; `npm run verify:v3:core` PASS; `npm run test:e2e` PASS; `npm run validate:docs` reports README counts consistent at 31 roles / 8 skills / 27 schemas / 5 workflows / 40 fixtures / 13 root test commands. |
 | G | EVAL-PLAN.md shows every item done with evidence (commands + real output) | PASS | this ledger |
 
 ---
@@ -444,3 +449,16 @@ scorecard + trust report committed under `eval/results/`. Completion report belo
   `extractionPrecision=0.40` + a wrongly-approved distressed deal into the committed scorecard made
   `npm run test:eval` exit 1 naming both breaches; regenerating restored green. Thresholds fixed
   before the run; nothing tuned to flatter.
+- 2026-06-25 (full live verification): Re-ran the real live Codex path after a pipeline-wide verification
+  pass. `npm run codex:status` confirmed Codex CLI 0.142.0, ChatGPT login, and live-agent readiness.
+  `npm run codex:smoke` passed for a real `financial-model-builder` run. `npm run codex:run:full`
+  passed as `codex-1782411174372` with 21/21 live agents PASS on first attempt. `npm run eval:live`
+  passed as `eval-2026-06-25T18-44-12-814Z`, running all 8 fake benchmark deals through live Codex
+  agents: IC exact/directional match **100% (8/8)**, determinable financials **100% (8/8)**,
+  required red-flag recall **100% (5/5)**, dealbreaker recall **100% (2/2)**, partial failures **0**.
+  Live manifest validation exposed real schema drift (`agentTimeoutMs`, result `timedOut`); schema fixed
+  and `npm test`, `npm run validate:codex`, `node scripts/validate-fixtures.js`, and
+  `node scripts/codex-runtime.test.mjs` passed. The committed trust report was regenerated with
+  `node eval/run-eval.mjs --mode all --reparse-run eval-2026-06-25T18-44-12-814Z`, preserving the saved
+  live workpapers while restoring the full extraction + simulation + live report; regression gate passed
+  **9/9 measured gates**.
