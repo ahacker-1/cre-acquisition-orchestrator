@@ -75,13 +75,13 @@ Status values:
 
 | Step | Status | Evidence |
 | --- | --- | --- |
-| PSA | UNVERIFIED | Pending real phase output and schema verification. |
-| title/survey | UNVERIFIED | Pending real phase output and schema verification. |
-| loan docs | UNVERIFIED | Pending real phase output and schema verification. |
-| insurance | UNVERIFIED | Pending real phase output and schema verification. |
-| estoppels | UNVERIFIED | Pending real phase output and schema verification. |
-| transfer docs | UNVERIFIED | Pending real phase output and schema verification. |
-| closing conditions | UNVERIFIED | Pending real phase output and schema verification. |
+| PSA | PASSED | `npm run simulate && npm run validate` on 2026-06-25 passed canonical `config/deal.json` / `core-plus` / seed `42`; read `psaStatus.reviewStatus: REVIEWED`, `psa-reviewer` agent finding, and `psa-reviewer-workpaper-v1.md` summary `PSA reviewed and deadlines calendared.` `npm run test:legal` also passed PSA fixture extraction with provenance. |
+| title/survey | PASSED | Same run produced `title-survey-reviewer` in `agentFindings`; read `titleStatus.status: CLEAR` and `title-survey-reviewer-workpaper-v1.md` summary `Title and survey package clear.` `npm run test:legal` passed title commitment fixture extraction. |
+| loan docs | PASSED | Same run produced `loan-doc-reviewer` in `agentFindings` with status `COMPLETE` and finding `Loan docs align with selected financing terms.` Workpaper exists and `npm run test:codex-legal` confirms legal-phase prompts include scoped legal source documents. |
+| insurance | PASSED | Same run produced `insurance-coordinator` in `agentFindings`; read `insuranceStatus.overallStatus: ALL_BOUND` and workpaper summary `Primary insurance coverages bound.` `npm run validate` passed `phase-legal`. |
+| estoppels | PASSED | Same run produced `estoppel-tracker` in `agentFindings`; read `estoppelStatus.returnRate: 0.85` and workpaper summary `153/180 estoppels collected.` `npm run test:legal` passed estoppel fixture extraction. |
+| transfer docs | PASSED | Same run produced `transfer-doc-preparer` in `agentFindings`; read `transferDocStatus.overallReadiness: READY` and workpaper summary `Transfer package complete for signature routing.` `npm run validate` passed. |
+| closing conditions | PASSED | Same run read `closingChecklistStatus` with pre-closing `18/18`, closing-day `9/11`, post-closing `4/6` identified, and critical path `Rate lock confirmation`; schema validation passed `phase-legal`. |
 
 ## Phase 7 - Closing
 
@@ -137,3 +137,5 @@ Status values:
 - 2026-06-25: Broader `npm test` regression passed after Phase 4 fix; system-test now validates `phase-underwriting-artifacts` across core-plus, value-add, distressed, and failure-resume runs.
 - 2026-06-25: Phase 5 financing passed via canonical simulation output inspection and `npm run validate`.
 - 2026-06-25: Broader `npm test` regression passed after Phase 5 verification.
+- 2026-06-25: Phase 6 legal passed via canonical simulation output inspection, `npm run validate`, `npm run test:legal`, and `npm run test:codex-legal`.
+- 2026-06-25: Broader `npm test` regression passed after Phase 6 verification.
