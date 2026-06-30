@@ -7,10 +7,12 @@ import { getDealRecord, saveUserDeal } from '../dashboard/server/deal-service.ts
 import { runDocumentParser, sanitizeCsvCell } from '../dashboard/server/parser-service.ts'
 import { RunManager } from '../dashboard/server/run-manager.ts'
 import codexManifestPaths from './lib/codex-manifest-paths.js'
+import runtimeCore from './lib/runtime-core.js'
 import safePaths from './lib/safe-paths.js'
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const { resolveCodexRunArtifactPath, resolveRepoRelativePath } = codexManifestPaths
+const { readScenarioConfig } = runtimeCore
 
 const insidePath = safePaths.assertWithinBase(projectRoot, join(projectRoot, 'data', 'status'), 'inside test')
 assert.equal(insidePath, resolve(projectRoot, 'data', 'status'))
@@ -20,6 +22,12 @@ assert.throws(
 )
 assert.equal(safePaths.assertSafeSegment('parkview-2026-001', 'deal ID'), 'parkview-2026-001')
 assert.throws(() => safePaths.assertSafeSegment('../parkview', 'deal ID'), /Invalid deal ID/)
+assert.equal(readScenarioConfig(projectRoot, 'core-plus').name, 'core-plus')
+assert.throws(
+  () => readScenarioConfig(projectRoot, '../../package'),
+  /Invalid scenario name/,
+  'scenario names must not read JSON outside config/scenarios',
+)
 
 const codexRunDir = join(projectRoot, 'data', 'codex-runs', 'safe-run')
 assert.equal(
@@ -74,6 +82,13 @@ const unsafeSnapshotResponse = runManager.start({
 })
 assert.equal(unsafeSnapshotResponse.statusCode, 400)
 assert.match(String(unsafeSnapshotResponse.body.error), /Unsafe input snapshot path/)
+
+const unsafeScenarioResponse = runManager.start({
+  runtimeProvider: 'simulation',
+  scenario: '../../package',
+})
+assert.equal(unsafeScenarioResponse.statusCode, 400)
+assert.match(String(unsafeScenarioResponse.body.error), /Invalid scenario name/)
 
 const unsafeDealRoot = mkdtempSync(join(tmpdir(), 'cre-deal-id-security-'))
 try {

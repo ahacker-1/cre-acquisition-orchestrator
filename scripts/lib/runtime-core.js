@@ -350,8 +350,16 @@ function readRuntimeConfig(baseDir) {
   return readJson(path.join(baseDir, 'config', 'runtime.json'));
 }
 
+function assertSafeScenarioName(value) {
+  const scenarioName = typeof value === 'string' ? value.trim() : '';
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,159}$/.test(scenarioName) || scenarioName.includes('..')) {
+    throw new Error('Invalid scenario name. Use letters, numbers, dots, underscores, or hyphens without path separators or "..".');
+  }
+  return scenarioName;
+}
+
 function readScenarioConfig(baseDir, scenarioName) {
-  return readJson(path.join(baseDir, 'config', 'scenarios', `${scenarioName}.json`));
+  return readJson(path.join(baseDir, 'config', 'scenarios', `${assertSafeScenarioName(scenarioName)}.json`));
 }
 
 function phaseOrder() {
@@ -410,6 +418,7 @@ module.exports = {
   ensureRuntimePaths,
   phaseFromArg,
   readRuntimeConfig,
+  assertSafeScenarioName,
   readScenarioConfig,
   phaseOrder,
   phaseMetadata,

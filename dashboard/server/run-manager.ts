@@ -104,7 +104,11 @@ function sanitizeMode(mode: unknown): RunMode {
 
 function sanitizeScenario(scenario: unknown): string {
   if (typeof scenario !== 'string' || scenario.trim().length === 0) return 'core-plus'
-  return scenario
+  const value = scenario.trim()
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,159}$/.test(value) || value.includes('..')) {
+    throw new Error('Invalid scenario name')
+  }
+  return value
 }
 
 function sanitizeWorkflowId(workflowId: unknown): string {
@@ -298,9 +302,11 @@ export class RunManager {
 
     let dealPath: string
     let inputSnapshotPath: string | null
+    let scenario: string
     try {
       dealPath = sanitizeDealPath(this.projectRoot, request.dealPath)
       inputSnapshotPath = sanitizeInputSnapshotPath(this.projectRoot, request.inputSnapshotPath)
+      scenario = sanitizeScenario(request.scenario)
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       return {
@@ -311,7 +317,6 @@ export class RunManager {
 
     const mode = sanitizeMode(request.mode)
     const speed = sanitizeSpeed(request.speed)
-    const scenario = sanitizeScenario(request.scenario)
     const seed = sanitizeSeed(request.seed)
     const workflowId = sanitizeWorkflowId(request.workflowId)
     const runtimeProvider = sanitizeRuntimeProvider(request.runtimeProvider)
