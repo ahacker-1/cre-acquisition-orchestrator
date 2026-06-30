@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const { assertSafeSegment } = require('./lib/safe-paths');
 
 const BASE_DIR = path.resolve(__dirname, '..');
 
@@ -184,6 +185,7 @@ function main() {
     throw new Error('Deal config must include dealId or pass --deal-id');
   }
   if (args.dealId) baseDeal.dealId = args.dealId;
+  baseDeal.dealId = assertSafeSegment(baseDeal.dealId, 'deal ID');
 
   const incomingRoot = fs.existsSync(path.join(args.incomingDir, baseDeal.dealId))
     ? path.join(args.incomingDir, baseDeal.dealId)
@@ -192,7 +194,8 @@ function main() {
   const { normalized, extraction } = buildNormalizedDeal(baseDeal, ingestionResult);
   validateMinimumDealShape(normalized);
 
-  const dealDir = path.join(args.outputDir, normalized.dealId);
+  const normalizedDealId = assertSafeSegment(normalized.dealId, 'normalized deal ID');
+  const dealDir = path.join(args.outputDir, normalizedDealId);
   ensureDir(dealDir);
   const normalizedPath = path.join(dealDir, 'deal-normalized.json');
   fs.writeFileSync(normalizedPath, JSON.stringify(normalized, null, 2));
