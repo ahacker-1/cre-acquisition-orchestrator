@@ -11,6 +11,7 @@ const {
 const { getWorkflowById, createWorkflowRunPlan } = require('./lib/workflow-catalog');
 const { getCodexStatus, runStreaming, runSync } = require('./lib/codex-cli');
 const { StoryEngine } = require('./lib/story-engine');
+const safePaths = require('./lib/safe-paths');
 
 const BASE_DIR = path.resolve(__dirname, '..');
 const SAFE_RUN_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
@@ -282,6 +283,27 @@ function toRepoPath(filePath) {
   return path.relative(BASE_DIR, filePath).replace(/\\/g, '/');
 }
 
+function safeSegmentOrNull(value, label) {
+  try {
+    return safePaths.assertSafeSegment(String(value || ''), label);
+  } catch {
+    return null;
+  }
+}
+
+function existingRepoPathOrNull(filePath) {
+  if (!filePath) return null;
+  const rawPath = String(filePath);
+  if (rawPath.includes('\0')) return null;
+  try {
+    const absolutePath = path.isAbsolute(rawPath) ? rawPath : path.resolve(BASE_DIR, rawPath);
+    const repoPath = safePaths.toRelativePath(BASE_DIR, absolutePath, 'prompt file');
+    return fs.existsSync(path.join(BASE_DIR, repoPath)) ? repoPath : null;
+  } catch {
+    return null;
+  }
+}
+
 function resolveAgentMeta(registry, phaseMeta, agentName) {
   const phaseRegistry = registry.agents?.[phaseMeta.slug] || {};
   const meta = phaseRegistry[agentName];
@@ -298,11 +320,12 @@ function uniqueExistingRepoPaths(filePaths) {
   const seen = new Set();
   return filePaths
     .filter(Boolean)
-    .map((filePath) => String(filePath).replace(/\\/g, '/'))
+    .map((filePath) => existingRepoPathOrNull(filePath))
+    .filter(Boolean)
     .filter((filePath) => {
       if (seen.has(filePath)) return false;
       seen.add(filePath);
-      return fs.existsSync(path.join(BASE_DIR, filePath));
+      return true;
     });
 }
 
@@ -331,7 +354,9 @@ const TEXT_DOCUMENT_EXTENSIONS = new Set(['.md', '.txt', '.csv', '.json']);
 // legal specialist reason over the real PSA / title commitment / estoppels
 // rather than only the deal config and upstream phase outputs.
 function legalDocumentRepoFiles(dealId) {
-  const manifestPath = path.join(BASE_DIR, 'data', 'deals', String(dealId), 'document-manifest.json');
+  const safeDealId = safeSegmentOrNull(dealId, 'deal ID');
+  if (!safeDealId) return [];
+  const manifestPath = path.join(BASE_DIR, 'data', 'deals', safeDealId, 'document-manifest.json');
   let manifest;
   try {
     manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
@@ -342,10 +367,13 @@ function legalDocumentRepoFiles(dealId) {
   const files = [];
   for (const doc of documents) {
     if (!doc || !LEGAL_DOCUMENT_TYPES.has(doc.type)) continue;
-    files.push(`data/deals/${dealId}/extractions/${doc.documentId}.json`);
+    const safeDocumentId = safeSegmentOrNull(doc.documentId, 'document ID');
+    if (!safeDocumentId) continue;
+    files.push(`data/deals/${safeDealId}/extractions/${safeDocumentId}.json`);
     const ext = path.extname(doc.fileName || '').toLowerCase();
     if (doc.path && TEXT_DOCUMENT_EXTENSIONS.has(ext)) {
-      files.push(toRepoPath(doc.path));
+      const repoPath = existingRepoPathOrNull(doc.path);
+      if (repoPath) files.push(repoPath);
     }
   }
   return files;
