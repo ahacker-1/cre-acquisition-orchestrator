@@ -215,6 +215,12 @@ function requireSafeRunId(runId) {
   return value;
 }
 
+function resolveRepoInputPath(rawPath, label) {
+  const value = typeof rawPath === 'string' && rawPath.trim().length > 0 ? rawPath.trim() : null;
+  if (!value) throw new Error(`Safe ${label} is required`);
+  return safePaths.assertWithinBase(BASE_DIR, path.resolve(BASE_DIR, value), label);
+}
+
 function parseArgs() {
   const args = process.argv.slice(2);
   function getArg(flag, fallback = null) {
@@ -234,8 +240,8 @@ function parseArgs() {
   const rerunFailed = args.includes('--rerun-failed');
   const rawRunId = getArg('--run-id', `codex-${Date.now()}`);
   return {
-    dealPath: path.resolve(BASE_DIR, getArg('--deal', 'config/deal.json')),
-    inputSnapshotPath: inputSnapshotArg ? path.resolve(BASE_DIR, inputSnapshotArg) : null,
+    dealPath: resolveRepoInputPath(getArg('--deal', 'config/deal.json'), 'deal path'),
+    inputSnapshotPath: inputSnapshotArg ? resolveRepoInputPath(inputSnapshotArg, 'input snapshot path') : null,
     workflowId: getArg('--workflow', 'quick-deal-screen'),
     scenarioName: getArg('--scenario', null),
     phaseKey: phaseFromArg(getArg('--phase', null)),
