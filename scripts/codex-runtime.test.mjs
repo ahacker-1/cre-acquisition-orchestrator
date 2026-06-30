@@ -2,6 +2,7 @@
 // Runs WITHOUT a real Codex CLI: every code path uses injected fakes/stubs,
 // no network, and no real sleeping. Run with: node scripts/codex-runtime.test.mjs
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -120,6 +121,25 @@ async function main() {
     } finally {
       rmSync(baseDir, { recursive: true, force: true })
     }
+  })
+
+  await test('codex runner rejects outside deal and snapshot paths before status checks', () => {
+    const scriptPath = resolve(projectRoot, 'scripts', 'codex-agent-runner.js')
+    const outsideDeal = resolve(projectRoot, '..', 'outside-deal.json')
+    const outsideSnapshot = resolve(projectRoot, '..', 'outside-snapshot.json')
+    const dealResult = spawnSync(process.execPath, [scriptPath, '--deal', outsideDeal, '--dry-run'], {
+      cwd: projectRoot,
+      encoding: 'utf8',
+    })
+    assert.notEqual(dealResult.status, 0)
+    assert.match(dealResult.stderr, /Unsafe deal path/)
+
+    const snapshotResult = spawnSync(process.execPath, [scriptPath, '--input-snapshot', outsideSnapshot, '--dry-run'], {
+      cwd: projectRoot,
+      encoding: 'utf8',
+    })
+    assert.notEqual(snapshotResult.status, 0)
+    assert.match(snapshotResult.stderr, /Unsafe input snapshot path/)
   })
 
   // -------------------------------------------------------------------------
