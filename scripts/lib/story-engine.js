@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { nowIso, ensureDir, safeString } = require('./runtime-core');
+const safePaths = require('./safe-paths');
 
 function toSlug(value) {
   return safeString(value, 'item')
@@ -15,6 +16,10 @@ function requireSafeRunId(runId) {
     throw new Error('StoryEngine runId must be a safe slug without path separators or "..".');
   }
   return value;
+}
+
+function requireSafeDealId(dealId) {
+  return safePaths.assertSafeSegment(String(dealId || '').trim(), 'deal ID');
 }
 
 function normalizePhase(phase) {
@@ -76,11 +81,11 @@ function readJsonIfExists(filePath, fallback) {
 class StoryEngine {
   constructor({ baseDir, dealId, runId }) {
     this.baseDir = baseDir;
-    this.dealId = dealId;
+    this.dealId = requireSafeDealId(dealId);
     this.runId = requireSafeRunId(runId);
 
-    this.statusDealDir = path.join(baseDir, 'data', 'status', dealId);
-    this.reportsDealDir = path.join(baseDir, 'data', 'reports', dealId);
+    this.statusDealDir = path.join(baseDir, 'data', 'status', this.dealId);
+    this.reportsDealDir = path.join(baseDir, 'data', 'reports', this.dealId);
     this.eventsPath = path.join(this.statusDealDir, `run-${this.runId}-events.ndjson`);
     this.documentsPath = path.join(this.statusDealDir, `run-${this.runId}-documents.json`);
     this.manifestPath = path.join(this.statusDealDir, `run-${this.runId}-manifest.json`);
@@ -90,7 +95,7 @@ class StoryEngine {
 
     this.documents = readJsonIfExists(this.documentsPath, {
       runId: this.runId,
-      dealId,
+      dealId: this.dealId,
       updatedAt: nowIso(),
       documents: []
     });
@@ -107,7 +112,7 @@ class StoryEngine {
     this.seq = this.loadLastSeq();
     this.persistManifest({
       runId: this.runId,
-      dealId,
+      dealId: this.dealId,
       startedAt: nowIso(),
       status: 'RUNNING',
       eventsPath: this.rel(this.eventsPath),

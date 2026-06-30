@@ -2,8 +2,9 @@
 // Runs WITHOUT a real Codex CLI: every code path uses injected fakes/stubs,
 // no network, and no real sleeping. Run with: node scripts/codex-runtime.test.mjs
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 
@@ -17,6 +18,7 @@ const {
   selectFailedAgentSelectors
 } = require('./codex-agent-runner.js')
 const { runStreaming } = require('./lib/codex-cli.js')
+const { StoryEngine } = require('./lib/story-engine.js')
 
 let passed = 0
 function test(name, fn) {
@@ -101,6 +103,23 @@ async function main() {
   await test('W73 handles null/undefined safely', () => {
     assert.equal(redactSecrets(null), null)
     assert.equal(redactSecrets(undefined), undefined)
+  })
+
+  await test('StoryEngine rejects path-shaped deal ids before creating runtime dirs', () => {
+    const baseDir = mkdtempSync(join(tmpdir(), 'cre-story-engine-security-'))
+    try {
+      assert.throws(
+        () => new StoryEngine({ baseDir, dealId: '../escaped-story', runId: 'run-safe' }),
+        /Invalid deal ID/,
+      )
+      assert.equal(
+        existsSync(join(baseDir, 'data', 'escaped-story')),
+        false,
+        'unsafe deal IDs must not create runtime directories outside data/status or data/reports',
+      )
+    } finally {
+      rmSync(baseDir, { recursive: true, force: true })
+    }
   })
 
   // -------------------------------------------------------------------------
