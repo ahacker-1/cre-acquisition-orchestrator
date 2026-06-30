@@ -6,8 +6,9 @@
 //   node scripts/codex-legal-docs.test.mjs
 
 import assert from 'node:assert/strict'
-import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 
@@ -94,6 +95,35 @@ try {
     const prompt = makePrompt('legal')
     assert.match(prompt, new RegExp(`data/deals/${dealId}/extractions/${psaDocId}\\.json`), 'legal prompt should list the PSA extraction')
     assert.match(prompt, /Legal source documents:.*included in the file list/, 'legal prompt should include the grounding note')
+  })
+
+  check('legalDocumentRepoFiles skips text source paths outside the repo', () => {
+    const outsideRoot = mkdtempSync(join(tmpdir(), 'cre-codex-legal-outside-'))
+    try {
+      const outsidePath = join(outsideRoot, 'outside-loi.txt')
+      const outsideDocId = 'doc_outside_loi_0004'
+      writeFileSync(outsidePath, 'Outside LOI text must not enter prompt files')
+      const manifestPath = resolve(dealRoot, 'document-manifest.json')
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      manifest.documents.push({
+        documentId: outsideDocId,
+        fileName: 'outside-loi.txt',
+        type: 'loi',
+        path: outsidePath,
+      })
+      writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
+      writeFileSync(resolve(dealRoot, 'extractions', `${outsideDocId}.json`), JSON.stringify({ fields: [] }))
+
+      const files = legalDocumentRepoFiles(dealId)
+      assert.ok(
+        files.includes(`data/deals/${dealId}/extractions/${outsideDocId}.json`),
+        'repo-contained extraction should still be included',
+      )
+      assert.ok(!files.some((filePath) => filePath.includes('..')), 'prompt file paths must not escape the repo')
+      assert.ok(!files.some((filePath) => filePath.includes('outside-loi.txt')), 'outside text source must be skipped')
+    } finally {
+      rmSync(outsideRoot, { recursive: true, force: true })
+    }
   })
 
   check('non-legal phase prompt excludes the legal documents', () => {
