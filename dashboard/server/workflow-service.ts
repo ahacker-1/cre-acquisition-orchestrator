@@ -97,6 +97,17 @@ function presetsRoot(dataRoot: string): string {
   return join(dataRoot, 'workflow-presets')
 }
 
+function assertSafePresetId(value: string, label = 'preset ID'): string {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,159}$/.test(value) || value.includes('..')) {
+    throw new Error(`Invalid ${label}`)
+  }
+  return value
+}
+
+function presetPathForId(dataRoot: string, presetId: string): string {
+  return join(presetsRoot(dataRoot), `${assertSafePresetId(presetId)}.json`)
+}
+
 function readJsonSafe<T>(filePath: string): T | null {
   try {
     return JSON.parse(readFileSync(filePath, 'utf8')) as T
@@ -183,7 +194,22 @@ export function listWorkflowPresets(context: ServiceContext): { presets: Workflo
   if (!existsSync(root)) return { presets: [] }
   const presets = readdirSync(root)
     .filter((name) => name.endsWith('.json'))
-    .map((name) => readJsonSafe<WorkflowPreset>(join(root, name)))
+    .map((name) => {
+      const filePresetId = name.slice(0, -'.json'.length)
+      try {
+        assertSafePresetId(filePresetId, 'preset file ID')
+      } catch {
+        return null
+      }
+      const preset = readJsonSafe<WorkflowPreset>(join(root, name))
+      if (!preset?.presetId) return null
+      try {
+        assertSafePresetId(preset.presetId)
+      } catch {
+        return null
+      }
+      return preset.presetId === filePresetId ? preset : { ...preset, presetId: filePresetId }
+    })
     .filter((preset): preset is WorkflowPreset => Boolean(preset?.presetId))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
   return { presets }
@@ -205,14 +231,18 @@ export function saveWorkflowPreset(
   const workflow = getWorkflow(context, workflowId)
   if (!workflow) throw new Error(`Unknown workflow: ${workflowId}`)
 
-  const existing =
+  const requestedPresetId =
     typeof input.presetId === 'string' && input.presetId.trim().length > 0
-      ? readJsonSafe<WorkflowPreset>(join(presetsRoot(context.dataRoot), `${input.presetId.trim()}.json`))
+      ? assertSafePresetId(input.presetId.trim())
+      : null
+  const existing =
+    requestedPresetId
+      ? readJsonSafe<WorkflowPreset>(presetPathForId(context.dataRoot, requestedPresetId))
       : null
   const timestamp = nowIso()
   const presetId =
-    existing?.presetId ||
-    `${slugify(name) || 'workflow-preset'}-${timestamp.replace(/[:.]/g, '-')}`
+    requestedPresetId ||
+    assertSafePresetId(`${slugify(name) || 'workflow-preset'}-${timestamp.replace(/[:.]/g, '-')}`)
   const runtimeProvider = asRuntimeProvider(input.runtimeProvider ?? nestedInputs.runtimeProvider)
   const codexSearch = asCodexSearch(input as Record<string, unknown>, nestedInputs, runtimeProvider)
 
@@ -260,6 +290,6 @@ export function saveWorkflowPreset(
 
   const root = presetsRoot(context.dataRoot)
   mkdirSync(root, { recursive: true })
-  writeFileSync(join(root, `${preset.presetId}.json`), JSON.stringify(preset, null, 2))
+  writeFileSync(presetPathForId(context.dataRoot, preset.presetId), JSON.stringify(preset, null, 2))
   return preset
 }

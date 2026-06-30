@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -64,6 +64,58 @@ try {
     runtimeProvider: 'simulation',
   })
   assert.equal(simulationPreset.codexSearch, false, 'simulation presets do not imply Codex search')
+
+  mkdirSync(context.dataRoot, { recursive: true })
+  writeFileSync(
+    join(context.dataRoot, 'outside-preset.json'),
+    JSON.stringify({
+      ...codexDefaultSearchPreset,
+      presetId: '../escaped-preset',
+      name: 'Escaping Preset',
+    }, null, 2),
+  )
+  assert.throws(
+    () => saveWorkflowPreset(context, {
+      presetId: '../outside-preset',
+      name: 'Path Escaping Preset',
+      dealId: 'preset-deal',
+      workflowId: 'quick-deal-screen',
+      runtimeProvider: 'codex',
+    }),
+    /Invalid preset ID/,
+    'preset updates must reject path-shaped preset ids before reading local files',
+  )
+  assert.equal(
+    existsSync(join(context.dataRoot, 'escaped-preset.json')),
+    false,
+    'unsafe preset IDs must not write outside data/workflow-presets',
+  )
+
+  const presetRoot = join(context.dataRoot, 'workflow-presets')
+  writeFileSync(
+    join(presetRoot, `${codexDefaultSearchPreset.presetId}.json`),
+    JSON.stringify({
+      ...codexDefaultSearchPreset,
+      presetId: '../escaped-preset',
+    }, null, 2),
+  )
+  const repairedPreset = saveWorkflowPreset(context, {
+    presetId: codexDefaultSearchPreset.presetId,
+    name: 'Codex Default Search Preset',
+    dealId: 'preset-deal',
+    workflowId: 'quick-deal-screen',
+    runtimeProvider: 'codex',
+  })
+  assert.equal(
+    repairedPreset.presetId,
+    codexDefaultSearchPreset.presetId,
+    'updating an existing preset must preserve the requested safe preset identity',
+  )
+  assert.equal(
+    existsSync(join(context.dataRoot, 'escaped-preset.json')),
+    false,
+    'stored preset JSON must not redirect the write target outside the preset directory',
+  )
 
   const baseDeal = JSON.parse(readFileSync(join(projectRoot, 'config', 'deal.json'), 'utf8'))
 
