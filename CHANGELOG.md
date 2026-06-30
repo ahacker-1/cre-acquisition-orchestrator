@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [3.4.1](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.4.0...v3.4.1) (2026-06-30)
+
+
+### Bug Fixes
+
+* contain codex legal prompt files ([706a1fa](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/706a1fa8d44b438154995153931338142e0ea43e))
+* harden codex runner input paths ([dd42f48](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/dd42f48c627731c115473a333ff82ce19b5a5df1))
+* harden deal id path handling ([e817b20](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/e817b2040fc5d740313dfd8c9a36af69ba6e359b))
+* harden ingest deal ids ([096ede3](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/096ede305485fcf795b0a48ed6332f03c1bbcddc))
+* harden scenario config paths ([ab82914](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/ab82914ba7e868366b493409df4f45ef36c5cf7e))
+* harden story engine deal ids ([3b9bdee](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/3b9bdee381ed58a4ad92e7f7541e23e25122fa8c))
+* harden workflow preset paths ([5bc39d5](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/5bc39d5986020e36767a2442ce495b354fd646c4))
+
 ## [3.4.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.3.0...v3.4.0) (2026-06-25)
 
 Turns the post-3.3.0 hardening work into a verified release. Every acquisition phase now has recorded
