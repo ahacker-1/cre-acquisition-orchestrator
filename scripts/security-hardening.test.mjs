@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -89,6 +90,43 @@ const unsafeScenarioResponse = runManager.start({
 })
 assert.equal(unsafeScenarioResponse.statusCode, 400)
 assert.match(String(unsafeScenarioResponse.body.error), /Invalid scenario name/)
+
+const unsafeIngestRoot = mkdtempSync(join(tmpdir(), 'cre-ingest-security-'))
+try {
+  const dealPath = join(unsafeIngestRoot, 'deal.json')
+  const incomingDir = join(unsafeIngestRoot, 'incoming')
+  const outputDir = join(unsafeIngestRoot, 'normalized')
+  mkdirSync(incomingDir, { recursive: true })
+  writeFileSync(
+    dealPath,
+    JSON.stringify({
+      dealId: '../escaped-ingest',
+      property: { totalUnits: 12 },
+      financials: { askingPrice: 1200000, inPlaceOccupancy: 0.91 },
+    }, null, 2),
+  )
+  const result = spawnSync(process.execPath, [
+    join(projectRoot, 'scripts', 'ingest-deal.js'),
+    '--deal',
+    dealPath,
+    '--incoming',
+    incomingDir,
+    '--output-dir',
+    outputDir,
+  ], {
+    cwd: projectRoot,
+    encoding: 'utf8',
+  })
+  assert.notEqual(result.status, 0, 'ingest-deal must reject path-shaped deal IDs')
+  assert.match(result.stderr, /Invalid deal ID/)
+  assert.equal(
+    existsSync(join(unsafeIngestRoot, 'escaped-ingest', 'deal-normalized.json')),
+    false,
+    'ingest-deal must not write normalized deals outside the selected output root',
+  )
+} finally {
+  rmSync(unsafeIngestRoot, { recursive: true, force: true })
+}
 
 const unsafeDealRoot = mkdtempSync(join(tmpdir(), 'cre-deal-id-security-'))
 try {
