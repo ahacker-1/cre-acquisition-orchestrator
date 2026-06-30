@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { getDealRecord, saveUserDeal } from '../dashboard/server/deal-service.ts'
 import { runDocumentParser, sanitizeCsvCell } from '../dashboard/server/parser-service.ts'
 import { RunManager } from '../dashboard/server/run-manager.ts'
 import codexManifestPaths from './lib/codex-manifest-paths.js'
@@ -73,6 +74,41 @@ const unsafeSnapshotResponse = runManager.start({
 })
 assert.equal(unsafeSnapshotResponse.statusCode, 400)
 assert.match(String(unsafeSnapshotResponse.body.error), /Unsafe input snapshot path/)
+
+const unsafeDealRoot = mkdtempSync(join(tmpdir(), 'cre-deal-id-security-'))
+try {
+  const dataRoot = join(unsafeDealRoot, 'data')
+  const statusDir = join(dataRoot, 'status')
+  mkdirSync(join(unsafeDealRoot, 'config'), { recursive: true })
+  mkdirSync(statusDir, { recursive: true })
+
+  const outsideDeal = JSON.parse(readFileSync(join(projectRoot, 'config', 'deal.json'), 'utf8'))
+  outsideDeal.dealId = 'outside-probe'
+  writeFileSync(join(unsafeDealRoot, 'config', 'deal.json'), JSON.stringify(outsideDeal, null, 2))
+
+  const dealContext = { dataRoot, projectRoot, statusDir }
+  assert.equal(
+    getDealRecord(dealContext, '../../config'),
+    null,
+    'deal lookup must not resolve deal.json outside data/deals',
+  )
+  assert.throws(
+    () => saveUserDeal(dealContext, { deal: { ...outsideDeal, dealId: '../escaped' }, mode: 'draft' }),
+    /Invalid deal ID/,
+    'saving a deal must reject path-shaped ids before writing data/deals paths',
+  )
+  assert.throws(
+    () => saveUserDeal(dealContext, {
+      deal: { ...outsideDeal, dealId: 'safe-after-edit' },
+      mode: 'draft',
+      currentDealId: '../escaped-current',
+    }),
+    /Invalid current deal ID/,
+    'renaming a deal must reject path-shaped current ids before building source directories',
+  )
+} finally {
+  rmSync(unsafeDealRoot, { recursive: true, force: true })
+}
 
 assert.equal(sanitizeCsvCell('=HYPERLINK("http://example.com")'), '\'=HYPERLINK("http://example.com")')
 assert.equal(sanitizeCsvCell('+SUM(A1:A2)'), "'+SUM(A1:A2)")

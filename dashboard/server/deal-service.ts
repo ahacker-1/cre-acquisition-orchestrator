@@ -87,16 +87,31 @@ function samplesRoot(projectRoot: string): string {
   return join(projectRoot, 'demo', 'deals')
 }
 
+function assertSafeDealId(value: string, label = 'deal ID'): string {
+  if (!/^(?!.*\.\.)[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(value)) {
+    throw new Error(`Invalid ${label}`)
+  }
+  return value
+}
+
+function maybeSafeDealId(value: string): string | null {
+  try {
+    return assertSafeDealId(value)
+  } catch {
+    return null
+  }
+}
+
 function metaPathForDeal(dataRoot: string, dealId: string): string {
-  return join(dealsRoot(dataRoot), dealId, 'meta.json')
+  return join(dealsRoot(dataRoot), assertSafeDealId(dealId), 'meta.json')
 }
 
 function dealPathForDeal(dataRoot: string, dealId: string): string {
-  return join(dealsRoot(dataRoot), dealId, 'deal.json')
+  return join(dealsRoot(dataRoot), assertSafeDealId(dealId), 'deal.json')
 }
 
 function checkpointPathForDeal(statusDir: string, dealId: string): string {
-  return join(statusDir, `${dealId}.json`)
+  return join(statusDir, `${assertSafeDealId(dealId)}.json`)
 }
 
 function asString(value: unknown): string | undefined {
@@ -391,6 +406,7 @@ function summarizeDeal(
 }
 
 function readPipelineStatus(statusDir: string, dealId: string): string | null {
+  if (!maybeSafeDealId(dealId)) return null
   const checkpoint = readJsonSafe(checkpointPathForDeal(statusDir, dealId))
   return checkpoint && typeof checkpoint.status === 'string' ? checkpoint.status : null
 }
@@ -415,6 +431,7 @@ function listUserDeals(context: ServiceContext): DealLibraryItem[] {
       if (!deal) return null
       const meta = readJsonSafe(metaFilePath) as DealMeta | null
       const dealId = asString(deal.dealId) ?? basename(entryPath)
+      if (!maybeSafeDealId(dealId)) return null
       return summarizeDeal(
         'user',
         dealFilePath,
@@ -438,6 +455,7 @@ function listSampleDeals(context: ServiceContext): DealLibraryItem[] {
       const deal = readJsonSafe(dealFilePath)
       if (!deal) return null
       const dealId = asString(deal.dealId) ?? basename(entry, '.json')
+      if (!maybeSafeDealId(dealId)) return null
       return summarizeDeal(
         'sample',
         dealFilePath,
@@ -484,33 +502,36 @@ export function getDealRecord(
   context: ServiceContext,
   dealId: string,
 ): DealRecord | null {
-  const userDealPath = dealPathForDeal(context.dataRoot, dealId)
+  const safeDealId = maybeSafeDealId(dealId)
+  if (!safeDealId) return null
+
+  const userDealPath = dealPathForDeal(context.dataRoot, safeDealId)
   if (existsSync(userDealPath)) {
     const deal = readJsonSafe(userDealPath)
     if (!deal) return null
-    const meta = readJsonSafe(metaPathForDeal(context.dataRoot, dealId)) as DealMeta | null
+    const meta = readJsonSafe(metaPathForDeal(context.dataRoot, safeDealId)) as DealMeta | null
     const libraryIds = listDealLibrary(context).deals.map((entry) => entry.dealId)
     const validation = validateDealConfig(deal, {
       projectRoot: context.projectRoot,
       mode: 'launch',
       existingIds: libraryIds,
-      currentDealId: dealId,
+      currentDealId: safeDealId,
     })
     return {
-      item: summarizeDeal('user', userDealPath, deal, meta, readPipelineStatus(context.statusDir, dealId)),
+      item: summarizeDeal('user', userDealPath, deal, meta, readPipelineStatus(context.statusDir, safeDealId)),
       deal,
       validation,
     }
   }
 
-  const samplePath = join(samplesRoot(context.projectRoot), `${dealId}.json`)
+  const samplePath = join(samplesRoot(context.projectRoot), `${safeDealId}.json`)
   const sampleByFileName = existsSync(samplePath) ? samplePath : null
 
   if (sampleByFileName) {
     const deal = readJsonSafe(sampleByFileName)
     if (!deal) return null
     return {
-      item: summarizeDeal('sample', sampleByFileName, deal, null, readPipelineStatus(context.statusDir, dealId)),
+      item: summarizeDeal('sample', sampleByFileName, deal, null, readPipelineStatus(context.statusDir, safeDealId)),
       deal,
       validation: {
         valid: true,
@@ -523,7 +544,7 @@ export function getDealRecord(
   }
 
   const sampleFiles = listSampleDeals(context)
-  const match = sampleFiles.find((entry) => entry.dealId === dealId)
+  const match = sampleFiles.find((entry) => entry.dealId === safeDealId)
   if (match) {
     const deal = readJsonSafe(match.dealPath)
     if (!deal) return null
@@ -542,15 +563,15 @@ export function getDealRecord(
 
   const configDealPath = join(context.projectRoot, 'config', 'deal.json')
   const configDeal = readJsonSafe(configDealPath)
-  if (configDeal && asString(configDeal.dealId) === dealId) {
+  if (configDeal && asString(configDeal.dealId) === safeDealId) {
     const validation = validateDealConfig(configDeal, {
       projectRoot: context.projectRoot,
       mode: 'launch',
       existingIds: listDealLibrary(context).deals.map((entry) => entry.dealId),
-      currentDealId: dealId,
+      currentDealId: safeDealId,
     })
     return {
-      item: summarizeDeal('sample', configDealPath, configDeal, null, readPipelineStatus(context.statusDir, dealId)),
+      item: summarizeDeal('sample', configDealPath, configDeal, null, readPipelineStatus(context.statusDir, safeDealId)),
       deal: configDeal,
       validation,
     }
@@ -571,13 +592,17 @@ export function saveUserDeal(
   if (!dealId) {
     throw new Error('Missing required field: dealId')
   }
+  const safeDealId = assertSafeDealId(dealId)
+  const safeCurrentDealId = request.currentDealId
+    ? assertSafeDealId(request.currentDealId, 'current deal ID')
+    : undefined
 
   const library = listDealLibrary(context)
   const validation = validateDealConfig(request.deal, {
     projectRoot: context.projectRoot,
     mode: request.mode,
     existingIds: library.deals.map((entry) => entry.dealId),
-    currentDealId: request.currentDealId,
+    currentDealId: safeCurrentDealId,
   })
 
   if (validation.blockingIssues.length > 0) {
@@ -589,19 +614,19 @@ export function saveUserDeal(
   const root = dealsRoot(context.dataRoot)
   ensureDir(root)
 
-  if (request.currentDealId && request.currentDealId !== dealId) {
-    const currentDir = join(root, request.currentDealId)
-    const targetDir = join(root, dealId)
+  if (safeCurrentDealId && safeCurrentDealId !== safeDealId) {
+    const currentDir = join(root, safeCurrentDealId)
+    const targetDir = join(root, safeDealId)
     if (existsSync(currentDir) && !existsSync(targetDir)) {
       renameSync(currentDir, targetDir)
     }
   }
 
-  const targetDir = join(root, dealId)
+  const targetDir = join(root, safeDealId)
   ensureDir(targetDir)
 
   const now = new Date().toISOString()
-  const previousMeta = readJsonSafe(metaPathForDeal(context.dataRoot, dealId)) as DealMeta | null
+  const previousMeta = readJsonSafe(metaPathForDeal(context.dataRoot, safeDealId)) as DealMeta | null
   const launchValidation =
     request.mode === 'launch'
       ? validation
@@ -609,25 +634,25 @@ export function saveUserDeal(
           projectRoot: context.projectRoot,
           mode: 'launch',
           existingIds: library.deals.map((entry) => entry.dealId),
-          currentDealId: request.currentDealId ?? dealId,
+          currentDealId: safeCurrentDealId ?? safeDealId,
         })
   const meta: DealMeta = {
-    dealId,
+    dealId: safeDealId,
     saveState: launchValidation.launchReady ? 'ready' : 'draft',
     createdAt: previousMeta?.createdAt ?? now,
     updatedAt: now,
     lastLaunchedAt: previousMeta?.lastLaunchedAt,
   }
 
-  writeFileSync(dealPathForDeal(context.dataRoot, dealId), JSON.stringify(request.deal, null, 2))
-  writeFileSync(metaPathForDeal(context.dataRoot, dealId), JSON.stringify(meta, null, 2))
+  writeFileSync(dealPathForDeal(context.dataRoot, safeDealId), JSON.stringify(request.deal, null, 2))
+  writeFileSync(metaPathForDeal(context.dataRoot, safeDealId), JSON.stringify(meta, null, 2))
 
   const item = summarizeDeal(
     'user',
-    dealPathForDeal(context.dataRoot, dealId),
+    dealPathForDeal(context.dataRoot, safeDealId),
     request.deal,
     meta,
-    readPipelineStatus(context.statusDir, dealId),
+    readPipelineStatus(context.statusDir, safeDealId),
   )
 
   return {
@@ -638,7 +663,8 @@ export function saveUserDeal(
 }
 
 export function markDealLaunched(context: ServiceContext, dealId: string): void {
-  const metaPath = metaPathForDeal(context.dataRoot, dealId)
+  const safeDealId = assertSafeDealId(dealId)
+  const metaPath = metaPathForDeal(context.dataRoot, safeDealId)
   const current = readJsonSafe(metaPath) as DealMeta | null
   if (!current) return
   current.lastLaunchedAt = new Date().toISOString()
