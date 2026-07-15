@@ -57,14 +57,17 @@ export default function LiveFeed({ storyEvents, limit = 40 }: LiveFeedProps) {
 
   return (
     <section data-testid="live-feed" aria-label="Live team feed">
-      <p className="portal-kicker">Live Feed</p>
+      <div className="flex items-center gap-2.5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#aeb8bf]">Live team</p>
+        <span className="cre-dot cre-dot-done" aria-hidden="true" />
+      </div>
       {rows.length === 0 ? (
-        <p className="mt-3 text-xs leading-5 text-gray-600">
+        <p className="mt-5 max-w-[28ch] text-xs leading-5 text-[#9aa6ae]">
           No team activity yet. Summon an agent or run a stage to watch the team work.
         </p>
       ) : (
         <ul
-          className="mt-3 space-y-2"
+          className="mt-5 divide-y divide-white/[0.06] border-y border-white/[0.08]"
           role="log"
           aria-live="polite"
           aria-relevant="additions"
@@ -75,13 +78,13 @@ export default function LiveFeed({ storyEvents, limit = 40 }: LiveFeedProps) {
               key={`${event.runId}-${event.seq}`}
               data-testid="live-feed-row"
               data-agent={event.agent ?? ''}
-              className="flex items-start gap-2 text-[11px] leading-5"
+              className="grid grid-cols-[auto_42px_minmax(0,1fr)] items-start gap-2 py-3 text-[11px] leading-5"
             >
-              <span className={`${FEED_DOT[feedToneFromEvent(event)]} mt-1`} aria-hidden="true" />
-              <span className="font-mono text-gray-600">{formatClock(event.ts)}</span>
+              <span className={`${FEED_DOT[feedToneFromEvent(event)]} mt-1.5`} aria-hidden="true" />
+              <span className="font-mono text-[10px] tabular-nums text-[#82909a]">{formatClock(event.ts)}</span>
               <span className="min-w-0">
-                {event.agent && <span className="text-gray-200">{event.agent} </span>}
-                <span className="text-gray-500">{eventLabel(event)}</span>
+                {event.agent && <span className="text-[#dbe1e5]">{event.agent} </span>}
+                <span className="text-[#98a4ac]">{eventLabel(event)}</span>
               </span>
             </li>
           ))}

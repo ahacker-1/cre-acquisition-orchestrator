@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { IconAdjustmentsHorizontal, IconArrowRight, IconChevronDown } from '@tabler/icons-react'
 import type { DealCheckpoint, StoryEvent } from '../../types/checkpoint'
 import type { SpineStage, StageId, StageStatus } from '../../lib/stageModel'
 import type { CommandSuggestion } from '../../lib/commandModel'
@@ -48,6 +49,14 @@ interface WorkspaceFrameProps {
   onOpenAgent: (agentId: string) => void
   onSummon: () => void
   onOpenAdvanced: () => void
+  primaryAction?: {
+    label: string
+    pendingLabel?: string
+    testId: string
+    disabled?: boolean
+    pending?: boolean
+    onClick: () => void
+  }
   children: ReactNode
 }
 
@@ -73,64 +82,103 @@ export default function WorkspaceFrame({
   onOpenAgent,
   onSummon,
   onOpenAdvanced,
+  primaryAction,
   children,
 }: WorkspaceFrameProps) {
   return (
-    <div className="portal-shell" data-testid="workspace-frame">
-      <header className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <p className="portal-kicker">Acquisition Workspace</p>
-          <h1 className="mt-1 truncate font-serif text-3xl font-semibold tracking-[-0.02em] text-white md:text-4xl">
-            {deal.dealName || 'Untitled Deal'}
-          </h1>
-          <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-gray-500">{dealFacts(deal)}</p>
+    <div className="portal-shell grid min-h-screen min-w-0 grid-cols-[minmax(0,1fr)] pb-24 xl:grid-cols-[185px_minmax(0,1fr)] xl:pb-0" data-testid="workspace-frame">
+      <aside className="min-w-0 border-b border-cre-border bg-[#0c151c]/90 xl:min-h-screen xl:border-b-0 xl:border-r" aria-label="Workspace navigation">
+        <div className="flex items-start justify-between gap-4 px-5 py-5 xl:block xl:px-5 xl:py-7">
+          <div>
+            <p className="font-serif text-[26px] font-medium leading-none tracking-[-0.04em] text-cre-primary" aria-hidden="true">AO</p>
+            <p className="mt-5 hidden max-w-[132px] text-[13px] font-light leading-5 text-gray-300 xl:block">
+              CRE Acquisition<br />Orchestrator
+            </p>
+          </div>
+          <div className="min-w-0 xl:mt-9 xl:border-y xl:border-cre-border xl:py-5">
+            <p className="portal-kicker">Deal</p>
+            <button type="button" onClick={() => onFocusStage(activeStage)} className="mt-3 flex min-w-0 items-center gap-2 text-left text-xs text-gray-300 hover:text-white">
+              <span className="truncate">{deal.dealName || 'Untitled Deal'}</span>
+              <IconChevronDown size={14} stroke={1.5} className="shrink-0 text-gray-600" aria-hidden="true" />
+            </button>
+          </div>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
+
+        <div className="xl:px-0">
+          <p className="portal-kicker hidden px-5 pb-3 xl:block">Workflow</p>
+          <LifecycleSpine stages={stages} activeStageId={activeStage} onFocusStage={onFocusStage} />
+        </div>
+
+        <div className="hidden px-5 pb-28 pt-8 xl:block">
           <span
-            className="flex items-center gap-2 border border-white/10 px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-gray-300"
+            className="flex items-center gap-2 border-t border-cre-border pt-5 text-[10px] uppercase tracking-[0.12em] text-gray-500"
             data-testid="package-readiness"
           >
             <span className={DOT_CLASS[packageStatus]} aria-hidden="true" />
             {packageLabel}
           </span>
-          <button
-            type="button"
-            data-testid="open-advanced"
-            onClick={onOpenAdvanced}
-            className="portal-button portal-button-secondary min-h-9 px-3 py-1"
-          >
-            Advanced
-          </button>
         </div>
-      </header>
+      </aside>
 
-      <LifecycleSpine stages={stages} activeStageId={activeStage} onFocusStage={onFocusStage} />
+      <div className="min-w-0 overflow-hidden xl:overflow-visible">
+        <header className="flex min-h-[162px] flex-col justify-center gap-6 border-b border-cre-border px-6 py-8 md:px-10 lg:flex-row lg:items-center lg:justify-between xl:px-[54px]">
+          <div className="min-w-0">
+            <p className="portal-kicker xl:hidden">Acquisition workspace</p>
+            <h1 className="mt-1 truncate font-serif text-4xl font-medium leading-none tracking-[-0.035em] text-cre-primary md:text-[52px]">
+              {deal.dealName || 'Untitled Deal'}
+            </h1>
+            <p className="mt-4 text-xs font-light tracking-[0.14em] text-gray-500">{dealFacts(deal)}</p>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-4">
+            <button
+              type="button"
+              data-testid="open-advanced"
+              onClick={onOpenAdvanced}
+              className="portal-button portal-button-secondary min-h-[46px] px-5"
+            >
+              <IconAdjustmentsHorizontal size={17} stroke={1.5} aria-hidden="true" />
+              Advanced
+            </button>
+            {primaryAction && (
+              <button
+                type="button"
+                data-testid={primaryAction.testId}
+                disabled={primaryAction.disabled || primaryAction.pending}
+                onClick={primaryAction.onClick}
+                className="portal-button portal-button-primary min-h-[46px] min-w-[220px] justify-between px-6"
+              >
+                <span>{primaryAction.pending ? primaryAction.pendingLabel ?? 'Working…' : primaryAction.label}</span>
+                <IconArrowRight size={18} stroke={1.5} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        </header>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="min-w-0 space-y-4" data-testid="stage-outlet">
-          {children}
-        </div>
-        <aside className="space-y-5" data-testid="workspace-rail">
-          <div className="portal-panel">
+        <section className="grid min-h-[calc(100vh-162px)] xl:grid-cols-[minmax(0,1fr)_330px]">
+          <section className="min-w-0 px-6 py-10 md:px-10 xl:px-[54px]" data-testid="stage-outlet" aria-label={`${stageLabel} stage`}>
+            {children}
+          </section>
+          <aside className="flex min-h-[640px] flex-col border-t border-cre-border px-5 py-7 xl:sticky xl:top-0 xl:h-[calc(100vh-162px)] xl:min-h-0 xl:self-start xl:overflow-y-auto xl:border-l xl:border-t-0" data-testid="workspace-rail">
             <LiveFeed storyEvents={storyEvents} />
-          </div>
-          <div className="portal-panel">
-            <TeamRail
-              stageLabel={stageLabel}
-              agents={team}
-              totalAgentCount={totalAgentCount}
-              onOpenAgent={onOpenAgent}
-              onSummon={onSummon}
-            />
-          </div>
-        </aside>
-      </section>
-
-      <CommandBar
-        suggestions={suggestions}
-        onSubmit={onCommandSubmit}
-        onSuggestion={onCommandSuggestion}
-      />
+            <div className="mt-6">
+              <TeamRail
+                stageLabel={stageLabel}
+                agents={team}
+                totalAgentCount={totalAgentCount}
+                onOpenAgent={onOpenAgent}
+                onSummon={onSummon}
+              />
+            </div>
+            <div className="mt-auto pt-10">
+              <CommandBar
+                suggestions={suggestions}
+                onSubmit={onCommandSubmit}
+                onSuggestion={onCommandSuggestion}
+              />
+            </div>
+          </aside>
+        </section>
+      </div>
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { IconPlus } from '@tabler/icons-react'
 import type { StageStatus } from '../../lib/stageModel'
 
 const DOT_CLASS: Record<StageStatus, string> = {
@@ -34,12 +35,20 @@ export default function TeamRail({
   onSummon,
 }: TeamRailProps) {
   return (
-    <section data-testid="team-rail" aria-label="Your team">
-      <p className="portal-kicker">Your Team · {stageLabel}</p>
+    <section
+      data-testid="team-rail"
+      aria-label="Your team"
+      className="border-t border-white/[0.08] pt-6"
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#aeb8bf]">
+        Your Team <span className="text-[#65747e]">·</span> {stageLabel}
+      </p>
       {agents.length === 0 ? (
-        <p className="mt-3 text-xs leading-5 text-gray-600">No agents staffed on this stage yet.</p>
+        <p className="mt-4 max-w-[26ch] text-xs leading-5 text-[#8996a0]">
+          No agents staffed on this stage yet.
+        </p>
       ) : (
-        <ul className="mt-3 space-y-1">
+        <ul className="mt-4 space-y-0.5">
           {agents.map((agent) => (
             <li key={agent.agentId}>
               <button
@@ -47,12 +56,16 @@ export default function TeamRail({
                 data-testid={`team-agent-${agent.agentId}`}
                 data-status={agent.status}
                 onClick={() => onOpenAgent(agent.agentId)}
-                className="flex w-full items-center gap-2 border border-transparent px-1 py-1.5 text-left text-xs text-gray-300 transition-colors hover:border-white/10 hover:bg-white/[0.03]"
+                className="group -mx-2 flex min-h-10 w-[calc(100%+1rem)] items-center gap-3 border border-transparent px-2 py-2 text-left text-xs text-[#dbe1e5] transition-colors hover:border-white/[0.08] hover:bg-white/[0.025] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#c98d61]"
               >
                 <span className={DOT_CLASS[agent.status]} aria-hidden="true" />
-                <span className="min-w-0 flex-1 truncate">{agent.name}</span>
+                <span className="min-w-0 flex-1 truncate transition-colors group-hover:text-white">
+                  {agent.name}
+                </span>
                 {agent.critical && (
-                  <span className="shrink-0 text-[9px] uppercase tracking-[0.12em] text-gray-600">critical</span>
+                  <span className="shrink-0 text-[9px] uppercase tracking-[0.14em] text-[#82909a]">
+                    critical
+                  </span>
                 )}
               </button>
             </li>
@@ -63,9 +76,10 @@ export default function TeamRail({
         type="button"
         data-testid="team-summon"
         onClick={onSummon}
-        className="mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-cre-live transition-colors hover:text-white"
+        className="mt-4 inline-flex min-h-9 items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#d39769] transition-colors hover:text-[#f0b584] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-[#c98d61]"
       >
-        + summon any of {totalAgentCount} agents
+        <IconPlus size={13} stroke={1.6} aria-hidden="true" />
+        Summon any of {totalAgentCount} agents
       </button>
     </section>
   )

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { IconChevronDown } from '@tabler/icons-react'
 import DealRecord, { type RecordGroup } from './DealRecord'
 import ProofPathStrip, { type ProofPathStep } from '../../ProofPathStrip'
 
@@ -50,21 +51,21 @@ export default function IntakeStage({
   // workspace refresh); otherwise the native <details> manages itself.
   const controlled = detailedReviewOpen !== undefined
   return (
-    <div className="space-y-4" data-testid="intake-stage">
-      <section className="portal-panel">
-        <p className="portal-kicker">Intake</p>
-        <h2 className="mt-1 font-serif text-2xl font-semibold tracking-[-0.01em] text-white">
+    <div className="space-y-7" data-testid="intake-stage">
+      <section className="border-b border-white/10 pb-7 pt-1">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cre-accent">Intake</p>
+        <h2 className="mt-3 max-w-3xl font-serif text-3xl font-medium leading-tight tracking-[-0.025em] text-cre-primary md:text-[2rem]">
           Drop the package. The team reads it.
         </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-400">
           Drop the rent roll, T12, offering memo, and inspection. Your ingestion agents read every
           document and fill the deal record below — you only touch what they flag.
         </p>
         <p
-          className="mt-3 flex items-start gap-2 text-[11px] leading-5 text-gray-500"
+          className="mt-5 flex max-w-4xl items-start gap-2.5 border-t border-white/[0.07] pt-4 text-[11px] leading-5 text-gray-500"
           data-testid="intake-agents-line"
         >
-          <span className="cre-dot cre-dot-live cre-dot-pulse mt-1" aria-hidden="true" />
+          <span className="cre-dot cre-dot-live cre-dot-pulse mt-1.5" aria-hidden="true" />
           <span>{agentsLine && agentsLine.trim().length > 0 ? agentsLine : DEFAULT_AGENTS_LINE}</span>
         </p>
       </section>
@@ -81,26 +82,36 @@ export default function IntakeStage({
       </div>
 
       <details
-        className="portal-panel"
+        className="group border-y border-white/10"
         data-testid="intake-detailed-review"
         {...(controlled ? { open: detailedReviewOpen } : {})}
         onToggle={(event) => onDetailedReviewToggle?.((event.currentTarget as HTMLDetailsElement).open)}
       >
-        <summary className="cursor-pointer list-none">
+        <summary className="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
           <span className="flex items-center justify-between gap-3">
             <span>
-              <span className="portal-kicker">Source documents &amp; detailed review</span>
-              <span className="mt-1 block text-sm text-gray-400">
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-300">
+                Source documents &amp; detailed review
+              </span>
+              <span className="mt-2 block max-w-3xl text-sm leading-6 text-gray-500">
                 Upload more files, or review every extracted field with full approve / reject /
                 waive control and source provenance.
               </span>
             </span>
-            <span className="shrink-0 text-[11px] uppercase tracking-[0.12em] text-gray-500" aria-hidden="true">
+            <span
+              className="flex shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-gray-500"
+              aria-hidden="true"
+            >
               Open
+              <IconChevronDown
+                size={15}
+                stroke={1.5}
+                className="transition-transform duration-200 group-open:rotate-180"
+              />
             </span>
           </span>
         </summary>
-        <div className="mt-4 border-t border-white/10 pt-4">{children}</div>
+        <div className="border-t border-white/[0.08] py-5">{children}</div>
       </details>
     </div>
   )

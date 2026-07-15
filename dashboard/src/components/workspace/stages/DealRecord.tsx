@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconAlertTriangle, IconArrowRight, IconPencil } from '@tabler/icons-react'
 
 // One field of the auto-filled deal record. Presentational: the IntakeStage adapter maps
 // workspace extraction/approved data into these and wires `onEditField` to the backend's
@@ -61,11 +62,13 @@ function FieldRow({
       data-testid={`record-field-${field.fieldId}`}
       data-flagged={field.flagged ? 'true' : 'false'}
       className={[
-        'grid grid-cols-[140px_minmax(0,1fr)_auto] items-center gap-3 border-l-2 px-3 py-2.5',
-        field.flagged ? 'border-l-[color:var(--cre-review)] bg-cre-warning/[0.06]' : 'border-l-white/10',
+        'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 border-t border-white/[0.08] border-l-2 px-3 py-3 sm:grid-cols-[132px_minmax(0,1fr)_auto]',
+        field.flagged ? 'border-l-cre-warning bg-cre-warning/[0.035]' : 'border-l-transparent',
       ].join(' ')}
     >
-      <span className="truncate text-[11px] uppercase tracking-[0.1em] text-gray-500">{field.label}</span>
+      <span className="col-span-2 truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500 sm:col-span-1">
+        {field.label}
+      </span>
 
       {editing ? (
         <input
@@ -83,19 +86,21 @@ function FieldRow({
               setEditing(false)
             }
           }}
-          className="min-w-0 border border-cre-live/60 bg-black px-2 py-1 text-sm text-white focus:outline-none"
+          className="min-w-0 border-0 border-b border-cre-accent/70 bg-transparent px-0 py-1 text-sm text-cre-primary focus:outline-none"
         />
       ) : (
-        <span className="min-w-0 truncate text-sm text-white">{field.value}</span>
+        <span className="min-w-0 truncate text-sm text-cre-primary">{field.value}</span>
       )}
 
-      <span className="flex items-center gap-2">
+      <span className="flex items-center justify-end gap-1.5">
         <button
           type="button"
           data-testid={`record-field-source-${field.fieldId}`}
           onClick={() => setShowProvenance((open) => !open)}
-          className="border border-white/12 px-2 py-0.5 text-[9.5px] uppercase tracking-[0.1em] text-gray-500 hover:border-white/30 hover:text-gray-300"
+          className="border-b border-white/15 px-1 py-1 text-[9px] uppercase tracking-[0.1em] text-gray-500 transition-colors hover:border-cre-accent/70 hover:text-gray-300"
           title="Show where this came from"
+          aria-expanded={showProvenance}
+          aria-controls={field.provenance ? `record-field-provenance-${field.fieldId}` : undefined}
         >
           {field.source}
         </button>
@@ -107,20 +112,27 @@ function FieldRow({
             setDraft(field.value)
             setEditing(true)
           }}
-          className="text-cre-live transition-colors hover:text-white"
+          className="grid h-8 w-8 place-items-center text-gray-500 transition-colors hover:text-cre-accent"
           aria-label={`Edit ${field.label}`}
         >
-          ✎
+          <IconPencil size={15} stroke={1.5} aria-hidden="true" />
         </button>
       </span>
 
       {field.flagged && field.flagReason && (
-        <p className="col-span-3 text-[11px] leading-5 text-cre-warning" data-testid={`record-field-flag-${field.fieldId}`}>
-          <span aria-hidden="true">⚠</span> {field.flagReason}
+        <p
+          className="col-span-2 flex items-start gap-2 text-[11px] leading-5 text-cre-warning sm:col-span-3"
+          data-testid={`record-field-flag-${field.fieldId}`}
+        >
+          <IconAlertTriangle size={14} stroke={1.5} className="mt-0.5 shrink-0" aria-hidden="true" />
+          <span>{field.flagReason}</span>
         </p>
       )}
       {showProvenance && field.provenance && (
-        <p className="col-span-3 mt-1 whitespace-pre-wrap break-words border border-white/10 bg-black px-2 py-1 font-mono text-[10.5px] text-gray-400">
+        <p
+          id={`record-field-provenance-${field.fieldId}`}
+          className="col-span-2 mt-1 whitespace-pre-wrap break-words border-l border-white/15 pl-3 font-mono text-[10.5px] leading-5 text-gray-400 sm:col-span-3"
+        >
           {field.provenance}
         </p>
       )}
@@ -146,9 +158,9 @@ export default function DealRecord({
   const startDisabled = startBlocked || saving === true
 
   return (
-    <section data-testid="deal-record" className="portal-panel">
-      <p className="portal-kicker">Deal Record</p>
-      <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
+    <section data-testid="deal-record" className="border-y border-white/10 py-6">
+      <h3 className="font-serif text-2xl font-medium tracking-[-0.02em] text-cre-primary">Deal Record</h3>
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-400">
         Everything below was <span className="text-gray-200">read from your documents</span> — nothing was
         typed by hand. Edit any value that's off; tap a source tag to see where it came from.
       </p>
@@ -163,8 +175,10 @@ export default function DealRecord({
             .filter((group) => group.fields.length > 0)
             .map((group) => (
               <div key={group.label}>
-                <p className="mb-2 text-[10px] uppercase tracking-[0.16em] text-gray-600">{group.label}</p>
-                <div className="space-y-1.5">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-600">
+                  {group.label}
+                </p>
+                <div className="border-b border-white/[0.08]">
                   {group.fields.map((field) => (
                     <FieldRow key={field.fieldId} field={field} onEditField={onEditField} saving={saving} />
                   ))}
@@ -175,12 +189,14 @@ export default function DealRecord({
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
             <span
               data-testid="needs-eye-count"
-              className={
-                needsEyeCount > 0
-                  ? 'border border-cre-warning/40 px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] text-cre-warning'
-                  : 'text-[11px] uppercase tracking-[0.1em] text-gray-600'
-              }
+              className={`flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                needsEyeCount > 0 ? 'text-cre-warning' : 'text-gray-600'
+              }`}
             >
+              <span
+                className={`cre-dot ${needsEyeCount > 0 ? 'cre-dot-review' : 'cre-dot-done'}`}
+                aria-hidden="true"
+              />
               {needsEyeCount > 0 ? `${needsEyeCount} value${needsEyeCount === 1 ? '' : 's'} need your eye` : 'All values read cleanly'}
             </span>
             <button
@@ -190,8 +206,11 @@ export default function DealRecord({
               onClick={onStartDiligence}
               className="portal-button portal-button-primary"
               title={startBlocked ? 'Resolve flagged values before starting Diligence' : undefined}
+              aria-label="Looks right, start Diligence"
             >
-              Looks right → start Diligence
+              <span>Looks right</span>
+              <IconArrowRight size={15} stroke={1.5} aria-hidden="true" />
+              <span>start Diligence</span>
             </button>
           </div>
         </div>

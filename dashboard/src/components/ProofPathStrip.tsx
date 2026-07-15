@@ -19,9 +19,13 @@ const DEFAULT_STEPS: ProofPathStep[] = [
 ]
 
 function stepTone(status: ProofPathStep['status']): string {
+  return status === 'ready' ? 'text-gray-300' : 'text-gray-500'
+}
+
+function statusDot(status: ProofPathStep['status']): string {
   return status === 'ready'
-    ? 'border-cre-success/40 bg-cre-success/10 text-cre-success'
-    : 'border-white/10 bg-black/20 text-gray-400'
+    ? 'cre-dot cre-dot-done'
+    : 'h-2 w-2 shrink-0 rounded-full border border-white/25'
 }
 
 export default function ProofPathStrip({
@@ -33,7 +37,7 @@ export default function ProofPathStrip({
 
   return (
     <section data-testid={testId} aria-label="Source to IC proof path">
-      <ol className={`grid gap-2 md:grid-cols-4 ${className}`}>
+      <ol className={`grid border-y border-white/10 md:grid-cols-4 ${className}`}>
         {resolved.map((step, index) => {
           const detail = step.detail && step.detail.trim().length > 0 ? step.detail : 'Pending'
           const statusLabel = step.status === 'ready' ? 'Ready' : 'Pending'
@@ -42,18 +46,22 @@ export default function ProofPathStrip({
               key={step.key}
               aria-label={`Step ${index + 1}: ${step.label}. ${statusLabel}. ${detail}`}
               className={[
-                'min-h-[76px] border px-3 py-2',
-                'grid grid-rows-[auto_1fr] gap-1',
+                'grid min-h-[76px] grid-rows-[auto_1fr] gap-2 border-b border-white/[0.08] px-3 py-3 last:border-b-0 md:border-b-0 md:border-l md:first:border-l-0',
                 stepTone(step.status),
               ].join(' ')}
             >
-              <div className="flex items-center gap-2">
-                <span className="grid h-5 w-5 place-items-center border border-current text-[10px] font-semibold">
-                  {index + 1}
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="font-mono text-[9px] text-cre-accent" aria-hidden="true">
+                    0{index + 1}
+                  </span>
+                  <span className="truncate text-[10px] font-semibold uppercase tracking-[0.12em]">
+                    {step.label}
+                  </span>
                 </span>
-                <span className="text-[11px] font-semibold uppercase tracking-[0.12em]">{step.label}</span>
+                <span className={statusDot(step.status)} aria-hidden="true" />
               </div>
-              <p className="line-clamp-2 self-end text-xs leading-5 text-gray-400">{detail}</p>
+              <p className="line-clamp-2 self-end text-xs leading-5 text-gray-500">{detail}</p>
             </li>
           )
         })}

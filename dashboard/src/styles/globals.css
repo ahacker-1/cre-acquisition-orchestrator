@@ -5,13 +5,24 @@
 @layer base {
   :root {
     color-scheme: dark;
-    /* Functional status palette. The UI is ~90% monochrome; these appear ONLY on
-       state markers (spine dots, the live stream, tags, the package meter). */
-    --cre-live: #3B82F6;
-    --cre-done: #2DB87A;
-    --cre-review: #D9B56C;
-    --cre-blocked: #EF4444;
-    --cre-idle: #A3A5B3;
+    --cre-canvas: #0f1820;
+    --cre-rail: #0c151c;
+    --cre-surface: #111c24;
+    --cre-elevated: #16232c;
+    --cre-hairline: rgba(174, 190, 199, 0.16);
+    --cre-hairline-strong: rgba(180, 194, 202, 0.24);
+    --cre-ink: #f4f2ee;
+    --cre-ink-secondary: #b9bec2;
+    --cre-ink-muted: #8f99a2;
+    --cre-copper: #c88768;
+    --cre-copper-deep: #9a5e40;
+    --cre-copper-hover: #ab6a49;
+    /* Functional colors are reserved for state and evidence. */
+    --cre-live: #6f9de2;
+    --cre-done: #78b77d;
+    --cre-review: #dfb565;
+    --cre-blocked: #ec6e5b;
+    --cre-idle: #75818b;
   }
 
   * {
@@ -22,10 +33,20 @@
     @apply bg-cre-bg text-gray-100 font-sans;
     margin: 0;
     background:
-      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
-      #000000;
-    background-size: 48px 48px;
+      radial-gradient(circle at 9% 82%, rgba(45, 82, 105, 0.18), transparent 32rem),
+      radial-gradient(circle at 88% 72%, rgba(35, 75, 96, 0.13), transparent 34rem),
+      linear-gradient(135deg, #0b141b 0%, #111c24 47%, #0e1820 100%);
+    min-width: 320px;
+    min-height: 100vh;
+    color: var(--cre-ink);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: rgba(200, 135, 104, 0.32);
+    color: var(--cre-ink);
   }
 
   button,
@@ -39,16 +60,16 @@
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    outline: 2px solid rgba(255,255,255,0.9);
-    outline-offset: 2px;
+    outline: 2px solid var(--cre-copper);
+    outline-offset: 3px;
   }
 }
 
 @layer components {
   .status-badge {
-    @apply inline-flex items-center border px-2 py-0.5 text-xs font-semibold uppercase;
+    @apply inline-flex items-center border px-2 py-0.5 text-[10px] font-semibold uppercase;
     border-radius: 0;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
   }
   .status-complete { @apply border-cre-success/30 bg-cre-success/10 text-cre-success; }
   .status-running { @apply border-white/20 bg-white/10 text-gray-100; }
@@ -89,8 +110,9 @@
   }
 
   .card {
-    @apply border border-cre-border bg-cre-surface p-4;
+    @apply border border-cre-border bg-cre-surface/45 p-5;
     border-radius: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
   }
 
   .tab {
@@ -99,7 +121,7 @@
     letter-spacing: 0.08em;
   }
   .tab-active {
-    @apply bg-white text-black border-b-2 border-white;
+    @apply border-b-2 border-cre-accent bg-cre-accent/[0.06] text-cre-primary;
   }
   .tab-inactive {
     @apply text-gray-400 hover:text-gray-200 hover:bg-cre-surface/50;
@@ -115,22 +137,25 @@
   .log-complete { @apply text-gray-100; }
 
   .red-flag {
-    @apply border-l-4 border-cre-danger bg-cre-danger/10 p-3;
+    @apply border-l-2 border-cre-danger bg-transparent px-4 py-3;
   }
   .finding {
-    @apply border-l-4 border-cre-success bg-cre-success/10 p-3;
+    @apply border-l-2 border-cre-success bg-transparent px-4 py-3;
   }
   .data-gap {
-    @apply border-l-4 border-cre-warning bg-cre-warning/10 p-3;
+    @apply border-l-2 border-cre-warning bg-transparent px-4 py-3;
   }
 
   .portal-shell {
-    @apply space-y-5;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 20% 80%, rgba(35, 73, 95, 0.12), transparent 30rem),
+      linear-gradient(135deg, rgba(13, 22, 29, 0.98), rgba(18, 29, 37, 0.98));
   }
 
   .portal-hero {
-    @apply grid gap-6 border border-white/10 bg-black p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:p-8;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    @apply grid gap-6 border border-cre-border bg-cre-surface/35 p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:p-8;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.035);
   }
 
   .portal-hero h1 {
@@ -171,9 +196,9 @@
   }
 
   .portal-panel {
-    @apply border border-white/10 bg-cre-surface p-4 md:p-5;
+    @apply border border-cre-border bg-cre-surface/35 p-4 md:p-5;
     border-radius: 0;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
   }
 
   .portal-section-header {
@@ -181,27 +206,34 @@
   }
 
   .portal-kicker {
-    @apply text-xs font-bold uppercase text-gray-500;
-    letter-spacing: 0.14em;
+    @apply text-[10px] font-semibold uppercase text-gray-500;
+    letter-spacing: 0.16em;
   }
 
   .portal-title {
-    @apply mt-1 font-serif text-2xl font-semibold leading-tight text-white;
+    @apply mt-1 font-serif text-2xl font-medium leading-tight text-cre-primary;
     letter-spacing: -0.02em;
   }
 
   .portal-button {
-    @apply inline-flex min-h-11 items-center justify-center border px-4 py-2 text-xs font-bold uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 border px-4 py-2 text-[11px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50;
     border-radius: 0;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.04em;
   }
 
   .portal-button-primary {
-    @apply border-white bg-white text-black hover:bg-gray-200;
+    border-color: #b87555;
+    background: var(--cre-copper-deep);
+    color: #fffaf6;
+  }
+
+  .portal-button-primary:hover {
+    border-color: #ca8766;
+    background: var(--cre-copper-hover);
   }
 
   .portal-button-secondary {
-    @apply border-white/20 bg-transparent text-white hover:border-white hover:bg-white/10;
+    @apply border-cre-border bg-transparent text-gray-300 hover:border-white/35 hover:bg-white/[0.035] hover:text-white;
   }
 
   .portal-field {
@@ -216,7 +248,7 @@
   .portal-field input,
   .portal-field select,
   .portal-field textarea {
-    @apply w-full border border-white/10 bg-black px-3 py-2 text-sm font-normal normal-case text-gray-100 transition-colors placeholder:text-gray-700;
+    @apply w-full border border-cre-border bg-cre-bg/60 px-3 py-2 text-sm font-normal normal-case text-gray-100 transition-colors placeholder:text-gray-600;
     border-radius: 0;
     letter-spacing: 0;
   }
@@ -224,7 +256,7 @@
   .portal-field input:focus,
   .portal-field select:focus,
   .portal-field textarea:focus {
-    @apply border-white/40;
+    border-color: rgba(200, 135, 104, 0.7);
   }
 
   .portal-stat {

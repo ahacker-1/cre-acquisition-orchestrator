@@ -1,4 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import {
+  IconArrowUpRight,
+  IconChevronRight,
+  IconFileText,
+  IconFolderPlus,
+  IconSend,
+  IconX,
+} from '@tabler/icons-react'
 
 export type AgentRunStatus = 'queued' | 'working' | 'done' | 'failed'
 
@@ -134,7 +142,7 @@ export default function AgentPanel({
       <button
         type="button"
         aria-label="Close agent panel"
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 bg-[#02070a]/75 backdrop-blur-[2px]"
         onClick={onClose}
         tabIndex={-1}
       />
@@ -144,57 +152,72 @@ export default function AgentPanel({
         aria-modal="true"
         aria-label={`${agentName} agent`}
         tabIndex={-1}
-        className="relative flex h-full w-[min(94vw,400px)] flex-col overflow-y-auto border-l border-white/15 bg-cre-surface shadow-[-18px_0_50px_rgba(0,0,0,0.6)] focus:outline-none"
+        className="relative flex h-full w-[min(94vw,460px)] flex-col overflow-y-auto border-l border-white/[0.12] bg-[#0a151d] shadow-[-24px_0_80px_rgba(0,0,0,0.55)] focus:outline-none"
       >
-        <header className="flex items-start justify-between gap-3 border-b border-white/10 px-4 py-4">
+        <header className="flex items-start justify-between gap-4 border-b border-white/[0.08] px-6 py-6">
           <div className="min-w-0">
-            <h2 className="truncate font-serif text-xl font-semibold text-white">{agentName}</h2>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#c98d61]">Agent workspace</p>
+            <h2 className="mt-2 truncate font-serif text-2xl font-normal tracking-[-0.015em] text-[#f4f1ed]">
+              {agentName}
+            </h2>
             {agentRole && (
-              <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-cre-live">{agentRole}</p>
+              <p className="mt-1.5 text-[10px] uppercase tracking-[0.14em] text-[#96a2aa]">{agentRole}</p>
             )}
           </div>
           <button
             type="button"
             data-testid="agent-panel-close"
             onClick={onClose}
-            className="shrink-0 border border-white/10 px-2 py-1 text-xs text-gray-400 hover:bg-white/10 hover:text-white"
+            aria-label="Close"
+            className="inline-flex size-10 shrink-0 items-center justify-center border border-white/[0.1] text-[#a4afb6] transition-colors hover:border-white/[0.22] hover:bg-white/[0.03] hover:text-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#c98d61]"
           >
-            Close
+            <IconX size={18} stroke={1.4} aria-hidden="true" />
+            <span className="sr-only">Close</span>
           </button>
         </header>
 
         {task && (
-          <div className="border-b border-white/10 px-4 py-3">
-            <p className="text-[9.5px] uppercase tracking-[0.14em] text-gray-600">Task</p>
-            <p className="mt-1 text-sm text-white">{task}</p>
-            {taskSource && <p className="mt-1 text-[10px] text-cre-live">↳ {taskSource}</p>}
+          <div className="border-b border-white/[0.08] px-6 py-5">
+            <p className="text-[9.5px] font-semibold uppercase tracking-[0.16em] text-[#7f8d97]">Task</p>
+            <p className="mt-2 text-sm leading-6 text-[#eef1f2]">{task}</p>
+            {taskSource && (
+              <p className="mt-2 flex items-center gap-1.5 text-[10px] text-[#d39769]">
+                <IconArrowUpRight size={13} stroke={1.5} aria-hidden="true" />
+                {taskSource}
+              </p>
+            )}
           </div>
         )}
 
-        <div className="border-b border-white/10 px-4 py-3" data-testid="agent-panel-stream">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="flex items-center gap-2 text-gray-300">
+        <div className="border-b border-white/[0.08] px-6 py-5" data-testid="agent-panel-stream">
+          <div className="flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.13em]">
+            <span className="flex items-center gap-2 text-[#cbd2d7]">
               <span className={STATUS_DOT[status]} aria-hidden="true" />
               {STATUS_LABEL[status]}
             </span>
-            {elapsedLabel && <span className="font-mono text-gray-500">{elapsedLabel}</span>}
+            {elapsedLabel && <span className="font-mono tabular-nums text-[#8c99a2]">{elapsedLabel}</span>}
           </div>
           {streamLines.length === 0 ? (
-            <p className="mt-3 text-xs text-gray-600">
+            <p className="mt-4 text-xs leading-5 text-[#8c99a2]">
               {status === 'queued' ? 'Queued — waiting to start.' : 'No activity recorded yet.'}
             </p>
           ) : (
-            <ul className="mt-3 space-y-1" role="log" aria-live="polite" aria-label="Agent reasoning, live">
+            <ul className="mt-4 divide-y divide-white/[0.055]" role="log" aria-live="polite" aria-label="Agent reasoning, live">
               {streamLines.map((line) => (
                 <li
                   key={line.id}
                   className={[
-                    'text-[11px] leading-5',
-                    line.tone === 'current' ? 'text-white' : line.tone === 'done' ? 'text-cre-done' : 'text-gray-400',
+                    'flex gap-2 py-2.5 text-[11px] leading-5',
+                    line.tone === 'current' ? 'text-white' : line.tone === 'done' ? 'text-[#6ecb8b]' : 'text-[#a4afb6]',
                   ].join(' ')}
                 >
-                  <span className="text-gray-600" aria-hidden="true">▸ </span>
-                  {line.text}
+                  <IconChevronRight
+                    size={13}
+                    stroke={1.5}
+                    aria-hidden="true"
+                    className="mt-1 shrink-0 text-[#6f7d87]"
+                  />
+                  <span>{line.text}</span>
                 </li>
               ))}
             </ul>
@@ -202,34 +225,39 @@ export default function AgentPanel({
         </div>
 
         {output && (
-          <div className="border-b border-white/10 bg-cre-success/[0.04] px-4 py-3" data-testid="agent-panel-output">
-            <p className="text-[9.5px] uppercase tracking-[0.14em] text-cre-done">Output · {output.title}</p>
-            <dl className="mt-2 space-y-1.5">
+          <div className="border-b border-white/[0.08] px-6 py-5" data-testid="agent-panel-output">
+            <div className="flex items-center gap-2 text-[9.5px] font-semibold uppercase tracking-[0.15em] text-[#69c98a]">
+              <IconFileText size={14} stroke={1.5} aria-hidden="true" />
+              <p>Output · {output.title}</p>
+            </div>
+            <dl className="mt-4 divide-y divide-white/[0.055] border-y border-white/[0.08]">
               {output.rows.map((row) => (
-                <div key={row.label} className="grid grid-cols-[72px_minmax(0,1fr)] gap-2 text-[11px]">
-                  <dt className="text-gray-600">{row.label}</dt>
-                  <dd className={row.impact ? 'text-cre-warning' : 'text-gray-200'}>{row.value}</dd>
+                <div key={row.label} className="grid grid-cols-[88px_minmax(0,1fr)] gap-3 py-2.5 text-[11px] leading-5">
+                  <dt className="text-[#82909a]">{row.label}</dt>
+                  <dd className={row.impact ? 'text-[#e0ae69]' : 'text-[#dbe1e5]'}>{row.value}</dd>
                 </div>
               ))}
             </dl>
             {(output.onOpenFull || output.onFile) && (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-4">
                 {output.onOpenFull && (
                   <button
                     type="button"
                     data-testid="agent-panel-open-workpaper"
                     onClick={output.onOpenFull}
-                    className="border border-cre-live/50 px-3 py-1 text-[11px] text-cre-live hover:bg-white/5"
+                    className="inline-flex min-h-9 items-center gap-1.5 border-b border-[#c98d61]/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#dba174] transition-colors hover:border-[#e5aa7b] hover:text-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-[#c98d61]"
                   >
                     Open full workpaper
+                    <IconArrowUpRight size={13} stroke={1.5} aria-hidden="true" />
                   </button>
                 )}
                 {output.onFile && (
                   <button
                     type="button"
                     onClick={output.onFile}
-                    className="border border-white/20 px-3 py-1 text-[11px] text-gray-300 hover:border-white/40 hover:text-white"
+                    className="inline-flex min-h-9 items-center gap-1.5 border-b border-white/[0.18] text-[10px] font-semibold uppercase tracking-[0.1em] text-[#aeb8bf] transition-colors hover:border-white/40 hover:text-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-[#c98d61]"
                   >
+                    <IconFolderPlus size={13} stroke={1.5} aria-hidden="true" />
                     File to deal
                   </button>
                 )}
@@ -238,16 +266,16 @@ export default function AgentPanel({
           </div>
         )}
 
-        <div className="mt-auto px-4 py-3">
-          <p className="text-[9.5px] uppercase tracking-[0.14em] text-gray-600">Give a follow-up</p>
+        <div className="mt-auto px-6 py-5">
+          <p className="text-[9.5px] font-semibold uppercase tracking-[0.16em] text-[#7f8d97]">Give a follow-up</p>
           {!liveDispatch && (
-            <p className="mt-1 text-[10px] leading-4 text-gray-600">
+            <p className="mt-2 text-[10px] leading-4 text-[#82909a]">
               Offline replay — switch to the Codex runtime (Advanced) to dispatch this agent live.
             </p>
           )}
           {notice && (
             <p
-              className="mt-1 text-[10px] leading-4 text-cre-warning"
+              className="mt-2 text-[10px] leading-4 text-[#e0ae69]"
               role="status"
               data-testid="agent-followup-notice"
             >
@@ -263,15 +291,17 @@ export default function AgentPanel({
                   data-testid={`agent-followup-chip-${index}`}
                   disabled={!liveDispatch || !onFollowUp}
                   onClick={() => onFollowUp?.(suggestion)}
-                  className="border border-white/15 px-2.5 py-1 text-[11px] text-gray-300 hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  className="min-h-8 border-b border-white/[0.16] py-1 text-left text-[10px] text-[#aeb8bf] transition-colors hover:border-[#c98d61] hover:text-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-[#c98d61] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {suggestion}
                 </button>
               ))}
             </div>
           )}
-          <form onSubmit={submitFollowUp} className="mt-2 flex items-center gap-2 border border-white/20 px-3 py-2 focus-within:border-white/40">
-            <span className="text-cre-live" aria-hidden="true">▸</span>
+          <form
+            onSubmit={submitFollowUp}
+            className="mt-3 flex min-h-[72px] items-center gap-3 border border-white/[0.14] bg-[#081219]/70 px-4 py-3 transition-colors focus-within:border-[#c98d61]/70"
+          >
             <input
               data-testid="agent-followup-input"
               value={followUp}
@@ -279,8 +309,16 @@ export default function AgentPanel({
               onChange={(event) => setFollowUp(event.target.value)}
               placeholder={`Tell ${agentName} what to do next…`}
               aria-label={`Tell ${agentName} what to do next`}
-              className="min-w-0 flex-1 bg-transparent text-sm text-gray-100 placeholder:text-gray-600 focus:outline-none disabled:opacity-50"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[#eef1f2] placeholder:text-[#71808a] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             />
+            <button
+              type="submit"
+              aria-label="Send follow-up"
+              disabled={!liveDispatch || !onFollowUp || !followUp.trim()}
+              className="inline-flex size-10 shrink-0 items-center justify-center border border-[#de9d6c] bg-[#a75f3c] text-white transition-colors hover:bg-[#b86c46] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#efb184] disabled:cursor-not-allowed disabled:border-white/[0.08] disabled:bg-white/[0.035] disabled:text-[#66737c]"
+            >
+              <IconSend size={17} stroke={1.5} aria-hidden="true" />
+            </button>
           </form>
         </div>
       </div>

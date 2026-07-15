@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { IconX } from '@tabler/icons-react'
 import {
   createEmptyDealForm,
   createEmptyUnitMixRow,
@@ -81,11 +82,11 @@ function IssueList({
   const titleClass = tone === 'error' ? 'text-cre-danger' : 'text-cre-warning'
 
   return (
-    <div className={`rounded-xl p-4 ${containerClass}`}>
-      <h4 className={`text-sm font-semibold ${titleClass}`}>{title}</h4>
-      <ul className="mt-3 space-y-2 text-sm text-gray-200">
+    <div className={`border-l-2 p-4 ${containerClass}`}>
+      <h4 className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${titleClass}`}>{title}</h4>
+      <ul className="mt-3 divide-y divide-white/[0.06] text-sm text-gray-200">
         {issues.map((issue) => (
-          <li key={`${issue.path}-${issue.message}`} className="rounded-lg bg-black/20 px-3 py-2">
+          <li key={`${issue.path}-${issue.message}`} className="px-1 py-3">
             <div className="font-medium">{issue.path || 'general'}</div>
             <div className="text-gray-400 mt-1">{issue.message}</div>
           </li>
@@ -114,24 +115,24 @@ function Field({
 }
 
 function inputClassName(): string {
-  return 'w-full rounded-xl border border-cre-border bg-black/20 px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-cre-accent'
+  return 'w-full border border-cre-border bg-cre-bg/45 px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-cre-accent'
 }
 
 function buttonClassName(kind: 'primary' | 'secondary' | 'ghost'): string {
   if (kind === 'primary') {
-    return 'px-4 py-2.5 text-sm font-semibold uppercase bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+    return 'portal-button portal-button-primary min-h-10 px-4'
   }
   if (kind === 'secondary') {
-    return 'px-4 py-2.5 rounded-xl text-sm font-semibold bg-white/8 text-gray-100 hover:bg-white/12 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+    return 'portal-button portal-button-secondary min-h-10 px-4'
   }
-  return 'px-4 py-2.5 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+  return 'inline-flex min-h-10 items-center border-b border-white/[0.16] px-3 py-2 text-sm font-medium text-gray-400 transition-colors hover:border-cre-accent hover:text-white disabled:cursor-not-allowed disabled:opacity-50'
 }
 
 function statValue(value: string, label: string) {
   return (
-    <div className="rounded-xl bg-black/20 px-4 py-3">
-      <div className="text-lg font-semibold text-white">{value}</div>
-      <div className="text-xs uppercase tracking-wider text-gray-500 mt-1">{label}</div>
+    <div className="border-b border-cre-border px-1 py-3">
+      <div className="font-serif text-xl font-medium text-cre-primary">{value}</div>
+      <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-gray-500">{label}</div>
     </div>
   )
 }
@@ -326,10 +327,10 @@ export default function DealIntakeWizard({
         >
           <div className="border-b border-cre-border px-6 py-5 flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-cre-accent font-semibold">
+              <p className="portal-kicker text-cre-accent">
                 Deal Details
               </p>
-              <h2 id="deal-wizard-title" className="text-2xl font-bold text-white mt-2">
+              <h2 id="deal-wizard-title" className="mt-2 font-serif text-3xl font-medium text-cre-primary">
                 {editingDealId ? 'Edit Deal' : 'Create a Deal'}
               </h2>
               <p className="text-sm text-gray-500 mt-2 max-w-2xl">
@@ -339,12 +340,10 @@ export default function DealIntakeWizard({
             <button
               onClick={onClose}
               data-testid="deal-wizard-close"
-              className="rounded-full p-2 text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
+              className="inline-flex size-10 items-center justify-center border border-cre-border text-gray-400 transition-colors hover:border-white/30 hover:text-white"
               aria-label="Close wizard"
             >
-              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
-                <path d="M5 5L15 15M15 5L5 15" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
+              <IconX size={19} stroke={1.5} aria-hidden="true" />
             </button>
           </div>
 
@@ -362,12 +361,12 @@ export default function DealIntakeWizard({
                     aria-current={active ? 'step' : undefined}
                     aria-label={`Go to step ${index + 1}: ${step}`}
                     data-testid={`deal-wizard-step-${index}`}
-                    className={`w-full text-left rounded-2xl border px-3 py-3 transition-colors disabled:cursor-not-allowed ${
+                    className={`w-full border-b-2 px-3 py-3 text-left transition-colors disabled:cursor-not-allowed ${
                       active
-                        ? 'border-cre-accent bg-cre-accent/10'
+                        ? 'border-cre-accent bg-cre-accent/[0.06]'
                         : complete
-                          ? 'border-cre-success/30 bg-cre-success/10'
-                          : 'border-cre-border bg-black/10'
+                          ? 'border-cre-success/40 bg-cre-success/[0.04]'
+                          : 'border-cre-border bg-transparent'
                     }`}
                   >
                     <div className="text-[11px] uppercase tracking-wider text-gray-500">
@@ -384,7 +383,7 @@ export default function DealIntakeWizard({
 
           <div className="px-6 py-6 space-y-6">
             {saveError && (
-              <div className="rounded-xl border border-cre-danger/40 bg-cre-danger/10 px-4 py-3 text-sm text-cre-danger">
+              <div className="border-l-2 border-cre-danger bg-cre-danger/[0.06] px-4 py-3 text-sm text-cre-danger">
                 {saveError}
               </div>
             )}
@@ -615,7 +614,7 @@ export default function DealIntakeWizard({
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="rounded-xl bg-black/20 px-4 py-3 text-right">
+                        <div className="border-b border-cre-border px-4 py-3 text-right">
                           <div className="text-lg font-semibold text-white">{totalUnitsFromMix}</div>
                           <div className="text-xs uppercase tracking-wider text-gray-500">Units in mix</div>
                         </div>
@@ -640,7 +639,7 @@ export default function DealIntakeWizard({
 
                     <div className="space-y-4">
                       {form.property.unitMix.types.map((row, index) => (
-                        <div key={row.id} className="rounded-2xl border border-cre-border bg-black/15 p-4">
+                        <div key={row.id} className="border border-cre-border bg-cre-bg/20 p-4">
                           <div className="flex items-center justify-between gap-3 mb-4">
                             <div className="text-sm font-semibold text-gray-200">Unit Type {index + 1}</div>
                             {form.property.unitMix.types.length > 1 && (
