@@ -98,10 +98,10 @@ per-deal results, and weaknesses).
 
 ## Current Status
 
-The latest public release is `v3.4.0`. It turns the post-3.3.0 hardening work into a verified release: every acquisition phase has recorded pipeline proof, live Codex smoke/full/eval gates passed, and the public trust report reflects a fresh all-8-deal live run. It builds on `v3.3.0`, which made live Codex / ChatGPT the default workflow runtime with real web search and added lean legal-document parsing. The stable baseline remains local-first and review-first:
+The latest public release is `v3.5.0`. It gives the full acquisition journey an Architectural Graphite facelift and closes seven local trust-boundary gaps across deal storage, workflow configuration, ingestion, runtime artifacts, legal prompt files, and direct Codex inputs. It builds on `v3.4.0`'s end-to-end pipeline proof and all-8-deal live evaluation. The stable baseline remains local-first and review-first:
 
 - **Local-first** - the offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
-- **Versioned release baseline** - `v3.4.0` adds the pipeline verification ledger, live Codex proof gates, refreshed all-8-deal live eval, phase artifact validation, and manifest/schema hardening on top of `v3.3.0`'s live Codex main lane with web search, `v3.2.0`'s production-scale local QA harness, `v3.1.0`'s local scanned-PDF OCR bridge, and `v3.0.0`'s evidence-grade source-to-IC workbench.
+- **Versioned release baseline** - `v3.5.0` adds the Architectural Graphite product system, decision-first workspace, refreshed public visual tour, and seven path-containment fixes on top of `v3.4.0`'s pipeline verification ledger, live Codex proof gates, all-8-deal live eval, phase artifact validation, and manifest/schema hardening.
 - **Honest evaluation** - `npm run eval` scores the orchestrator on an **8-deal** synthetic benchmark and reports honest numbers including where it falls short (see [Honest Evaluation](#honest-evaluation--prove-it)). The live (Codex) layer covers all 8 deals; the current verified live run hit 100% IC exact/directional match, 100% determinable financial accuracy, 100% required red-flag recall, and 100% dealbreaker recall. The documented soft spot is model-dependent returns (~25%).
 - **Known limits** - the local OCR bridge supports readable scanned/image-only PDFs for review-backed headline extraction, but not arbitrary image files or fully reliable table reconstruction. Multi-tenant cloud hosting and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are supported.
 
@@ -115,6 +115,15 @@ The latest public release is `v3.4.0`. It turns the post-3.3.0 hardening work in
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
+
+## What's New in v3.5.0
+
+- **Architectural Graphite system** - full-bleed graphite surfaces, editorial Playfair Display hierarchy, Inter interface typography, restrained copper actions, hairline structure, semantic evidence colors, and Tabler line icons replace the prior dense card treatment.
+- **Decision-first deal space** - the lifecycle spine, phase brief, next action, ranked findings, red flags, agent activity, context rail, specialist panel, command bar, and IC package now share one quieter institutional hierarchy.
+- **Whole-journey consistency** - the upload-first front door, Intake Deal Record, saved-deal library, deal editor, Workflow Launcher, reports, findings, error states, and completion package all use the same visual and interaction system.
+- **Seven trust boundaries hardened** - unsafe deal IDs, preset IDs, scenario names, ingest IDs, StoryEngine IDs, legal prompt paths, and direct Codex runner deal/input-snapshot paths now fail closed before escaping their intended repository directories.
+- **Current visual proof** - all seven README screenshots were recaptured from the live facelift, including real XLSX extraction, Market Rent/source-row inspection, populated phase and IC states, specialist handoff, and authenticated Codex launch review.
+- **Responsive and accessible** - desktop, tablet, and mobile layouts were tightened while preserving keyboard behavior, accessibility semantics, source-review gates, active-run Stop controls, exports, and operational actions.
 
 ## What's New in v3.4.0
 
@@ -180,7 +189,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Release Journey
 
-This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, then a credibility-hardened sample package with strict schemas, then a completion pass adding PDF extraction and review-grade workpapers, then real-world drop-flow hardening with an honest evaluation harness, then a redesign into one persistent deal space you drive by summoning agents, then an evidence-grade source-to-IC workbench with full release verification, then a production-scale local QA harness that exercises the app like a real operator across a sanitized 150-deal corpus, then live Codex / ChatGPT as the default workflow runtime with real, cited web search, and now a release that records end-to-end pipeline proof and a fresh all-8-deal live Codex eval.
+This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, then a credibility-hardened sample package with strict schemas, then a completion pass adding PDF extraction and review-grade workpapers, then real-world drop-flow hardening with an honest evaluation harness, then a redesign into one persistent deal space you drive by summoning agents, then an evidence-grade source-to-IC workbench with full release verification, then a production-scale local QA harness that exercises the app like a real operator across a sanitized 150-deal corpus, then live Codex / ChatGPT as the default workflow runtime with real, cited web search, then end-to-end pipeline proof and a fresh all-8-deal live Codex eval, and now an Architectural Graphite product system backed by tighter local trust boundaries.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -202,6 +211,7 @@ This project has grown from agent architecture into a local-first acquisition wo
 | **v3.2.0 - Production-Scale Local QA Harness** | Adds a sanitized 150-deal local seed (`npm run seed:prod-local`), a `npm run test:prod-local-data` regression gate, a production-scale Playwright inventory, the `npm run proof` public proof command, and QA inventory/bug-log docs, plus workspace reliability fixes. | [RELEASE_NOTES_v3.2.0.md](RELEASE_NOTES_v3.2.0.md) |
 | **v3.3.0 - Codex Main Lane + Live Web Search** | Makes live Codex / ChatGPT the default workflow runtime (Simulation kept as the no-credential fallback), gives agents real, cited web search, adds lean legal-document (PSA / title / estoppel) parsing, and lands the intake/extraction/launch UX fixes and e2e/CI stabilization. | [RELEASE_NOTES_v3.3.0.md](RELEASE_NOTES_v3.3.0.md) |
 | **v3.4.0 - Pipeline Verification + Live Eval Proof** | Records end-to-end pipeline verification, hardens phase artifacts and live Codex manifest validation, refreshes the all-8-deal live eval, and updates the public trust report to the June 25 live run. | [RELEASE_NOTES_v3.4.0.md](RELEASE_NOTES_v3.4.0.md) |
+| **v3.5.0 - Architectural Graphite + Trust-Boundary Hardening** | Gives the complete acquisition journey an institutional graphite facelift, refreshes the public visual proof, and closes seven local path-containment gaps across deal, workflow, ingestion, runtime, and Codex inputs. | [RELEASE_NOTES_v3.5.0.md](RELEASE_NOTES_v3.5.0.md) |
 
 ---
 
@@ -211,23 +221,23 @@ The public demo is intentionally visual: a first-time visitor should understand 
 
 ### 1. Front Door - drop your deal, watch your team go to work
 
-![Dashboard front door showing the drop-your-deal upload path, recent deals, and the Parkview guided-demo option](docs/assets/dashboard-front-door.png)
+![Dashboard front door with Upload Source Package, Start Guided Demo, and Recent Deals](docs/assets/dashboard-front-door.png)
 
 ### 2. Intake - drop documents, the record auto-fills
 
-![Intake stage showing dropped source documents auto-extracted by the ingestion agents into an auto-filled deal record, with source tags, confidence dots, flagged values to review inline, and the "start Diligence" action](docs/assets/source-extraction-review.png)
+![Intake stage showing a source package auto-extracted into the Deal Record, with source tags, confidence dots, and the "Looks right → start Diligence" action](docs/assets/source-extraction-review.png)
 
 ### 3. Uploaded Data Inspector - see every field and click into rows
 
-![Uploaded Data Inspector showing parsed rent roll fields, field quality stats, row-level source data, and click-through detail for the selected field and selected row](docs/assets/uploaded-data-inspector.png)
+![Uploaded Data Inspector showing rent roll field quality, the selected Market Rent field, and source-row detail for row 3](docs/assets/uploaded-data-inspector.png)
 
 ### 4. The Deal Space - one frame, the whole lifecycle
 
-![The persistent deal space showing the deal header with IC-package readiness, the always-visible lifecycle spine (Intake to IC) with status dots, the focused center stage, and the right rail with the Live Feed and Your Team](docs/assets/acquisition-command.png)
+![The persistent deal space with the left lifecycle spine, focused center decision brief, and right context rail for Live Team activity and specialist controls](docs/assets/acquisition-command.png)
 
 ### 5. Watch It Work - summon an agent, read its workpaper
 
-![An agent panel slid in over the dimmed deal space, streaming one specialist's work with an elapsed timer and its filed workpaper, while the Live Feed keeps running in the right rail](docs/assets/deal-team-handoffs.png)
+![Rent Roll Analyst panel showing the specialist timeline, decision summary, caveat, workpaper action, and follow-up command field](docs/assets/deal-team-handoffs.png)
 
 ### 6. IC Package - decision-ready acquisition package
 
