@@ -1,4 +1,5 @@
 import React from 'react'
+import { IconAlertTriangle, IconRefresh } from '@tabler/icons-react'
 
 interface ErrorBoundaryProps {
   children: React.ReactNode
@@ -144,20 +145,8 @@ export default class ErrorBoundary extends React.Component<
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="card text-center max-w-lg">
             {/* Error Icon */}
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-cre-danger/20 flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-cre-danger"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
+            <div className="mx-auto mb-4 flex size-16 items-center justify-center border border-cre-danger/30 bg-cre-danger/[0.08]">
+              <IconAlertTriangle size={32} stroke={1.5} className="text-cre-danger" aria-hidden="true" />
             </div>
 
             {/* Error Title */}
@@ -171,7 +160,7 @@ export default class ErrorBoundary extends React.Component<
             </p>
 
             {/* Suggestion Box */}
-            <div className="bg-cre-surface/50 rounded-lg p-4 mb-6 text-left">
+            <div className="mb-6 border-l-2 border-cre-accent bg-cre-surface/35 p-4 text-left">
               <p className="text-sm text-gray-300">
                 <span className="font-medium text-cre-accent">Suggestion: </span>
                 {suggestion}
@@ -185,17 +174,15 @@ export default class ErrorBoundary extends React.Component<
                   this.resetErrorBoundary()
                   window.location.reload()
                 }}
-                className="px-5 py-2.5 bg-white text-black text-sm font-semibold uppercase hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                className="portal-button portal-button-primary px-5"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
+                <IconRefresh size={16} stroke={1.5} aria-hidden="true" />
                 Refresh Page
               </button>
 
               <button
                 onClick={this.resetErrorBoundary}
-                className="px-5 py-2.5 rounded-lg bg-cre-surface text-gray-300 text-sm font-medium hover:bg-cre-surface/80 transition-colors border border-cre-border"
+                className="portal-button portal-button-secondary px-5"
               >
                 Try Again
               </button>
@@ -206,7 +193,7 @@ export default class ErrorBoundary extends React.Component<
                     this.resetErrorBoundary()
                     this.props.onGoHome?.()
                   }}
-                  className="px-5 py-2.5 rounded-lg bg-cre-surface text-gray-300 text-sm font-medium hover:bg-cre-surface/80 transition-colors border border-cre-border"
+                  className="portal-button portal-button-secondary px-5"
                 >
                   Go Home
                 </button>
@@ -230,7 +217,7 @@ export default class ErrorBoundary extends React.Component<
             {/* Technical Details (Collapsible) */}
             {this.state.showDetails && (
               <div className="mt-4 text-left">
-                <div className="bg-cre-bg rounded-lg p-4 border border-cre-border">
+                <div className="border border-cre-border bg-cre-bg p-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xs text-gray-500 uppercase tracking-wider">
                       Error Details

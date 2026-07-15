@@ -4,6 +4,62 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [3.5.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.4.0...v3.5.0) (2026-07-15)
+
+Delivers the Architectural Graphite product facelift across the full acquisition journey and closes
+the local path-containment gaps identified after v3.4.0. The release keeps the source-backed operating
+contract intact while making the dashboard quieter, more decisive, more responsive, and more consistent.
+
+### Features
+
+* **Architectural Graphite system:** introduces full-bleed graphite surfaces, editorial serif hierarchy,
+  restrained copper actions, hairline structure, semantic evidence color, and Tabler line icons.
+* **Decision-first persistent workspace:** rebuilds the lifecycle spine, phase brief, next action,
+  findings, red flags, live context rail, specialist panel, command bar, and IC package around the
+  operator's next decision.
+* **Coherent end-to-end journey:** carries the system through the upload-first front door, source-backed
+  Intake Deal Record, saved-deal library, deal editor, Advanced Workflow Launcher, reports, findings,
+  error states, and completion package.
+* **Responsive and accessible presentation:** tightens desktop/tablet/mobile layout behavior, preserves
+  keyboard and semantic contracts, and keeps active-run status and Stop controls visible from the front
+  door.
+
+### Security
+
+* **Deal and workflow path safety:** validates deal IDs, workflow preset IDs, and scenario names before
+  they become local read/write paths or launch inputs.
+* **Ingestion and runtime containment:** rejects unsafe ingest IDs and StoryEngine deal IDs before any
+  normalized output, event, document, status, manifest, or report directory is created.
+* **Codex input containment:** omits outside-repo legal text sources from prompts and rejects direct
+  runner deal/input-snapshot paths that resolve outside the repository.
+* **Regression coverage:** adds focused tests for all seven post-v3.4.0 trust-boundary fixes while
+  preserving valid slug-style IDs and repo-relative launch paths.
+
+### Documentation
+
+* Adds the selected reference, design-system inventory, baseline/concept exploration, before/after
+  comparisons, desktop/mobile captures, same-state comparison, and `design-qa.md` verification record.
+* Refreshes all seven README screenshots from the live facelift, including real XLSX extraction,
+  Market Rent/source-row inspection, populated phase and IC states, specialist handoff, and authenticated
+  Codex launch review.
+* Updates the supported-version table in `SECURITY.md` for the 3.5.x release line.
+* Adds [RELEASE_NOTES_v3.5.0.md](RELEASE_NOTES_v3.5.0.md) with the complete post-v3.4.0 release summary.
+
+### Verification
+
+* `npm run verify:v3`
+* `npm run release:check`
+* `npm run validate:docs`
+* `npm run validate:guides`
+* `npm test`
+* `npm run test:parsers`
+* `npm run test:workspace`
+* `npm --prefix dashboard run typecheck`
+* `npm --prefix dashboard run build`
+* root and dashboard moderate-level dependency audits
+* offline evaluation regression and production self-host smoke
+* 42 Playwright browser tests, including mobile guided-workspace and automated accessibility coverage
+
 ## [3.4.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.3.0...v3.4.0) (2026-06-25)
 
 Turns the post-3.3.0 hardening work into a verified release. Every acquisition phase now has recorded

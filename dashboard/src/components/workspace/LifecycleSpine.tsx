@@ -1,13 +1,5 @@
 import type { SpineStage, StageId, StageStatus } from '../../lib/stageModel'
-
-// Status drives only the small dot marker (color), never the label text — the brand
-// expresses hierarchy through weight/size/space, and reserves color for state cues.
-const DOT_CLASS: Record<StageStatus, string> = {
-  live: 'cre-dot cre-dot-live cre-dot-pulse',
-  done: 'cre-dot cre-dot-done',
-  blocked: 'cre-dot cre-dot-blocked',
-  idle: 'cre-dot cre-dot-idle',
-}
+import { IconCheck } from '@tabler/icons-react'
 
 const STATUS_HINT: Record<StageStatus, string> = {
   live: 'working',
@@ -29,11 +21,11 @@ interface LifecycleSpineProps {
 export default function LifecycleSpine({ stages, activeStageId, onFocusStage }: LifecycleSpineProps) {
   return (
     <nav
-      className="flex w-full flex-wrap gap-1 border-b border-white/10 sm:flex-nowrap sm:overflow-x-auto"
+      className="flex w-full overflow-x-auto border-t border-cre-border xl:block xl:overflow-visible xl:border-t-0"
       aria-label="Deal lifecycle"
       data-testid="lifecycle-spine"
     >
-      {stages.map((stage) => {
+      {stages.map((stage, index) => {
         const active = stage.id === activeStageId
         return (
           <button
@@ -44,16 +36,27 @@ export default function LifecycleSpine({ stages, activeStageId, onFocusStage }: 
             aria-current={active ? 'step' : undefined}
             onClick={() => onFocusStage(stage.id)}
             className={[
-              'flex min-w-0 flex-1 items-center gap-2 border-b-2 px-3 py-3 text-left transition-colors',
-              active ? 'border-white text-white' : 'border-transparent text-gray-500 hover:text-gray-200',
+              'group relative flex min-w-[124px] items-center gap-3 border-b border-cre-border px-4 py-4 text-left transition-colors xl:min-w-0 xl:border-b-0 xl:px-5 xl:py-3',
+              active ? 'text-white' : 'text-gray-500 hover:text-gray-200',
             ].join(' ')}
           >
-            <span className={DOT_CLASS[stage.status]} aria-hidden="true" />
+            <span className="relative flex h-8 w-4 shrink-0 items-center justify-center" aria-hidden="true">
+              {index < stages.length - 1 && (
+                <span className="absolute left-1/2 top-[21px] hidden h-[38px] w-px -translate-x-1/2 bg-cre-border xl:block" />
+              )}
+              <span className={[
+                'relative z-[1] flex h-[14px] w-[14px] items-center justify-center rounded-full border bg-[#0c151c]',
+                active ? 'border-cre-accent ring-1 ring-cre-accent/35' : stage.status === 'done' ? 'border-cre-success bg-cre-success' : stage.status === 'blocked' ? 'border-cre-danger' : 'border-gray-600',
+              ].join(' ')}>
+                {stage.status === 'done' && <IconCheck size={10} stroke={2.4} className="text-[#0c151c]" />}
+                {active && stage.status !== 'done' && <span className="h-1 w-1 rounded-full bg-cre-primary" />}
+              </span>
+            </span>
             <span className="min-w-0">
-              <span className="block truncate text-[11px] font-semibold uppercase tracking-[0.12em]">
+              <span className="block truncate text-[13px] font-medium tracking-[-0.01em]">
                 {stage.label}
               </span>
-              <span className="block truncate text-[10px] tracking-[0.1em] text-gray-600">
+              <span className="mt-0.5 block truncate text-[10px] tracking-[0.02em] text-gray-600">
                 {STATUS_HINT[stage.status]}
               </span>
             </span>

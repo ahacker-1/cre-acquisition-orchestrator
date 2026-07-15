@@ -115,17 +115,17 @@ function statusText(loading: boolean, count: number, error: string | null): stri
 }
 
 function inputClassName(): string {
-  return 'w-full rounded-lg border border-cre-border bg-black/20 px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-cre-accent'
+  return 'w-full border border-cre-border bg-cre-bg/45 px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-cre-accent'
 }
 
 function buttonClassName(kind: 'primary' | 'secondary' | 'ghost'): string {
   if (kind === 'primary') {
-    return 'px-4 py-2 text-sm font-semibold uppercase bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+    return 'portal-button portal-button-primary min-h-10 px-4'
   }
   if (kind === 'secondary') {
-    return 'px-4 py-2 rounded-md text-sm font-semibold bg-white/8 text-gray-100 hover:bg-white/12 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+    return 'portal-button portal-button-secondary min-h-10 px-4'
   }
-  return 'px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+  return 'inline-flex min-h-10 items-center border-b border-white/[0.16] px-3 py-2 text-sm font-medium text-gray-400 transition-colors hover:border-cre-accent hover:text-white disabled:cursor-not-allowed disabled:opacity-50'
 }
 
 function workflowLaunchTestId(workflowId: string): string {
@@ -558,7 +558,7 @@ function WorkflowLauncher({
               <span className="text-xs text-gray-500">{deals.length} available</span>
             </div>
             {deals.length === 0 ? (
-              <div className="rounded-lg border border-cre-border bg-black/20 p-4 text-sm text-gray-500">
+              <div className="border-l-2 border-cre-border bg-cre-bg/20 p-4 text-sm text-gray-500">
                 No deals are available yet. Create or save a deal before launching a workflow.
               </div>
             ) : (

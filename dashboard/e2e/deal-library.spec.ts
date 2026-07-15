@@ -326,6 +326,13 @@ test('edits a saved deal and starts a run from the wizard', async ({ page, reque
   expect(capturedLaunchBody?.codexConcurrency).toBe(2)
   expect(capturedLaunchBody?.codexSearch).toBe(true)
 
+  // Starting a second deal must not strand an active run without controls. The clean front door
+  // keeps a compact live status and Stop action until the current run finishes or is stopped.
+  await page.getByTestId('header-new-deal-button').click()
+  await expect(page.getByTestId('drop-zone-hero')).toBeVisible()
+  await expect(page.getByText('Run: Running')).toBeVisible()
+  await expect(page.getByTestId('header-stop-run')).toBeVisible()
+
   expect(consoleErrors).toEqual([])
 })
 

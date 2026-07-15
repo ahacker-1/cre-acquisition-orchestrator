@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { IconAlertTriangle, IconCircleCheck, IconHelpCircle } from '@tabler/icons-react'
 import type { DealCheckpoint, AgentCheckpoint, RedFlag, DataGap } from '../types/checkpoint'
 
 interface FindingsPanelProps {
@@ -86,37 +87,38 @@ export default function FindingsPanel({
   }, [dealCheckpoint, agentCheckpoints])
 
   return (
-    <div className="space-y-6">
+    <div className="divide-y divide-white/10 border-y border-white/10">
       {/* Red Flags */}
-      <section className="card">
-        <h3 className="text-sm font-semibold text-cre-danger uppercase tracking-wider mb-3 flex items-center gap-2">
-          Red Flags
-          <span className="status-badge status-failed">{allRedFlags.length}</span>
-        </h3>
+      <section className="py-7" aria-labelledby="findings-red-flags">
+        <div className="flex items-baseline justify-between gap-4">
+          <h3 id="findings-red-flags" className="font-serif text-2xl text-white">Red Flags</h3>
+          <span className="font-serif text-2xl tabular-nums text-cre-danger">{allRedFlags.length}</span>
+        </div>
         {allRedFlags.length === 0 ? (
-          <p className="text-sm text-gray-500">No red flags identified yet.</p>
+          <p className="mt-4 text-sm text-gray-500">No red flags identified yet.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="mt-5 border-y border-white/10">
             {allRedFlags.map((flag, i) => (
-              <li key={i} className="red-flag">
-                <div className="flex items-center gap-2 mb-1">
-                  <span
-                    className={`status-badge ${
-                      flag.severity === 'HIGH'
-                        ? 'bg-cre-danger/30 text-cre-danger'
-                        : flag.severity === 'MEDIUM'
-                        ? 'bg-cre-warning/30 text-cre-warning'
-                        : 'bg-[#4b5563]/30 text-gray-400'
-                    }`}
-                  >
-                    {flag.severity}
-                  </span>
-                  <span className="text-xs text-gray-500">{flag.category}</span>
-                  <span className="text-xs text-gray-600 ml-auto">
-                    {flag.sourceAgent}
-                  </span>
+              <li key={i} className="flex gap-4 border-t border-white/10 py-4 first:border-t-0">
+                <IconAlertTriangle size={19} stroke={1.6} className="mt-0.5 shrink-0 text-cre-danger" aria-hidden="true" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.14em]">
+                    <span
+                      className={
+                        flag.severity === 'HIGH'
+                          ? 'text-cre-danger'
+                          : flag.severity === 'MEDIUM'
+                          ? 'text-cre-warning'
+                          : 'text-gray-400'
+                      }
+                    >
+                      {flag.severity}
+                    </span>
+                    <span className="text-gray-500">{flag.category}</span>
+                    <span className="ml-auto text-gray-600">{flag.sourceAgent}</span>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-gray-300">{redFlagText(flag)}</p>
                 </div>
-                <p className="text-sm text-gray-300">{redFlagText(flag)}</p>
               </li>
             ))}
           </ul>
@@ -124,21 +126,22 @@ export default function FindingsPanel({
       </section>
 
       {/* Key Findings */}
-      <section className="card">
-        <h3 className="text-sm font-semibold text-cre-success uppercase tracking-wider mb-3 flex items-center gap-2">
-          Key Findings
-          <span className="status-badge status-complete">{allFindings.length}</span>
-        </h3>
+      <section className="py-7" aria-labelledby="findings-key-findings">
+        <div className="flex items-baseline justify-between gap-4">
+          <h3 id="findings-key-findings" className="font-serif text-2xl text-white">Key Findings</h3>
+          <span className="font-serif text-2xl tabular-nums text-cre-success">{allFindings.length}</span>
+        </div>
         {allFindings.length === 0 ? (
-          <p className="text-sm text-gray-500">No findings reported yet.</p>
+          <p className="mt-4 text-sm text-gray-500">No findings reported yet.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="mt-5 border-y border-white/10">
             {allFindings.map((finding, i) => (
-              <li key={i} className="finding">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-500">{finding.sourceAgent}</span>
+              <li key={i} className="flex gap-4 border-t border-white/10 py-4 first:border-t-0">
+                <IconCircleCheck size={19} stroke={1.6} className="mt-0.5 shrink-0 text-cre-success" aria-hidden="true" />
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500">{finding.sourceAgent}</span>
+                  <p className="mt-2 text-sm leading-6 text-gray-300">{finding.description}</p>
                 </div>
-                <p className="text-sm text-gray-300">{finding.description}</p>
               </li>
             ))}
           </ul>
@@ -146,23 +149,22 @@ export default function FindingsPanel({
       </section>
 
       {/* Data Gaps */}
-      <section className="card">
-        <h3 className="text-sm font-semibold text-cre-warning uppercase tracking-wider mb-3 flex items-center gap-2">
-          Data Gaps
-          <span className="status-badge bg-cre-warning/20 text-cre-warning">
-            {allDataGaps.length}
-          </span>
-        </h3>
+      <section className="py-7" aria-labelledby="findings-data-gaps">
+        <div className="flex items-baseline justify-between gap-4">
+          <h3 id="findings-data-gaps" className="font-serif text-2xl text-white">Data Gaps</h3>
+          <span className="font-serif text-2xl tabular-nums text-cre-warning">{allDataGaps.length}</span>
+        </div>
         {allDataGaps.length === 0 ? (
-          <p className="text-sm text-gray-500">No data gaps identified.</p>
+          <p className="mt-4 text-sm text-gray-500">No data gaps identified.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="mt-5 border-y border-white/10">
             {allDataGaps.map((gap, i) => (
-              <li key={i} className="data-gap">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-500">{gap.sourceAgent}</span>
+              <li key={i} className="flex gap-4 border-t border-white/10 py-4 first:border-t-0">
+                <IconHelpCircle size={19} stroke={1.6} className="mt-0.5 shrink-0 text-cre-warning" aria-hidden="true" />
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500">{gap.sourceAgent}</span>
+                  <p className="mt-2 text-sm leading-6 text-gray-300">{gap.description}</p>
                 </div>
-                <p className="text-sm text-gray-300">{gap.description}</p>
               </li>
             ))}
           </ul>

@@ -1564,8 +1564,6 @@ function PhaseWorkspaceView({
   phase,
   documents,
   onChecklist,
-  onLaunch,
-  launching,
   launchBlockers = [],
   onEditDeal,
   runtimeProvider,
@@ -1581,8 +1579,6 @@ function PhaseWorkspaceView({
   phase: PhaseWorkspaceStatus
   documents: SourceDocument[]
   onChecklist: (phaseSlug: string, checklist: Record<string, GuideChecklistStatus>, notes?: Record<string, string>) => Promise<unknown>
-  onLaunch: (phaseSlug: string) => Promise<void>
-  launching: boolean
   launchBlockers?: DealValidationIssue[]
   onEditDeal?: () => void
   runtimeProvider: RuntimeProvider
@@ -1606,213 +1602,136 @@ function PhaseWorkspaceView({
   }
 
   return (
-    <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-      <div className="space-y-4">
-        <div className="portal-panel">
-          <div className="portal-section-header">
-            <div>
-              <p className="portal-kicker">{phase.label}</p>
-              <h2 className="portal-title">Agent Playbook</h2>
-            </div>
-            <span className={`status-badge ${statusClass(phase.readiness)}`}>{phase.readiness}</span>
-          </div>
-          <p className="mt-3 text-sm text-gray-400">{phase.summary}</p>
-          <div className="mt-5 grid grid-cols-3 gap-3 text-center">
-            <div className="portal-stat">
-              <strong>{coverage}%</strong>
-              <span>Doc Coverage</span>
-            </div>
-            <div className="portal-stat">
-              <strong>{phase.agents.length}</strong>
-              <span>Agents</span>
-            </div>
-            <div className="portal-stat">
-              <strong>{phaseProgress(dealCheckpoint, phase)}%</strong>
-              <span>Runtime</span>
-            </div>
-          </div>
-          <div className="mt-4 grid gap-3">
-            <label className="portal-field">
-              <span>Runtime</span>
-              <select
-                data-testid={`phase-runtime-provider-select-${phase.phaseSlug}`}
-                value={runtimeProvider}
-                onChange={(event) => onRuntimeProviderChange(event.target.value as RuntimeProvider)}
-              >
-                {RUNTIME_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {isCodexRun && (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="portal-field">
-                  <span>Codex Agents</span>
-                  <select
-                    data-testid={`phase-codex-agent-limit-select-${phase.phaseSlug}`}
-                    value={typeof codexMaxAgents === 'number' && codexMaxAgents > 0 ? String(codexMaxAgents) : ''}
-                    onChange={(event) =>
-                      onCodexMaxAgentsChange(event.target.value === '' ? null : Number(event.target.value))
-                    }
-                  >
-                    {CODEX_AGENT_LIMITS.map((option) => (
-                      <option key={option.value || 'all'} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="portal-field">
-                  <span>Codex Concurrency</span>
-                  <input
-                    data-testid={`phase-codex-concurrency-input-${phase.phaseSlug}`}
-                    type="number"
-                    min={1}
-                    max={4}
-                    value={codexConcurrency}
-                    onChange={(event) => onCodexConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
-                  />
-                </label>
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            data-testid={`phase-launch-${phase.phaseSlug}`}
-            disabled={launching}
-            onClick={() => void onLaunch(phase.phaseSlug)}
-            className="portal-button portal-button-primary mt-5 w-full"
-          >
-            {launching ? 'Launching Workflow' : isCodexRun ? 'Run Phase with Codex' : 'Run Phase Demo'}
-          </button>
-          {launchBlockers.length > 0 && (
-            <div
-              className="mt-3 border border-amber-400/30 bg-amber-400/10 px-3 py-3 text-sm text-amber-100"
-              data-testid={`phase-launch-blocked-${phase.phaseSlug}`}
-            >
-              <p className="font-semibold">Launch blocked — this deal is not launch ready.</p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-5">
-                {launchBlockers.map((issue, index) => (
-                  <li key={issue.path || index}>
-                    {issue.path ? (
-                      <>
-                        <span className="font-medium">{fieldLabel(issue.path)}</span> — {issue.message}
-                      </>
-                    ) : (
-                      issue.message
-                    )}
-                  </li>
-                ))}
-              </ul>
-              {onEditDeal && (
-                <button
-                  type="button"
-                  data-testid={`phase-launch-blocked-edit-${phase.phaseSlug}`}
-                  onClick={onEditDeal}
-                  className="portal-button portal-button-secondary mt-3 px-3 py-1"
-                >
-                  Open Edit Deal
-                </button>
-              )}
-            </div>
+    <section className="space-y-10">
+      {runtimePhase ? (
+        <PhaseDetail phase={runtimePhase} phaseName={phase.label} agentCheckpoints={agentCheckpoints} />
+      ) : (
+        <div className="border-b border-cre-border pb-8">
+          <p className="text-lg font-medium text-gray-400">{phase.label}</p>
+          <p className="mt-4 font-serif text-5xl font-medium text-cre-primary">Awaiting review</p>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-500">{phase.summary}</p>
+        </div>
+      )}
+
+      {launchBlockers.length > 0 && (
+        <div className="border-l-2 border-cre-warning px-5 py-4 text-sm text-gray-300" data-testid={`phase-launch-blocked-${phase.phaseSlug}`}>
+          <p className="font-medium text-cre-warning">Launch blocked — this deal is not launch ready.</p>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-xs leading-5 text-gray-400">
+            {launchBlockers.map((issue, index) => (
+              <li key={issue.path || index}>
+                {issue.path ? <><span className="font-medium text-gray-300">{fieldLabel(issue.path)}</span> — {issue.message}</> : issue.message}
+              </li>
+            ))}
+          </ul>
+          {onEditDeal && (
+            <button type="button" data-testid={`phase-launch-blocked-edit-${phase.phaseSlug}`} onClick={onEditDeal} className="portal-button portal-button-secondary mt-4 px-3 py-1">
+              Open Edit Deal
+            </button>
           )}
         </div>
+      )}
 
-        <div className="portal-panel">
+      <section className="border-t border-cre-border pt-8" aria-labelledby={`${phase.phaseSlug}-playbook-title`}>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="portal-kicker">Operations</p>
+            <h2 id={`${phase.phaseSlug}-playbook-title`} className="mt-2 font-serif text-2xl font-medium text-cre-primary">Agent Playbook</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">{phase.summary}</p>
+          </div>
+          <span className={`status-badge ${statusClass(phase.readiness)}`}>{phase.readiness}</span>
+        </div>
+
+        <div className="mt-7 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.72fr)]">
+          <div>
+            <p className="portal-kicker">Run configuration</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <label className="portal-field">
+                <span>Runtime</span>
+                <select data-testid={`phase-runtime-provider-select-${phase.phaseSlug}`} value={runtimeProvider} onChange={(event) => onRuntimeProviderChange(event.target.value as RuntimeProvider)}>
+                  {RUNTIME_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+              {isCodexRun && (
+                <>
+                  <label className="portal-field">
+                    <span>Codex Agents</span>
+                    <select data-testid={`phase-codex-agent-limit-select-${phase.phaseSlug}`} value={typeof codexMaxAgents === 'number' && codexMaxAgents > 0 ? String(codexMaxAgents) : ''} onChange={(event) => onCodexMaxAgentsChange(event.target.value === '' ? null : Number(event.target.value))}>
+                      {CODEX_AGENT_LIMITS.map((option) => <option key={option.value || 'all'} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="portal-field">
+                    <span>Concurrency</span>
+                    <input data-testid={`phase-codex-concurrency-input-${phase.phaseSlug}`} type="number" min={1} max={4} value={codexConcurrency} onChange={(event) => onCodexConcurrencyChange(Math.max(1, Number(event.target.value) || 1))} />
+                  </label>
+                </>
+              )}
+            </div>
+            <p className="mt-3 text-xs text-gray-600">
+              Launch from the primary action above. Runtime controls remain visible for review and testing.
+            </p>
+          </div>
+
+          <dl className="grid grid-cols-3 divide-x divide-cre-border border-y border-cre-border py-4 text-center">
+            <div className="px-3"><dt className="portal-kicker">Doc Coverage</dt><dd className="mt-2 font-serif text-2xl text-cre-primary">{coverage}%</dd></div>
+            <div className="px-3"><dt className="portal-kicker">Agents</dt><dd className="mt-2 font-serif text-2xl text-cre-primary">{phase.agents.length}</dd></div>
+            <div className="px-3"><dt className="portal-kicker">Runtime</dt><dd className="mt-2 font-serif text-2xl text-cre-primary">{phaseProgress(dealCheckpoint, phase)}%</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section className="grid gap-10 border-t border-cre-border pt-8 lg:grid-cols-2">
+        <div>
           <p className="portal-kicker">Checklist</p>
-          <div className="mt-3 space-y-2">
+          <div className="mt-4 divide-y divide-cre-border border-y border-cre-border">
             {phase.checklist.map((item) => (
-              <label key={item.id} className="flex items-center gap-3 border border-white/10 bg-black px-3 py-3">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-white"
-                  checked={item.status === 'complete'}
-                  onChange={(event) => void toggleChecklist(item.id, event.target.checked)}
-                />
-                <span className="text-sm text-gray-300">{item.label}</span>
+              <label key={item.id} className="flex items-center gap-3 py-3 text-sm text-gray-300">
+                <input type="checkbox" className="h-4 w-4 accent-cre-accent" checked={item.status === 'complete'} onChange={(event) => void toggleChecklist(item.id, event.target.checked)} />
+                <span>{item.label}</span>
               </label>
             ))}
           </div>
         </div>
 
-        <div className="portal-panel">
+        <div>
           <p className="portal-kicker">Required Documents</p>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 divide-y divide-cre-border border-y border-cre-border">
             {phase.requiredDocuments.map((type) => (
-              <span
-                key={type}
-                className={`status-badge ${
-                  phase.uploadedDocuments.includes(type) ? 'status-complete' : 'status-pending'
-                }`}
-              >
-                {DOCUMENT_LABELS[type] ?? type}
-              </span>
+              <div key={type} className="flex items-center justify-between gap-4 py-3 text-sm">
+                <span className="text-gray-300">{DOCUMENT_LABELS[type] ?? type}</span>
+                <span className={`status-badge ${phase.uploadedDocuments.includes(type) ? 'status-complete' : 'status-pending'}`}>
+                  {phase.uploadedDocuments.includes(type) ? 'received' : 'pending'}
+                </span>
+              </div>
+            ))}
+            {phaseDocs.map((doc) => (
+              <div key={doc.documentId} className="flex items-center justify-between gap-4 py-3 text-xs">
+                <span className="truncate text-gray-500">{doc.fileName}</span>
+                <span className={`status-badge ${statusClass(doc.status)}`}>{doc.status}</span>
+              </div>
             ))}
           </div>
-          {phaseDocs.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {phaseDocs.map((doc) => (
-                <div key={doc.documentId} className="flex items-center justify-between gap-3 border border-white/10 bg-black px-3 py-2 text-sm">
-                  <span className="truncate text-gray-300">{doc.fileName}</span>
-                  <span className={`status-badge ${statusClass(doc.status)}`}>{doc.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
-      </div>
+      </section>
 
-      <div className="space-y-4">
-        {runtimePhase && (
-          <PhaseDetail
-            phase={runtimePhase}
-            phaseName={phase.label}
-            agentCheckpoints={agentCheckpoints}
-          />
-        )}
-        <div className="portal-panel">
-          <p className="portal-kicker">Agents</p>
-          <div className="mt-3 space-y-2">
-            {phase.agents.map((agent) => (
-              <article
-                key={agent.agentId}
-                className={`border border-white/10 bg-black p-3 ${
-                  onOpenAgent ? 'cursor-pointer transition-colors hover:border-white/40' : ''
-                }`}
-                data-testid={`phase-agent-${agent.agentId}`}
-                {...(onOpenAgent
-                  ? {
-                      role: 'button',
-                      tabIndex: 0,
-                      onClick: () => onOpenAgent(agent.agentId),
-                      onKeyDown: (event: ReactKeyboardEvent) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault()
-                          onOpenAgent(agent.agentId)
-                        }
-                      },
-                    }
-                  : {})}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-white">{agent.name}</p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.16em] text-gray-500">
-                      {agent.critical ? 'Critical Path' : 'Support Agent'}
-                    </p>
-                  </div>
-                  <span className="status-badge status-pending">{agent.outputs.length} outputs</span>
-                </div>
-                <p className="mt-3 text-xs text-gray-500">
-                  Inputs: {agent.inputs.join(', ') || 'Deal data'}
-                </p>
-              </article>
-            ))}
-          </div>
+      <section className="border-t border-cre-border pt-8">
+        <p className="portal-kicker">Phase agents</p>
+        <div className="mt-4 divide-y divide-cre-border border-y border-cre-border">
+          {phase.agents.map((agent) => (
+            <article
+              key={agent.agentId}
+              className={`grid gap-2 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${onOpenAgent ? 'cursor-pointer transition-colors hover:bg-white/[0.025]' : ''}`}
+              data-testid={`phase-agent-${agent.agentId}`}
+              {...(onOpenAgent ? { role: 'button', tabIndex: 0, onClick: () => onOpenAgent(agent.agentId), onKeyDown: (event: ReactKeyboardEvent) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpenAgent(agent.agentId) } } } : {})}
+            >
+              <div>
+                <p className="text-sm font-medium text-cre-primary">{agent.name}</p>
+                <p className="mt-1 text-xs text-gray-600">Inputs: {agent.inputs.join(', ') || 'Deal data'}</p>
+              </div>
+              <span className="text-[10px] uppercase tracking-[0.12em] text-gray-500">{agent.critical ? 'critical' : 'support'} · {agent.outputs.length} outputs</span>
+            </article>
+          ))}
         </div>
-      </div>
+      </section>
     </section>
   )
 }
@@ -2742,8 +2661,6 @@ export default function DealWorkspace({
             phase={activePhaseForStage}
             documents={documents}
             onChecklist={savePhaseChecklist}
-            onLaunch={handlePhaseLaunch}
-            launching={launchingWorkflowId !== null}
             launchBlockers={launchBlockers}
             onEditDeal={() => { setLaunchBlockers([]); onOpenEditDetails?.(dealCheckpoint.dealId) }}
             runtimeProvider={phaseRuntimeProvider}
@@ -2788,6 +2705,14 @@ export default function DealWorkspace({
         onOpenAgent={openAgentPanel}
         onSummon={() => setAdvancedOpen(true)}
         onOpenAdvanced={() => setAdvancedOpen(true)}
+        primaryAction={activePhaseForStage ? {
+          label: `Run ${activePhaseForStage.label.toLowerCase()}`,
+          pendingLabel: `Launching ${activePhaseForStage.label.toLowerCase()}…`,
+          testId: `phase-launch-${activePhaseForStage.phaseSlug}`,
+          disabled: false,
+          pending: launchingWorkflowId !== null,
+          onClick: () => void handlePhaseLaunch(activePhaseForStage.phaseSlug),
+        } : undefined}
       >
         {loading && !workspace ? (
           // Only blank to a placeholder on the FIRST load. Once the workspace is in hand, keep the

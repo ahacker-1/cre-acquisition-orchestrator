@@ -1,4 +1,14 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import {
+  IconAdjustmentsHorizontal,
+  IconBuildingEstate,
+  IconFolder,
+  IconPlayerPlay,
+  IconPlayerStop,
+  IconPlus,
+  IconSparkles,
+  IconX,
+} from '@tabler/icons-react'
 import { useCheckpointData } from './hooks/useCheckpointData'
 import ErrorBoundary from './components/ErrorBoundary'
 import DealIntakeWizard from './components/DealIntakeWizard'
@@ -399,114 +409,106 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-cre-bg text-gray-100">
-      {/* Header */}
-      <header className="bg-cre-surface border-b border-cre-border px-4 py-4 flex flex-col gap-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0 flex flex-wrap items-center gap-3">
-          <h1 className="min-w-0 text-xl font-bold tracking-tight">CRE Acquisition Orchestrator</h1>
-          {visibleDealCheckpoint && (
-            <span className="min-w-0 break-words text-sm text-gray-500">
-              | {visibleDealCheckpoint.dealName || 'Unnamed Deal'}
-            </span>
-          )}
-        </div>
-        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
-          {/* Run status + controls are run-time concerns — hidden on the clean front door (no
-              deal open and nothing running) so a newcomer is not shown inert chrome or jargon. */}
-          {(visibleDealCheckpoint || runActive) && (
-            <div className="flex min-w-0 items-center gap-2 text-sm" role="status" aria-live="polite">
-              <span
-                aria-hidden="true"
-                className={`inline-block w-2.5 h-2.5 rounded-full ${
-                  runStatus.state === 'RUNNING' || runStatus.state === 'STARTING'
-                    ? 'bg-cre-info'
-                    : runStatus.state === 'FAILED'
-                      ? 'bg-cre-danger'
-                      : runStatus.state === 'COMPLETED'
-                        ? 'bg-cre-success'
-                        : 'bg-[#6b7280]'
-                }`}
-              />
-              <span className="min-w-0 break-words text-gray-400">
-                Run: {runStateLabel}{runProviderLabel ? ` / ${runProviderLabel}` : ''}
-              </span>
+      {/* The workspace turns the global toolbar into a quiet utility dock inside the left rail. */}
+      {visibleDealCheckpoint ? (
+        <header className="fixed bottom-0 left-0 z-30 w-full border-t border-cre-border bg-[#0c151c]/95 px-4 py-3 backdrop-blur xl:w-[185px]" aria-label="Workspace utilities">
+          <h1 className="sr-only">CRE Acquisition Orchestrator</h1>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2 text-[10px] text-gray-500" role="status" aria-live="polite">
+              <span className={`cre-dot ${connected ? 'cre-dot-done' : 'cre-dot-blocked'}`} aria-hidden="true" />
+              <span>{connected ? 'Connected' : 'Disconnected'}</span>
             </div>
-          )}
-
-          {/* Connection Status */}
-          <div className="flex min-w-0 items-center gap-2 text-sm" role="status" aria-live="polite">
-            <span
-              aria-hidden="true"
-              className={`inline-block w-2.5 h-2.5 rounded-full ${
-                connected ? 'bg-cre-success' : 'bg-cre-danger'
-              }`}
-            />
-            <span className="min-w-0 break-words text-gray-400">
-              {connected ? 'Connected' : 'Disconnected'}
-            </span>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setWorkflowOpen(true)} data-testid="header-workflows-button" className="p-2 text-gray-500 transition-colors hover:text-white" aria-label="Advanced workflows" title="Advanced workflows">
+                <IconAdjustmentsHorizontal size={17} stroke={1.5} aria-hidden="true" />
+              </button>
+              <button onClick={openUploadFrontDoor} data-testid="header-new-deal-button" className="p-2 text-gray-500 transition-colors hover:text-white" aria-label="New Deal" title="New Deal">
+                <IconPlus size={17} stroke={1.5} aria-hidden="true" />
+              </button>
+              <button onClick={() => setLibraryOpen(true)} data-testid="header-deals-button" className="p-2 text-gray-500 transition-colors hover:text-white" aria-label="Deals" title="Deals">
+                <IconFolder size={17} stroke={1.5} aria-hidden="true" />
+              </button>
+            </div>
           </div>
 
-          <button
-            onClick={() => setWorkflowOpen(true)}
-            data-testid="header-workflows-button"
-            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 transition-colors"
-          >
-            Advanced
-          </button>
-
-          {/* "New Deal" opens the document-drop front door — no manual data-entry form.
-              Drop the source package and the team fills + flags the deal record. */}
-          <button
-            onClick={openUploadFrontDoor}
-            data-testid="header-new-deal-button"
-            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 transition-colors"
-          >
-            New Deal
-          </button>
-
-          <button
-            onClick={() => setLibraryOpen(true)}
-            data-testid="header-deals-button"
-            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 transition-colors"
-          >
-            Deals
-          </button>
-
-          {visibleDealCheckpoint && (
-            <button
-              onClick={() => void openGuidedDemo()}
-              data-testid="guided-demo-header-cta"
-              disabled={guidedDemoLoading}
-              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-black hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {guidedDemoLoading ? 'Opening Parkview...' : 'Parkview Demo'}
-            </button>
-          )}
-
-          {(visibleDealCheckpoint || runActive) && (
-            <>
+          <div className="mt-2 flex items-center justify-between gap-2 border-t border-cre-border pt-2">
+            <div className="min-w-0 text-[9px] leading-4 text-gray-600" role="status" aria-live="polite">
+              Run: {runStateLabel}{runProviderLabel ? ` / ${runProviderLabel}` : ''}
+            </div>
+            <div className="flex items-center gap-1">
               <button
-                onClick={() => {
-                  setFrontDoorPinned(false)
-                  setFrontDoorOpen(false)
-                  void startLiveRun()
-                }}
+                onClick={() => void openGuidedDemo()}
+                data-testid="guided-demo-header-cta"
+                disabled={guidedDemoLoading}
+                className="p-1.5 text-gray-500 transition-colors hover:text-cre-accent disabled:opacity-40"
+                aria-label={guidedDemoLoading ? 'Opening Parkview demo' : 'Open Parkview demo'}
+                title="Parkview demo"
+              >
+                <IconSparkles size={16} stroke={1.5} aria-hidden="true" />
+              </button>
+              <button
+                onClick={() => { setFrontDoorPinned(false); setFrontDoorOpen(false); void startLiveRun() }}
                 disabled={!canStart}
-                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/5 text-gray-100 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 text-gray-500 transition-colors hover:text-cre-success disabled:opacity-35"
+                aria-label={runRequestPending ? 'Working' : 'Run Codex'}
+                title="Run Codex"
               >
-                {runRequestPending ? 'Working...' : 'Run Codex'}
+                <IconPlayerPlay size={16} stroke={1.5} aria-hidden="true" />
               </button>
-
-              <button
-                onClick={() => void stopRun()}
-                disabled={!canStop || runRequestPending}
-                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-cre-danger/80 text-white hover:bg-cre-danger disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Stop
+              <button onClick={() => void stopRun()} disabled={!canStop || runRequestPending} className="p-1.5 text-gray-500 transition-colors hover:text-cre-danger disabled:opacity-35" aria-label="Stop" title="Stop">
+                <IconPlayerStop size={16} stroke={1.5} aria-hidden="true" />
               </button>
-            </>
-          )}
-        </div>
-      </header>
+            </div>
+          </div>
+        </header>
+      ) : (
+        <header className="border-b border-cre-border bg-[#0c151c]/72 px-5 py-5 backdrop-blur sm:px-8">
+          <div className="mx-auto flex max-w-[1320px] flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <span className="font-serif text-2xl font-medium tracking-[-0.04em] text-cre-primary" aria-hidden="true">AO</span>
+              <div>
+                <h1 className="text-sm font-medium text-cre-primary">CRE Acquisition Orchestrator</h1>
+                <div className="mt-1 flex items-center gap-2 text-[10px] tracking-[0.08em] text-gray-500" role="status" aria-live="polite">
+                  <span className={`cre-dot ${connected ? 'cre-dot-done' : 'cre-dot-blocked'}`} aria-hidden="true" />
+                  {connected ? 'Connected' : 'Disconnected'}
+                </div>
+              </div>
+            </div>
+            <nav className="flex flex-wrap items-center gap-3" aria-label="Application actions">
+              {runActive && (
+                <div
+                  className="flex min-h-10 items-center gap-3 border border-cre-live/25 bg-cre-live/[0.06] px-3 text-[10px] text-gray-300"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span className="cre-dot cre-dot-live cre-dot-pulse" aria-hidden="true" />
+                  <span>Run: {runStateLabel}{runProviderLabel ? ` / ${runProviderLabel}` : ''}</span>
+                  <button
+                    type="button"
+                    data-testid="header-stop-run"
+                    onClick={() => void stopRun()}
+                    disabled={!canStop || runRequestPending}
+                    className="inline-flex min-h-7 items-center gap-1.5 border-l border-cre-border pl-3 text-cre-danger transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Stop active run"
+                  >
+                    <IconPlayerStop size={14} stroke={1.5} aria-hidden="true" />
+                    Stop
+                  </button>
+                </div>
+              )}
+              <button onClick={() => setWorkflowOpen(true)} data-testid="header-workflows-button" className="portal-button portal-button-secondary min-h-10 px-4">
+                <IconAdjustmentsHorizontal size={16} stroke={1.5} aria-hidden="true" /> Advanced
+              </button>
+              <button onClick={() => setLibraryOpen(true)} data-testid="header-deals-button" className="portal-button portal-button-secondary min-h-10 px-4">
+                <IconBuildingEstate size={16} stroke={1.5} aria-hidden="true" /> Deals
+              </button>
+              <button onClick={openUploadFrontDoor} data-testid="header-new-deal-button" className="portal-button portal-button-primary min-h-10 px-4">
+                <IconPlus size={16} stroke={1.5} aria-hidden="true" /> New Deal
+              </button>
+            </nav>
+          </div>
+        </header>
+      )}
 
       {/* Reconnection Banner */}
       {!connected && reconnectAttempt > 0 && (
@@ -528,7 +530,7 @@ export default function App() {
       )}
 
       {/* Content */}
-      <main className="p-6 max-w-[1440px] mx-auto">
+      <main className={visibleDealCheckpoint ? 'min-h-screen' : 'mx-auto max-w-[1320px] px-5 py-10 sm:px-8 sm:py-14'}>
         <ErrorBoundary routeName={visibleDealCheckpoint ? 'Deal workspace' : 'Home'} onGoHome={openUploadFrontDoor}>
           {!visibleDealCheckpoint ? (
             <ErrorBoundary routeName="New deal">
@@ -581,7 +583,7 @@ export default function App() {
       </main>
 
       {/* Footer - minimal, demo-friendly */}
-      <footer className="border-t border-cre-border px-6 py-3 text-center">
+      {!visibleDealCheckpoint && <footer className="border-t border-cre-border px-6 py-4 text-center">
         <p className="text-xs text-gray-600">
           CRE Acquisition Orchestrator · Built by{' '}
           <a
@@ -593,7 +595,7 @@ export default function App() {
             Avi Hacker, J.D. — The AI Consulting Network
           </a>
         </p>
-      </footer>
+      </footer>}
 
       {libraryOpen && (
         <div data-testid="deal-library-backdrop" className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm overflow-y-auto">
@@ -607,19 +609,17 @@ export default function App() {
             >
               <div className="border-b border-cre-border px-6 py-5 flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-cre-accent font-semibold">
+                  <p className="portal-kicker text-cre-accent">
                     Deal Library
                   </p>
-                  <h2 id="deal-library-title" className="text-2xl font-bold text-white mt-2">Saved and Sample Deals</h2>
+                  <h2 id="deal-library-title" className="mt-2 font-serif text-3xl font-medium text-cre-primary">Saved and Sample Deals</h2>
                 </div>
                 <button
                   onClick={() => setLibraryOpen(false)}
                   className="rounded-full p-2 text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
                   aria-label="Close deal library"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
-                    <path d="M5 5L15 15M15 5L5 15" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
+                  <IconX size={20} stroke={1.5} aria-hidden="true" />
                 </button>
               </div>
               <div className="p-6">
@@ -654,19 +654,17 @@ export default function App() {
             >
               <div className="border-b border-cre-border px-6 py-5 flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-cre-accent font-semibold">
+                  <p className="portal-kicker text-cre-accent">
                     Advanced Orchestration Controls
                   </p>
-                  <h2 id="workflow-launcher-title" className="text-2xl font-bold text-white mt-2">Launch Orchestration</h2>
+                  <h2 id="workflow-launcher-title" className="mt-2 font-serif text-3xl font-medium text-cre-primary">Launch Orchestration</h2>
                 </div>
                 <button
                   onClick={() => setWorkflowOpen(false)}
                   className="rounded-full p-2 text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
                   aria-label="Close workflow launcher"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
-                    <path d="M5 5L15 15M15 5L5 15" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
+                  <IconX size={20} stroke={1.5} aria-hidden="true" />
                 </button>
               </div>
               <div className="p-6">

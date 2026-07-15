@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { IconArrowRight, IconScale } from '@tabler/icons-react'
 import type { StoryEvent } from '../types/checkpoint'
 
 interface DecisionLogProps {
@@ -20,65 +21,76 @@ export default function DecisionLog({ storyEvents }: DecisionLogProps) {
 
   if (decisions.length === 0) {
     return (
-      <div className="card flex items-center justify-center h-64 text-center">
+      <section className="flex min-h-64 items-center justify-center border-y border-white/10 px-6 text-center" aria-labelledby="decision-ribbon-title">
         <div>
-          <p className="text-gray-400">No decisions logged yet.</p>
-          <p className="text-xs text-gray-600 mt-1">
+          <h3 id="decision-ribbon-title" className="font-serif text-2xl text-gray-300">Decision Ribbon</h3>
+          <p className="mt-4 text-gray-400">No decisions logged yet.</p>
+          <p className="mt-2 text-xs text-gray-600">
             Verdict and gating rationale will appear here.
           </p>
         </div>
-      </div>
+      </section>
     )
   }
 
   return (
-    <div className="card">
-      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
-        Decision Ribbon
-      </h3>
-      <div className="space-y-3">
+    <section className="border-y border-white/10 py-7" aria-labelledby="decision-ribbon-title">
+      <div className="flex items-end justify-between gap-4">
+        <h3 id="decision-ribbon-title" className="font-serif text-2xl text-white">Decision Ribbon</h3>
+        <span className="font-serif text-2xl tabular-nums text-gray-400">{decisions.length}</span>
+      </div>
+      <div className="mt-6 divide-y divide-white/10 border-y border-white/10">
         {decisions.map((decision) => (
-          <div key={`${decision.runId}-${decision.seq}`} className="rounded-lg border border-cre-border bg-black/20 p-3">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="status-badge bg-cre-warning/20 text-cre-warning">Decision</span>
+          <article key={`${decision.runId}-${decision.seq}`} className="grid gap-4 py-5 md:grid-cols-[150px_minmax(0,1fr)]">
+            <div className="text-xs text-gray-600">
+              <div className="flex items-center gap-2 text-cre-warning">
+                <IconScale size={18} stroke={1.5} aria-hidden="true" />
+                <span className="text-[10px] font-semibold uppercase tracking-[0.16em]">Decision</span>
+              </div>
               {typeof decision.phase === 'string' && (
-                <span className="text-gray-500">{decision.phase}</span>
+                <p className="mt-3 text-gray-500">{decision.phase}</p>
               )}
-              <span className="text-gray-600 ml-auto">{prettyTs(decision.ts)}</span>
+              <p className="mt-1 font-mono text-[11px]">{prettyTs(decision.ts)}</p>
             </div>
-            <p className="text-sm text-gray-200 mt-1">
-              {typeof decision.title === 'string' ? decision.title : 'Decision'}
-            </p>
-            {typeof decision.rationale === 'string' && decision.rationale.length > 0 && (
-              <p className="text-xs text-gray-500 mt-1">{decision.rationale}</p>
-            )}
-            {Array.isArray(decision.inputs) && decision.inputs.length > 0 && (
-              <div className="mt-2">
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Inputs</p>
-                <ul className="mt-1 space-y-1">
-                  {decision.inputs.map((input, idx) => (
-                    <li key={idx} className="text-xs text-gray-400">
-                      - {input}
-                    </li>
-                  ))}
-                </ul>
+            <div className="min-w-0">
+              <h4 className="font-serif text-xl leading-snug text-gray-200">
+                {typeof decision.title === 'string' ? decision.title : 'Decision'}
+              </h4>
+              {typeof decision.rationale === 'string' && decision.rationale.length > 0 && (
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-500">{decision.rationale}</p>
+              )}
+              <div className="mt-5 grid gap-6 lg:grid-cols-2">
+                {Array.isArray(decision.inputs) && decision.inputs.length > 0 && (
+                  <div className="border-l border-white/15 pl-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">Inputs</p>
+                    <ul className="mt-3 space-y-2">
+                      {decision.inputs.map((input, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-xs leading-5 text-gray-400">
+                          <IconArrowRight size={14} stroke={1.6} className="mt-0.5 shrink-0 text-cre-accent" aria-hidden="true" />
+                          <span>{input}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {Array.isArray(decision.impact) && decision.impact.length > 0 && (
+                  <div className="border-l border-white/15 pl-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">Impact</p>
+                    <ul className="mt-3 space-y-2">
+                      {decision.impact.map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-xs leading-5 text-gray-400">
+                          <IconArrowRight size={14} stroke={1.6} className="mt-0.5 shrink-0 text-cre-accent" aria-hidden="true" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
-            )}
-            {Array.isArray(decision.impact) && decision.impact.length > 0 && (
-              <div className="mt-2">
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Impact</p>
-                <ul className="mt-1 space-y-1">
-                  {decision.impact.map((item, idx) => (
-                    <li key={idx} className="text-xs text-gray-400">
-                      - {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+            </div>
+          </article>
         ))}
       </div>
-    </div>
+    </section>
   )
 }
