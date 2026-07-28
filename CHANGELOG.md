@@ -6,6 +6,13 @@ This project follows the spirit of [Keep a Changelog](https://keepachangelog.com
 
 ## [3.6.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.5.0...v3.6.0) (2026-07-28)
 
+
+### Features
+
+* add conversation desk and persistent agent chat ([#76](https://github.com/ahacker-1/cre-acquisition-orchestrator/issues/76)) ([a1cdd7f](https://github.com/ahacker-1/cre-acquisition-orchestrator/commit/a1cdd7f680a4dcf2f5e70a8380d6eb5eaccda878))
+
+## [3.6.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.5.0...v3.6.0) (2026-07-28)
+
 ### Conversation Desk + Persistent Agent Conversations
 
 Makes a source-backed conversation the dashboard's front door. Operators can choose a deal, choose
