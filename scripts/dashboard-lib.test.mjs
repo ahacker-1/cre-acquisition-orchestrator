@@ -1,6 +1,6 @@
 // Unit tests for redesigned dashboard frontend logic (dashboard/src/lib/*).
 // Consolidated into one file invoked from the root `test` chain so it runs in the gate
-// WITHOUT adding a new `test:*` script key (which would change the README "Tests passing"
+// WITHOUT adding a new `test:*` script key (which would change the README "Test commands"
 // count that validate:docs enforces). Run via: cd dashboard && npm exec tsx ../scripts/dashboard-lib.test.mjs
 import assert from 'node:assert/strict'
 import {
@@ -8,10 +8,13 @@ import {
   phaseStatusToStageStatus,
   normalizeProgress,
   intakeSummaryFromDocuments,
+  isCompleteDealStatus,
   INGESTION_TEAM,
   SPINE_STAGE_IDS,
 } from '../dashboard/src/lib/stageModel.ts'
 import { suggestionsForStage } from '../dashboard/src/lib/commandModel.ts'
+import { dealArtifactHref } from '../dashboard/src/lib/artifactUrl.ts'
+import { buildPackageProofSteps, sourceReadinessPresentation } from '../dashboard/src/lib/completionModel.ts'
 import {
   buildDealRecordGroups,
   countNeedsEye,
@@ -35,6 +38,11 @@ import {
 import { routeIntent } from '../dashboard/src/lib/intentRouting.ts'
 import { suggestionsForStage as suggestionsForStageRouting } from '../dashboard/src/lib/commandModel.ts'
 import { requestAgentDispatch, DISPATCH_WORKFLOW_ID } from '../dashboard/src/hooks/useAgentDispatch.ts'
+import {
+  conversationSubmissionFor,
+  postConversationMessageRequest,
+} from '../dashboard/src/lib/conversationRequests.ts'
+import { conversationPathForDeal } from '../dashboard/src/lib/conversationNavigation.ts'
 
 let passed = 0
 function check(name, fn) {
@@ -68,6 +76,33 @@ function phase(status, progress = 0) {
     outputs: { phaseSummary: '', keyFindings: [], redFlags: [], dataGaps: [], phaseVerdict: null },
   }
 }
+
+console.log('conversation request identity:')
+
+check('one logical conversation submission retains its client request ID until its payload changes', () => {
+  let sequence = 0
+  const makeId = () => `request-${++sequence}`
+  const first = conversationSubmissionFor('Review the rent roll', ['doc-b', 'doc-a'], null, makeId)
+  const resubmission = conversationSubmissionFor('Review the rent roll', ['doc-a', 'doc-b'], first, makeId)
+  const changedEvidence = conversationSubmissionFor('Review the rent roll', ['doc-a'], resubmission, makeId)
+  const changedText = conversationSubmissionFor('Review the T12', ['doc-a'], changedEvidence, makeId)
+
+  assert.strictEqual(resubmission, first, 'an unchanged resubmission reuses the durable identity')
+  assert.equal(first.clientRequestId, 'request-1')
+  assert.equal(changedEvidence.clientRequestId, 'request-2')
+  assert.equal(changedText.clientRequestId, 'request-3')
+})
+
+check('switching deals clears stale agent and thread URL authority while a same-deal round-trip preserves it', () => {
+  assert.equal(
+    conversationPathForDeal('http://localhost/?deal=deal-a&agent=legal&thread=thread-a&view=compact', 'deal-b'),
+    '/?deal=deal-b&view=compact',
+  )
+  assert.equal(
+    conversationPathForDeal('http://localhost/?deal=deal-b&agent=legal&thread=thread-b#conversation', 'deal-b'),
+    '/?deal=deal-b&agent=legal&thread=thread-b#conversation',
+  )
+})
 
 console.log('stageModel:')
 
@@ -126,12 +161,25 @@ check('intake stage derives from the intake summary', () => {
   assert.equal(done.progress, 100)
   const blocked = deriveSpineStages(makeDeal(), { documentCount: 1, reviewPendingCount: 1, appliedCount: 0, blocked: true })[0]
   assert.equal(blocked.status, 'blocked')
+  const failedOnly = deriveSpineStages(makeDeal(), { documentCount: 2, reviewPendingCount: 0, appliedCount: 0, blockedCount: 2 })[0]
+  assert.equal(failedOnly.status, 'blocked')
+  assert.equal(failedOnly.progress, 0)
+  const waivedOnly = deriveSpineStages(makeDeal(), { documentCount: 1, reviewPendingCount: 0, appliedCount: 0 })[0]
+  assert.equal(waivedOnly.status, 'idle')
 })
 
 check('IC stage is done when the deal is complete', () => {
   assert.equal(deriveSpineStages(makeDeal({ status: 'complete' }))[6].status, 'done')
+  assert.equal(deriveSpineStages(makeDeal({ status: 'completed' }))[6].status, 'done')
   assert.equal(deriveSpineStages(makeDeal(), undefined, { hasContent: true })[6].status, 'live')
   assert.equal(deriveSpineStages(makeDeal())[6].status, 'idle')
+})
+
+check('isCompleteDealStatus accepts complete and completed consistently', () => {
+  assert.equal(isCompleteDealStatus('complete'), true)
+  assert.equal(isCompleteDealStatus('COMPLETED'), true)
+  assert.equal(isCompleteDealStatus('running'), false)
+  assert.equal(isCompleteDealStatus(undefined), false)
 })
 
 check('intakeSummaryFromDocuments tallies applied vs pending', () => {
@@ -145,6 +193,44 @@ check('intakeSummaryFromDocuments tallies applied vs pending', () => {
   assert.equal(summary.documentCount, 5)
   assert.equal(summary.appliedCount, 2)
   assert.equal(summary.reviewPendingCount, 2)
+  assert.equal(summary.blockedCount, 1)
+  assert.equal(summary.blocked, true)
+  const failedOnly = intakeSummaryFromDocuments([
+    { status: 'parse_failed', extractionStatus: 'parse_failed' },
+    { status: 'unsupported', extractionStatus: 'unsupported' },
+    { status: 'rejected', extractionStatus: 'extracted' },
+  ])
+  assert.equal(failedOnly.appliedCount, 0)
+  assert.equal(failedOnly.reviewPendingCount, 0)
+  assert.equal(failedOnly.blockedCount, 2)
+  assert.equal(deriveSpineStages(makeDeal(), failedOnly)[0].status, 'blocked')
+
+  const appliedWithRejected = intakeSummaryFromDocuments([
+    { status: 'applied', extractionStatus: 'extracted' },
+    { status: 'rejected', extractionStatus: 'extracted' },
+    { status: 'waived', extractionStatus: 'extracted' },
+  ])
+  assert.equal(appliedWithRejected.blocked, false)
+  assert.equal(deriveSpineStages(makeDeal(), appliedWithRejected)[0].status, 'done')
+})
+
+check('deal artifact links use the deal-scoped API and encode the report path', () => {
+  assert.equal(
+    dealArtifactHref('parkview-2026-001', 'data/reports/parkview-2026-001/legal/PSA review.md'),
+    '/api/deals/parkview-2026-001/artifacts?path=data%2Freports%2Fparkview-2026-001%2Flegal%2FPSA%20review.md',
+  )
+})
+
+check('source readiness is never inferred from package completion', () => {
+  assert.deepEqual(sourceReadinessPresentation(undefined), { status: 'pending', label: 'not captured' })
+  assert.deepEqual(sourceReadinessPresentation({ status: 'warning' }), { status: 'warning', label: 'warning' })
+
+  const steps = buildPackageProofSteps(
+    { sourceDocumentCount: 1, approvedFieldCount: 0 },
+    [],
+    makeDeal({ status: 'complete' }),
+  )
+  assert.deepEqual(steps.map((step) => step.status), ['ready', 'pending', 'pending', 'ready'])
 })
 
 check('INGESTION_TEAM: Intake stage team is the 4 ingestion agents, keyed by kebab id (Fix A)', () => {
@@ -913,6 +999,39 @@ function mockFetch({ ok = true, body = {} } = {}) {
   impl.calls = calls
   return impl
 }
+
+await (async function conversationLostResponseRetry() {
+  const requestBodies = []
+  let calls = 0
+  const acceptedResponse = {
+    ok: true,
+    json: async () => ({ status: 'accepted' }),
+  }
+  const result = await postConversationMessageRequest(
+    {
+      url: '/api/deals/deal-a/conversations/thread-a/messages',
+      content: 'Review the rent roll',
+      documentIds: ['doc-a'],
+      clientRequestId: 'stable-request-id',
+    },
+    async (_url, init) => {
+      calls += 1
+      requestBodies.push(JSON.parse(init.body))
+      if (calls === 1) throw new TypeError('The POST response was lost')
+      return acceptedResponse
+    },
+  )
+
+  assert.strictEqual(result, acceptedResponse)
+  assert.equal(calls, 2)
+  assert.deepEqual(
+    requestBodies.map((body) => body.clientRequestId),
+    ['stable-request-id', 'stable-request-id'],
+    'the transport retry must replay the same durable identity',
+  )
+  passed += 1
+  console.log('  ok - a lost POST response retries once with the same client request ID')
+})()
 
 await (async () => {
   // Offline (simulation) dispatch is a no-op that never calls fetch, returns the switch-to-Codex notice.

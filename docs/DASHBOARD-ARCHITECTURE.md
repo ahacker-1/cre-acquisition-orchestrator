@@ -134,6 +134,22 @@ saves operator launch presets, and resolves a workflow id to its phase/agent
 selection. Backs `/api/workflows`, `/api/workflow-presets`, and feeds the launch
 route.
 
+### `conversation-service.ts` + `conversation-manager.ts` — retained specialist threads
+
+`conversation-service.ts` owns deal-local thread metadata, append-only message/event history,
+turn state, registry validation, and document-evidence bundles under
+`data/deals/{dealId}/conversations/`. Browser payloads never expose runtime session IDs.
+
+`conversation-manager.ts` owns a separate bounded queue from `RunManager`: one active turn per
+thread, multiple independent threads up to the configured local cap, and read-only Codex execution
+from a fresh evidence-only temporary root. Shell, browser, app, plugin, MCP, memory, skill, and web
+tool features are disabled. The server-built prompt contains the selected documents' extracted
+evidence, current deal record, underwriting criteria, approved fields, selected agent role guide,
+recent conversation transcript, and current question.
+The manager also owns explicit session resume, cancellation, timeout handling, restart recovery,
+structured response validation, and server-derived source citations. It emits compact activity
+labels rather than raw model reasoning, commands, or tool arguments.
+
 ---
 
 ## Client (`dashboard/src`)
@@ -152,11 +168,12 @@ route.
 
 | Hook | Responsibility |
 |------|----------------|
-| `useCheckpointData.ts` | Opens the **WebSocket**, consumes `initial`/`checkpoint`/`log`/`event`/`run` envelopes, normalizes them into typed state (deal checkpoint, agent checkpoints, log entries, story events, document artifacts, run status), and auto-reconnects (up to 20 attempts, backoff capped at 30s). Also exposes `startLiveRun` / `stopRun` / `refreshRunStatus` via REST. |
+| `useCheckpointData.ts` | Opens the **WebSocket**, consumes `initial`/`checkpoint`/`log`/`event`/`run`/`conversation` envelopes, normalizes them into typed state, and auto-reconnects (up to 20 attempts, backoff capped at 30s). Conversation events are a bounded live acceleration stream; REST remains transcript source of truth. |
 | `useDealLibrary.ts` | REST CRUD against `/api/deals*`: list, load, validate, save, launch. |
 | `useDealWorkspace.ts` | REST against `/api/deals/:id/*`: workspace, criteria, document extract/extraction/apply/review, IC-starter-package, phase-state. |
 | `useWorkflows.ts` | REST against `/api/workflows` and `/api/workflow-presets`, plus `/api/workflows/:id/launch`. |
 | `useAgentDispatch.ts` | Dispatches a single named agent on demand (live Codex path) so the `AgentPanel` can summon → watch → re-task one specialist; offline it is a read/replay of recorded work. |
+| `useAgentConversations.ts` | Lists/creates per-deal agent threads, reloads durable history, posts idempotent messages, cancels turns, and merges deal-filtered live conversation events. |
 
 ### Components — views
 
@@ -187,8 +204,10 @@ route.
   `workspace/TeamRail.tsx`), and the bottom **`CommandBar`** (`workspace/CommandBar.tsx`,
   "tell your team…" + suggestion chips from `src/lib/commandModel.ts`, routed by
   `src/lib/intentRouting.ts`). Clicking an agent (rail, chip, or command bar) opens
-  the slide-in **`AgentPanel`** (`workspace/AgentPanel.tsx`), fed by
-  `src/lib/agentView.ts` and dispatched via `hooks/useAgentDispatch.ts`.
+  the slide-in **`AgentPanel`** (`workspace/AgentPanel.tsx`). When local conversations are enabled,
+  it becomes a persistent timeline with retained follow-ups, document attachments, compact live
+  activity, and expandable citations; recorded workflow work and filed workpapers remain available
+  in the same panel. The searchable directory includes all 31 registry identities.
   `DealWorkspace` also renders a guided demo tour (`GuidedDemoTour`).
 
 - Power-user surfaces live in the **Advanced drawer** (`open-advanced` →

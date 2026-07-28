@@ -207,7 +207,7 @@ test('staffs the Intake stage Your Team rail with the ingestion crew', async ({ 
   await expect(teamRail.getByTestId('team-agent-financial-model-builder')).toBeVisible()
 })
 
-test('blocks diligence start while intake record fields need review', async ({ page, request }) => {
+test('routes flagged intake fields directly into detailed review before diligence', async ({ page, request }) => {
   await saveLaunchReadyDeal(request, FLAGGED_RECORD_DEAL_ID, 'Flagged Intake Record Deal')
   seedRecordExtraction({
     dealId: FLAGGED_RECORD_DEAL_ID,
@@ -224,8 +224,11 @@ test('blocks diligence start while intake record fields need review', async ({ p
 
   await expect(page.getByTestId('needs-eye-count')).toContainText('1 value')
   const flaggedStart = page.getByTestId('start-diligence')
-  await expect(flaggedStart).toBeDisabled()
-  await flaggedStart.evaluate((button) => (button as HTMLButtonElement).click())
+  await expect(flaggedStart).toBeEnabled()
+  await expect(flaggedStart).toHaveAttribute('data-action', 'review-flagged-values')
+  await expect(flaggedStart).toHaveAccessibleName('Review 1 flagged value')
+  await flaggedStart.click()
+  await expect(page.getByTestId('intake-detailed-review')).toHaveJSProperty('open', true)
   await expect(page.getByTestId('spine-step-intake')).toHaveAttribute('aria-current', 'step')
   await expect(page.getByTestId('spine-step-diligence')).not.toHaveAttribute('aria-current', 'step')
 
@@ -246,6 +249,7 @@ test('blocks diligence start while intake record fields need review', async ({ p
   await expect(page.getByTestId('needs-eye-count')).toContainText('All values read cleanly')
   const cleanStart = page.getByTestId('start-diligence')
   await expect(cleanStart).toBeEnabled()
+  await expect(cleanStart).toHaveAttribute('data-action', 'start-diligence')
   await cleanStart.click()
   await expect(page.getByTestId('spine-step-diligence')).toHaveAttribute('aria-current', 'step')
 })

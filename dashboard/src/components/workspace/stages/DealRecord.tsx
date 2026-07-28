@@ -154,8 +154,8 @@ export default function DealRecord({
   saving,
 }: DealRecordProps) {
   const hasFields = groups.some((group) => group.fields.length > 0)
-  const startBlocked = needsEyeCount > 0
-  const startDisabled = startBlocked || saving === true
+  const reviewRequired = needsEyeCount > 0
+  const actionDisabled = saving === true
 
   return (
     <section data-testid="deal-record" className="border-y border-white/10 py-6">
@@ -202,15 +202,17 @@ export default function DealRecord({
             <button
               type="button"
               data-testid="start-diligence"
-              disabled={startDisabled}
+              data-action={reviewRequired ? 'review-flagged-values' : 'start-diligence'}
+              disabled={actionDisabled}
               onClick={onStartDiligence}
               className="portal-button portal-button-primary"
-              title={startBlocked ? 'Resolve flagged values before starting Diligence' : undefined}
-              aria-label="Looks right, start Diligence"
+              aria-label={reviewRequired
+                ? `Review ${needsEyeCount} flagged value${needsEyeCount === 1 ? '' : 's'}`
+                : 'Looks right, start Diligence'}
             >
-              <span>Looks right</span>
+              <span>{reviewRequired ? 'Review flagged values' : 'Looks right'}</span>
               <IconArrowRight size={15} stroke={1.5} aria-hidden="true" />
-              <span>start Diligence</span>
+              {!reviewRequired && <span>start Diligence</span>}
             </button>
           </div>
         </div>

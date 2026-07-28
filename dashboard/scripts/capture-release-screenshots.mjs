@@ -7,184 +7,347 @@ const __dirname = dirname(__filename)
 const repoRoot = resolve(__dirname, '..', '..')
 const assetsDir = resolve(repoRoot, 'docs', 'assets')
 const baseURL = process.env.CRE_DASHBOARD_URL || 'http://localhost:5173'
-const apiURL = process.env.CRE_API_URL || 'http://localhost:8081'
 const sampleUploadPath = resolve(repoRoot, 'fixtures', 'parsers', 'rent-roll-basic.xlsx')
 
-async function delay(ms) {
-  await new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
-}
-
-async function readApi(path) {
-  const response = await fetch(`${apiURL}${path}`)
-  if (!response.ok) throw new Error(`GET ${path} failed with ${response.status}`)
-  return response.json()
-}
-
-async function postApi(path, body) {
-  const response = await fetch(`${apiURL}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body ?? {}),
-  })
-  if (!response.ok) throw new Error(`POST ${path} failed with ${response.status}`)
-  return response.json().catch(() => ({}))
-}
-
-// Kick the deterministic demo run the same way the header "Run Demo" button does (it POSTs
-// /api/run/start). That control is now hidden on the clean front door, so call the API directly;
-// the app auto-reveals the workspace once the run goes active.
-async function startDemoRun() {
-  await postApi('/api/run/start', {
-    dealPath: 'config/deal.json',
-    mode: 'live',
-    speed: 'normal',
-    runtimeProvider: 'simulation',
-    reset: true,
-  })
-}
-
-async function waitForCondition(label, predicate, timeoutMs, intervalMs = 500) {
-  const startedAt = Date.now()
-  let lastError = null
-  while (Date.now() - startedAt < timeoutMs) {
-    try {
-      if (await predicate()) return
-    } catch (err) {
-      lastError = err
-    }
-    await delay(intervalMs)
-  }
-  const suffix = lastError instanceof Error ? ` Last error: ${lastError.message}` : ''
-  throw new Error(`Timed out waiting for ${label}.${suffix}`)
-}
-
-async function waitForRunIdle() {
-  await waitForCondition('run to finish', async () => {
-    const status = await readApi('/api/run/status')
-    return !status.active && ['IDLE', 'COMPLETED', 'FAILED', 'STOPPED'].includes(status.state)
-  }, 120_000)
-}
-
-async function waitForRunStartedOrCompleted() {
-  await waitForCondition('run to start', async () => {
-    const status = await readApi('/api/run/status')
-    return status.active || ['STARTING', 'RUNNING', 'COMPLETED', 'FAILED', 'STOPPED'].includes(status.state)
-  }, 20_000)
-}
-
-async function waitForRunDocuments() {
-  await waitForCondition('run documents to be written', async () => {
-    const status = await readApi('/api/run/status')
-    if (!status.runId) return false
-    const documents = await readApi(`/api/run/${status.runId}/documents`)
-    return Array.isArray(documents.documents) && documents.documents.length >= 20
-  }, 40_000)
-}
-
-// Land in the persistent deal space (the redesigned "workspace-frame", which replaced the old
-// "operator-deal-hub"). From the front door we capture the door, then run the deterministic
-// Parkview demo so the spine, rail, and stages populate with no API keys.
-async function waitForWorkspace(page) {
-  await page.goto(baseURL, { waitUntil: 'networkidle' })
-  await page.getByText('Connected').waitFor({ timeout: 20_000 })
-  await waitForRunIdle()
-
-  if (await page.getByTestId('drop-zone-hero').isVisible().catch(() => false)) {
-    await capture(page, 'dashboard-front-door.png')
-  }
-
-  if (!(await page.getByTestId('workspace-frame').isVisible().catch(() => false))) {
-    await startDemoRun()
-    await waitForRunStartedOrCompleted()
-    await page.getByTestId('workspace-frame').waitFor({ timeout: 30_000 })
-  }
-
-  await waitForRunIdle()
-  await waitForRunDocuments()
-  await page.getByText('Completed').first().waitFor({ timeout: 30_000 })
-  await page.waitForTimeout(500)
-  await page.getByTestId('workspace-frame').waitFor({ timeout: 30_000 })
+async function stabilizePage(page) {
+  await page.addStyleTag({
+    content: `
+      *, *::before, *::after {
+        animation-duration: 0.001s !important;
+        animation-delay: 0s !important;
+        transition-duration: 0.001s !important;
+        scroll-behavior: auto !important;
+      }
+    `,
+  }).catch(() => {})
 }
 
 async function capture(page, name) {
   await page.waitForLoadState('networkidle').catch(() => {})
+  await page.waitForTimeout(200)
   await page.screenshot({ path: resolve(assetsDir, name), fullPage: false })
   console.log(`captured docs/assets/${name}`)
 }
 
-// Focus a lifecycle stage by clicking its spine step. Stage ids: intake | diligence |
-// underwriting | financing | legal | closing | ic. The center stage swaps to the focused stage;
-// the frame (header, spine, rail, command bar) stays put.
+async function waitForConversationDesk(page) {
+  await page.goto(baseURL, { waitUntil: 'networkidle' })
+  await page.getByText('Connected').first().waitFor({ timeout: 20_000 })
+  await stabilizePage(page)
+
+  if (await page.getByTestId('conversation-home').isVisible().catch(() => false)) return
+
+  const backToConversations = page.getByTestId('header-conversations-button')
+  if (await backToConversations.isVisible().catch(() => false)) {
+    await backToConversations.click()
+  } else if (await page.getByTestId('back-to-conversations').isVisible().catch(() => false)) {
+    await page.getByTestId('back-to-conversations').click()
+  }
+  await page.getByTestId('conversation-home').waitFor({ timeout: 20_000 })
+}
+
+async function openNewDealSurface(page) {
+  const headerNewDeal = page.getByTestId('header-new-deal-button')
+  await headerNewDeal.waitFor({ timeout: 10_000 })
+  await headerNewDeal.click()
+  await page.getByTestId('drop-zone-hero').waitFor({ timeout: 20_000 })
+  await stabilizePage(page)
+}
+
+async function captureConversationDeskJourney(page) {
+  await waitForConversationDesk(page)
+  await page.getByTestId('conversation-home').waitFor({ timeout: 20_000 })
+  await capture(page, 'conversation-desk.jpg')
+
+  const specialistTrigger = page.getByTestId('conversation-home-agent-select')
+  if (!(await specialistTrigger.isVisible().catch(() => false))) {
+    throw new Error('Conversation Desk has no specialist picker. Run npm run demo before npm run screenshots.')
+  }
+  await specialistTrigger.click()
+  const picker = page.getByTestId('conversation-home-agent-menu')
+  await picker.waitFor({ timeout: 10_000 })
+  const specialistSearch = page.getByTestId('conversation-home-agent-search')
+  await capture(page, 'specialist-picker.jpg')
+  await specialistSearch.press('Escape')
+  await picker.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {})
+
+  await openNewDealSurface(page)
+  await capture(page, 'new-deal-source-package.jpg')
+  await page.getByTestId('back-to-conversations').click()
+  await page.getByTestId('conversation-home').waitFor({ timeout: 20_000 })
+}
+
+// A release checkout may have no retained local threads. Reuse an existing, complete,
+// source-backed conversation when one is available, but never send a prompt or invoke Codex just
+// to manufacture a screenshot.
+async function captureRetainedAgentConversation(page) {
+  const conversation = page.getByTestId('agent-conversation')
+  const threadList = page.getByTestId('conversation-home-thread-list')
+  const threadButtons = threadList.locator('button[data-testid^="conversation-home-thread-"]')
+  const threadCount = await threadButtons.count().catch(() => 0)
+
+  async function hasSourceBackedAnswer() {
+    const threadId = await conversation.getAttribute('data-thread-id').catch(() => null)
+    const assistantCount = await conversation.locator('[data-role="assistant"]').count().catch(() => 0)
+    const citationCount = await conversation.locator('[data-testid^="conversation-citation-"]').count().catch(() => 0)
+    return Boolean(threadId) && assistantCount > 0 && citationCount > 0
+  }
+
+  if (!(await hasSourceBackedAnswer())) {
+    for (let index = 0; index < threadCount; index += 1) {
+      const threadButton = threadButtons.nth(index)
+      if (!(await threadButton.isVisible().catch(() => false))) continue
+      await threadButton.click()
+      await page.waitForTimeout(250)
+      if (await hasSourceBackedAnswer()) break
+    }
+  }
+
+  if (!(await hasSourceBackedAnswer())) {
+    console.warn(
+      'skip agent-conversation.jpg: no retained source-backed thread with an assistant answer and citation; live Codex was not invoked',
+    )
+    return
+  }
+
+  await page.getByTestId('conversation-timeline').evaluate((node) => {
+    node.scrollTop = node.scrollHeight
+  }).catch(() => {})
+  await capture(page, 'agent-conversation.jpg')
+}
+
+async function openGuidedDemoFromUi(page) {
+  await openNewDealSurface(page)
+  const guidedDemo = page.getByTestId('guided-demo-front-door-cta')
+  await guidedDemo.waitFor({ timeout: 10_000 })
+  await guidedDemo.click()
+  await page.getByTestId('workspace-frame').waitFor({ timeout: 30_000 })
+  await stabilizePage(page)
+
+  const guidedTourClose = page.getByTestId('guided-demo-close')
+  if (await guidedTourClose.isVisible().catch(() => false)) {
+    await guidedTourClose.click()
+    await page.getByTestId('guided-demo-overlay').waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {})
+  }
+}
+
+function runStatusFromUi(page) {
+  return page.locator('[role="status"]').evaluateAll((nodes) => (
+    nodes
+      .map((node) => node.textContent?.replace(/\s+/g, ' ').trim() ?? '')
+      .find((text) => text.startsWith('Run: '))
+      ?? ''
+  ))
+}
+
+// The app broadcasts run lifecycle messages on its existing WebSocket. Keep a lightweight record
+// from page creation onward so a prior run's terminal UI label can never satisfy this run's wait.
+function createRunEventObserver(page) {
+  const statesByRunId = new Map()
+  const waiters = new Set()
+
+  function resolveWaiters(runId, state) {
+    for (const waiter of waiters) {
+      if (waiter.runId !== runId || !waiter.states.has(state)) continue
+      clearTimeout(waiter.timeout)
+      waiters.delete(waiter)
+      waiter.resolve(state)
+    }
+  }
+
+  function recordFrame(frame) {
+    try {
+      const payload = typeof frame.payload === 'string' ? frame.payload : frame.payload.toString()
+      const message = JSON.parse(payload)
+      if (
+        message?.type !== 'run'
+        || typeof message.runId !== 'string'
+        || typeof message.state !== 'string'
+      ) return
+      const states = statesByRunId.get(message.runId) ?? new Set()
+      states.add(message.state)
+      statesByRunId.set(message.runId, states)
+      resolveWaiters(message.runId, message.state)
+    } catch {
+      // Non-JSON frames are irrelevant to the run lifecycle.
+    }
+  }
+
+  page.on('websocket', (socket) => socket.on('framereceived', recordFrame))
+
+  return {
+    waitForState(runId, expectedStates, timeoutMs) {
+      const expected = new Set(expectedStates)
+      const observed = statesByRunId.get(runId)
+      const existing = [...(observed ?? [])].find((state) => expected.has(state))
+      if (existing) return Promise.resolve(existing)
+
+      return new Promise((resolve, reject) => {
+        const waiter = {
+          runId,
+          states: expected,
+          resolve,
+          timeout: setTimeout(() => {
+            waiters.delete(waiter)
+            reject(new Error(`Timed out waiting for ${runId} to reach ${expectedStates.join(' or ')}`))
+          }, timeoutMs),
+        }
+        waiters.add(waiter)
+      })
+    },
+  }
+}
+
+// The chat-first route opens Parkview but deliberately does not launch anything. Start the
+// no-credential workflow through its visible UI instead of calling an API directly: this keeps
+// screenshot capture on the deterministic Simulation Demo lane and cannot send a conversation to
+// Codex. Resetting means a clean checkout never reuses an incomplete prior run.
+async function startAndWaitForDeterministicDemo(page, runEvents) {
+  await page.getByTestId('open-advanced').click({ force: true })
+  const drawer = page.getByTestId('advanced-drawer')
+  await drawer.waitFor({ timeout: 10_000 })
+
+  const launcher = drawer.getByTestId('workspace-workflow-launcher')
+  await launcher.waitFor({ timeout: 20_000 })
+  await launcher.getByTestId('workflow-step-review').click()
+  await launcher.getByTestId('workflow-select').selectOption('full-acquisition-review')
+  await launcher.getByTestId('workflow-runtime-provider-select').selectOption('simulation')
+  await launcher.getByTestId('workflow-scenario-select').selectOption('core-plus')
+  await launcher.getByTestId('workflow-speed-select').selectOption('normal')
+  await launcher.getByTestId('workflow-mode-select').selectOption('live')
+
+  // Parkview uses the checked-in deterministic evidence bundle, not an operator-uploaded source
+  // package, so the real-deal source approval gate would correctly block this demo run.
+  const sourceGate = launcher.getByTestId('workflow-require-source-backed-inputs')
+  if (await sourceGate.isChecked()) await sourceGate.click()
+
+  const resetArtifacts = launcher
+    .getByText('Reset prior run artifacts before launch', { exact: true })
+    .locator('..')
+    .getByRole('checkbox')
+  if (!(await resetArtifacts.isChecked())) await resetArtifacts.click()
+
+  const launchResponse = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/workflows/full-acquisition-review/launch')
+  ), { timeout: 20_000 })
+  await launcher.getByTestId('workflow-launch-selected').click()
+  const response = await launchResponse
+  if (!response.ok()) {
+    throw new Error(`Deterministic demo launch failed with HTTP ${response.status()}`)
+  }
+  const launchPayload = await response.json().catch(() => null)
+  const runId = typeof launchPayload?.runId === 'string' ? launchPayload.runId : null
+  if (!runId) {
+    throw new Error('Deterministic demo launch response did not include a runId')
+  }
+
+  // Bind the UI state to the exact launch response. A previous completed simulation cannot satisfy
+  // this sequence because it must first receive a STARTING/RUNNING event for this runId.
+  await runEvents.waitForState(runId, ['STARTING', 'RUNNING'], 20_000)
+  await page.waitForFunction(() => (
+    Array.from(document.querySelectorAll('[role="status"]')).some((node) => (
+      /^Run: (Starting|Running) \/ Simulation$/.test(
+        node.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      )
+    ))
+  ), { timeout: 20_000 })
+  const terminalState = await runEvents.waitForState(runId, ['COMPLETED', 'FAILED', 'STOPPED'], 120_000)
+  if (terminalState !== 'COMPLETED') {
+    throw new Error(`Deterministic demo ${runId} did not complete successfully (${terminalState})`)
+  }
+  const terminalStatus = await (await page.waitForFunction(() => (
+    Array.from(document.querySelectorAll('[role="status"]'))
+      .map((node) => node.textContent?.replace(/\s+/g, ' ').trim() ?? '')
+      .find((text) => /^Run: (Completed|Failed|Stopped) \/ Simulation$/.test(text))
+      ?? ''
+  ), { timeout: 120_000 })).jsonValue()
+  if (terminalStatus !== 'Run: Completed / Simulation') {
+    throw new Error(`Deterministic demo did not complete successfully (${terminalStatus || await runStatusFromUi(page)})`)
+  }
+
+  // Completion alone is not enough for proof screenshots: wait until the two captured lifecycle
+  // stages have received their completed state from the deterministic run.
+  await page.waitForFunction(() => (
+    ['underwriting', 'ic'].every((stage) => (
+      document.querySelector(`[data-testid="spine-step-${stage}"]`)?.getAttribute('data-status') === 'done'
+    ))
+  ), { timeout: 30_000 })
+
+  await page.getByTestId('advanced-drawer-close').click().catch(() => {})
+  await drawer.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {})
+}
+
+// Focus a lifecycle stage by clicking its spine step. The center stage swaps while the persistent
+// frame (header, spine, rail, and command bar) stays in place.
 async function focusStage(page, stageId) {
   await page.getByTestId(`spine-step-${stageId}`).click({ force: true })
   await page.waitForTimeout(350)
 }
 
-// W50 (redesigned): capture the Intake auto-fill moment in an isolated page so it does not
-// disturb the deterministic demo gallery captured on the main page. Creates a deal from the
-// document-first front door, lands in Intake, extracts the rent roll so the auto-filled deal
-// record populates, and captures it. Skips gracefully if the front door is not reachable.
-async function captureIntakeAutoFill(browser) {
+// Capture the source inspection/review path in an isolated real-deal page so it does not disturb
+// the deterministic Parkview workspace already open on the main page.
+async function captureIntakeEvidence(browser) {
   const intakePage = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1 })
   try {
     await intakePage.goto(baseURL, { waitUntil: 'networkidle' })
-    await intakePage.getByText('Connected').waitFor({ timeout: 20_000 })
-    await intakePage.addStyleTag({
-      content: `*, *::before, *::after { animation-duration: 0.001s !important; transition-duration: 0.001s !important; scroll-behavior: auto !important; }`,
-    })
-    const hero = intakePage.getByTestId('drop-zone-hero')
-    if (!(await hero.isVisible().catch(() => false))) {
-      // A deal is already open (e.g. the demo run captured on the main page); return to the
-      // document-first front door via the New Deal header affordance.
-      const newDealButton = intakePage.getByTestId('header-new-deal-button')
-      if (await newDealButton.isVisible().catch(() => false)) {
-        await newDealButton.click()
-        await hero.waitFor({ timeout: 10_000 }).catch(() => {})
-      }
+    await intakePage.getByText('Connected').first().waitFor({ timeout: 20_000 })
+    await stabilizePage(intakePage)
+
+    if (!(await intakePage.getByTestId('drop-zone-hero').isVisible().catch(() => false))) {
+      await intakePage.getByTestId('header-new-deal-button').click()
+      await intakePage.getByTestId('drop-zone-hero').waitFor({ timeout: 20_000 })
     }
-    if (!(await hero.isVisible().catch(() => false))) {
-      console.warn('skip source-extraction-review.png: document-first front door not reachable')
-      return
-    }
+
     await intakePage.getByTestId('drop-zone-input').setInputFiles(sampleUploadPath)
     await intakePage.getByTestId('quick-deal-modal').waitFor({ timeout: 20_000 })
     await intakePage.getByTestId('quick-deal-create').click()
     await intakePage.getByTestId('workspace-frame').waitFor({ timeout: 30_000 })
-    // The deal opens on the Intake stage; make sure it is focused, then surface the auto-filled
-    // record. Open the detailed-review disclosure to extract if the record has not auto-filled yet.
+    await stabilizePage(intakePage)
     await focusStage(intakePage, 'intake')
     await intakePage.getByTestId('intake-stage').waitFor({ timeout: 20_000 })
+
     const detailedReview = intakePage.getByTestId('intake-detailed-review')
-    if (await detailedReview.isVisible().catch(() => false)) {
-      const extractButton = intakePage.getByTestId('extract-document-rent_roll')
-      if (await extractButton.isVisible().catch(() => false)) {
-        await extractButton.click()
-      }
+    const extractButton = intakePage.getByTestId('extract-document-rent_roll')
+    if (!(await extractButton.isVisible().catch(() => false))) {
+      await detailedReview.locator('summary').click()
+      await extractButton.waitFor({ timeout: 10_000 }).catch(() => {})
     }
+    if (
+      await extractButton.isVisible().catch(() => false)
+      && await extractButton.isEnabled().catch(() => false)
+    ) {
+      await extractButton.click()
+    }
+
     const inspector = intakePage.getByTestId('uploaded-data-inspector')
     if (await inspector.isVisible({ timeout: 30_000 }).catch(() => false)) {
       await inspector.getByTestId('uploaded-field-list').getByText('Market Rent').click().catch(() => {})
       await inspector.getByTestId('uploaded-row-3').click().catch(() => {})
       await inspector.scrollIntoViewIfNeeded()
-      await intakePage.waitForTimeout(300)
-      await capture(intakePage, 'uploaded-data-inspector.png')
+      await capture(intakePage, 'uploaded-data-inspector.jpg')
     } else {
-      console.warn('skip uploaded-data-inspector.png: uploaded data inspector not visible')
+      console.warn('skip uploaded-data-inspector.jpg: uploaded data inspector not visible')
     }
-    // The auto-filled deal record is the headline of Intake.
-    await intakePage.getByTestId('deal-record').waitFor({ timeout: 30_000 })
-    await intakePage.getByTestId('deal-record').scrollIntoViewIfNeeded()
-    await intakePage.waitForTimeout(500)
-    await capture(intakePage, 'source-extraction-review.png')
+
+    const extractionPreview = intakePage.getByTestId('extraction-preview')
+    if (await extractionPreview.isVisible({ timeout: 10_000 }).catch(() => false)) {
+      const firstCandidate = extractionPreview.locator('[data-testid^="extraction-field-"]').first()
+      if (await firstCandidate.isVisible().catch(() => false)) {
+        await firstCandidate.scrollIntoViewIfNeeded()
+      } else {
+        await extractionPreview.scrollIntoViewIfNeeded()
+      }
+      await capture(intakePage, 'source-extraction-review.jpg')
+    } else {
+      console.warn('skip source-extraction-review.jpg: extraction review not visible')
+    }
   } finally {
     await intakePage.close()
   }
 }
 
-// v3.3.0 launch experience: the Advanced drawer's Workflow Launcher now defaults to the live
-// Codex / ChatGPT runtime with web search on. Open the drawer, keep the Codex default selected, and
-// capture the launcher element showing the runtime picker, the Codex controls, and the live
-// web-search toggle. Skips gracefully if the drawer or launcher is not reachable.
+// Capture the Advanced drawer's Workflow Launcher with the live Codex controls visible. Selecting
+// the runtime does not launch it, so this screenshot remains safe and deterministic.
 async function captureWorkflowLauncher(page) {
   const openAdvanced = page.getByTestId('open-advanced')
   if (!(await openAdvanced.isVisible().catch(() => false))) {
@@ -202,17 +365,9 @@ async function captureWorkflowLauncher(page) {
     await page.getByTestId('advanced-drawer-close').click().catch(() => {})
     return
   }
-  // The runtime picker, Codex controls, and web-search toggle live on the Review step.
   await page.getByTestId('workflow-step-review').click().catch(() => {})
   await page.getByTestId('workflow-runtime-provider-select').waitFor({ timeout: 10_000 }).catch(() => {})
-  // A fresh draft already defaults to the live Codex runtime; assert it so the shot reliably shows
-  // the runtime on Codex with the "Live web search" toggle on.
   await page.getByTestId('workflow-runtime-provider-select').selectOption('codex').catch(() => {})
-  // Grow the viewport so the whole launch form fits, then clip the shot from the launcher top to
-  // just below the Launch button. The Advanced drawer is not a full-viewport modal and the launcher
-  // wrapper is taller than its content, so a plain element/viewport shot would include the dimmed
-  // workspace behind it; clipping to the form gives a clean image of the runtime picker, the Codex
-  // controls, and the "Live web search" toggle.
   await page.setViewportSize({ width: 1440, height: 1900 })
   await page.waitForTimeout(400)
   const launcherBox = await launcher.boundingBox()
@@ -232,71 +387,34 @@ async function captureWorkflowLauncher(page) {
   await page.getByTestId('advanced-drawer').waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {})
 }
 
-// Default: launch Playwright's bundled headless Chromium. Set CRE_CDP_ENDPOINT (e.g.
-// http://localhost:9222) to instead attach to an already-running Chromium over the DevTools
-// Protocol — useful when Playwright's browser download is unavailable in the environment.
+// Default: launch Playwright's bundled headless Chromium. Set CRE_CDP_ENDPOINT (for example,
+// http://localhost:9222) to attach to an already-running Chromium over the DevTools Protocol.
 const cdpEndpoint = process.env.CRE_CDP_ENDPOINT
 const browser = cdpEndpoint
   ? await chromium.connectOverCDP(cdpEndpoint)
   : await chromium.launch({ headless: true })
 const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1 })
+const runEvents = createRunEventObserver(page)
 
-await page.addStyleTag({
-  content: `
-    *, *::before, *::after {
-      animation-duration: 0.001s !important;
-      animation-delay: 0s !important;
-      transition-duration: 0.001s !important;
-      scroll-behavior: auto !important;
-    }
-  `,
-})
+await captureConversationDeskJourney(page)
+await captureRetainedAgentConversation(page)
+await openGuidedDemoFromUi(page)
+await startAndWaitForDeterministicDemo(page, runEvents)
 
-await waitForWorkspace(page)
+// Keep the trust-path shots in source-to-decision order. The real upload page is isolated; the
+// main page remains on the deterministic guided-demo workspace throughout.
+await captureIntakeEvidence(browser)
 
-const guidedTourClose = page.getByTestId('guided-demo-close')
-if (await guidedTourClose.isVisible().catch(() => false)) {
-  await guidedTourClose.click()
-  await page.getByTestId('guided-demo-overlay').waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {})
-}
-
-// The deal space: the whole frame — header + lifecycle spine + center stage + Live Feed / Your
-// Team rail + command bar. Focus Underwriting so the center stage shows a phase mid-lifecycle.
 await focusStage(page, 'underwriting')
 await page.getByTestId('lifecycle-spine').waitFor({ timeout: 20_000 })
 await page.getByTestId('live-feed').waitFor({ timeout: 20_000 })
 await page.getByTestId('command-bar').waitFor({ timeout: 20_000 })
 await page.evaluate(() => window.scrollTo(0, 0))
-await page.waitForTimeout(200)
 await capture(page, 'acquisition-command.png')
 
-// Watch it work: summon a specialist into the slide-in agent panel (streaming work + workpaper),
-// with the Live Feed still running in the rail. Open it from the Your Team rail on a stage that
-// has staffed agents.
-await focusStage(page, 'diligence')
-await page.getByTestId('team-rail').waitFor({ timeout: 20_000 })
-const rentRollAgent = page.getByTestId('team-agent-rent-roll-analyst')
-const anyTeamAgent = page.locator('[data-testid^="team-agent-"]').first()
-const agentButton = (await rentRollAgent.isVisible().catch(() => false)) ? rentRollAgent : anyTeamAgent
-if (await agentButton.isVisible().catch(() => false)) {
-  await agentButton.click({ force: true })
-  await page.getByTestId('agent-panel').waitFor({ timeout: 20_000 })
-  await page.waitForTimeout(400)
-  await capture(page, 'deal-team-handoffs.png')
-  await page.getByTestId('agent-panel-close').click().catch(() => {})
-  await page.getByTestId('agent-panel').waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {})
-} else {
-  console.warn('skip deal-team-handoffs.png: no staffed agent in the Your Team rail to summon')
-}
-
-// IC package: the committee-ready output assembled at the IC stage.
 await focusStage(page, 'ic')
 await page.getByTestId('completion-package-view').waitFor({ timeout: 20_000 })
 await capture(page, 'ic-package.png')
 
-// The v3.3.0 default launch surface: live Codex runtime + web search, from the Advanced drawer.
 await captureWorkflowLauncher(page)
-
-await captureIntakeAutoFill(browser)
-
 await browser.close()

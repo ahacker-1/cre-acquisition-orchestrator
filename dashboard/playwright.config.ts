@@ -66,6 +66,7 @@ export default defineConfig({
         {
           command: 'npx tsx server/watcher.ts',
           cwd: '.',
+          env: { CRE_AGENT_CONVERSATIONS: '0' },
           url: 'http://127.0.0.1:8081/api/run/status',
           reuseExistingServer: !process.env.CI,
           timeout: 120_000,

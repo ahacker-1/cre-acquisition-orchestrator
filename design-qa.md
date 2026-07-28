@@ -1,53 +1,67 @@
-# Design QA — Luxury Facelift
+# Design QA — Conversation Desk
 
 ## Reference and target
 
-- Selected direction: `audit-artifacts/luxury-facelift-2026-07-15/concepts/03-architectural-graphite-console.png`
-- Primary state: Parkview Apartments guided demo, Underwriting focused
-- Reference-state match: Conditional verdict, 100% complete, three findings, two red flags, one data gap
-- Desktop CSS viewport: 1440 × 1024 (capture pixels reflect the in-app browser's device-pixel scaling)
-- Mobile CSS viewport: 390 × 844 (capture pixels reflect the in-app browser's device-pixel scaling)
-- Final reference comparison: `audit-artifacts/luxury-facelift-2026-07-15/implementation/reference-vs-underwriting-final.png`
+- Selected direction: Option 2, “Conversation Desk.”
+- Source visual: internal design exploration used during implementation; the release evidence below is committed and portable.
+- Source dimensions: 1487 × 1058 pixels.
+- Implementation state: `UI Audit First Deal` → `Rent Roll Analyst` → completed, cited occupancy answer.
+- Release implementation screenshot: [`docs/assets/agent-conversation.jpg`](docs/assets/agent-conversation.jpg).
+- Chat-first landing screenshot: [`docs/assets/conversation-desk.jpg`](docs/assets/conversation-desk.jpg).
+- Searchable specialist picker: [`docs/assets/specialist-picker.jpg`](docs/assets/specialist-picker.jpg).
+- Mobile behavior is covered by the Pixel 5 browser regression in `dashboard/e2e/conversation-home.spec.ts`.
 
-## Full-view evidence
+## Density normalization
 
-- Front door: `audit-artifacts/luxury-facelift-2026-07-15/implementation/front-door-1440x1024.jpg`
-- Intake: `audit-artifacts/luxury-facelift-2026-07-15/implementation/intake-1440x1024.jpg`
-- Underwriting: `audit-artifacts/luxury-facelift-2026-07-15/implementation/underwriting-1440x1024.jpg`
-- Matched-state Underwriting: `audit-artifacts/luxury-facelift-2026-07-15/implementation/underwriting-conditional-1440x1024.jpg`
-- IC package: `audit-artifacts/luxury-facelift-2026-07-15/implementation/ic-package-1440x1024.jpg`
-- Mobile Intake: `audit-artifacts/luxury-facelift-2026-07-15/implementation/mobile-intake-390x844.jpg`
-- Mobile Underwriting: `audit-artifacts/luxury-facelift-2026-07-15/implementation/mobile-underwriting-390x844.jpg`
+- The working source was normalized to the implementation viewport for like-for-like review during development.
+- The committed release screenshots preserve the states needed to judge the rail proportion, header hierarchy, picker containment, conversation rhythm, cited-source rows, and composer without relying on a machine-local path.
 
-## Focused comparison evidence
+## Final comparison findings
 
-- Selected reference vs final Underwriting in the same Conditional / 100% / populated-evidence state: `audit-artifacts/luxury-facelift-2026-07-15/implementation/reference-vs-underwriting-final.png`
-- Before vs after Underwriting: `audit-artifacts/luxury-facelift-2026-07-15/implementation/before-vs-after-underwriting.png`
-- Before vs after front door: `audit-artifacts/luxury-facelift-2026-07-15/implementation/before-vs-after-front-door.png`
+- Layout: passed. The persistent deal/thread rail, specialist canvas, fixed composer, header actions, and dense editorial spacing match the selected direction.
+- Visual language: passed. Graphite surfaces, copper rules and actions, serif display type, square hairlines, restrained status colors, and low-chrome controls are consistent with the source.
+- Conversation hierarchy: passed. User and specialist roles are explicit, assistant answers receive the dominant editorial treatment, and citations appear as full-width evidence rows.
+- Real-state fidelity: passed. The implementation uses actual deal names, registered agents, retained threads, source documents, live activity, and validated citations instead of hard-coded concept data.
+- Opening comprehension: passed. The fresh homepage visibly communicates `1 · Choose a deal`, `2 · Choose a specialist`, and `3 · Ask`, includes editable starter questions, and does not silently resume an older thread.
+- Responsive behavior: passed. At 393 pixels the deal and recent-conversation rails scroll within their own containers, the page has no horizontal overflow, and the guided start plus composer remain reachable in one normal vertical scroll.
 
 ## Iteration history
 
-- P0: None observed. Core navigation, stage focus, deal library, guided demo, agent summon, command routing, and source-backed evidence workflows remained functional.
-- P1: The initial responsive grid could create horizontal overflow on narrow viewports. Fixed by constraining the implicit workspace grid to `minmax(0, 1fr)`, making the utility dock full width on mobile, and reserving bottom safe space.
-- P1: The command composer could fall below the desktop viewport because the context rail inherited content height. Fixed with a height-constrained sticky right rail and internal scrolling.
-- P1: Opening the front door during an active run initially hid the run status and Stop action. Fixed with a compact live-run control in the front-door header and a dedicated regression assertion.
-- P1: The deal editor and Advanced workflow launcher initially retained legacy rounded controls and white/black CTAs. Fixed by carrying the graphite surfaces, square hairlines, copper primary action, and shared field treatment into both operational surfaces.
-- P1: The first IC-package capture combined a complete run badge with stale pending phase data and an “in progress” recommendation. Replaced it with a fresh completed full-acquisition simulation showing five complete phases, 35 filed workpapers, an explicit source-readiness warning, and a committee-review recommendation.
-- P2: The first implementation underplayed the selected reference's verdict hierarchy and brief density. Fixed with a larger editorial verdict, a side-by-side status band, tighter evidence rhythm, a copper next-action rule, and a circular action icon.
-- P2: The Advanced drawer remains intentionally denser than the primary deal space because it is a secondary power-user surface.
+- Pass 1 P2: Assistant text and card hierarchy were too compact; speaker roles were understated. Fixed with page-specific editorial answer type, role labels, timestamps, and full-width source rows.
+- Pass 1 P2: The mobile header could crowd or clip action labels. Fixed with compact icon-first actions and a narrower mobile hierarchy.
+- Pass 1 P3: The left rail was wider than the selected direction. Reduced the desktop rail to 360 pixels.
+- Pass 2 P1: Browser Back could restore the deal and agent before the new deal’s thread catalog arrived, leaving the requested thread unloaded. Fixed by binding restoration to the loaded catalog’s deal ID; the focused regression now passes.
+- Pass 2 P1: The root route opened the latest conversation without explaining what to do. Changed it to a fresh-first landing state with numbered guidance, editable starter prompts, lazy thread creation, and explicit recent-thread resumption.
+- Final P0/P1/P2: none observed.
 
-## Intentional deviations
+## Interaction and state checks
 
-- Real command suggestions remain above the composer because they are functional shortcuts in the existing product.
-- The code-native `AO` monogram is paired with the full product name; no unsupported logo asset was invented.
-- Verdicts, source readiness, and evidence rows remain derived from live checkpoint state rather than being hard-coded to the concept's sample values.
+- Root route: preselects a useful deal and agent but opens a fresh, understandable conversation state.
+- Starter prompt: stages focused, editable composer text and does not create or send a thread.
+- First send: lazily creates one thread with the selected document IDs, sends the message, and writes the exact deal/agent/thread URL.
+- Deal and specialist selection: resets to a fresh conversation without silently loading old history.
+- Recent thread and deep link: restore the exact deal, specialist, messages, documents, and citations.
+- Browser Back: restores the prior deal/agent/thread after cross-deal navigation.
+- Workspace round-trip and New Deal round-trip: preserve conversation selection.
+- Empty library, disabled conversations, and no-document states: each expose a clear next action.
+- Live activity, completed cited answer, cancellation/retry, disconnected state, and document selection: retained.
+- Mobile: Pixel 5 E2E and 393-pixel visual pass completed with `scrollWidth === innerWidth`.
+- Browser console: a fresh-load review returned no warnings or errors.
 
-## Verification
+## Automated evidence
 
-- Browser interaction pass: front door, guided demo, lifecycle stages, Advanced drawer, deal library, agent panel, command routing, and Escape behavior.
-- Browser console: no warnings or errors in the final reviewed states.
-- WCAG A/AA and color-contrast checks: passed for the loaded workspace states covered by the automated accessibility suite.
-- Typecheck and production build: passed.
-- Root `npm run verify:v3`: passed, including 42 browser tests and the mobile guided-workspace smoke test.
+- Focused Conversation Desk regressions cover desktop Chromium and Pixel 5, including picker search,
+  deep links, Back/Forward restoration, stale-request races, mobile thread resumption, and draft
+  preservation after a failed send.
+- Dashboard typecheck: passed.
+- Production build: passed.
+- Full `npm run verify:v3` passed through the local core gate and the release pull request's GitHub CI
+  core and browser-E2E jobs before `v3.6.0` was tagged and published.
 
-passed
+## Intentional P3 deviations
+
+- Real source chips remain directly visible above the composer instead of hiding them behind one “Attach source” menu; this makes deal evidence and scope inspectable before sending.
+- The global header remains slightly more compact than the concept so the product-level Advanced, Deals, and New Deal actions stay available.
+- The landing state adds numbered guidance and editable starter questions; these are product requirements absent from the active-thread concept visual.
+
+final result: passed

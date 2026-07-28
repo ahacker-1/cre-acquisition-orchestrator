@@ -1,8 +1,8 @@
 # Public Proof Path
 
-This is the shortest local path for proving that CRE Acquisition Orchestrator is more than a generic AI dashboard. It traces one deal fact from source document, to uploaded data inspection, to extraction review, to approved evidence, to specialist workpaper context, to the IC package.
+This is the shortest local path for proving that CRE Acquisition Orchestrator is more than a generic chatbot or AI dashboard. It begins in the chat-first Conversation Desk, then follows one deal fact from source upload through inspection, extraction review, approved evidence, specialist work, and the IC package.
 
-The proof path is local-first. It uses deterministic Parkview artifacts and does not require external AI APIs, cloud services, private deal files, or a video.
+The proof is local-first. It uses deterministic Parkview artifacts and does not require external AI APIs, cloud services, private deal files, or a video.
 
 ## Run It
 
@@ -20,109 +20,159 @@ npm run proof
 
 1. Regenerates the deterministic Parkview sample artifacts.
 2. Starts the local dashboard and waits for both the UI and local API to respond.
-3. Opens `http://localhost:5173/` and prints the path to this reviewer script.
+3. Opens the chat-first Conversation Desk at `http://localhost:5173/` and prints the path to this reviewer script.
 
-For CI or a local non-interactive smoke check:
+The proof does not install, authenticate, or invoke Codex. Live Conversation Desk answers are optional and outside the deterministic proof.
+
+For CI or a non-interactive smoke check:
 
 ```powershell
 npm run proof -- --smoke --no-open
 ```
 
+## Understand the Two Surfaces
+
+The walkthrough is easier to trust when the surfaces are not conflated:
+
+| Surface | Primary job | Model requirement |
+| --- | --- | --- |
+| **Conversation Desk** | Choose a deal and specialist, select source documents, ask questions, and resume retained deal threads. | Reading the desk and retained history is local. Sending a new question uses the optional local Codex / ChatGPT runtime. |
+| **Deal Workspace** | Upload and inspect documents, review extraction, approve evidence, coordinate the lifecycle, inspect workpapers, and assemble the IC package. | Parkview and deterministic orchestration require no live model. Live workflow launches are optional. |
+
+When the operator sends a live Conversation Desk question, the local server supplies Codex with the selected documents' extracted evidence, current deal record, underwriting criteria, approved fields, selected agent role guide, recent conversation transcript, and current question. Merely browsing the desk does not send this context.
+
+Selecting a deal or specialist does not create a thread and does not call a model. The first sent message is the durable-thread boundary. Completed source-backed answers remain scoped to the selected deal, specialist, thread, and document set, and expose citations when supporting evidence is available.
+
 ## What To Prove
 
-Pick one reviewed value or warning and follow it through the system. The strongest first pass is:
+Use this trust question:
 
-- **Source package:** Parkview's uploaded rent roll, T12, and offering memo sample.
-- **Trust question:** "Where did this value come from, and can I inspect the source before it affects the IC package?"
-- **Expected answer:** the dashboard exposes source rows, field quality, extracted candidates, review status, downstream workpapers, and the IC package decision trail.
+> Where did this value come from, and can I inspect the source before it affects the IC package?
+
+Expected result: the application exposes the deal/document scope, uploaded source rows, candidate-field provenance, human review status, downstream specialist output, and the IC decision trail without an opaque leap.
 
 ## Reviewer Script
 
-### 1. Start from source documents
+### 1. Orient on the Conversation Desk
 
-Open the dashboard at `http://localhost:5173/`.
-
-Use **Start Guided Demo** or **Parkview Demo**. The point is that the operator begins with source files and a deal workspace, not a blank prompt.
+Open `http://localhost:5173/`.
 
 What to look for:
 
-- Document-first intake on the front door.
-- The deterministic Parkview sample as the no-upload fallback.
-- No API key or live model requirement for the public proof path.
+- **Choose a deal → Choose a specialist → Ask** is legible without prior setup knowledge.
+- Recent conversations belong to the selected deal.
+- The source-document selector and **Open full workspace** action make the evidence and workspace boundaries explicit.
+- No prompt is sent merely by browsing deals, specialists, or retained history.
 
-Screenshot reference: `docs/assets/dashboard-front-door.png`.
+Screenshot references:
 
-### 2. Inspect the uploaded data before trusting extraction
+- `docs/assets/conversation-desk.jpg`
+- `docs/assets/specialist-picker.jpg`
+- `docs/assets/agent-conversation.jpg` when a retained cited thread exists
 
-Click **Intake** in the lifecycle spine. If the detailed review area is closed, open **Source documents & detailed review**. Choose a source document such as `rent-roll-sample.csv` or the rent roll fixture and click **Preview Extraction**, **Review Fields**, or **View Applied Evidence**. The **Uploaded Data Inspector** appears above the candidate fields in the extraction preview.
+### 2. Open New Deal and Choose the Deterministic Path
+
+Click **New Deal**. The source-package page offers two honest entry points:
+
+- **Upload Source Package** for a real acquisition.
+- **Start Guided Demo** for deterministic Parkview data without uploads, API keys, or live model calls.
+
+Click **Start Guided Demo**. Parkview opens in the Deal Workspace. Close or advance the guided overlay as needed.
+
+Screenshot reference: `docs/assets/new-deal-source-package.jpg`.
+
+### 3. Inspect Uploaded Data Before Trusting Extraction
+
+For the real-source proof, create a deal from a supported rent roll or use the screenshot fixture generated by `npm run screenshots`. In the workspace, focus **Intake**, open **Source documents & detailed review**, and preview or review the document extraction.
 
 What to look for:
 
-- Parsed tables from uploaded files.
+- Parsed worksheets or tables.
 - Field types, fill rates, examples, and source rows.
-- Click-through row detail for a selected field and row.
-- Evidence that a visitor can inspect source-shaped data before approving extracted values.
+- Click-through detail for a selected field and row.
+- Source-shaped data that can be inspected before extracted values are approved.
 
-Screenshot reference: `docs/assets/uploaded-data-inspector.png`.
+Screenshot reference: `docs/assets/uploaded-data-inspector.jpg`.
 
-### 3. Review extracted candidates
+### 4. Review Extracted Candidates
 
-Move to **Intake** and review source-backed candidate fields.
-
-What to look for:
-
-- Candidate values with confidence, warnings, source file, source location, raw snippets, and file hashes where available.
-- OCR-derived values remaining review-gated.
-- Ambiguous fields staying pending until a human approves, rejects, or waives them.
-
-Screenshot reference: `docs/assets/source-extraction-review.png`.
-
-### 4. Approve evidence before workflows consume it
-
-Approve or apply a trusted candidate field, or inspect the approved evidence already present in the sample.
+Stay in the Intake detailed review and inspect the Extraction Preview.
 
 What to look for:
 
-- Underwriting inputs do not silently change from raw extraction.
-- Approved values become the evidence layer downstream workflows can cite.
-- Rejections and waivers remain explicit review decisions, not hidden cleanup.
+- Candidate value, confidence, validation warnings, source file, source location, raw snippet, and file hash where available.
+- OCR-derived or ambiguous values remaining review-gated.
+- Explicit approve/apply, reject, and waive controls.
 
-### 5. Watch the deal team use the reviewed context
+Screenshot reference: `docs/assets/source-extraction-review.jpg`.
 
-Open the persistent deal space and summon or inspect a specialist workpaper.
+### 5. Approve Evidence Before Workflows Consume It
+
+Approve and apply a trusted candidate, or inspect approved evidence already present in Parkview.
+
+What to look for:
+
+- Raw extraction cannot silently overwrite underwriting inputs.
+- Approved values become the evidence layer downstream work can cite.
+- Rejections and waivers remain visible human decisions.
+
+### 6. Distinguish a Conversation Answer From a Workspace Workpaper
+
+The two outputs can use the same reviewed deal context, but they serve different jobs:
+
+- A **Conversation Desk answer** is a retained back-and-forth with the selected specialist and document scope. Source-backed answers expose citations and remain available for follow-ups.
+- A **Deal Workspace workpaper** is an operational artifact filed into the acquisition process with findings, impact, caveats, status, and available source/workpaper references.
+
+The deterministic proof never sends a live prompt. `npm run screenshots` refreshes `agent-conversation.jpg` only when a completed retained local thread already includes an assistant answer and citation; otherwise it logs a skip and continues.
+
+### 7. Watch the Deal Workspace Use Reviewed Context
+
+In Parkview, inspect the persistent Deal Workspace.
 
 What to look for:
 
 - Lifecycle spine from Intake through IC.
-- Live Feed and Your Team rail showing visible coordination.
-- Agent panel or workpaper output with finding, impact, caveats, and available references.
+- Center-stage work, Live Feed, Your Team rail, and command bar in one frame.
+- Clear access back to conversations and into Advanced workflows.
 
-Screenshot references:
+Screenshot reference: `docs/assets/acquisition-command.png`.
 
-- `docs/assets/acquisition-command.png`
-- `docs/assets/deal-team-handoffs.png`
-
-### 6. Trace the reviewed item into the IC package
+### 8. Trace the Reviewed Item Into the IC Package
 
 Open **IC Package**.
 
 What to look for:
 
 - Recommendation, phase outcomes, red flags, data gaps, document manifest, workpaper links, review trail, and Markdown/JSON export.
-- Evidence Chain or proof-path sections where current artifacts expose source document, approved field, workpaper, and package references.
-- Honest gaps: if a reference is not exposed for a given item yet, the package should show that as a review limitation rather than inventing certainty.
+- Evidence-chain or proof-path sections where current artifacts expose source document, approved field, workpaper, and package references.
+- Honest limitations when a given reference is not yet exposed.
 
 Screenshot reference: `docs/assets/ic-package.png`.
 
-## Why This Matters
+### 9. Verify the Optional Runtime Boundary
 
-The public trust loop is:
+Open **Advanced** and review the Workflow Launcher without launching it.
+
+What to look for:
+
+- Deterministic simulation and optional live Codex controls are visibly distinct.
+- Choosing the Codex runtime in the form does not itself launch a workflow.
+
+Screenshot reference: `docs/assets/workflow-launcher.png`.
+
+## Trust Loop
 
 ```text
-source document -> uploaded data inspector -> extraction review -> approved evidence -> specialist workpaper -> IC package
+deal + specialist + selected documents
+  -> source upload
+  -> uploaded data inspector
+  -> extraction review
+  -> approved evidence
+  -> cited conversation and/or specialist workpaper
+  -> IC package
 ```
 
-That loop is the adoption wedge. A first-time CRE operator does not need to understand every orchestrator, schema, or runtime option before trusting the project. They need to see one value move from source evidence into a reviewable decision package without an opaque AI leap.
+That is the adoption wedge. A first-time CRE operator does not need to understand every orchestrator, schema, or runtime option before trusting the project. They need to see one value stay scoped to a deal, survive human review, and reach a reviewable decision package without an opaque AI leap.
 
 ## Full Validation
 

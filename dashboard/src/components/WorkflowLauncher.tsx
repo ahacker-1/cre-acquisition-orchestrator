@@ -14,6 +14,7 @@ import type {
 interface WorkflowLauncherProps {
   deals: DealLibraryItem[]
   initialDealId?: string
+  initialStep?: 'deal' | 'workflow' | 'review'
   onLaunchStarted?: (response: WorkflowLaunchResponse) => void
   onPresetSaved?: (preset: WorkflowPreset) => void
   className?: string
@@ -207,6 +208,7 @@ function createInitialDraft(
 function WorkflowLauncher({
   deals,
   initialDealId,
+  initialStep = 'deal',
   onLaunchStarted,
   onPresetSaved,
   className = '',
@@ -231,7 +233,7 @@ function WorkflowLauncher({
   const [draft, setDraft] = useState<WorkflowSelectionDraft>(() =>
     createInitialDraft(deals, defaultWorkflowId || 'full-acquisition-review', initialDealId, defaultRequireSourceBackedInputs)
   )
-  const [activeStep, setActiveStep] = useState<'deal' | 'workflow' | 'review'>('deal')
+  const [activeStep, setActiveStep] = useState<'deal' | 'workflow' | 'review'>(initialStep)
   const [localMessage, setLocalMessage] = useState<string | null>(null)
   const [codexStatus, setCodexStatus] = useState<CodexAuthStatus | null>(null)
   const [codexStatusLoading, setCodexStatusLoading] = useState(false)

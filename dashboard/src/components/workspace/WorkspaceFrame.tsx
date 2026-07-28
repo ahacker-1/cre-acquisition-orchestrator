@@ -48,6 +48,7 @@ interface WorkspaceFrameProps {
   onCommandSuggestion: (suggestion: CommandSuggestion) => void
   onOpenAgent: (agentId: string) => void
   onSummon: () => void
+  onOpenDealLibrary: () => void
   onOpenAdvanced: () => void
   primaryAction?: {
     label: string
@@ -81,6 +82,7 @@ export default function WorkspaceFrame({
   onCommandSuggestion,
   onOpenAgent,
   onSummon,
+  onOpenDealLibrary,
   onOpenAdvanced,
   primaryAction,
   children,
@@ -97,7 +99,14 @@ export default function WorkspaceFrame({
           </div>
           <div className="min-w-0 xl:mt-9 xl:border-y xl:border-cre-border xl:py-5">
             <p className="portal-kicker">Deal</p>
-            <button type="button" onClick={() => onFocusStage(activeStage)} className="mt-3 flex min-w-0 items-center gap-2 text-left text-xs text-gray-300 hover:text-white">
+            <button
+              type="button"
+              onClick={onOpenDealLibrary}
+              aria-label={`Switch deal. Current deal: ${deal.dealName || 'Untitled Deal'}`}
+              title="Switch deal"
+              data-testid="workspace-switch-deal"
+              className="mt-3 flex min-h-11 min-w-0 items-center gap-2 text-left text-xs text-gray-300 hover:text-white"
+            >
               <span className="truncate">{deal.dealName || 'Untitled Deal'}</span>
               <IconChevronDown size={14} stroke={1.5} className="shrink-0 text-gray-600" aria-hidden="true" />
             </button>

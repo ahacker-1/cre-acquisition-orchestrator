@@ -8,6 +8,13 @@ const DOT_CLASS: Record<StageStatus, string> = {
   idle: 'cre-dot cre-dot-idle',
 }
 
+const STATUS_LABEL: Record<StageStatus, string> = {
+  live: 'working',
+  done: 'done',
+  blocked: 'needs attention',
+  idle: 'pending',
+}
+
 export interface TeamAgentView {
   agentId: string
   name: string
@@ -62,6 +69,7 @@ export default function TeamRail({
                 <span className="min-w-0 flex-1 truncate transition-colors group-hover:text-white">
                   {agent.name}
                 </span>
+                <span className="sr-only">Status: {STATUS_LABEL[agent.status]}.</span>
                 {agent.critical && (
                   <span className="shrink-0 text-[9px] uppercase tracking-[0.14em] text-[#82909a]">
                     critical

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { API_URL } from '../config'
 import type {
   ApplyOperatorFieldEditResult,
@@ -18,12 +18,20 @@ async function parseJson<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>
 }
 
-export function useDealWorkspace(dealId: string | null | undefined) {
+interface UseDealWorkspaceOptions {
+  autoExtract?: boolean
+}
+
+export function useDealWorkspace(
+  dealId: string | null | undefined,
+  { autoExtract = false }: UseDealWorkspaceOptions = {},
+) {
   const [workspace, setWorkspace] = useState<DealWorkspace | null>(null)
   const [loading, setLoading] = useState(false)
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastExtraction, setLastExtraction] = useState<ExtractionPreview | null>(null)
+  const autoExtractedRef = useRef<Set<string>>(new Set())
 
   const refreshWorkspace = useCallback(async (): Promise<void> => {
     if (!dealId) {
@@ -50,6 +58,7 @@ export function useDealWorkspace(dealId: string | null | undefined) {
     setWorkspace(null)
     setLastExtraction(null)
     setError(null)
+    autoExtractedRef.current = new Set()
   }, [dealId])
 
   useEffect(() => {
@@ -93,7 +102,7 @@ export function useDealWorkspace(dealId: string | null | undefined) {
     }
   }
 
-  async function extractDocument(documentId: string): Promise<ExtractionPreview> {
+  const extractDocument = useCallback(async (documentId: string): Promise<ExtractionPreview> => {
     if (!dealId) throw new Error('Choose a deal before extracting documents.')
     setWorking(true)
     try {
@@ -115,7 +124,18 @@ export function useDealWorkspace(dealId: string | null | undefined) {
     } finally {
       setWorking(false)
     }
-  }
+  }, [dealId, refreshWorkspace])
+
+  useEffect(() => {
+    if (!autoExtract || working) return
+    const pending = workspace?.documents.find(
+      (document) => document.extractionStatus === 'not-started'
+        && !autoExtractedRef.current.has(document.documentId),
+    )
+    if (!pending) return
+    autoExtractedRef.current.add(pending.documentId)
+    void extractDocument(pending.documentId)
+  }, [autoExtract, extractDocument, working, workspace?.documents])
 
   async function loadExtraction(documentId: string): Promise<ExtractionPreview> {
     if (!dealId) throw new Error('Choose a deal before reviewing extracted fields.')

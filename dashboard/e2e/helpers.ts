@@ -199,11 +199,13 @@ export async function launchWorkflowForDeal(
 }
 
 /**
- * Open a seeded deal from the recent-deals strip into the persistent workspace frame.
+ * Open a seeded deal from the Conversation Desk (or a legacy/fallback deal surface) into
+ * the persistent workspace frame.
  *
  * The redesigned workspace renders `workspace-frame` (the old `operator-deal-hub` tab hub
- * is gone). A deal opens by clicking its `workspace-docs-<id>` button in the
- * `recent-deals-strip`; the frame then mounts with the deal name as the main heading.
+ * is gone). The primary route selects `conversation-home-deal-<id>` and then uses
+ * `conversation-home-open-workspace`; the deal library remains a fallback for deals outside
+ * the compact home rail.
  *
  * The dashboard auto-reveals a completed run's workspace on load, so a leftover deal from a
  * prior test can already be on screen. This helper is robust to that: if the frame is showing
@@ -217,6 +219,9 @@ export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, d
   // The frame's own H1 — distinct from the recent-deals card's H3 of the same name, which
   // also lives inside <main>, so we must scope the heading to the frame to avoid matching it.
   const heading = workspace.getByRole('heading', { name: dealName, level: 1 })
+  const conversationHome = page.getByTestId('conversation-home')
+  const conversationDeal = page.getByTestId(`conversation-home-deal-${dealId}`)
+  const conversationWorkspace = page.getByTestId('conversation-home-open-workspace')
   const strip = page.getByTestId('recent-deals-strip')
   const card = strip.getByTestId(`workspace-docs-${dealId}`)
 
@@ -255,6 +260,12 @@ export async function openWorkspaceFromRecentDeals(page: Page, dealId: string, d
       }
     }
     return false
+  }
+
+  if ((await conversationHome.isVisible().catch(() => false)) && (await conversationDeal.isVisible().catch(() => false))) {
+    await conversationDeal.click()
+    await expect(conversationDeal).toHaveAttribute('aria-pressed', 'true')
+    if (await clickWorkspaceButton(conversationWorkspace)) return
   }
 
   if ((await strip.isVisible().catch(() => false)) && await clickWorkspaceButton(card)) {

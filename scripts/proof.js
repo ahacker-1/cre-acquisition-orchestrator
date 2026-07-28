@@ -199,7 +199,8 @@ function printReadyMessage(reusedExisting, smoke) {
     console.log('[proof] Existing dashboard and API detected; reusing the running local app.');
   }
   console.log(`[proof] Open the dashboard: ${UI_URL}`);
-  console.log('[proof] Click "Start Guided Demo" or "Parkview Demo", then follow docs/PROOF-PATH.md.');
+  console.log('[proof] The app opens on the chat-first Conversation Desk. Click "New Deal", then "Start Guided Demo" for Parkview.');
+  console.log('[proof] Follow docs/PROOF-PATH.md; live Codex login is optional and is not used by this proof.');
   console.log('[proof] Proof stops: source upload, uploaded data inspector, extraction review, approved evidence, workpaper, IC package.');
 }
 
@@ -274,6 +275,7 @@ async function main() {
   console.log('CRE Acquisition Orchestrator public proof path');
   console.log('====================================================');
   console.log('[proof] This local path uses deterministic Parkview data and no external AI APIs.');
+  console.log('[proof] Live agent chat is optional and is not required for the proof path.');
   console.log('[proof] Reviewer script: docs/PROOF-PATH.md');
   console.log('');
 

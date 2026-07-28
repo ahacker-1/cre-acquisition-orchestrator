@@ -1699,6 +1699,21 @@ function setDeepValue(target: Record<string, unknown>, pathValue: string, value:
   cursor[parts[parts.length - 1]] = value
 }
 
+// Parser previews intentionally preserve missing optional cells as `null` so the operator can see
+// exactly what the source contained. Deal schemas are stricter: an optional object property may be
+// absent, but when present it still has to match its declared type. Normalize only at the write
+// boundary by recursively omitting null-valued object properties. Arrays and their ordering remain
+// intact, and the extraction/approved-field evidence continues to retain the original parser value.
+function extractedValueForDeal(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map((entry) => extractedValueForDeal(entry))
+  if (!value || typeof value !== 'object') return value
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, entry]) => entry !== null)
+      .map(([key, entry]) => [key, extractedValueForDeal(entry)]),
+  )
+}
+
 function getDeepValue(target: Record<string, unknown>, pathValue: string): unknown {
   const parts = pathValue.split('.').filter(Boolean)
   let cursor: unknown = target
@@ -2834,7 +2849,11 @@ export function saveSourceDocument(
   dealId: string,
   payload: Record<string, unknown>,
 ): { document: SourceDocument; documents: SourceDocument[] } {
-  if (!getDealRecord(context, dealId)) throw new Error(`Deal not found: ${dealId}`)
+  const record = getDealRecord(context, dealId)
+  if (!record) throw new Error(`Deal not found: ${dealId}`)
+  if (record.item.readOnly) {
+    throw new Error('Sample deals are read-only. Create a new deal before uploading source documents.')
+  }
   const rawFileName = asString(payload.fileName)
   if (!rawFileName.trim()) throw new Error('Missing required field: fileName')
   const fileName = normalizeUploadedFileName(rawFileName)
@@ -3074,7 +3093,7 @@ function commitFieldApply(
   const { documentId, manifest, sourceDocument, enrichedExtraction, localDeal, selectedFields, action, note } = args
   const nextDeal = JSON.parse(JSON.stringify(localDeal)) as Record<string, unknown>
   for (const field of selectedFields) {
-    setDeepValue(nextDeal, field.path, field.value)
+    setDeepValue(nextDeal, field.path, extractedValueForDeal(field.value))
   }
   const draftValidation = validateDealConfig(nextDeal, {
     projectRoot: context.projectRoot,

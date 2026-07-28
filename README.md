@@ -1,6 +1,6 @@
 # CRE Acquisition Orchestrator
 
-**An open-source, multi-orchestrator workspace for commercial real estate multifamily acquisitions: drop documents, state the goal, watch 31 AI roles coordinate, and review the acquisition package.**
+**An open-source, multi-orchestrator workspace for commercial real estate multifamily acquisitions: choose a deal, speak directly with a 31-role AI deal team over its source documents, and carry the work through diligence to an investment committee package.**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
@@ -15,7 +15,7 @@ A few months ago I wrote about [what happens when you point 489 AI agents at a 2
 
 **It is not fully production-ready.** I want to be direct about that. But what is here is the most in-depth open-source framework I have seen for CRE acquisition orchestration because the category barely exists. There are agent frameworks for coding, customer support, research, and data analysis. There is almost nothing that models how a real multifamily acquisition moves across due diligence, underwriting, financing, legal, and closing while preserving data handoffs, review gates, and investment committee evidence.
 
-The project is local-first: you can run the proof path with no API keys, inspect uploaded tables and source rows, review extracted candidate fields with provenance, approve or waive ambiguous values, and export Markdown/JSON for an investment committee starter package. The dashboard's workflow runtime defaults to live ChatGPT/Codex (with web search on) so the team can pull and cite real market, lender, and environmental data, while the deterministic offline demo stays the no-credential public proof path for tours, screenshots, and CI.
+The project is local-first: you can select a deal, choose the right specialist, and keep a durable source-backed conversation over its documents; you can also run the proof path with no API keys, inspect uploaded tables and source rows, review extracted candidate fields with provenance, approve or waive ambiguous values, and export Markdown/JSON for an investment committee starter package. The dashboard's workflow runtime defaults to live ChatGPT/Codex (with web search on) so the team can pull and cite real market, lender, and environmental data, while the deterministic offline demo stays the no-credential public proof path for tours, screenshots, and CI.
 
 Everything in here - the agent prompts, domain skills, schemas, pipeline architecture, dashboard, and demo artifacts - is yours to use as a starting point. Fork it. Build on it. Adapt it to your own deals, investment thesis, and internal acquisition workflow. If this framework helps even one CRE team rethink how they approach acquisitions, it was worth open-sourcing.
 
@@ -27,10 +27,11 @@ Let's bring this industry into the future.
 
 ## First-Time Visitor Path
 
+- **Start by asking the deal team:** on the Conversation Desk, choose a deal, search for the right role, select the documents that belong in scope, and ask. Open a retained thread from the left rail when you want to continue where you left off.
 - **Prove the trust loop first:** run `npm run proof` and follow the [Public Proof Path](docs/PROOF-PATH.md) from source document to uploaded data inspector to extraction review to approved evidence to workpaper to IC package.
 - **Run a first real deal in 10 minutes:** follow the [First Deal Guide](docs/FIRST-DEAL-GUIDE.md), start the dashboard, drop local rent roll/T12/offering memo files, review source-backed fields, and export the IC starter package.
 - **Trace the source-to-IC proof path manually:** use the [Demo Journey](docs/DEMO-JOURNEY.md#source-to-ic-proof-path) to follow a value or red flag from document drop, through uploaded data inspection, extraction review, approved evidence, workpapers, and the IC package references the current artifacts expose.
-- **Use Parkview as the deterministic fallback:** click **Start Guided Demo** when you want a no-upload sample tour through the deal space - the lifecycle spine, the command bar, Your Team, the live feed, and the IC package.
+- **Use Parkview as the deterministic fallback:** from the chat-first Conversation Desk, click **New Deal**, then **Start Guided Demo** for a no-upload sample tour through the lifecycle spine, command bar, Your Team, live feed, and IC package.
 - **Install from scratch:** follow [Quick Start](#quick-start). The dashboard path is local-first, launches live Codex workflows by default, and keeps the sample tour deterministic.
 - **Choose the right runtime:** read [Live Codex Agents vs Offline Demo](docs/RUNTIME-COMPARISON.md) - live Codex is the default launch lane and the offline demo is the no-credential fallback - before sending any real deal context through Codex.
 - **Understand the system:** read [Architecture](docs/ARCHITECTURE.md), [Agent Catalog](docs/AGENT-CATALOG.md), [API Reference](docs/API-REFERENCE.md), and [WebSocket Events](docs/WEBSOCKET-EVENTS.md).
@@ -42,6 +43,9 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 
 ## What It Does
 
+- **Chat-first Conversation Desk** - choose a deal, search the 31-role deal team, pick a specialist, and ask questions in plain English without first navigating a workflow console.
+- **Durable, deal-scoped threads** - each conversation keeps its selected documents, messages, citations, activity, and agent identity after reload; deal, agent, and thread state can be restored directly from the URL.
+- **Source-backed answers** - agents answer from the selected local deal documents, expose the exact citation evidence available to the runtime, support follow-ups, and keep retry/cancel state visible without silently launching a workflow action.
 - **Document-first deal intake** - upload rent rolls, T12s, offering memos, PDFs, and supporting files into a local workspace.
 - **Uploaded data inspector** - see uploaded tables, field types, fill rates, examples, source rows, and click-through row detail before applying extracted values.
 - **Source-backed extraction review** - supported XLSX/CSV/TXT/MD, text-based PDF sources, and readable scanned/image-only PDFs become candidate fields with confidence, warnings, file hashes, and source-location (sheet/row/column or page) provenance; OCR-derived fields stay review-gated before they can change deal inputs.
@@ -54,11 +58,11 @@ For the guided path, use [First Deal Guide](docs/FIRST-DEAL-GUIDE.md). For the s
 
 ## By the Numbers
 
-| AI Roles | Skills | Schemas | Workflows | Fixtures | Tests passing |
+| AI Roles | Skills | Schemas | Workflows | Fixtures | Test commands |
 |----------|--------|---------|-----------|----------|---------------|
-| 31 | 8 | 27 | 5 | 40 | 13 |
+| 31 | 8 | 28 | 5 | 40 | 14 |
 
-Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 27 JSON Schema contracts; 5 workflow definitions; 40 curated fixture files under `fixtures/` (messy parser fixtures, legal diligence checklist extraction, lean legal-document parsing for PSA/title/estoppel, scanned OCR coverage, the adversarial real-world-pile smoke set, and the first-deal package); and 13 root `test*` commands tracked by [package.json](package.json).
+Counts reflect the current checked-in catalog: 25 specialist prompt files plus 6 orchestrators; 8 domain knowledge files; 28 JSON Schema contracts; 5 workflow definitions; 40 curated fixture files under `fixtures/` (messy parser fixtures, legal diligence checklist extraction, lean legal-document parsing for PSA/title/estoppel, scanned OCR coverage, the adversarial real-world-pile smoke set, and the first-deal package); and 14 root `test*` commands tracked by [package.json](package.json).
 
 ---
 
@@ -98,10 +102,10 @@ per-deal results, and weaknesses).
 
 ## Current Status
 
-The latest public release is `v3.5.0`. It gives the full acquisition journey an Architectural Graphite facelift and closes seven local trust-boundary gaps across deal storage, workflow configuration, ingestion, runtime artifacts, legal prompt files, and direct Codex inputs. It builds on `v3.4.0`'s end-to-end pipeline proof and all-8-deal live evaluation. The stable baseline remains local-first and review-first:
+The latest public release is `v3.6.0`. It makes the Conversation Desk the front door, adds persistent deal-and-document-scoped conversations with any role on the 31-role deal team, and tightens the first-run, review, accessibility, and completion workflows uncovered by the full UI audit. The stable baseline remains local-first and review-first:
 
 - **Local-first** - the offline dashboard, deterministic Parkview demo, and source-backed extraction require no API keys.
-- **Versioned release baseline** - `v3.5.0` adds the Architectural Graphite product system, decision-first workspace, refreshed public visual tour, and seven path-containment fixes on top of `v3.4.0`'s pipeline verification ledger, live Codex proof gates, all-8-deal live eval, phase artifact validation, and manifest/schema hardening.
+- **Versioned release baseline** - `v3.6.0` adds the chat-first Conversation Desk, retained source-backed threads, searchable role picker, live conversation state, first-run and workflow repairs, and a new public walkthrough on top of `v3.5.0`'s Architectural Graphite product system and trust-boundary fixes.
 - **Honest evaluation** - `npm run eval` scores the orchestrator on an **8-deal** synthetic benchmark and reports honest numbers including where it falls short (see [Honest Evaluation](#honest-evaluation--prove-it)). The live (Codex) layer covers all 8 deals; the current verified live run hit 100% IC exact/directional match, 100% determinable financial accuracy, 100% required red-flag recall, and 100% dealbreaker recall. The documented soft spot is model-dependent returns (~25%).
 - **Known limits** - the local OCR bridge supports readable scanned/image-only PDFs for review-backed headline extraction, but not arbitrary image files or fully reliable table reconstruction. Multi-tenant cloud hosting and autonomous investment decisions remain out of scope. Text-based PDF extraction, merged-cell workbooks, and single-operator self-host deployment (see [Deployment](docs/DEPLOYMENT.md)) are supported.
 
@@ -116,13 +120,24 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
 
+## What's New in v3.6.0
+
+- **Conversation Desk as the front door** - the first screen now explains the three-step path directly in the product: choose a deal, choose a specialist, and ask about the selected evidence. Recent threads stay visible beside the active conversation.
+- **Persistent source-backed conversations** - deal, agent, thread, selected-document scope, messages, citations, follow-up suggestions, active turns, cancellation, retries, and reconnection state are handled by a dedicated local conversation runtime and survive reloads.
+- **A searchable 31-role picker** - the native browser select is replaced by a contained dark-theme picker with search, phase/role context, selected state, keyboard navigation, Escape handling, mobile bounds, and no viewport-covering OS dropdown.
+- **Honest action boundaries** - a conversation turn answers a question; it does not silently release a workflow. Sample deals remain read-only, missing sources block sending, and the full workspace remains the explicit place for review gates, orchestration, and package actions.
+- **First-run and workflow audit repairs** - document upload, source review, workspace handoffs, completion gating, workpaper links, status semantics, modal focus, reduced motion, and responsive chat space were audited and tightened across the complete operator journey.
+- **New visual walkthrough** - the README now shows the Conversation Desk, agent search, New Deal upload path, a retained cited answer, and the full lifecycle workspace as one coherent start-to-finish experience.
+
+---
+
 ## What's New in v3.5.0
 
 - **Architectural Graphite system** - full-bleed graphite surfaces, editorial Playfair Display hierarchy, Inter interface typography, restrained copper actions, hairline structure, semantic evidence colors, and Tabler line icons replace the prior dense card treatment.
 - **Decision-first deal space** - the lifecycle spine, phase brief, next action, ranked findings, red flags, agent activity, context rail, specialist panel, command bar, and IC package now share one quieter institutional hierarchy.
 - **Whole-journey consistency** - the upload-first front door, Intake Deal Record, saved-deal library, deal editor, Workflow Launcher, reports, findings, error states, and completion package all use the same visual and interaction system.
 - **Seven trust boundaries hardened** - unsafe deal IDs, preset IDs, scenario names, ingest IDs, StoryEngine IDs, legal prompt paths, and direct Codex runner deal/input-snapshot paths now fail closed before escaping their intended repository directories.
-- **Current visual proof** - all seven README screenshots were recaptured from the live facelift, including real XLSX extraction, Market Rent/source-row inspection, populated phase and IC states, specialist handoff, and authenticated Codex launch review.
+- **v3.5 visual proof** - all seven README screenshots were recaptured from the live facelift, including real XLSX extraction, Market Rent/source-row inspection, populated phase and IC states, specialist handoff, and authenticated Codex launch review.
 - **Responsive and accessible** - desktop, tablet, and mobile layouts were tightened while preserving keyboard behavior, accessibility semantics, source-review gates, active-run Stop controls, exports, and operational actions.
 
 ## What's New in v3.4.0
@@ -189,7 +204,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Release Journey
 
-This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, then a document-first cockpit, then an operator workbench, then an agentic deal-team workspace, then source-backed deal intake, then a credibility-hardened sample package with strict schemas, then a completion pass adding PDF extraction and review-grade workpapers, then real-world drop-flow hardening with an honest evaluation harness, then a redesign into one persistent deal space you drive by summoning agents, then an evidence-grade source-to-IC workbench with full release verification, then a production-scale local QA harness that exercises the app like a real operator across a sanitized 150-deal corpus, then live Codex / ChatGPT as the default workflow runtime with real, cited web search, then end-to-end pipeline proof and a fresh all-8-deal live Codex eval, and now an Architectural Graphite product system backed by tighter local trust boundaries.
+This project has grown from agent architecture into a local-first acquisition workspace: first the orchestration catalog, then a usable dashboard, then live Codex-backed execution, document-first intake, an operator workbench, an evidence-grade source-to-IC chain, production-scale local QA, live web-backed deal work, a quieter Architectural Graphite system, and now a chat-first Conversation Desk where the operator can speak directly with any role over the exact documents selected for a deal before moving into the full lifecycle workspace.
 
 | Release | What Changed | Full Notes |
 |---------|--------------|------------|
@@ -212,40 +227,49 @@ This project has grown from agent architecture into a local-first acquisition wo
 | **v3.3.0 - Codex Main Lane + Live Web Search** | Makes live Codex / ChatGPT the default workflow runtime (Simulation kept as the no-credential fallback), gives agents real, cited web search, adds lean legal-document (PSA / title / estoppel) parsing, and lands the intake/extraction/launch UX fixes and e2e/CI stabilization. | [RELEASE_NOTES_v3.3.0.md](RELEASE_NOTES_v3.3.0.md) |
 | **v3.4.0 - Pipeline Verification + Live Eval Proof** | Records end-to-end pipeline verification, hardens phase artifacts and live Codex manifest validation, refreshes the all-8-deal live eval, and updates the public trust report to the June 25 live run. | [RELEASE_NOTES_v3.4.0.md](RELEASE_NOTES_v3.4.0.md) |
 | **v3.5.0 - Architectural Graphite + Trust-Boundary Hardening** | Gives the complete acquisition journey an institutional graphite facelift, refreshes the public visual proof, and closes seven local path-containment gaps across deal, workflow, ingestion, runtime, and Codex inputs. | [RELEASE_NOTES_v3.5.0.md](RELEASE_NOTES_v3.5.0.md) |
+| **v3.6.0 - Conversation Desk + Persistent Agent Conversations** | Makes direct, retained, document-scoped conversations with the 31-role deal team the front door; adds cited follow-ups and live turn controls; and closes first-run, workflow, accessibility, and completion gaps found in the full UI audit. | [RELEASE_NOTES_v3.6.0.md](RELEASE_NOTES_v3.6.0.md) |
 
 ---
 
 ## Visual Demo Tour
 
-The public demo is intentionally visual: a first-time visitor should understand the workspace before they read the architecture. The path below starts at the front door, drops a document package into **Intake**, inspects the uploaded tables field by field, then moves through the persistent deal space - the lifecycle spine, the agents at work, and the IC package - using the deterministic Parkview sample so it populates with no API keys.
+The public demo is intentionally visual. The path begins where the operator now begins: pick a deal, choose who on the deal team should answer, and ask over the exact source documents in scope. From there it shows how new documents enter review, how evidence becomes trusted deal data, and how the same deal moves into the full lifecycle workspace and IC package.
 
-### 1. Front Door - drop your deal, watch your team go to work
+### 1. Conversation Desk - select the deal and start with a real question
 
-![Dashboard front door with Upload Source Package, Start Guided Demo, and Recent Deals](docs/assets/dashboard-front-door.png)
+![Conversation Desk with a selected deal, recent retained threads, Rent Roll Analyst, document readiness, starter questions, selected source chips, and the follow-up composer](docs/assets/conversation-desk.jpg)
 
-### 2. Intake - drop documents, the record auto-fills
+### 2. Choose the right specialist - search the full 31-role deal team
 
-![Intake stage showing a source package auto-extracted into the Deal Record, with source tags, confidence dots, and the "Looks right → start Diligence" action](docs/assets/source-extraction-review.png)
+![Contained dark specialist picker with search, role and phase labels, keyboard guidance, and the current Rent Roll Analyst selection](docs/assets/specialist-picker.jpg)
 
-### 3. Uploaded Data Inspector - see every field and click into rows
+### 3. New Deal - upload a source package or enter the guided sample
 
-![Uploaded Data Inspector showing rent roll field quality, the selected Market Rent field, and source-row detail for row 3](docs/assets/uploaded-data-inspector.png)
+![New Deal screen with Upload Source Package, supported document guidance, and Start Guided Demo for the deterministic Parkview walkthrough](docs/assets/new-deal-source-package.jpg)
 
-### 4. The Deal Space - one frame, the whole lifecycle
+### 4. Source-Backed Answer - keep the conversation and open its evidence
 
-![The persistent deal space with the left lifecycle spine, focused center decision brief, and right context rail for Live Team activity and specialist controls](docs/assets/acquisition-command.png)
+![Retained Rent Roll Analyst thread with an occupancy answer, expanded source evidence from the selected rent roll, document chips, and a follow-up composer](docs/assets/agent-conversation.jpg)
 
-### 5. Watch It Work - summon an agent, read its workpaper
+### 5. Uploaded Data Inspector - inspect fields and source rows before trusting them
 
-![Rent Roll Analyst panel showing the specialist timeline, decision summary, caveat, workpaper action, and follow-up command field](docs/assets/deal-team-handoffs.png)
+![Uploaded Data Inspector showing source-table field quality, fill rates, types, and the first source rows before extracted values are trusted](docs/assets/uploaded-data-inspector.jpg)
 
-### 6. IC Package - decision-ready acquisition package
+### 6. Intake Review - approve what can become deal data
 
-![IC Package view showing recommendation, phase outcomes, red flags, data gaps, manifest, and review trail](docs/assets/ic-package.png)
+![Expanded extraction review showing applied source-backed candidates, confidence and source metadata, row drilldowns, and the approve, reject, and waive controls](docs/assets/source-extraction-review.jpg)
 
-### 7. Launch on live Codex - the default runtime, with web search
+### 7. Full Workspace - one frame for the entire lifecycle
 
-![Workflow Launcher (in the Advanced drawer) on the Review step: Runtime is set to Codex / ChatGPT, "Live web search" is on by default, Codex concurrency is 2, and the ChatGPT session is authenticated - the default launch path that sends the selected workflow to live agents that look up and cite real market, lender, and environmental data. Simulation stays available as the no-credential fallback.](docs/assets/workflow-launcher.png)
+![Persistent deal workspace with the lifecycle spine, focused phase brief, live team activity, specialist controls, and the command bar](docs/assets/acquisition-command.png)
+
+### 8. IC Package - review and export the acquisition decision trail
+
+![IC Package view showing recommendation, phase outcomes, red flags, data gaps, manifest, review trail, and export actions](docs/assets/ic-package.png)
+
+### 9. Advanced Runtime - launch the reviewed workflow on live Codex
+
+![Workflow Launcher Review step with Codex and ChatGPT selected, live web search enabled, concurrency controls, authentication state, and Simulation available as the no-credential fallback](docs/assets/workflow-launcher.png)
 
 See [Demo Journey](docs/DEMO-JOURNEY.md) for the storyboard, screenshot refresh path, and the source-to-IC proof script a visitor can follow without a video.
 
@@ -307,6 +331,16 @@ flowchart LR
     U[Operator] --> UI[React Dashboard]
     UI --> API[Local REST API]
     UI --> WS[WebSocket Events]
+    UI --> CONV[Conversation API]
+    CONV --> THREADS[Deal-Scoped Threads]
+    THREADS --> SCOPE[Selected Document Evidence]
+    THREADS --> DEALCTX[Deal Record, Criteria, Approved Fields]
+    THREADS --> TURNCTX[Role Guide, Recent Transcript, Question]
+    SCOPE --> ANSWER[Codex Agent Answer]
+    DEALCTX --> ANSWER
+    TURNCTX --> ANSWER
+    ANSWER --> CITED[Citations and Follow-Ups]
+    CITED --> UI
     API --> DOCS[Local Source Documents]
     DOCS --> REVIEW[Source-Backed Extraction Review]
     REVIEW --> APPROVED[Approved Inputs]
@@ -318,7 +352,7 @@ flowchart LR
     WS --> UI
 ```
 
-The source-to-IC proof path is the public trust loop: local source documents become reviewable candidates, approved inputs shape deterministic/offline or live-agent workpapers, and the IC package exports the available decision trail for human review. The offline simulation path stays local after dependencies are installed. The default live Codex path sends selected prompts and deal context through the user's ChatGPT-authenticated Codex CLI session, then writes raw Codex outputs and dashboard-readable package artifacts back into the local `data/` tree. Authentication is not stored in this repository.
+The conversation loop and workflow loop share the same local deal evidence but keep different authority. For a live Conversation Desk turn, the local server supplies Codex with the selected documents' extracted evidence, current deal record, underwriting criteria, approved fields, selected agent role guide, recent conversation transcript, and current question; the answer returns with server-owned citations and stays available for follow-ups. It does **not** release an orchestration workflow. The source-to-IC workflow remains the explicit operating loop: local source documents become reviewable candidates, approved inputs shape deterministic/offline or live-agent workpapers, and the IC package exports the available decision trail for human review. The default live Codex paths use the user's ChatGPT-authenticated Codex CLI session. Authentication is not stored in this repository.
 
 ---
 
@@ -444,7 +478,7 @@ Domain files intentionally separate reusable CRE policy from individual agent pr
 
 ## Data Contracts
 
-The repo ships 27 JSON Schema contracts under [schemas/](schemas/), validated with AJV strict mode and shared enum refs.
+The repo ships 28 JSON Schema contracts under [schemas/](schemas/), validated with AJV strict mode and shared enum refs.
 
 | Contract Area | Files | Purpose |
 |---------------|-------|---------|
@@ -455,6 +489,7 @@ The repo ships 27 JSON Schema contracts under [schemas/](schemas/), validated wi
 | Document manifests | [schemas/documents/manifest.schema.json](schemas/documents/manifest.schema.json) | Local source-document inventory, hashes, and extraction status. |
 | Event payloads | [schemas/events/phase-completion.schema.json](schemas/events/phase-completion.schema.json) | Phase completion events consumed by the dashboard and validation scripts. |
 | Live-run manifest | [schemas/codex/run-manifest.schema.json](schemas/codex/run-manifest.schema.json) | Redacted Codex live-run manifest: run outcome, per-agent attempts, and failed-agent list. |
+| Conversation answer | [schemas/agent-conversation-response.schema.json](schemas/agent-conversation-response.schema.json) | Cited answer, follow-up suggestions, evidence references, and honesty-gate response contract. |
 | Workpaper quality gate | [schemas/workpapers/quality-gate.schema.json](schemas/workpapers/quality-gate.schema.json) | Workpaper quality-gate block: cited inputs, assumptions, calculations, caveats, and reviewer signoff. |
 
 Schema validation is part of the public credibility story: extra fields fail, legacy enum values fail, and Parkview fixtures must continue to validate.
@@ -463,16 +498,21 @@ Schema validation is part of the public credibility story: extra fields fail, le
 
 ## Operator Dashboard
 
-The dashboard is a single **persistent deal space**, not a set of tabs. One frame stays in place; only the focused stage's body swaps. The frame has four fixed regions:
+The dashboard has two connected surfaces with a clear handoff:
+
+- **Conversation Desk** - the chat-first home. Choose the deal, choose or search for any role on the 31-role team, select the source documents in scope, and ask. Recent deal-scoped threads remain in the left rail; cited answers, live activity, cancellation, retry, and follow-ups remain in the main conversation. **Add documents**, **Review sources**, and **Open full workspace** connect the question back to the operating record.
+- **Full lifecycle workspace** - the execution and review surface. One persistent frame stays in place while only the focused stage's body swaps. This is where operators approve evidence, release workflows, monitor the team, resolve exceptions, and export the package.
+
+The full workspace has four fixed regions:
 
 - **Deal header** - the deal name, key facts (units, price, location), and live IC-package readiness.
 - **Lifecycle spine** - an always-visible row of the seven deal stages: **Intake → Diligence → Underwriting → Financing → Legal → Closing → IC**. Each stage carries a status dot (live, done, needs-your-eye, blocked, idle); clicking a stage focuses the center stage on it. The spine replaces the old six-tab nav.
 - **Center stage** - the focused stage's body: its agents at work and the outputs they file. **Intake** is the opener - drop the document package, ingestion agents auto-extract, and the deal record auto-fills (trusted fields apply on read; you edit only flagged values inline, with full source provenance one tap away). The five orchestrated phases each show their specialists, streaming progress, and workpapers. **IC** assembles the committee package (recommendation, phase outcomes, red flags, data gaps, manifest, export).
-- **Right rail + command bar** - a **Live Feed** (a chronological war-room stream of every agent's activity) and **Your Team** (the specialists staffed on the focused stage, with a "summon any of 31 agents" picker) sit in the rail; a persistent **command bar** ("Tell your team what to do…" plus context-aware suggestion chips) runs along the bottom. Clicking an agent - from the rail, a chip, or the command bar - opens a side **AgentPanel** that streams that one agent's work and shows its workpaper.
+- **Right rail + command bar** - a **Live Feed** (a chronological war-room stream of every agent's activity) and **Your Team** (the specialists staffed on the focused stage, with a searchable "talk to any of 31 agents" directory) sit in the rail; a persistent **command bar** ("Tell your team what to do…" plus context-aware suggestion chips) runs along the bottom. Clicking or directly addressing an agent opens a retained, deal-specific conversation: attach local documents, watch compact live activity, receive source-backed answers with citations, continue the thread after reload, and keep the agent's filed workpaper in view. Conversation turns are read-only unless the operator separately confirms a workflow action.
 
 Power-user controls move off the primary path into an **Advanced drawer** (deal criteria/target overrides, the workflow launcher for simulation or live Codex runs, mission control, the deal-team tree, workpapers, pipeline view, story/timeline, and the partial-failure "retry failed agents" recovery panel).
 
-The dashboard is intentionally not a landing page. It is the actual workspace: a local operator can drop documents, watch the team work the lifecycle, decide what to trust, and export a package.
+The first screen is intentionally conversational, but it is not a generic chatbot. Every question is bound to a deal, an agent, a retained thread, and selected local evidence; the lifecycle workspace remains one click away for the actions that change the acquisition record.
 
 ---
 
@@ -500,6 +540,8 @@ npm run proof
 Open `http://localhost:5173` if the browser does not open automatically. The proof path regenerates deterministic Parkview artifacts, starts the dashboard, waits for the local UI/API to respond, and works even if Codex is missing or login is skipped.
 `npm run setup -- --skip-codex-install --skip-login` also prepares the local parser virtual environment used for XLSX/PDF extraction without starting the optional Codex/ChatGPT auth path.
 
+The app opens on the chat-first **Conversation Desk**. For the deterministic proof, click **New Deal**, then **Start Guided Demo**. For your own data, click **New Deal**, then **Upload Source Package**. Live agent chat requires the optional Codex / ChatGPT login; the Parkview proof and local document-review workflow do not.
+
 To require a complete live-agent setup during onboarding:
 
 ```powershell
@@ -524,7 +566,7 @@ Run the public proof path:
 npm run proof
 ```
 
-This regenerates Parkview, starts the dashboard, opens the local app, and points you to [Public Proof Path](docs/PROOF-PATH.md) so you can inspect source data, approve evidence, and trace it into the IC package.
+This regenerates Parkview, starts the dashboard, opens the chat-first Conversation Desk, and points you to [Public Proof Path](docs/PROOF-PATH.md). Click **New Deal**, then **Start Guided Demo** to inspect the deterministic sample without a Codex login.
 
 Run the first real-deal workspace:
 
@@ -532,7 +574,7 @@ Run the first real-deal workspace:
 npm run dashboard
 ```
 
-Inside the workspace, drop your source files into **Intake** - the ingestion agents extract them and the deal record auto-fills, so you only correct flagged values - then advance through the lifecycle spine and export the **IC** package as Markdown or JSON.
+From the Conversation Desk, click **New Deal**, then **Upload Source Package**. The ingestion agents extract the files and the deal record auto-fills, so you only correct flagged values before advancing through the lifecycle spine and exporting the **IC** package as Markdown or JSON.
 
 Run the deterministic Parkview demo:
 
@@ -571,13 +613,14 @@ npm run codex:smoke
 | Capability | Why It Matters |
 |------------|----------------|
 | **31-role acquisition team** | The repo models a real acquisition desk with orchestrators, diligence specialists, underwriting, financing, legal, closing, and ingestion roles instead of one generic assistant. |
+| **Conversation Desk** | Operators can choose a deal and agent, scope the exact documents for the question, receive cited answers, and return to retained threads without first launching a full workflow. |
 | **19-section prompt anatomy** | The 21 acquisition specialists follow the 19-section anatomy from [Agent Development](docs/AGENT-DEVELOPMENT.md) (identity, mission, inputs, strategy, outputs, checkpoint/logging/resume protocols, error recovery, dealbreaker detection, confidence scoring, downstream contract, self-review, and self-validation). Orchestrators and ingestion roles use their own purpose-specific templates. |
 | **Local source-package review** | Operators can drop deal files into a local workspace, inspect extracted fields, review source provenance, and decide what becomes deal data. |
 | **Human approval gate** | The system is designed around operator judgment: candidate fields are accepted, rejected, waived, or left unresolved before workflows consume them. |
 | **Strict schema contracts** | Phase outputs, agent findings, checkpoints, document manifests, and events validate against JSON Schema with shared enums and closed objects. |
 | **Deterministic Parkview demo** | A complete Austin/Travis County sample run produces populated reports and workpapers with no API keys. |
 | **Live Codex runtime (default launch lane)** | Launching a real workflow uses ChatGPT-authenticated Codex CLI execution by default, with web search on so agents cite real facts; the deterministic offline simulation stays the no-credential demo/CI fallback so live AI is never required just to evaluate the system. |
-| **Operator dashboard** | The React workspace is one persistent deal space: a lifecycle spine from Intake to IC, the agents at work on the focused stage, a live feed, a command bar to dispatch the team, and IC package assembly - all in one frame. |
+| **Operator dashboard** | The React app pairs a chat-first Conversation Desk with the persistent lifecycle workspace: ask over selected evidence first, then open Intake-to-IC review, live team activity, workflow controls, and package assembly when action is required. |
 | **Public validation harness** | Demo verification, parser tests, workspace tests, schema tests, security assertions, docs drift checks, and browser E2E coverage are part of the repo. |
 | **Open, inspectable domain layer** | CRE assumptions live in Markdown skill files and JSON config, so operators can see and change the policy rather than trusting hidden code. |
 
@@ -624,6 +667,7 @@ cre-acquisition-orchestrator/
 |   |-- agents/                    # Per-agent output contracts
 |   |-- checkpoint/                # Master and agent checkpoint schemas
 |   |-- documents/                 # Source manifest schema
+|   |-- agent-conversation-response.schema.json # Cited agent-turn response contract
 |   `-- events/                    # Dashboard and phase-completion event schemas
 |
 |-- config/
@@ -636,14 +680,16 @@ cre-acquisition-orchestrator/
 |
 |-- dashboard/
 |   |-- src/
-|   |   |-- components/            # WorkspaceFrame, LifecycleSpine, stages, AgentPanel, IC Package
-|   |   |-- hooks/                 # Deal, checkpoint, workspace, and workflow data hooks
+|   |   |-- components/            # ConversationHome, ConversationPane, workspace stages, and IC Package
+|   |   |-- hooks/                 # Conversations, deals, checkpoints, workspace, and workflow data
 |   |   |-- lib/                   # Client-side upload and form utilities
 |   |   |-- types/                 # Dashboard TypeScript contracts
 |   |   |-- config.ts              # API and WebSocket URL configuration
 |   |   `-- App.tsx                # Route shell and lazy-loaded workspace
 |   |-- server/
 |   |   |-- watcher.ts             # Local REST, WebSocket, file watching, and run orchestration
+|   |   |-- conversation-manager.ts # Persistent turn lifecycle, cancellation, and event routing
+|   |   |-- conversation-service.ts # Deal/agent/thread/message persistence and evidence scope
 |   |   |-- parser-service.ts      # Source document parsing and review candidates
 |   |   |-- workspace-service.ts   # Workspace persistence and package exports
 |   |   |-- workflow-service.ts    # Workflow catalog and readiness rules

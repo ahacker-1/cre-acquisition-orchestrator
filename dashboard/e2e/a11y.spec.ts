@@ -82,6 +82,7 @@ test('agent panel dialog traps focus and closes on Escape', async ({ page, reque
 
   // Open the first staffed agent from the "Your Team" rail via keyboard activation.
   const firstAgent = page.getByTestId('team-rail').getByRole('button').first()
+  await expect(firstAgent).toHaveAccessibleName(/Status: (working|done|needs attention|pending)/i)
   await firstAgent.focus()
   await page.keyboard.press('Enter')
 
