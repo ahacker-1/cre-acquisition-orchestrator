@@ -461,7 +461,12 @@ export default function App() {
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = previousOverflow
       const opener = overlayOpenerRef.current
-      queueMicrotask(() => opener?.focus())
+      queueMicrotask(() => {
+        // A library action can hand off directly to the edit wizard. Do not move focus behind
+        // that successor modal after it has already claimed focus.
+        if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
+        opener?.focus()
+      })
     }
   }, [libraryOpen, workflowOpen])
 

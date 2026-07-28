@@ -1011,7 +1011,9 @@ test('preserves the composer draft when lazy thread creation fails', async ({ pa
   await expect(input).toHaveValue(draft)
   expect(harness.sendRequests).toEqual([])
   expect(harness.unhandledRequests).toEqual([])
-  expect(consoleErrors).toEqual([])
+  expect(consoleErrors).toEqual([
+    'Failed to load resource: the server responded with a status of 500 (Internal Server Error)',
+  ])
 })
 
 test('keeps a newer popstate thread restore when an older detail request finishes first', async ({ page }) => {
