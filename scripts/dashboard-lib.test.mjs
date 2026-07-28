@@ -1067,10 +1067,11 @@ await (async () => {
     assert.equal(sent.runtimeProvider, 'codex')
     assert.deepEqual(sent.codexAgents, ['ic-memo-writer'])
     assert.equal(sent.codexMaxAgents, 1)
+    assert.equal(sent.codexSearch, true)
     assert.equal(sent.reset, false)
     assert.equal(sent.notes, 'Draft the recommendation')
     passed += 1
-    console.log('  ok - codex dispatch POSTs a one-agent launch (codexAgents:[name], codexMaxAgents:1, reset:false)')
+    console.log('  ok - codex dispatch POSTs a one-agent launch (one agent, live search, no reset)')
   })()
 
   // A failed codex launch surfaces the server error as a notice (no throw).
