@@ -28,6 +28,7 @@ const DRAFT_DEAL_NAME = 'Playwright Draft Deal'
 const READY_DEAL_ID = 'DEAL-2099-902'
 const READY_DEAL_NAME = 'Playwright Launch Deal'
 const SAMPLE_DEAL_ID = 'demo-pass-001'
+const SAMPLE_DEAL_NAME = 'Riverside Gardens'
 const WORKSPACE_DEAL_ID = 'DEAL-2099-903'
 const WORKSPACE_DEAL_NAME = 'Playwright Operator Hub Deal'
 const RECENT_DEAL_ID = 'DEAL-2099-904'
@@ -130,13 +131,14 @@ async function waitForRunIdle(request: APIRequestContext): Promise<void> {
   throw new Error('Timed out waiting for active run to finish')
 }
 
-async function ensureCompletedRunWorkspaceVisible(page: Page): Promise<void> {
+async function ensureCompletedRunWorkspaceVisible(page: Page, dealId: string, dealName: string): Promise<void> {
   const workspace = page.getByTestId('workspace-frame')
-  if (!(await workspace.isVisible().catch(() => false))) {
-    await page.reload()
-    await expect(page.getByText('Connected')).toBeVisible({ timeout: 20_000 })
+  const heading = workspace.getByRole('heading', { name: dealName, level: 1 })
+  if (!(await workspace.isVisible().catch(() => false)) || !(await heading.isVisible().catch(() => false))) {
+    await openWorkspaceFromRecentDeals(page, dealId, dealName)
   }
   await expect(workspace).toBeVisible({ timeout: 25_000 })
+  await expect(heading).toBeVisible({ timeout: 25_000 })
 }
 
 async function expectViewportAtTop(page: Page): Promise<void> {
@@ -239,6 +241,8 @@ test('a dropped PDF sets the one-click-extraction expectation before create', as
   const consoleErrors = collectConsoleErrors(page)
 
   await waitForDashboardReady(page)
+  await page.getByTestId('header-new-deal-button').click()
+  await expect(page.getByTestId('drop-zone-hero')).toBeVisible()
   // A PDF is stored for extraction (not auto-applied like CSV/XLSX), so the create step surfaces
   // an honest note up front instead of leaving the deal record silently empty after create.
   await page.getByTestId('drop-zone-input').setInputFiles({
@@ -248,10 +252,18 @@ test('a dropped PDF sets the one-click-extraction expectation before create', as
   })
   const quick = page.getByTestId('quick-deal-modal')
   await expect(quick).toBeVisible()
+  await expect(quick.getByTestId('quick-deal-name-input')).toBeFocused()
+  await expect(quick.getByTestId('quick-upload-progress')).toHaveAttribute('role', 'status')
+  await expect(quick.getByTestId('quick-upload-progress')).toHaveAttribute('aria-live', 'polite')
+  await page.keyboard.press('Shift+Tab')
+  await expect(quick.getByTestId('quick-deal-create')).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(quick.getByTestId('quick-deal-name-input')).toBeFocused()
   await expect(quick.getByTestId('quick-pdf-note')).toBeVisible()
   await expect(quick.getByTestId('quick-pdf-note')).toContainText('one-click extraction')
   await quick.getByTestId('quick-deal-cancel').click()
   await expect(quick).toBeHidden()
+  await expect(page.getByTestId('header-new-deal-button')).toBeFocused()
 
   expect(consoleErrors).toEqual([])
 })
@@ -269,9 +281,15 @@ test('reopens a saved draft deal in the edit wizard from the deal library', asyn
   await expect(modal.getByTestId(`deal-card-${DRAFT_DEAL_ID}`)).toContainText('Draft')
 
   await modal.getByTestId(`edit-deal-${DRAFT_DEAL_ID}`).click()
+  const wizard = page.getByTestId('deal-wizard-modal')
   await expect(page.getByRole('heading', { name: 'Edit Deal' })).toBeVisible()
+  await expect(wizard).toBeFocused()
+  const saveDraft = wizard.getByTestId('deal-wizard-save-draft')
   await expect(page.getByTestId('deal-id-input')).toHaveValue(DRAFT_DEAL_ID)
   await expect(page.getByTestId('deal-name-input')).toHaveValue(DRAFT_DEAL_NAME)
+  await expect(saveDraft).toBeEnabled()
+  await page.keyboard.press('Shift+Tab')
+  await expect(saveDraft).toBeFocused()
 
   expect(consoleErrors).toEqual([])
 })
@@ -332,6 +350,8 @@ test('edits a saved deal and starts a run from the wizard', async ({ page, reque
   await expect(page.getByTestId('drop-zone-hero')).toBeVisible()
   await expect(page.getByText('Run: Running')).toBeVisible()
   await expect(page.getByTestId('header-stop-run')).toBeVisible()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(page.getByTestId('header-stop-run')).toBeVisible()
 
   expect(consoleErrors).toEqual([])
 })
@@ -388,10 +408,11 @@ test('launches a shipped sample deal from the library', async ({ page, request }
   expect(consoleErrors).toEqual([])
 })
 
-test('creates a draft from the document-first homepage and uploads the dropped file', async ({ page, request }) => {
+test('creates a draft from the New Deal document flow and uploads the dropped file', async ({ page, request }) => {
   const consoleErrors = collectConsoleErrors(page)
 
   await waitForDashboardReady(page)
+  await page.getByTestId('header-new-deal-button').click()
   await expect(page.getByTestId('drop-zone-hero')).toContainText('Drop the deal. Watch the team go to work.')
   await expect(page.getByTestId('drop-zone-hero')).toContainText('supported XLSX rent rolls or T12s auto-fill now')
 
@@ -421,7 +442,10 @@ test('creates a draft from the document-first homepage and uploads the dropped f
   const savePayload = (await saveResponse.json()) as { item: { dealId: string } }
   const quickDealId = savePayload.item.dealId
 
+  await expect(page).toHaveURL(new RegExp(`[?&]deal=${quickDealId}(?:&|$)`))
   await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByTestId('conversation-home')).toHaveCount(0)
+  await expect(page.getByTestId('workspace-frame').getByRole('heading', { name: 'Playwright Hero Drop Deal' })).toBeVisible()
   // A freshly created deal opens focused on the Intake stage (the old "documents" tab body),
   // and the always-present command bar replaces the removed OperatorCommandBar surface that
   // used to read "Upload the first source package".
@@ -480,17 +504,18 @@ test('creates a draft from the document-first homepage and uploads the dropped f
   expect(consoleErrors).toEqual([])
 })
 
-test('shows compact recent deals without changing the full deal library modal', async ({ page, request }) => {
+test('shows compact Conversation Desk deals without changing the full deal library modal', async ({ page, request }) => {
   const consoleErrors = collectConsoleErrors(page)
 
   await saveLaunchReadyDeal(request, RECENT_DEAL_ID, RECENT_DEAL_NAME)
   await waitForDashboardReady(page)
 
-  const strip = page.getByTestId('recent-deals-strip')
-  await expect(strip).toBeVisible()
-  await expect(strip.getByTestId(`deal-card-${RECENT_DEAL_ID}`)).toContainText(RECENT_DEAL_NAME)
-
-  await strip.getByTestId(`workspace-docs-${RECENT_DEAL_ID}`).click()
+  const conversationDeal = page.getByTestId(`conversation-home-deal-${RECENT_DEAL_ID}`)
+  await expect(conversationDeal).toBeVisible()
+  await expect(conversationDeal).toContainText(RECENT_DEAL_NAME)
+  await conversationDeal.click()
+  await expect(conversationDeal).toHaveAttribute('aria-pressed', 'true')
+  await page.getByTestId('conversation-home-open-workspace').click()
   await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
   await expectViewportAtTop(page)
   await expect(page.getByTestId('spine-step-intake')).toHaveAttribute('aria-current', 'step')
@@ -516,7 +541,8 @@ test('returns to the deal front door from a checkpoint-backed workspace', async 
   await expect(page.getByTestId('drop-zone-hero')).toBeVisible()
   await expectViewportAtTop(page)
   await expect(page.getByTestId('drop-zone-hero')).toContainText('Drop the deal. Watch the team go to work.')
-  await expect(page.getByTestId('recent-deals-strip')).toContainText(WORKSPACE_DEAL_NAME)
+  await page.getByTestId('back-to-conversations').click()
+  await expect(page.getByTestId(`conversation-home-deal-${WORKSPACE_DEAL_ID}`)).toContainText(WORKSPACE_DEAL_NAME)
 
   expect(consoleErrors).toEqual([])
 })
@@ -525,6 +551,8 @@ test('guided demo mode opens the sample deal, advances through major sections, a
   const consoleErrors = collectConsoleErrors(page)
 
   await waitForDashboardReady(page)
+  await page.getByTestId('header-new-deal-button').click()
+  await expect(page.getByTestId('drop-zone-hero')).toBeVisible()
   await page.getByTestId('guided-demo-front-door-cta').click()
 
   await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
@@ -602,9 +630,7 @@ test('keeps the embedded workflow launcher scoped to the open deal', async ({ pa
     }))
   }, READY_DEAL_ID)
 
-  await waitForDashboardReady(page)
-  await page.getByTestId(`workspace-docs-${WORKSPACE_DEAL_ID}`).click()
-  await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
+  await openWorkspaceFromRecentDeals(page, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
   await openAdvancedDrawer(page)
 
   const launcher = page.getByTestId('workspace-workflow-launcher')
@@ -1063,9 +1089,7 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
   const consoleErrors = collectConsoleErrors(page)
 
   await saveLaunchReadyDeal(request, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
-  await waitForDashboardReady(page)
-  await page.getByTestId(`workspace-docs-${WORKSPACE_DEAL_ID}`).click()
-  await expect(page.getByTestId('workspace-frame')).toBeVisible({ timeout: 20_000 })
+  await openWorkspaceFromRecentDeals(page, WORKSPACE_DEAL_ID, WORKSPACE_DEAL_NAME)
   // The Intake stage body is the document intake surface (was the "documents" tab).
   await focusStage(page, 'intake')
   await page.getByTestId('source-document-upload').setInputFiles([
@@ -1090,6 +1114,7 @@ test('keeps PDF and XLSX document status honest in the cockpit', async ({ page, 
   // honestly rather than fabricating fields. The status stays truthful (parse_failed), and the
   // doc offers a "Re-run Extraction" action; it is never silently marked extracted/applied.
   await expect(page.getByTestId('source-document-rent_roll')).toContainText('Re-run Extraction', { timeout: 30_000 })
+  await expect(page.getByTestId('spine-step-intake')).toHaveAttribute('data-status', 'blocked')
   // The cockpit's "PDF and Excel stay honest" caption is gone; the equivalent honest-status
   // messaging now lives in the intake stage's extraction preview panel. The auto-extract effect
   // loads the XLSX's failed extraction there, and it reports the failure plainly (parse_failed +
@@ -1165,7 +1190,7 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
     if (attempt === 59) throw new Error('Quick deal workflow did not complete in time')
   }
 
-  await ensureCompletedRunWorkspaceVisible(page)
+  await ensureCompletedRunWorkspaceVisible(page, SAMPLE_DEAL_ID, SAMPLE_DEAL_NAME)
 
   // Mission Control + the Swarm Goal Console moved into the Advanced drawer.
   const drawer = await openAdvancedDrawer(page)
@@ -1200,10 +1225,10 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   expect(capturedSwarmLaunchBody?.runtimeProvider).toBe('codex')
   expect(capturedSwarmLaunchBody?.codexMaxAgents).toBeNull()
   expect(capturedSwarmLaunchBody?.codexConcurrency).toBe(2)
-  // Reload after the relaunch is idle so the browser reads the final checkpoint instead of a
-  // transient in-progress package render emitted during the run.
-  await waitForDashboardReady(page)
-  await ensureCompletedRunWorkspaceVisible(page)
+  // Stay in the open workspace after the relaunch. The Conversation Desk is now the root route,
+  // so navigating to `/` would intentionally leave the completed package instead of refreshing it.
+  await page.waitForTimeout(300)
+  await ensureCompletedRunWorkspaceVisible(page, SAMPLE_DEAL_ID, SAMPLE_DEAL_NAME)
   // The launch itself is verified by the run-status poll above. Keep the post-launch assertions on
   // stable workspace surfaces so this test does not race the live WebSocket refresh after relaunch.
 
@@ -1253,6 +1278,26 @@ test('runs quick deal screen workflow to completion with skipped phases and pack
   await expect(packageView).toContainText(/Verdict|decision events/)
   await expect(packageView).toContainText('Final Recommendation Package')
   await expect(packageView).toContainText('Priority Flags')
+  await expect(packageView.getByTestId('proof-path-strip')).toBeVisible()
+  const runSnapshotLink = packageView.locator('[data-testid^="package-workpaper-open-"][href*="data%2Fruns%2F"]').first()
+  await expect(runSnapshotLink).toBeVisible()
+  await expect(runSnapshotLink).toContainText('Open run snapshot')
+  const runSnapshotHref = await runSnapshotLink.getAttribute('href')
+  expect(runSnapshotHref).not.toBeNull()
+  const runSnapshotResponse = await apiGet(request, `${API_URL}${runSnapshotHref}`)
+  await expectApiOk(runSnapshotResponse)
+  expect(runSnapshotResponse.headers()['content-type']).toContain('application/json')
+
+  const firstWorkpaperLink = packageView.locator('[data-testid^="package-workpaper-open-"][href*="data%2Freports%2F"]').first()
+  await expect(firstWorkpaperLink).toBeVisible()
+  const firstWorkpaperHref = await firstWorkpaperLink.getAttribute('href')
+  expect(firstWorkpaperHref).not.toBeNull()
+  const workpaperResponse = await apiGet(request, `${API_URL}${firstWorkpaperHref}`)
+  await expectApiOk(workpaperResponse)
+  expect(workpaperResponse.status()).toBe(200)
+  expect(workpaperResponse.headers()['content-type']).toContain('text/markdown')
+  await expect(page.getByTestId('final-report-gate')).toBeVisible()
+  await expect(page.getByTestId('final-report')).toHaveCount(0)
 
   expect(consoleErrors).toEqual([])
 })
@@ -1278,7 +1323,7 @@ test('drills a red flag back to its originating specialist workpaper in the IC p
       { timeout: 60_000 },
     )
     .toBe('COMPLETED')
-  await ensureCompletedRunWorkspaceVisible(page)
+  await ensureCompletedRunWorkspaceVisible(page, RED_FLAG_DEAL_ID, RED_FLAG_DEAL_NAME)
 
   // Re-focus the IC stage until a real completed-run red flag is visible. The generated
   // scenario flag is deterministic for this deal, but the test only needs the UI contract:
@@ -1295,8 +1340,12 @@ test('drills a red flag back to its originating specialist workpaper in the IC p
   const origin = firstFlag.getByTestId(/^red-flag-origin-/).first()
   await expect(origin).toBeVisible()
   await expect(firstFlag.getByTestId(/^red-flag-origin-workpaper-/).first()).toBeVisible()
+  await expect(firstFlag.getByTestId(/^red-flag-origin-workpaper-/).first()).toContainText('scenario-analyst Workpaper')
   await expect(firstFlag).toContainText('Originating workpaper')
   await expect(firstFlag).toContainText(/filed by|Raised by/)
+  const openOrigin = firstFlag.getByTestId(/^red-flag-origin-open-/).first()
+  await expect(openOrigin).toBeVisible()
+  await expect(openOrigin).toHaveAttribute('href', /\/api\/deals\/[^/]+\/artifacts\?path=/)
 
   cleanupDealArtifacts(RED_FLAG_DEAL_ID)
   expect(consoleErrors).toEqual([])

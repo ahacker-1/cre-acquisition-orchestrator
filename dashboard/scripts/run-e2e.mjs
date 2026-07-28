@@ -212,7 +212,10 @@ async function main() {
   const clientAlreadyRunning = reuseServers && await isUrlReady(clientUrl)
   const watcher = watcherAlreadyRunning
     ? null
-    : spawnLogged(npxCommand, ['tsx', 'server/watcher.ts'], { label: 'watcher' })
+    : spawnLogged(npxCommand, ['tsx', 'server/watcher.ts'], {
+        label: 'watcher',
+        env: { ...process.env, CRE_AGENT_CONVERSATIONS: '0' },
+      })
   const client = clientAlreadyRunning
     ? null
     : spawnLogged(npxCommand, ['vite', '--host', '127.0.0.1', '--port', '4173', '--strictPort'], {

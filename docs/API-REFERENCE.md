@@ -6,7 +6,8 @@ Local dashboard API base URL: `http://127.0.0.1:8081`. The Vite dev proxy also s
 
 - `403` means the request failed local origin or loopback checks.
 - `404` means the route or requested deal/run artifact was not found.
-- `413` means the request body exceeded the document upload size cap.
+- `413` means the request body or requested text artifact exceeded its size cap.
+- `415` means a requested artifact did not use an allowlisted text extension.
 - `429` means the document mutation token bucket rejected the request.
 - `500` means an unhandled local server or file operation failed.
 - Path parameters that represent IDs must be safe slugs. Invalid IDs return `400`.
@@ -61,6 +62,7 @@ Optional live Codex controls accepted by launch requests:
 | Method | Path | Purpose | Request | Success |
 |---|---|---|---|---|
 | `GET` | `/api/deals/:dealId/workspace` | Load the full operator workspace. | `dealId` path param. | `DealWorkspace` |
+| `GET` | `/api/deals/:dealId/artifacts?path=...` | Open one deal-scoped report or phase output. Loopback only. | One URL-encoded repository artifact path from the workspace manifest. | Raw UTF-8 Markdown, text, or JSON with `200`. |
 | `POST` | `/api/deals/:dealId/criteria` | Save underwriting criteria. | `DealCriteria` | `{ "criteria": {}, "deal": {} }` |
 | `POST` | `/api/deals/:dealId/field-edit` | Apply an inline operator override to an approved source-backed deal field before launch. | `{ "path": "property.totalUnits", "value": 184, "label": "Total Units", "unit": "units", "note": "..." }` | `ApplyOperatorFieldEditResult` with `deal`, `approvedFields`, `field`, and `validation`. |
 | `GET` | `/api/deals/:dealId/documents` | List source documents. | `dealId` path param. | `{ "documents": [] }` |
@@ -73,6 +75,24 @@ Optional live Codex controls accepted by launch requests:
 | `POST` | `/api/deals/:dealId/phase-state` | Save phase checklist and notes. | `{ "phaseSlug": "...", "checklist": [], "notes": "..." }` | `{ "phases": [] }` |
 
 Successful field edits record the previous value and mark provenance as `operator-edited`; missing paths or values, non-editable fields, and validation-breaking edits return `400`.
+
+Artifact reads are restricted to regular files beneath `data/reports/:dealId` or `data/phase-outputs/:dealId`. The route requires the path's deal ID to match the URL, checks canonical containment (including symlinks), allows only `.md`, `.txt`, and `.json`, and rejects files larger than 1 MiB.
+
+## Agent Conversations
+
+Agent conversations are local, deal-scoped, and read-only. Conversation history is persisted under the selected deal. For a live turn, the server places the selected documents' extracted evidence, current deal record, underwriting criteria, approved fields, selected agent role guide, recent conversation transcript, and current question into an isolated, tool-disabled Codex prompt. The runtime cannot browse the repository or change deal fields, approvals, files, or workpapers.
+
+| Method | Path | Purpose | Request | Success |
+|---|---|---|---|---|
+| `GET` | `/api/deals/:dealId/conversations` | List thread summaries and the complete 31-agent directory. | None | `{ "enabled": true, "threads": [], "agents": [] }` |
+| `POST` | `/api/deals/:dealId/conversations` | Create a persistent thread for one registered agent. | `{ "agentId": "rent-roll-analyst", "title": "...", "documentIds": ["..."] }` | `201` with `{ "thread": {}, "messages": [], "activeTurn": null }` |
+| `GET` | `/api/deals/:dealId/conversations/:threadId` | Reload authoritative thread history. | Route params only. | `{ "thread": {}, "messages": [], "activeTurn": null }` |
+| `POST` | `/api/deals/:dealId/conversations/:threadId/messages` | Append an operator message and enqueue one agent turn. | `{ "content": "...", "documentIds": ["..."], "clientRequestId": "..." }` | `202` with `{ "thread": {}, "message": {}, "turn": {} }` |
+| `POST` | `/api/deals/:dealId/conversations/:threadId/turns/:turnId/cancel` | Cancel the exact queued or active turn. | Route params only. | `202` with `{ "turn": {} }` |
+
+The server accepts one active turn per thread and a bounded number of turns across different threads. `clientRequestId` makes a retried message request idempotent. Unknown agents, cross-deal documents, unsafe IDs, oversized messages, and concurrent same-thread turns fail before a runtime starts.
+
+Set `CRE_AGENT_CONVERSATIONS=0` before starting the watcher to disable new conversations without deleting history. `CRE_AGENT_CONVERSATION_CONCURRENCY` sets the bounded local concurrency (default `2`, maximum `4`), and `CRE_AGENT_CONVERSATION_QUEUE_LIMIT` bounds waiting turns (default `16`, maximum `64`).
 
 ## Legacy Checkpoint API
 

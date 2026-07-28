@@ -35,6 +35,16 @@ import {
   savePhaseState,
   saveSourceDocument,
 } from './workspace-service';
+import type { ConversationWebSocketMessage, CreateConversationRequest, SendConversationMessageRequest } from '../src/types/conversations';
+import {
+  appendConversationEvent,
+  createConversationThread,
+  getConversationThread,
+  listConversationThreads,
+  reconcileInterruptedConversations,
+} from './conversation-service';
+import { ConversationManager, ConversationManagerError } from './conversation-manager';
+import { parseDealArtifactRoute, readDealArtifact } from './artifact-service';
 
 // ---------------------------------------------------------------------------
 // Resolve paths
@@ -125,7 +135,7 @@ interface StoryEventMessage {
   event: Record<string, unknown>;
 }
 
-type WatcherMessage = CheckpointMessage | LogMessage | InitialMessage | StoryEventMessage | RunMessage;
+type WatcherMessage = CheckpointMessage | LogMessage | InitialMessage | StoryEventMessage | ConversationWebSocketMessage | RunMessage;
 
 const logLineOffsets: Map<string, number> = new Map();
 const eventLineOffsets: Map<string, number> = new Map();
@@ -560,6 +570,29 @@ const workflowServiceContext = {
   projectRoot,
 };
 
+const conversationServiceContext = {
+  dataRoot,
+  projectRoot,
+  statusDir,
+};
+
+const conversationsEnabled = !/^(0|false|off)$/i.test(process.env.CRE_AGENT_CONVERSATIONS ?? '1');
+const configuredConversationConcurrency = Number(process.env.CRE_AGENT_CONVERSATION_CONCURRENCY || 2);
+const configuredConversationQueueLimit = Number(process.env.CRE_AGENT_CONVERSATION_QUEUE_LIMIT || 16);
+const conversationManager = new ConversationManager({
+  context: conversationServiceContext,
+  projectRoot,
+  enabled: conversationsEnabled,
+  maxConcurrent: Number.isFinite(configuredConversationConcurrency) ? configuredConversationConcurrency : 2,
+  maxQueued: Number.isFinite(configuredConversationQueueLimit) ? configuredConversationQueueLimit : 16,
+  onEvent: (event) => broadcast({ type: 'conversation', event }),
+});
+
+const recoveredConversations = reconcileInterruptedConversations(conversationServiceContext);
+if (recoveredConversations.length > 0) {
+  console.warn(`[watcher] Marked ${recoveredConversations.length} interrupted conversation(s) for retry.`);
+}
+
 function safeFileSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').slice(0, 120) || 'item';
 }
@@ -773,9 +806,14 @@ console.log('[watcher] Watcher started');
 
 const API_PORT = 8081;
 const MAX_REQUEST_BODY_BYTES = 25 * 1024 * 1024;
+const MAX_CONVERSATION_BODY_BYTES = 64 * 1024;
 const DOCUMENT_ROUTE_RATE_LIMIT = {
   capacity: 60,
   refillPerMinute: 120,
+};
+const CONVERSATION_ROUTE_RATE_LIMIT = {
+  capacity: 30,
+  refillPerMinute: 60,
 };
 
 interface TokenBucket {
@@ -784,6 +822,7 @@ interface TokenBucket {
 }
 
 const documentRouteBuckets: Map<string, TokenBucket> = new Map();
+const conversationRouteBuckets: Map<string, TokenBucket> = new Map();
 
 class RequestBodyTooLargeError extends Error {
   readonly statusCode = 413;
@@ -824,6 +863,23 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
     'Content-Type': 'application/json',
   });
   res.end(payload);
+}
+
+// Conversation payload text is already normalized by the conversation service. Avoid the
+// generic artifact-path sanitizer here: prose containing slash-prefixed text is not a file path.
+function sendConversationJson(res: ServerResponse, status: number, body: unknown): void {
+  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(body));
+}
+
+function sendConversationError(res: ServerResponse, error: unknown, fallbackStatus = 400): void {
+  if (error instanceof ConversationManagerError) {
+    sendConversationJson(res, error.statusCode, { error: error.message, code: error.code });
+    return;
+  }
+  sendConversationJson(res, fallbackStatus, {
+    error: error instanceof Error ? error.message : 'Conversation request failed',
+  });
 }
 
 function readBody(req: IncomingMessage, limitBytes = MAX_REQUEST_BODY_BYTES): Promise<string> {
@@ -937,6 +993,33 @@ function parseDealDocumentRoute(url: string, suffix: 'extract' | 'extraction' | 
   }
 }
 
+function parseConversationRoute(url: string): {
+  dealId: string;
+  threadId?: string;
+  turnId?: string;
+  action: 'collection' | 'detail' | 'messages' | 'cancel';
+} | null {
+  const match = url.match(/^\/api\/deals\/([^/]+)\/conversations(?:\/([^/]+))?(?:\/(messages|turns\/([^/]+)\/cancel))?$/);
+  if (!match) return null;
+  try {
+    const dealId = safeDealId(decodeUrlPart(match[1]));
+    const threadId = match[2]
+      ? safePaths.assertSafeSegment(decodeUrlPart(match[2]), 'conversation ID')
+      : undefined;
+    const turnId = match[4]
+      ? safePaths.assertSafeSegment(decodeUrlPart(match[4]), 'conversation turn ID')
+      : undefined;
+    return {
+      dealId,
+      threadId,
+      turnId,
+      action: !threadId ? 'collection' : match[3] === 'messages' ? 'messages' : turnId ? 'cancel' : 'detail',
+    };
+  } catch {
+    return null;
+  }
+}
+
 function clientIp(req: IncomingMessage): string {
   return req.socket.remoteAddress || 'local';
 }
@@ -963,8 +1046,32 @@ function consumeDocumentRouteToken(req: IncomingMessage): boolean {
   return true;
 }
 
+function consumeConversationRouteToken(req: IncomingMessage): boolean {
+  const key = clientIp(req);
+  const now = Date.now();
+  const current = conversationRouteBuckets.get(key) ?? {
+    tokens: CONVERSATION_ROUTE_RATE_LIMIT.capacity,
+    updatedAt: now,
+  };
+  const elapsedMinutes = Math.max(0, (now - current.updatedAt) / 60000);
+  const refilled = Math.min(
+    CONVERSATION_ROUTE_RATE_LIMIT.capacity,
+    current.tokens + elapsedMinutes * CONVERSATION_ROUTE_RATE_LIMIT.refillPerMinute,
+  );
+  if (refilled < 1) {
+    conversationRouteBuckets.set(key, { tokens: refilled, updatedAt: now });
+    return false;
+  }
+  conversationRouteBuckets.set(key, { tokens: refilled - 1, updatedAt: now });
+  return true;
+}
+
 function isDocumentMutationRoute(method: string, url: string): boolean {
   return method === 'POST' && /^\/api\/deals\/[^/]+\/documents(?:\/|$)/.test(url);
+}
+
+function isConversationMutationRoute(method: string, url: string): boolean {
+  return method === 'POST' && /^\/api\/deals\/[^/]+\/conversations(?:\/|$)/.test(url);
 }
 
 const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
@@ -979,6 +1086,11 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
 
   if (isDocumentMutationRoute(method, url) && !consumeDocumentRouteToken(req)) {
     sendJson(res, 429, { error: 'Too many document requests from this local client. Try again shortly.' });
+    return;
+  }
+
+  if (isConversationMutationRoute(method, url) && !consumeConversationRouteToken(req)) {
+    sendConversationJson(res, 429, { error: 'Too many conversation requests. Try again shortly.' });
     return;
   }
 
@@ -1412,6 +1524,156 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
           sourceCoverage: inputSnapshot.readiness.sourceCoverage,
         },
       });
+      return;
+    }
+
+    // GET /api/deals/:dealId/conversations - list durable specialist threads and the 31-agent directory
+    if (method === 'GET' && /^\/api\/deals\/[^/]+\/conversations$/.test(url)) {
+      const route = parseConversationRoute(url);
+      if (!route || route.action !== 'collection') {
+        sendConversationJson(res, 400, { error: 'Invalid conversation route' });
+        return;
+      }
+      try {
+        const codexStatus = readCodexStatus();
+        const codexReady = Boolean(
+          codexStatus.installed && codexStatus.loggedIn && codexStatus.usingChatGpt,
+        );
+        sendConversationJson(res, 200, {
+          enabled: conversationsEnabled,
+          runtime: {
+            ready: conversationsEnabled && codexReady,
+            installed: Boolean(codexStatus.installed),
+            loggedIn: Boolean(codexStatus.loggedIn),
+            usingChatGpt: Boolean(codexStatus.usingChatGpt),
+            version: typeof codexStatus.version === 'string' ? codexStatus.version : null,
+            message: !conversationsEnabled
+              ? 'Agent conversations are disabled in this local runtime.'
+              : !codexStatus.installed
+                ? 'Install Codex to start live agent conversations.'
+                : !codexStatus.loggedIn
+                  ? 'Sign in to Codex with ChatGPT to start live agent conversations.'
+                  : !codexStatus.usingChatGpt
+                    ? 'Reconnect Codex using Sign in with ChatGPT to start live agent conversations.'
+                    : 'Codex / ChatGPT is ready.',
+          },
+          ...listConversationThreads(conversationServiceContext, route.dealId),
+        });
+      } catch (error) {
+        sendConversationError(res, error, 404);
+      }
+      return;
+    }
+
+    // POST /api/deals/:dealId/conversations - create a persistent thread for one registered agent
+    if (method === 'POST' && /^\/api\/deals\/[^/]+\/conversations$/.test(url)) {
+      if (!ensureLoopbackRequest(req, res)) return;
+      if (!conversationsEnabled) {
+        sendConversationJson(res, 503, { error: 'Agent conversations are currently disabled.', code: 'CONVERSATIONS_DISABLED' });
+        return;
+      }
+      const route = parseConversationRoute(url);
+      if (!route || route.action !== 'collection') {
+        sendConversationJson(res, 400, { error: 'Invalid conversation route' });
+        return;
+      }
+      let body: CreateConversationRequest;
+      try {
+        body = JSON.parse(await readBody(req, MAX_CONVERSATION_BODY_BYTES)) as CreateConversationRequest;
+      } catch (error) {
+        if (error instanceof RequestBodyTooLargeError) throw error;
+        sendConversationJson(res, 400, { error: 'Invalid JSON body' });
+        return;
+      }
+      try {
+        const detail = createConversationThread(conversationServiceContext, route.dealId, body);
+        const event = appendConversationEvent(conversationServiceContext, {
+          dealId: detail.thread.dealId,
+          threadId: detail.thread.threadId,
+          agentId: detail.thread.agentId,
+          thread: detail.thread,
+          activity: { kind: 'completed', label: 'Conversation created' },
+        });
+        broadcast({ type: 'conversation', event });
+        sendConversationJson(res, 201, detail);
+      } catch (error) {
+        sendConversationError(res, error);
+      }
+      return;
+    }
+
+    // GET /api/deals/:dealId/conversations/:threadId - reload authoritative thread history
+    if (method === 'GET' && /^\/api\/deals\/[^/]+\/conversations\/[^/]+$/.test(url)) {
+      const route = parseConversationRoute(url);
+      if (!route?.threadId || route.action !== 'detail') {
+        sendConversationJson(res, 400, { error: 'Invalid conversation route' });
+        return;
+      }
+      try {
+        sendConversationJson(res, 200, getConversationThread(conversationServiceContext, route.dealId, route.threadId));
+      } catch (error) {
+        sendConversationError(res, error, 404);
+      }
+      return;
+    }
+
+    // POST /api/deals/:dealId/conversations/:threadId/messages - enqueue one read-only agent turn
+    if (method === 'POST' && /^\/api\/deals\/[^/]+\/conversations\/[^/]+\/messages$/.test(url)) {
+      if (!ensureLoopbackRequest(req, res)) return;
+      const route = parseConversationRoute(url);
+      if (!route?.threadId || route.action !== 'messages') {
+        sendConversationJson(res, 400, { error: 'Invalid conversation route' });
+        return;
+      }
+      let body: SendConversationMessageRequest;
+      try {
+        body = JSON.parse(await readBody(req, MAX_CONVERSATION_BODY_BYTES)) as SendConversationMessageRequest;
+      } catch (error) {
+        if (error instanceof RequestBodyTooLargeError) throw error;
+        sendConversationJson(res, 400, { error: 'Invalid JSON body' });
+        return;
+      }
+      try {
+        sendConversationJson(res, 202, conversationManager.enqueue(route.dealId, route.threadId, body));
+      } catch (error) {
+        sendConversationError(res, error);
+      }
+      return;
+    }
+
+    // POST /api/deals/:dealId/conversations/:threadId/turns/:turnId/cancel
+    if (method === 'POST' && /^\/api\/deals\/[^/]+\/conversations\/[^/]+\/turns\/[^/]+\/cancel$/.test(url)) {
+      if (!ensureLoopbackRequest(req, res)) return;
+      const route = parseConversationRoute(url);
+      if (!route?.threadId || !route.turnId || route.action !== 'cancel') {
+        sendConversationJson(res, 400, { error: 'Invalid conversation route' });
+        return;
+      }
+      try {
+        sendConversationJson(res, 202, {
+          turn: conversationManager.cancel(route.dealId, route.threadId, route.turnId),
+        });
+      } catch (error) {
+        sendConversationError(res, error, 404);
+      }
+      return;
+    }
+
+    // GET /api/deals/:dealId/artifacts?path=... - open one bounded report or phase output
+    if (method === 'GET' && /^\/api\/deals\/[^/?]+\/artifacts(?:\?|$)/.test(url)) {
+      if (!ensureLoopbackRequest(req, res)) return;
+      const route = parseDealArtifactRoute(url);
+      if (!route) {
+        sendJson(res, 400, { error: 'Invalid deal artifact route' });
+        return;
+      }
+      const result = readDealArtifact({ projectRoot, dataRoot }, route.dealId, route.path);
+      if (result.statusCode !== 200 || !result.body || !result.headers) {
+        sendJson(res, result.statusCode, { error: result.error || 'Artifact could not be opened' });
+        return;
+      }
+      res.writeHead(200, result.headers);
+      res.end(result.body);
       return;
     }
 
@@ -1901,3 +2163,49 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
 httpServer.listen(API_PORT, LOCAL_API_HOST, () => {
   console.log(`[watcher] REST API listening on http://${LOCAL_API_HOST}:${API_PORT}`);
 });
+
+let shutdownPromise: Promise<void> | null = null;
+function shutdownWatcher(signal: string): Promise<void> {
+  if (shutdownPromise) return shutdownPromise;
+  shutdownPromise = (async () => {
+    console.log(`[watcher] ${signal} received; stopping active workflows, conversation turns, and local servers.`);
+    await Promise.allSettled([
+      runManager.shutdown(),
+      conversationManager.shutdown(),
+      statusWatcher.close(),
+      logsWatcher.close(),
+    ]);
+    for (const client of wss.clients) client.terminate();
+    const webSocketClose = new Promise<void>((resolveClose) => wss.close(() => resolveClose()));
+    const httpClose = new Promise<void>((resolveClose) => httpServer.close(() => resolveClose()));
+    httpServer.closeAllConnections();
+    await Promise.race([
+      Promise.all([webSocketClose, httpClose]),
+      new Promise<void>((resolveDeadline) => setTimeout(resolveDeadline, 5_000)),
+    ]);
+  })();
+  return shutdownPromise;
+}
+
+const SHUTDOWN_DEADLINE_MS = 16_000;
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    const exitCode = signal === 'SIGINT' ? 130 : 143;
+    const deadline = setTimeout(() => {
+      console.error(`[watcher] ${signal} shutdown deadline exceeded; forcing process exit.`);
+      process.exit(exitCode);
+    }, SHUTDOWN_DEADLINE_MS);
+    deadline.unref();
+    void shutdownWatcher(signal).then(
+      () => {
+        clearTimeout(deadline);
+        process.exit(exitCode);
+      },
+      (error) => {
+        clearTimeout(deadline);
+        console.error(`[watcher] ${signal} shutdown failed`, error);
+        process.exit(1);
+      },
+    );
+  });
+}

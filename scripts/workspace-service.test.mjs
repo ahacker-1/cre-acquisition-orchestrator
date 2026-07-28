@@ -119,6 +119,61 @@ try {
 
   const baseDeal = JSON.parse(readFileSync(join(projectRoot, 'config', 'deal.json'), 'utf8'))
 
+  assert.throws(
+    () => saveSourceDocument(context, 'demo-pass-001', {
+      fileName: 'private-rent-roll.csv',
+      mime: 'text/csv',
+      contentBase64: Buffer.from('Unit,Market Rent\n101,1500\n', 'utf8').toString('base64'),
+    }),
+    /Sample deals are read-only\. Create a new deal before uploading source documents\./,
+    'source uploads must not write operator files into shipped sample deals',
+  )
+  assert.equal(
+    existsSync(join(context.dataRoot, 'deals', 'demo-pass-001', 'documents')),
+    false,
+    'a rejected sample upload must not create a document directory',
+  )
+
+  const vacantUnitsDealId = 'test-vacant-unit-null-normalization'
+  const vacantUnitsProperty = { ...baseDeal.property }
+  delete vacantUnitsProperty.unitMix
+  saveUserDeal(context, {
+    deal: {
+      ...baseDeal,
+      dealId: vacantUnitsDealId,
+      dealName: 'Vacant Unit Null Normalization',
+      property: vacantUnitsProperty,
+    },
+    mode: 'draft',
+  })
+  const vacantUnitsDocument = saveSourceDocument(context, vacantUnitsDealId, {
+    fileName: 'rent-roll-vacant-units.csv',
+    mime: 'text/csv',
+    contentBase64: readFileSync(join(projectRoot, 'fixtures', 'parsers', 'rent-roll-vacant-units.csv')).toString('base64'),
+  }).document
+  const vacantUnitsResult = extractSourceDocument(context, vacantUnitsDealId, vacantUnitsDocument.documentId)
+  const vacantPreviewMix = vacantUnitsResult.extraction.fields.find((field) => field.path === 'property.unitMix.types')?.value
+  assert.ok(Array.isArray(vacantPreviewMix), 'vacant-unit fixture should expose unit mix evidence')
+  const vacantPreviewThreeBedroom = vacantPreviewMix.find((row) => row.type === '3BR/2BA')
+  assert.equal(vacantPreviewThreeBedroom.inPlaceRent, null, 'parser preview must retain the source null')
+
+  const vacantUnitsWorkspace = getDealWorkspace(context, vacantUnitsDealId)
+  const appliedVacantMix = vacantUnitsWorkspace.deal.deal.property.unitMix.types
+  const appliedThreeBedroom = appliedVacantMix.find((row) => row.type === '3BR/2BA')
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(appliedThreeBedroom, 'inPlaceRent'),
+    false,
+    'deal write must omit a null optional object property instead of violating the schema',
+  )
+  const approvedVacantMix = vacantUnitsWorkspace.approvedFields.fields
+    .find((field) => field.path === 'property.unitMix.types')?.value
+  assert.ok(Array.isArray(approvedVacantMix), 'approved evidence should retain the parser value')
+  assert.equal(
+    approvedVacantMix.find((row) => row.type === '3BR/2BA').inPlaceRent,
+    null,
+    'approved source evidence must preserve the original null even though the deal omits it',
+  )
+
   const filenameDealId = 'test-upload-filename-normalization'
   saveUserDeal(context, { deal: { ...baseDeal, dealId: filenameDealId, dealName: 'Upload Filename Normalization' }, mode: 'draft' })
   const suspiciousDocument = saveSourceDocument(context, filenameDealId, {

@@ -28,6 +28,7 @@ export interface IntakeSummary {
   documentCount: number
   reviewPendingCount: number
   appliedCount: number
+  blockedCount?: number
   blocked?: boolean
 }
 
@@ -65,8 +66,15 @@ const PHASE_KEY_BY_STAGE: Partial<Record<StageId, string>> = {
   closing: 'closing',
 }
 
+export function normalizeCheckpointStatus(status: string | null | undefined): string {
+  const normalized = (status ?? '').trim().toLowerCase().replace(/-/g, '_')
+  if (normalized === 'completed') return 'complete'
+  if (normalized === 'in_progress') return 'running'
+  return normalized
+}
+
 export function phaseStatusToStageStatus(status: PhaseStatus | string | undefined): StageStatus {
-  switch (status) {
+  switch (normalizeCheckpointStatus(status)) {
     case 'complete':
       return 'done'
     case 'running':
@@ -103,13 +111,14 @@ function deriveIntakeStage(intake?: IntakeSummary): SpineStage {
   let status: StageStatus = 'idle'
   let progress = 0
   if (intake && intake.documentCount > 0) {
-    const total = intake.appliedCount + intake.reviewPendingCount
+    const blockedCount = intake.blockedCount ?? 0
+    const total = intake.appliedCount + intake.reviewPendingCount + blockedCount
     progress = total > 0 ? Math.round((intake.appliedCount / total) * 100) : 0
-    if (intake.blocked) {
+    if (intake.blocked || blockedCount > 0) {
       status = 'blocked'
     } else if (intake.reviewPendingCount > 0) {
       status = 'live'
-    } else {
+    } else if (intake.appliedCount > 0) {
       status = 'done'
       progress = 100
     }
@@ -117,8 +126,12 @@ function deriveIntakeStage(intake?: IntakeSummary): SpineStage {
   return { id: 'intake', label: STAGE_LABELS.intake, status, progress }
 }
 
+export function isCompleteDealStatus(status: string | null | undefined): boolean {
+  return /^(complete|completed)$/i.test(status ?? '')
+}
+
 function deriveIcStage(deal: DealCheckpoint, ic?: IcSummary): SpineStage {
-  const dealComplete = /^(complete|completed)$/i.test(deal.status ?? '')
+  const dealComplete = isCompleteDealStatus(deal.status)
   let status: StageStatus = 'idle'
   let progress = 0
   if (ic?.complete || dealComplete) {
@@ -181,9 +194,19 @@ export const INGESTION_TEAM: StageTeamMember[] = [
 export function intakeSummaryFromDocuments(documents: SourceDocument[]): IntakeSummary {
   let appliedCount = 0
   let reviewPendingCount = 0
+  let blockedCount = 0
   for (const doc of documents) {
     if (doc.status === 'applied' || doc.status === 'approved') {
       appliedCount += 1
+    } else if (
+      doc.status === 'parse_failed' ||
+      doc.status === 'parser-unavailable' ||
+      doc.status === 'unsupported' ||
+      doc.extractionStatus === 'parse_failed' ||
+      doc.extractionStatus === 'parser-unavailable' ||
+      doc.extractionStatus === 'unsupported'
+    ) {
+      blockedCount += 1
     } else if (
       doc.status === 'review_ready' ||
       doc.status === 'extracted' ||
@@ -193,11 +216,14 @@ export function intakeSummaryFromDocuments(documents: SourceDocument[]): IntakeS
     ) {
       reviewPendingCount += 1
     }
-    // parse_failed / unsupported / parser-unavailable / rejected / waived: resolved-but-not-applied
+    // Rejected and waived evidence are intentional operator exclusions. They do not make Intake
+    // complete on their own, but they also do not block a usable, otherwise-complete package.
   }
   return {
     documentCount: documents.length,
     reviewPendingCount,
     appliedCount,
+    blockedCount,
+    blocked: blockedCount > 0,
   }
 }

@@ -5,7 +5,10 @@ import {
   IconCircleCheck,
   IconFileDescription,
 } from '@tabler/icons-react'
-import ProofPathStrip, { type ProofPathStep } from './ProofPathStrip'
+import ProofPathStrip from './ProofPathStrip'
+import { dealArtifactHref } from '../lib/artifactUrl'
+import { buildPackageProofSteps, sourceReadinessPresentation } from '../lib/completionModel'
+import { isCompleteDealStatus, normalizeCheckpointStatus } from '../lib/stageModel'
 import type {
   DealCheckpoint,
   DocumentArtifact,
@@ -36,8 +39,6 @@ interface PhaseOutcome {
   key: string
   phase: PhaseInfo
 }
-
-type ProofCoverage = NonNullable<NonNullable<DealCheckpoint['inputSnapshot']>['sourceCoverage']>
 
 function displayLabel(value: string): string {
   return value
@@ -87,44 +88,6 @@ function documentTone(docType: string): string {
   return 'border-white/10 text-gray-400'
 }
 
-function buildPackageProofSteps(
-  sourceCoverage: ProofCoverage | undefined,
-  documentArtifacts: DocumentArtifact[],
-  dealCheckpoint: DealCheckpoint | null,
-): ProofPathStep[] {
-  const sourceDocCount = sourceCoverage?.sourceDocumentCount ?? 0
-  const approvedFieldCount = sourceCoverage?.approvedFieldCount ?? 0
-  const workpaperCount = documentArtifacts.length
-  const packageReady = Boolean(dealCheckpoint && /^(complete|completed)$/i.test(dealCheckpoint.status))
-  const packageDetail = packageReady ? 'Complete' : workpaperCount > 0 ? 'In progress' : 'Pending'
-  return [
-    {
-      key: 'source-doc',
-      label: 'Source doc',
-      status: sourceDocCount > 0 ? 'ready' : 'pending',
-      detail: sourceDocCount > 0 ? `${sourceDocCount} captured` : 'Pending',
-    },
-    {
-      key: 'approved-field',
-      label: 'Approved field',
-      status: approvedFieldCount > 0 ? 'ready' : 'pending',
-      detail: approvedFieldCount > 0 ? `${approvedFieldCount} approved` : 'Pending',
-    },
-    {
-      key: 'agent-workpaper',
-      label: 'Agent workpaper',
-      status: workpaperCount > 0 ? 'ready' : 'pending',
-      detail: workpaperCount > 0 ? `${workpaperCount} filed` : 'Pending',
-    },
-    {
-      key: 'ic-package',
-      label: 'IC package',
-      status: packageReady ? 'ready' : 'pending',
-      detail: packageDetail,
-    },
-  ]
-}
-
 function finalRecommendation(
   dealCheckpoint: DealCheckpoint | null,
   decisionEvents: StoryEvent[],
@@ -135,14 +98,18 @@ function finalRecommendation(
   if (explicitEvent?.verdict) return explicitEvent.verdict
 
   const phases = dealCheckpoint ? Object.values(dealCheckpoint.phases) : []
-  const failed = phases.some((phase) => phase.status === 'failed' || phase.status === 'blocked')
+  const failed = phases.some((phase) => {
+    const status = normalizeCheckpointStatus(phase.status)
+    return status === 'failed' || status === 'blocked'
+  })
   if (failed) return 'Needs review before proceeding'
-  const hasSkipped = phases.some((phase) => phase.status === 'skipped')
-  if (hasSkipped && dealCheckpoint?.status === 'complete') {
+  const hasSkipped = phases.some((phase) => normalizeCheckpointStatus(phase.status) === 'skipped')
+  if (hasSkipped && isCompleteDealStatus(dealCheckpoint?.status)) {
     return 'Scoped workflow completed. Review the package outputs before expanding to a full closing run.'
   }
-  const allComplete = phases.length > 0 && phases.every((phase) => phase.status === 'complete')
+  const allComplete = phases.length > 0 && phases.every((phase) => isCompleteDealStatus(phase.status))
   if (allComplete) return 'Proceed with committee package review'
+  if (isCompleteDealStatus(dealCheckpoint?.status)) return 'Completed package ready for operator review'
   return 'Package in progress'
 }
 
@@ -154,7 +121,15 @@ function issueText(issue: { description?: string; message?: string; category?: s
 // workpaper (the phase that raised it) and, where one exists, the workpaper artifact
 // + its stored source path. Expanding reveals the origin so an operator can trace
 // the flag without leaving the IC package view.
-function RedFlagDrilldown({ entry }: { entry: RedFlagDrilldownEntry }) {
+function RedFlagDrilldown({
+  entry,
+  packageComplete,
+  dealId,
+}: {
+  entry: RedFlagDrilldownEntry
+  packageComplete: boolean
+  dealId: string
+}) {
   const [open, setOpen] = useState(false)
   const { flag, phase, workpaper } = entry
 
@@ -204,7 +179,9 @@ function RedFlagDrilldown({ entry }: { entry: RedFlagDrilldownEntry }) {
           <p className="mt-2 max-w-2xl leading-5 text-gray-500">
             {workpaper
               ? `${displayLabel(workpaper.docType)} filed by ${displayLabel(workpaper.agent)} in ${displayLabel(workpaper.phase)}.`
-              : `Raised by the ${phase} specialist agents. No filed workpaper artifact is available yet.`}
+              : packageComplete
+                ? `Raised by the ${phase} specialist agents. This completed scope did not file a separate originating workpaper.`
+                : `Raised by the ${phase} specialist agents. No filed workpaper artifact is available yet.`}
           </p>
           {flag.owner && (
             <p className="mt-3 text-gray-400">
@@ -217,9 +194,20 @@ function RedFlagDrilldown({ entry }: { entry: RedFlagDrilldownEntry }) {
             </p>
           )}
           {workpaper?.path && (
-            <p className="mt-3 break-all border-t border-white/10 pt-3 font-mono text-[11px] text-gray-600" data-testid={`red-flag-origin-source-${entry.id}`}>
-              {workpaper.path}
-            </p>
+            <div className="mt-3 border-t border-white/10 pt-3">
+              <p className="break-all font-mono text-[11px] text-gray-600" data-testid={`red-flag-origin-source-${entry.id}`}>
+                {workpaper.path}
+              </p>
+              <a
+                data-testid={`red-flag-origin-open-${entry.id}`}
+                href={dealArtifactHref(dealId, workpaper.path)}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex min-h-9 items-center border-b border-cre-accent/60 text-[10px] font-semibold uppercase tracking-[0.12em] text-cre-accent hover:border-white hover:text-white"
+              >
+                Open originating workpaper
+              </a>
+            </div>
           )}
         </div>
       )}
@@ -273,8 +261,17 @@ function CompletionPackage({
       outcome.phase.outputs.redFlags.map((flag, index) => {
         const phaseKey = outcome.key
         const phaseLabel = outcome.phase.name || displayLabel(phaseKey)
-        const workpaper = packageArtifacts.find((artifact) => artifact.phase === phaseKey)
-          ?? packageArtifacts.find((artifact) => normalizePhase(artifact.phase) === normalizePhase(phaseKey))
+        const phaseArtifacts = packageArtifacts.filter(
+          (artifact) => normalizePhase(artifact.phase) === normalizePhase(phaseKey),
+        )
+        const owner = flag.owner ? normalizePhase(flag.owner) : null
+        const workpaper = (owner
+          ? phaseArtifacts.find((artifact) =>
+              normalizePhase(artifact.agent) === owner && normalizePhase(artifact.docType) === 'workpaper')
+            ?? phaseArtifacts.find((artifact) => normalizePhase(artifact.agent) === owner)
+          : undefined)
+          ?? phaseArtifacts.find((artifact) => normalizePhase(artifact.docType) === 'workpaper')
+          ?? phaseArtifacts[0]
         return {
           id: `${phaseKey}-${index}`,
           phaseKey,
@@ -308,12 +305,14 @@ function CompletionPackage({
   const recommendation = finalRecommendation(dealCheckpoint, decisionEvents)
   const sourceCoverage = dealCheckpoint?.inputSnapshot?.sourceCoverage
   const sourceReadiness = dealCheckpoint?.inputSnapshot?.readiness
+  const sourceReadinessView = sourceReadinessPresentation(sourceReadiness)
+  const packageComplete = isCompleteDealStatus(dealCheckpoint?.status)
   const nextDecision = (() => {
     if (!dealCheckpoint) return 'Run a workflow to assemble the first package.'
     if (sourceReadiness?.blockers?.length) return 'Resolve source-backed launch blockers before relying on this package.'
     if (redFlagCount > 0) return 'Assign ownership for red flags before advancing the acquisition.'
     if (dataGapCount > 0) return 'Close open data gaps, then refresh the affected workflow.'
-    if (dealCheckpoint.status === 'complete') return 'Review with IC or expand the workflow scope as needed.'
+    if (isCompleteDealStatus(dealCheckpoint.status)) return 'Review with IC or expand the workflow scope as needed.'
     return 'Let the active workflow finish, then review phase outcomes.'
   })()
 
@@ -418,8 +417,8 @@ function CompletionPackage({
                 Run snapshot, approved extraction fields, and source document coverage captured before launch.
               </p>
             </div>
-            <span className={`status-badge ${statusClass(sourceReadiness?.status || 'pending')}`}>
-              {displayLabel(sourceReadiness?.status || 'not captured')}
+            <span className={`status-badge ${statusClass(sourceReadinessView.status)}`}>
+              {displayLabel(sourceReadinessView.label)}
             </span>
           </div>
           <div className="mt-6 grid border-y border-white/10 sm:grid-cols-2 lg:grid-cols-4">
@@ -439,7 +438,9 @@ function CompletionPackage({
               <div className={`font-serif text-2xl ${(sourceCoverage.missingApprovedFieldCount ?? 0) > 0 ? 'text-cre-warning' : 'text-white'}`}>
                 {sourceCoverage.missingApprovedFieldCount ?? 0}
               </div>
-              <div className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">Missing Fields</div>
+              <div className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                {packageComplete ? 'Unresolved At Completion' : 'Missing Fields'}
+              </div>
             </div>
           </div>
           {dealCheckpoint.inputSnapshot?.path && (
@@ -517,7 +518,12 @@ function CompletionPackage({
           </p>
           <div className="mt-5 border-y border-white/10">
             {redFlagDrilldowns.map((entry) => (
-              <RedFlagDrilldown key={entry.id} entry={entry} />
+              <RedFlagDrilldown
+                key={entry.id}
+                entry={entry}
+                packageComplete={packageComplete}
+                dealId={dealCheckpoint.dealId}
+              />
             ))}
           </div>
         </section>
@@ -571,7 +577,9 @@ function CompletionPackage({
             Findings
           </h3>
           {aggregateFindings.length === 0 ? (
-            <p className="mt-5 text-sm text-gray-500">No findings have been published yet.</p>
+            <p className="mt-5 text-sm text-gray-500">
+              {packageComplete ? 'This completed scope did not publish separate findings.' : 'No findings have been published yet.'}
+            </p>
           ) : (
             <ul className="mt-5 border-y border-white/10">
               {aggregateFindings.map((finding) => (
@@ -592,7 +600,9 @@ function CompletionPackage({
             Document Manifest
           </p>
           {packageArtifacts.length === 0 ? (
-            <p className="mt-5 text-sm text-gray-500">No workpapers have been generated yet.</p>
+            <p className="mt-5 text-sm text-gray-500">
+              {packageComplete ? 'This completed scope did not file separate workpapers.' : 'No workpapers have been generated yet.'}
+            </p>
           ) : (
             <div className="mt-5 divide-y divide-white/10 border-y border-white/10">
               {packageArtifacts.map((artifact) => (
@@ -611,7 +621,18 @@ function CompletionPackage({
                       <p className="mt-1 text-xs leading-5 text-gray-500">{artifact.summary}</p>
                     )}
                     {artifact.path && (
-                      <p className="mt-2 break-all font-mono text-[11px] text-gray-600">{artifact.path}</p>
+                      <div className="mt-2">
+                        <p className="break-all font-mono text-[11px] text-gray-600">{artifact.path}</p>
+                        <a
+                          data-testid={`package-workpaper-open-${artifact.docId}`}
+                          href={dealArtifactHref(dealCheckpoint.dealId, artifact.path)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-flex min-h-8 items-center border-b border-cre-accent/60 text-[10px] font-semibold uppercase tracking-[0.12em] text-cre-accent hover:border-white hover:text-white"
+                        >
+                          {normalizePhase(artifact.docType) === 'input_snapshot' ? 'Open run snapshot' : 'Open workpaper'}
+                        </a>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -627,7 +648,9 @@ function CompletionPackage({
             Decision Log
           </h3>
           {decisionEvents.length === 0 ? (
-            <p className="mt-5 text-sm text-gray-500">No decision events have been emitted yet.</p>
+            <p className="mt-5 text-sm text-gray-500">
+              {packageComplete ? 'This completed scope did not emit separate decision events.' : 'No decision events have been emitted yet.'}
+            </p>
           ) : (
             <div className="mt-5 divide-y divide-white/10 border-y border-white/10">
               {decisionEvents.map((event) => (
@@ -669,7 +692,9 @@ function CompletionPackage({
               Resume Instructions
             </div>
             <p className="mt-3 text-sm leading-6 text-gray-300">
-              {dealCheckpoint.resumeInstructions || 'No resume instructions published.'}
+              {dealCheckpoint.resumeInstructions || (packageComplete
+                ? 'No additional resume instruction was included for this completed scope.'
+                : 'No resume instructions published.')}
             </p>
           </div>
         </div>

@@ -156,3 +156,27 @@ Agent communication events may include `schemaVersion`, `phase`, `fromPhase`, `t
 }
 ```
 
+## Conversation Envelope
+
+Persistent agent threads use a separate live envelope. REST thread history is authoritative after reload or reconnect; this message only advances the open interface in real time.
+
+```json
+{
+  "type": "conversation",
+  "event": {
+    "eventId": "9ce5d85d-8ea0-4c38-a376-7aa7eb1e6be7",
+    "seq": 4,
+    "createdAt": "2026-07-28T18:00:00.000Z",
+    "dealId": "parkview-2026-001",
+    "threadId": "208a1bf9-d52d-4498-9ac1-e52056743c49",
+    "agentId": "rent-roll-analyst",
+    "turnId": "46a1294e-dcde-4421-af33-7df043fb5b08",
+    "activity": {
+      "kind": "reading",
+      "label": "Inspecting source materials"
+    }
+  }
+}
+```
+
+Events may include a current `thread`, `turn`, or completed `message`. Activity kinds are `queued`, `reading`, `analyzing`, `tool`, `answering`, `completed`, `failed`, `cancelled`, and `session-reset`. Raw runtime payloads, hidden reasoning, tool arguments, command output, absolute paths, and runtime session IDs are never broadcast.

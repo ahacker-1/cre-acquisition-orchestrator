@@ -4,6 +4,87 @@ All notable changes to this project are documented here.
 
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/) and uses semantic versioning for tagged public releases.
 
+## [3.6.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.5.0...v3.6.0) (2026-07-28)
+
+### Conversation Desk + Persistent Agent Conversations
+
+Makes a source-backed conversation the dashboard's front door. Operators can choose a deal, choose
+one of the 31 registered AI roles, select the deal documents in scope, and continue a retained
+thread without losing the lifecycle workspace, workpapers, or evidence trail.
+
+### Features
+
+* **Chat-first Conversation Desk:** replaces the workspace-first opening state with a guided
+  `Choose a deal -> Choose a specialist -> Ask` flow, editable starter questions, recent-thread
+  resumption, clear New Deal and document-upload actions, and a direct route into the full deal
+  workspace.
+* **Persistent, deal-scoped threads:** stores thread metadata, append-only messages and events, turn
+  state, selected document evidence, and validated citations under the selected deal. The exact
+  `deal`, `agent`, and `thread` selection is reflected in the URL for deep links, reload recovery,
+  browser Back/Forward, and workspace round trips.
+* **Source-backed specialist answers:** lets the operator attach current deal documents, watch
+  compact `queued`/`reading`/`analyzing`/`answering` activity, expand server-derived citations, stop
+  an active turn, and retry a cancelled or failed request while preserving the original prompt and
+  document scope.
+* **Searchable specialist picker:** replaces the browser-native dropdown with a bounded dark-theme
+  picker across all 31 agent identities, including search, phase/kind context, selected-state
+  feedback, click-away dismissal, and Arrow/Home/End/Enter/Escape keyboard behavior.
+* **Conversation support inside the workspace:** upgrades the specialist panel and team rail to
+  retain follow-ups, attachments, live status, citations, recorded workflow activity, and filed
+  workpapers in one deal context.
+
+### Reliability, Safety, and UX Fixes
+
+* Adds a bounded conversation queue separate from workflow runs, with one active turn per thread,
+  configurable local concurrency, idempotent message submission, precise cancellation, timeout and
+  restart recovery, and durable failure states that remain retryable after reload.
+* Runs document conversations from a fresh read-only evidence root with shell, browser, app,
+  plugin, MCP, memory, skill, and web capabilities disabled. The server-built prompt contains the
+  selected documents' extracted evidence, current deal record, underwriting criteria, approved
+  fields, selected role guide, recent transcript, and operator question. Browser responses exclude
+  runtime session IDs and raw model reasoning; unknown agents, unsafe IDs, cross-deal documents,
+  oversized messages, and same-thread concurrency are rejected before execution.
+* Fixes first-run ambiguity by keeping the root route fresh, numbering the starting steps, creating
+  a thread only on first send, and giving empty-library, no-document, disabled-conversation,
+  disconnected, and read-only sample states an explicit next action.
+* Fixes deal/thread restoration races by waiting for the requested deal's conversation catalog,
+  and preserves the exact selection through deep links, Back/Forward navigation, New Deal, and full
+  workspace round trips.
+* Rebalances the conversation canvas for desktop and mobile, prevents horizontal overflow, keeps
+  the composer and document scope reachable, strengthens speaker/citation hierarchy, and improves
+  accessible names, live status, focus handling, and specialist-picker keyboard semantics.
+
+### Documentation
+
+* Documents the conversation REST API, WebSocket activity envelope, client/server architecture,
+  local runtime controls, isolation boundary, and first-deal/proof-path changes.
+* Updates the README walkthrough around the chat-first start and adds current screenshots for the
+  Conversation Desk, searchable specialist picker, and retained cited conversation.
+* Refreshes `design-qa.md` with first-run, workflow, responsive, browser-navigation, accessibility,
+  live-state, cancel/retry, and empty-state audit evidence.
+* Adds [RELEASE_NOTES_v3.6.0.md](RELEASE_NOTES_v3.6.0.md) and advances the supported release line in
+  `SECURITY.md`.
+
+### Release Gates
+
+Run and pass these gates before creating the `v3.6.0` tag and GitHub release:
+
+* `npm run verify:v3`
+* `npm run release:check`
+* `npm run validate:docs`
+* `npm run validate:guides`
+* `npm test`
+* `npm run test:workspace`
+* `npm run test:conversations`
+* `npm --prefix dashboard run typecheck`
+* `npm --prefix dashboard run build`
+* root and dashboard dependency audits at the repository's release threshold
+* focused Conversation Desk and retained-conversation Playwright coverage on desktop and mobile
+* final README link/image validation and clean-clone release smoke
+
+Release verification completed on 2026-07-28: the local v3 core gate passed, and the release was
+published only after both GitHub CI jobs passed on the release pull request.
+
 ## [3.5.0](https://github.com/ahacker-1/cre-acquisition-orchestrator/compare/v3.4.0...v3.5.0) (2026-07-15)
 
 Delivers the Architectural Graphite product facelift across the full acquisition journey and closes

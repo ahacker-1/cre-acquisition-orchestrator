@@ -187,41 +187,6 @@ test('summons an agent from the Your Team rail and replays its recorded work (of
   await expect(panel).toBeHidden()
 })
 
-test('single-agent Codex follow-up keeps live web search enabled', async ({ page, request }) => {
-  await openSeededDealAtUnderwriting(page, request, 'codex')
-
-  const railAgent = page.getByTestId(`team-agent-${PANEL_AGENT_ID}`)
-  await expect(railAgent).toBeVisible()
-  await railAgent.click()
-
-  const panel = page.getByTestId('agent-panel')
-  await expect(panel).toBeVisible()
-  await expect(panel.getByRole('heading', { name: PANEL_AGENT_NAME })).toBeVisible()
-  const input = page.getByTestId('agent-followup-input')
-  await expect(input).toBeEnabled()
-
-  let capturedBody: Record<string, unknown> | null = null
-  await page.route('**/api/workflows/full-acquisition-review/launch', async (route) => {
-    capturedBody = route.request().postDataJSON() as Record<string, unknown>
-    await route.fulfill({
-      status: 202,
-      contentType: 'application/json',
-      body: JSON.stringify({ runId: 'run-single-agent-live', status: 'starting', state: 'STARTING' }),
-    })
-  })
-
-  await input.fill('Refresh lender terms with current market context')
-  await input.press('Enter')
-
-  await expect.poll(() => capturedBody).not.toBeNull()
-  expect(capturedBody!.runtimeProvider).toBe('codex')
-  expect(capturedBody!.codexAgents).toEqual([PANEL_AGENT_ID])
-  expect(capturedBody!.codexMaxAgents).toBe(1)
-  expect(capturedBody!.codexSearch).toBe(true)
-  expect(capturedBody!.reset).toBe(false)
-  expect(capturedBody!.notes).toBe('Refresh lender terms with current market context')
-})
-
 test('a command-bar chip opens the right agent panel', async ({ page, request }) => {
   await openSeededDealAtUnderwriting(page, request)
 

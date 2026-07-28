@@ -129,7 +129,17 @@ export default function QuickDealCreate({
 
   useEffect(() => {
     if (!isOpen) return
-    modalRef.current?.querySelector<HTMLInputElement>('[data-testid="quick-deal-name-input"]')?.focus()
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const frame = window.requestAnimationFrame(() => {
+      modalRef.current?.querySelector<HTMLInputElement>('[data-testid="quick-deal-name-input"]')?.focus()
+    })
+    return () => {
+      window.cancelAnimationFrame(frame)
+      document.body.style.overflow = previousOverflow
+      queueMicrotask(() => previouslyFocused?.focus?.())
+    }
   }, [isOpen])
 
   if (!isOpen) return null
@@ -241,12 +251,16 @@ export default function QuickDealCreate({
         'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
       ),
     ).filter((element) => !element.hasAttribute('aria-hidden'))
-    if (focusable.length === 0) return
+    if (focusable.length === 0) {
+      event.preventDefault()
+      event.currentTarget.focus()
+      return
+    }
 
     const first = focusable[0]
     const last = focusable[focusable.length - 1]
     const active = document.activeElement
-    if (event.shiftKey && active === first) {
+    if (event.shiftKey && (active === first || active === event.currentTarget)) {
       event.preventDefault()
       last.focus()
     } else if (!event.shiftKey && active === last) {
@@ -265,6 +279,7 @@ export default function QuickDealCreate({
           aria-modal="true"
           aria-labelledby="quick-deal-title"
           aria-describedby="quick-deal-description"
+          tabIndex={-1}
           onKeyDown={handleDialogKeyDown}
           className="my-4 flex max-h-[calc(100vh-2rem)] w-full max-w-xl flex-col border border-cre-border bg-cre-surface shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:my-6 sm:max-h-[calc(100vh-3rem)]"
         >
@@ -297,11 +312,17 @@ export default function QuickDealCreate({
             <div className="border border-white/10 bg-black p-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-semibold uppercase text-gray-500">Upload Queue</p>
-                <span className="text-xs font-semibold uppercase text-gray-500" data-testid="quick-upload-progress">
+                <span
+                  className="text-xs font-semibold uppercase text-gray-500"
+                  data-testid="quick-upload-progress"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
                   {progressText}
                 </span>
               </div>
-              <ul className="mt-3 space-y-2 text-sm text-gray-300">
+              <ul className="mt-3 space-y-2 text-sm text-gray-300" aria-label="Upload queue" aria-busy={working}>
                 {uploadQueue.map((item) => (
                   <li
                     key={item.id}
@@ -326,7 +347,9 @@ export default function QuickDealCreate({
               )}
             </div>
             {error && (
-              <p className="border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-100">{error}</p>
+              <p className="border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-100" role="alert">
+                {error}
+              </p>
             )}
           </div>
           <div className="flex flex-col-reverse gap-3 border-t border-cre-border px-6 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">

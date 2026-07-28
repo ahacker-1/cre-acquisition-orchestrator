@@ -12,12 +12,12 @@ From the repo root:
 
 ```powershell
 npm install
-npm run setup
+npm run setup -- --skip-codex-install --skip-login
 ```
 
-This verifies Node/npm, installs dashboard dependencies, prepares the local parser `.venv` with `pandas`, `openpyxl`, `pdfplumber`, and `PyMuPDF`, and tries to prepare the optional Codex live-agent runtime. If Codex install or login is skipped, the local dashboard and deterministic sample still work.
+This verifies Node/npm, installs dashboard dependencies, and prepares the local parser `.venv` with `pandas`, `openpyxl`, `pdfplumber`, and `PyMuPDF`. It deliberately skips the optional Codex installation and ChatGPT login so the local document-review path has no account setup step.
 
-If you want live AI agents, choose **Sign in with ChatGPT** during the Codex login flow. For a strict live-agent setup check, run:
+If you want live agent chat or Codex-backed workflows, opt in separately. The command below may install Codex globally and starts the ChatGPT login flow when needed:
 
 ```powershell
 npm run setup -- --require-codex
@@ -45,13 +45,13 @@ Open:
 http://localhost:5173
 ```
 
-The dashboard is the default first-deal path. You do not need to edit `config/deal.json` to create a workspace from source documents.
+The dashboard opens on the chat-first **Conversation Desk**. You do not need to edit `config/deal.json` to create a workspace from source documents. Live chat requires the optional Codex / ChatGPT setup from Step 1; document upload, extraction review, and the deterministic demo do not.
 
 ---
 
 ## Step 3: Drop a Local Source Package
 
-Use the front door to upload the files you actually have:
+From the Conversation Desk, click **New Deal**, then **Upload Source Package**. Upload the files you actually have:
 
 - rent roll
 - T12 or trailing operating statement
@@ -135,7 +135,7 @@ Runtime files remain local and are ignored by git.
 
 ## Parkview Sample Fallback
 
-If you want a deterministic no-upload walkthrough, click **Start Guided Demo** or run:
+If you want a deterministic no-upload walkthrough, click **New Deal**, then **Start Guided Demo**, or run:
 
 ```powershell
 npm run demo

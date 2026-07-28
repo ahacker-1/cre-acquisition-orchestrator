@@ -1,30 +1,42 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import {
   IconAdjustmentsHorizontal,
+  IconArrowLeft,
   IconBuildingEstate,
   IconFolder,
+  IconMessages,
   IconPlayerPlay,
   IconPlayerStop,
   IconPlus,
   IconSparkles,
   IconX,
 } from '@tabler/icons-react'
-import { useCheckpointData } from './hooks/useCheckpointData'
+import { normalizeDealCheckpoint, useCheckpointData } from './hooks/useCheckpointData'
 import ErrorBoundary from './components/ErrorBoundary'
 import DealIntakeWizard from './components/DealIntakeWizard'
 import DropZoneHero, { type OutcomeIntent } from './components/DropZoneHero'
 import QuickDealCreate from './components/QuickDealCreate'
 import SavedDealsPanel from './components/SavedDealsPanel'
 import { useDealLibrary } from './hooks/useDealLibrary'
+import { conversationPathForDeal } from './lib/conversationNavigation'
 import { uploadDealDocument } from './lib/documentUpload'
 import type { DealCheckpoint, PhaseInfo } from './types/checkpoint'
 import type { DealLibraryItem, DealRecordResponse } from './types/deals'
 
 type WorkspaceInitialTab = 'mission' | 'documents' | 'agents' | 'workpapers' | 'package' | 'advanced'
+type WorkflowLauncherStep = 'deal' | 'workflow' | 'review'
 
 const GUIDED_DEMO_DEAL_ID = 'parkview-2026-001'
+const ConversationHome = lazy(() => import('./components/ConversationHome'))
 const DealWorkspace = lazy(() => import('./components/DealWorkspace'))
 const WorkflowLauncher = lazy(() => import('./components/WorkflowLauncher'))
+
+function syncConversationUrlToDeal(dealId: string): void {
+  if (typeof window === 'undefined') return
+  const nextPath = conversationPathForDeal(window.location.href, dealId)
+  const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  if (nextPath !== currentPath) window.history.replaceState(null, '', nextPath)
+}
 
 function RouteSkeleton({ label }: { label: string }) {
   return (
@@ -80,12 +92,15 @@ function pendingPhase(name: string, totalAgents: number): PhaseInfo {
 function checkpointFromDealRecord(record: DealRecordResponse): DealCheckpoint {
   const property = asObject(record.deal.property)
   if (record.checkpoint) {
-    const checkpointProperty = asObject(record.checkpoint.property)
-    return {
-      ...record.checkpoint,
-      dealId: record.checkpoint.dealId || record.item.dealId,
-      dealName: record.checkpoint.dealName || record.item.dealName,
+    const rawCheckpoint = asObject(record.checkpoint)
+    const checkpointProperty = asObject(rawCheckpoint.property)
+    const rawPhases = asObject(rawCheckpoint.phases)
+    const normalized = normalizeDealCheckpoint({
+      ...rawCheckpoint,
+      dealId: asString(rawCheckpoint.dealId, record.item.dealId),
+      dealName: asString(rawCheckpoint.dealName, record.item.dealName),
       property: {
+        ...checkpointProperty,
         address: asString(checkpointProperty.address, asString(property.address, record.item.address || '')),
         city: asString(checkpointProperty.city, asString(property.city, record.item.city || '')),
         state: asString(checkpointProperty.state, asString(property.state, record.item.state || '')),
@@ -93,12 +108,12 @@ function checkpointFromDealRecord(record: DealRecordResponse): DealCheckpoint {
         totalUnits: asNumber(checkpointProperty.totalUnits, asNumber(property.totalUnits, record.item.totalUnits ?? 0)),
         askingPrice: asNumber(checkpointProperty.askingPrice, asNumber(asObject(record.deal.financials).askingPrice, record.item.askingPrice ?? 0)),
       },
-      status: record.checkpoint.status || record.item.pipelineStatus || record.item.saveState,
-      workflowName: record.checkpoint.workflowName || 'Deal Workspace',
-      overallProgress: asNumber(record.checkpoint.overallProgress, 0),
-      startedAt: asString(record.checkpoint.startedAt, record.item.createdAt || record.item.updatedAt),
-      lastUpdatedAt: asString(record.checkpoint.lastUpdatedAt, record.item.updatedAt),
-      phases: record.checkpoint.phases || {
+      status: asString(rawCheckpoint.status, record.item.pipelineStatus || record.item.saveState),
+      workflowName: asString(rawCheckpoint.workflowName, 'Deal Workspace'),
+      overallProgress: asNumber(rawCheckpoint.overallProgress, 0),
+      startedAt: asString(rawCheckpoint.startedAt, record.item.createdAt || record.item.updatedAt),
+      lastUpdatedAt: asString(rawCheckpoint.lastUpdatedAt, record.item.updatedAt),
+      phases: Object.keys(rawPhases).length > 0 ? rawPhases : {
         dueDiligence: pendingPhase('Due Diligence', 7),
         underwriting: pendingPhase('Underwriting', 3),
         financing: pendingPhase('Financing', 3),
@@ -106,8 +121,9 @@ function checkpointFromDealRecord(record: DealRecordResponse): DealCheckpoint {
         closing: pendingPhase('Closing', 2),
       },
       resumeInstructions:
-        record.checkpoint.resumeInstructions || 'Review source documents, phase outcomes, and the IC package.',
-    }
+        asString(rawCheckpoint.resumeInstructions, 'Review source documents, phase outcomes, and the IC package.'),
+    })
+    if (normalized) return normalized
   }
   return {
     dealId: record.item.dealId,
@@ -176,6 +192,7 @@ export default function App() {
     logEntries,
     storyEvents,
     documentArtifacts,
+    conversationEvents,
     connected,
     reconnectAttempt,
     reconnectIn,
@@ -185,6 +202,8 @@ export default function App() {
     stopRun,
     refreshRunStatus,
   } = useCheckpointData()
+  const overlayDialogRef = useRef<HTMLDivElement | null>(null)
+  const overlayOpenerRef = useRef<HTMLElement | null>(null)
   const {
     deals,
     suggestedDealId,
@@ -199,6 +218,7 @@ export default function App() {
   const [wizardOpen, setWizardOpen] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [workflowOpen, setWorkflowOpen] = useState(false)
+  const [workflowInitialStep, setWorkflowInitialStep] = useState<WorkflowLauncherStep>('deal')
   const [editingDealId, setEditingDealId] = useState<string | null>(null)
   const [launchingDealId, setLaunchingDealId] = useState<string | null>(null)
   const [libraryError, setLibraryError] = useState<string | null>(null)
@@ -210,7 +230,12 @@ export default function App() {
   const [quickCreateFiles, setQuickCreateFiles] = useState<File[]>([])
   const [quickCreateIntent, setQuickCreateIntent] = useState<OutcomeIntent>('ic-package')
   const [quickCreateGoal, setQuickCreateGoal] = useState('Build an IC-ready acquisition package')
-  const [frontDoorPinned, setFrontDoorPinned] = useState(false)
+  const [frontDoorPinned, setFrontDoorPinned] = useState(true)
+  const [homeMode, setHomeMode] = useState<'conversation' | 'new-deal'>('conversation')
+  const [conversationHomeDealId, setConversationHomeDealId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    return new URLSearchParams(window.location.search).get('deal')
+  })
 
   // Demo-friendly: Default to Pipeline tab, auto-expand relevant sections
   const runActive = runStatus.state === 'STARTING' || runStatus.state === 'RUNNING' || runStatus.state === 'STOPPING'
@@ -248,17 +273,32 @@ export default function App() {
     return 'core-plus'
   }
 
-  function openUploadFrontDoor(): void {
+  function openConversationHome(dealId?: string): void {
     setLibraryError(null)
     setFrontDoorPinned(true)
     setWorkspaceCheckpoint(null)
     setWorkspaceInitialTab('documents')
     setGuidedDemoAutoStart(false)
     setFrontDoorOpen(true)
+    setHomeMode('conversation')
+    if (dealId) {
+      setConversationHomeDealId(dealId)
+      syncConversationUrlToDeal(dealId)
+    }
     setLibraryOpen(false)
     setWorkflowOpen(false)
     setWizardOpen(false)
     scrollToPageTop()
+  }
+
+  function openNewDeal(): void {
+    openConversationHome()
+    setHomeMode('new-deal')
+  }
+
+  function openWorkflowControls(initialStep: WorkflowLauncherStep = 'deal'): void {
+    setWorkflowInitialStep(initialStep)
+    setWorkflowOpen(true)
   }
 
   function openEditDealWizard(dealId: string): void {
@@ -272,6 +312,7 @@ export default function App() {
 
   async function openDealWorkspace(dealId: string, section: WorkspaceInitialTab = 'documents'): Promise<boolean> {
     setLibraryError(null)
+    setConversationHomeDealId(dealId)
     setFrontDoorPinned(false)
     setFrontDoorOpen(false)
     setLibraryOpen(false)
@@ -279,6 +320,7 @@ export default function App() {
     setWizardOpen(false)
     try {
       const record = await loadDeal(dealId)
+      syncConversationUrlToDeal(dealId)
       setWorkspaceCheckpoint(checkpointFromDealRecord(record))
       setWorkspaceInitialTab(section)
       scrollToPageTop()
@@ -310,10 +352,16 @@ export default function App() {
 
   async function handleQuickDealCreated(dealId: string): Promise<void> {
     setQuickCreateFiles([])
-    setFrontDoorPinned(false)
-    setFrontDoorOpen(false)
     await refreshDeals()
-    await openDealWorkspace(dealId, 'documents')
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('deal', dealId)
+      url.searchParams.delete('agent')
+      url.searchParams.delete('thread')
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+    }
+    const opened = await openDealWorkspace(dealId, 'documents')
+    if (!opened) openConversationHome(dealId)
   }
 
   function handleWorkflowLaunchStarted(): void {
@@ -376,17 +424,54 @@ export default function App() {
     }
   }, [dealCheckpoint, runActive, workspaceCheckpoint])
 
-  // Dialog a11y: let keyboard users dismiss the header overlays (deal library / workflow
-  // launcher) with Escape, matching the role="dialog" + aria-modal semantics they carry.
+  // Treat the two header overlays as real modal dialogs: contain focus, keep the page still,
+  // support Escape, and return keyboard users to the control that opened the overlay.
   useEffect(() => {
     if (!libraryOpen && !workflowOpen) return
+    overlayOpenerRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const focusableSelector = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+    const focusFirstControl = window.requestAnimationFrame(() => {
+      const dialog = overlayDialogRef.current
+      const first = dialog?.querySelector<HTMLElement>(focusableSelector)
+      ;(first ?? dialog)?.focus()
+    })
     function onKeyDown(event: KeyboardEvent): void {
-      if (event.key !== 'Escape') return
-      setLibraryOpen(false)
-      setWorkflowOpen(false)
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setLibraryOpen(false)
+        setWorkflowOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusable = overlayDialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector)
+      if (!focusable || focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.cancelAnimationFrame(focusFirstControl)
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = previousOverflow
+      const opener = overlayOpenerRef.current
+      queueMicrotask(() => {
+        // A library action can hand off directly to the edit wizard. Do not move focus behind
+        // that successor modal after it has already claimed focus.
+        if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
+        opener?.focus()
+      })
+    }
   }, [libraryOpen, workflowOpen])
 
   const visibleDealCheckpoint = frontDoorOpen ? null : workspaceCheckpoint ?? dealCheckpoint
@@ -408,7 +493,7 @@ export default function App() {
   }, [documentArtifacts, visibleDealCheckpoint])
 
   return (
-    <div className="min-h-screen bg-cre-bg text-gray-100">
+    <div className="flex min-h-dvh flex-col bg-cre-bg text-gray-100">
       {/* The workspace turns the global toolbar into a quiet utility dock inside the left rail. */}
       {visibleDealCheckpoint ? (
         <header className="fixed bottom-0 left-0 z-30 w-full border-t border-cre-border bg-[#0c151c]/95 px-4 py-3 backdrop-blur xl:w-[185px]" aria-label="Workspace utilities">
@@ -419,10 +504,19 @@ export default function App() {
               <span>{connected ? 'Connected' : 'Disconnected'}</span>
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={() => setWorkflowOpen(true)} data-testid="header-workflows-button" className="p-2 text-gray-500 transition-colors hover:text-white" aria-label="Advanced workflows" title="Advanced workflows">
+              <button
+                onClick={() => openConversationHome(visibleDealCheckpoint.dealId)}
+                data-testid="header-conversations-button"
+                className="p-2 text-gray-500 transition-colors hover:text-white"
+                aria-label="Back to conversations"
+                title="Back to conversations"
+              >
+                <IconMessages size={17} stroke={1.5} aria-hidden="true" />
+              </button>
+              <button onClick={() => openWorkflowControls()} data-testid="header-workflows-button" className="p-2 text-gray-500 transition-colors hover:text-white" aria-label="Advanced workflows" title="Advanced workflows">
                 <IconAdjustmentsHorizontal size={17} stroke={1.5} aria-hidden="true" />
               </button>
-              <button onClick={openUploadFrontDoor} data-testid="header-new-deal-button" className="p-2 text-gray-500 transition-colors hover:text-white" aria-label="New Deal" title="New Deal">
+              <button onClick={openNewDeal} data-testid="header-new-deal-button" className="p-2 text-gray-500 transition-colors hover:text-white" aria-label="New Deal" title="New Deal">
                 <IconPlus size={17} stroke={1.5} aria-hidden="true" />
               </button>
               <button onClick={() => setLibraryOpen(true)} data-testid="header-deals-button" className="p-2 text-gray-500 transition-colors hover:text-white" aria-label="Deals" title="Deals">
@@ -462,48 +556,50 @@ export default function App() {
           </div>
         </header>
       ) : (
-        <header className="border-b border-cre-border bg-[#0c151c]/72 px-5 py-5 backdrop-blur sm:px-8">
-          <div className="mx-auto flex max-w-[1320px] flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
+        <header className="shrink-0 border-b border-cre-border bg-[#0c151c]/72 px-4 py-3 backdrop-blur sm:px-8 sm:py-3.5">
+          <div className="mx-auto flex max-w-[1320px] items-center justify-between gap-3">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-4">
               <span className="font-serif text-2xl font-medium tracking-[-0.04em] text-cre-primary" aria-hidden="true">AO</span>
               <div>
-                <h1 className="text-sm font-medium text-cre-primary">CRE Acquisition Orchestrator</h1>
-                <div className="mt-1 flex items-center gap-2 text-[10px] tracking-[0.08em] text-gray-500" role="status" aria-live="polite">
+                <h1 className="sr-only text-sm font-medium text-cre-primary sm:not-sr-only">CRE Acquisition Orchestrator</h1>
+                <div className="flex items-center gap-1.5 text-[9px] tracking-[0.06em] text-gray-500 sm:mt-1 sm:gap-2 sm:text-[10px] sm:tracking-[0.08em]" role="status" aria-live="polite">
                   <span className={`cre-dot ${connected ? 'cre-dot-done' : 'cre-dot-blocked'}`} aria-hidden="true" />
                   {connected ? 'Connected' : 'Disconnected'}
                 </div>
               </div>
             </div>
-            <nav className="flex flex-wrap items-center gap-3" aria-label="Application actions">
+            <nav className="flex shrink-0 items-center gap-1 sm:gap-3" aria-label="Application actions">
               {runActive && (
-                <div
-                  className="flex min-h-10 items-center gap-3 border border-cre-live/25 bg-cre-live/[0.06] px-3 text-[10px] text-gray-300"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <span className="cre-dot cre-dot-live cre-dot-pulse" aria-hidden="true" />
-                  <span>Run: {runStateLabel}{runProviderLabel ? ` / ${runProviderLabel}` : ''}</span>
+                <>
+                  <div
+                    className="sr-only lg:not-sr-only lg:flex lg:min-h-10 lg:items-center lg:gap-3 lg:border lg:border-cre-live/25 lg:bg-cre-live/[0.06] lg:px-3 lg:text-[10px] lg:text-gray-300"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <span className="cre-dot cre-dot-live cre-dot-pulse" aria-hidden="true" />
+                    <span>Run: {runStateLabel}{runProviderLabel ? ` / ${runProviderLabel}` : ''}</span>
+                  </div>
                   <button
                     type="button"
                     data-testid="header-stop-run"
                     onClick={() => void stopRun()}
                     disabled={!canStop || runRequestPending}
-                    className="inline-flex min-h-7 items-center gap-1.5 border-l border-cre-border pl-3 text-cre-danger transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 border border-cre-danger/25 px-2 text-cre-danger transition-colors hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 xl:px-3"
                     aria-label="Stop active run"
                   >
                     <IconPlayerStop size={14} stroke={1.5} aria-hidden="true" />
-                    Stop
+                    <span className="hidden xl:inline">Stop</span>
                   </button>
-                </div>
+                </>
               )}
-              <button onClick={() => setWorkflowOpen(true)} data-testid="header-workflows-button" className="portal-button portal-button-secondary min-h-10 px-4">
-                <IconAdjustmentsHorizontal size={16} stroke={1.5} aria-hidden="true" /> Advanced
+              <button onClick={() => openWorkflowControls()} data-testid="header-workflows-button" aria-label="Advanced workflows" title="Advanced workflows" className="portal-button portal-button-secondary min-h-11 min-w-11 px-2 sm:px-4">
+                <IconAdjustmentsHorizontal size={16} stroke={1.5} aria-hidden="true" /> <span className="hidden sm:inline">Advanced</span>
               </button>
-              <button onClick={() => setLibraryOpen(true)} data-testid="header-deals-button" className="portal-button portal-button-secondary min-h-10 px-4">
-                <IconBuildingEstate size={16} stroke={1.5} aria-hidden="true" /> Deals
+              <button onClick={() => setLibraryOpen(true)} data-testid="header-deals-button" aria-label="Deals" title="Deals" className="portal-button portal-button-secondary min-h-11 min-w-11 px-2 sm:px-4">
+                <IconBuildingEstate size={16} stroke={1.5} aria-hidden="true" /> <span className="hidden sm:inline">Deals</span>
               </button>
-              <button onClick={openUploadFrontDoor} data-testid="header-new-deal-button" className="portal-button portal-button-primary min-h-10 px-4">
-                <IconPlus size={16} stroke={1.5} aria-hidden="true" /> New Deal
+              <button onClick={openNewDeal} data-testid="header-new-deal-button" aria-label="New Deal" title="New Deal" className="portal-button portal-button-primary min-h-11 min-w-11 px-2 sm:px-4">
+                <IconPlus size={16} stroke={1.5} aria-hidden="true" /> <span className="hidden sm:inline">New Deal</span>
               </button>
             </nav>
           </div>
@@ -530,34 +626,65 @@ export default function App() {
       )}
 
       {/* Content */}
-      <main className={visibleDealCheckpoint ? 'min-h-screen' : 'mx-auto max-w-[1320px] px-5 py-10 sm:px-8 sm:py-14'}>
-        <ErrorBoundary routeName={visibleDealCheckpoint ? 'Deal workspace' : 'Home'} onGoHome={openUploadFrontDoor}>
+      <main className={visibleDealCheckpoint
+        ? 'min-h-screen'
+        : homeMode === 'conversation'
+          ? 'min-h-0 flex-1'
+          : 'mx-auto max-w-[1320px] px-5 py-10 sm:px-8 sm:py-14'}>
+        <ErrorBoundary routeName={visibleDealCheckpoint ? 'Deal workspace' : 'Home'} onGoHome={openConversationHome}>
           {!visibleDealCheckpoint ? (
-            <ErrorBoundary routeName="New deal">
-              <div className="space-y-6">
-                <DropZoneHero
-                  onFilesSelected={handleQuickFiles}
-                  onTryDemo={() => void openGuidedDemo()}
-                  starting={guidedDemoLoading}
-                  runError={runStatus.error}
-                />
-                <SavedDealsPanel
-                  variant="compact"
-                  deals={deals}
-                  loading={dealsLoading}
-                  error={libraryError || dealsError}
-                  onEditDeal={openEditDealWizard}
-                  onOpenWorkspace={(dealId, section) => void openDealWorkspace(dealId, section)}
-                  onLaunchDeal={(dealId) => void handleLaunchDeal(dealId)}
-                  onViewAll={() => setLibraryOpen(true)}
-                  launchingDealId={launchingDealId}
-                  activeRunDealPath={runStatus.dealPath}
-                  activeRunState={runStatus.state}
-                />
-              </div>
-            </ErrorBoundary>
+            homeMode === 'conversation' ? (
+              <ErrorBoundary routeName="Deal conversations">
+                <Suspense fallback={<RouteSkeleton label="Loading conversations..." />}>
+                  <ConversationHome
+                    deals={deals}
+                    dealsLoading={dealsLoading}
+                    dealsError={libraryError || dealsError}
+                    conversationEvents={conversationEvents}
+                    connected={connected}
+                    initialDealId={conversationHomeDealId}
+                    onOpenWorkspace={(dealId) => void openDealWorkspace(dealId, 'documents')}
+                    onOpenAdvanced={() => openWorkflowControls('review')}
+                    onNewDeal={openNewDeal}
+                  />
+                </Suspense>
+              </ErrorBoundary>
+            ) : (
+              <ErrorBoundary routeName="New deal">
+                <div className="space-y-6">
+                  <button
+                    type="button"
+                    onClick={() => openConversationHome()}
+                    className="portal-button portal-button-secondary"
+                    data-testid="back-to-conversations"
+                  >
+                    <IconArrowLeft size={16} stroke={1.5} aria-hidden="true" />
+                    Back to conversations
+                  </button>
+                  <DropZoneHero
+                    onFilesSelected={handleQuickFiles}
+                    onTryDemo={() => void openGuidedDemo()}
+                    starting={guidedDemoLoading}
+                    runError={runStatus.error}
+                  />
+                  <SavedDealsPanel
+                    variant="compact"
+                    deals={deals}
+                    loading={dealsLoading}
+                    error={libraryError || dealsError}
+                    onEditDeal={openEditDealWizard}
+                    onOpenWorkspace={(dealId, section) => void openDealWorkspace(dealId, section)}
+                    onLaunchDeal={(dealId) => void handleLaunchDeal(dealId)}
+                    onViewAll={() => setLibraryOpen(true)}
+                    launchingDealId={launchingDealId}
+                    activeRunDealPath={runStatus.dealPath}
+                    activeRunState={runStatus.state}
+                  />
+                </div>
+              </ErrorBoundary>
+            )
           ) : (
-            <ErrorBoundary routeName="Deal workspace" onGoHome={openUploadFrontDoor}>
+            <ErrorBoundary routeName="Deal workspace" onGoHome={openConversationHome}>
               <Suspense fallback={<RouteSkeleton label="Loading workspace..." />}>
                 <DealWorkspace
                   key={visibleDealCheckpoint.dealId}
@@ -568,11 +695,14 @@ export default function App() {
                   logEntries={showingManualWorkspace ? [] : logEntries}
                   storyEvents={visibleStoryEvents}
                   documentArtifacts={visibleDocumentArtifacts}
+                  conversationEvents={conversationEvents}
+                  conversationConnected={connected}
                   deals={deals}
                   initialTab={workspaceInitialTab}
                   startGuidedDemo={guidedDemoAutoStart}
                   onGuidedDemoConsumed={() => setGuidedDemoAutoStart(false)}
                   onOpenEditDetails={openEditDealWizard}
+                  onOpenDeals={() => setLibraryOpen(true)}
                   onLaunchStarted={handleWorkflowLaunchStarted}
                   onPresetSaved={() => void refreshDeals()}
                 />
@@ -583,7 +713,7 @@ export default function App() {
       </main>
 
       {/* Footer - minimal, demo-friendly */}
-      {!visibleDealCheckpoint && <footer className="border-t border-cre-border px-6 py-4 text-center">
+      {!visibleDealCheckpoint && homeMode === 'new-deal' && <footer className="border-t border-cre-border px-6 py-4 text-center">
         <p className="text-xs text-gray-600">
           CRE Acquisition Orchestrator · Built by{' '}
           <a
@@ -601,6 +731,8 @@ export default function App() {
         <div data-testid="deal-library-backdrop" className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm overflow-y-auto">
           <div className="min-h-full flex items-start justify-center p-6 lg:p-10">
             <div
+              ref={overlayDialogRef}
+              tabIndex={-1}
               data-testid="deal-library-modal"
               role="dialog"
               aria-modal="true"
@@ -623,7 +755,7 @@ export default function App() {
                 </button>
               </div>
               <div className="p-6">
-                <ErrorBoundary routeName="Deal library" onGoHome={openUploadFrontDoor}>
+                <ErrorBoundary routeName="Deal library" onGoHome={openConversationHome}>
                   <SavedDealsPanel
                     deals={deals}
                     loading={dealsLoading}
@@ -646,6 +778,8 @@ export default function App() {
         <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm overflow-y-auto">
           <div className="min-h-full flex items-start justify-center p-6 lg:p-10">
             <div
+              ref={overlayDialogRef}
+              tabIndex={-1}
               data-testid="workflow-launcher-modal"
               role="dialog"
               aria-modal="true"
@@ -668,11 +802,12 @@ export default function App() {
                 </button>
               </div>
               <div className="p-6">
-                <ErrorBoundary routeName="Workflow launcher" onGoHome={openUploadFrontDoor}>
+                <ErrorBoundary routeName="Workflow launcher" onGoHome={openConversationHome}>
                   <Suspense fallback={<RouteSkeleton label="Loading workflow launcher..." />}>
                     <WorkflowLauncher
                       deals={deals}
-                      initialDealId={visibleDealCheckpoint?.dealId}
+                      initialDealId={visibleDealCheckpoint?.dealId ?? conversationHomeDealId ?? undefined}
+                      initialStep={workflowInitialStep}
                       onLaunchStarted={handleWorkflowLaunchStarted}
                       onPresetSaved={() => void refreshDeals()}
                     />

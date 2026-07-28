@@ -90,6 +90,9 @@ interface RunManagerOptions {
   onReset?: () => void
 }
 
+const DEFAULT_STOP_GRACE_MS = 5_000
+const FORCE_KILL_WAIT_MS = 1_000
+
 function nowIso(): string {
   return new Date().toISOString()
 }
@@ -437,6 +440,7 @@ export class RunManager {
     try {
       const child = spawn('node', args, {
         cwd: this.projectRoot,
+        detached: process.platform !== 'win32',
         stdio: ['ignore', 'pipe', 'pipe'],
       })
       this.child = child
@@ -509,7 +513,7 @@ export class RunManager {
 
     child.on('exit', (code: number | null, signal: NodeJS.Signals | null) => {
       if (this.status.runId !== currentRunId) return
-      this.clearStopTimer()
+      if (!this.isProcessTreeAlive(child)) this.clearStopTimer()
       const stoppedByUser = this.status.state === 'STOPPING'
       const childSucceeded = !stoppedByUser && code === 0
       const validationError = childSucceeded && runtimeProvider === 'simulation'
@@ -624,20 +628,20 @@ export class RunManager {
 
     const activeRunId = this.status.runId
     const activePid = this.status.pid
+    const activeChild = this.child
 
     try {
-      this.killChildProcessTree()
+      this.killChildProcessTree(activeChild)
       this.clearStopTimer()
       this.stopTimer = setTimeout(() => {
-        if (!this.child) return
-        if (this.status.runId !== activeRunId) return
-        if (this.status.state !== 'STOPPING') return
+        this.stopTimer = null
+        if (!this.isProcessTreeAlive(activeChild)) return
         try {
-          this.child.kill('SIGKILL')
+          this.killChildProcessTree(activeChild, 'SIGKILL')
         } catch (err) {
           console.error('[run-manager] Failed to force kill process', err)
         }
-      }, 5000)
+      }, DEFAULT_STOP_GRACE_MS)
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       this.status = {
@@ -665,6 +669,28 @@ export class RunManager {
         pid: activePid,
       },
     }
+  }
+
+  async shutdown(gracePeriodMs = DEFAULT_STOP_GRACE_MS): Promise<void> {
+    const child = this.child
+    if (!child) {
+      this.clearStopTimer()
+      return
+    }
+
+    this.stop()
+    if (await this.waitForProcessTreeExit(child, gracePeriodMs)) {
+      this.clearStopTimer()
+      return
+    }
+
+    this.clearStopTimer()
+    try {
+      this.killChildProcessTree(child, 'SIGKILL')
+    } catch (err) {
+      console.error('[run-manager] Failed to force kill process during shutdown', err)
+    }
+    await this.waitForProcessTreeExit(child, FORCE_KILL_WAIT_MS)
   }
 
   private emit(event: RunMessage['event'], details: Record<string, unknown> = {}): void {
@@ -704,9 +730,49 @@ export class RunManager {
     }
   }
 
-  private killChildProcessTree(): void {
-    if (!this.child) return
-    const pid = this.child.pid
+  private unixProcessGroupId(
+    child: ChildProcessByStdio<null, Readable, Readable>,
+  ): number | null {
+    if (process.platform === 'win32') return null
+    const pid = child.pid
+    return typeof pid === 'number' && Number.isSafeInteger(pid) && pid > 1 ? pid : null
+  }
+
+  private isUnixProcessGroupAlive(groupId: number): boolean {
+    if (!Number.isSafeInteger(groupId) || groupId <= 1) return false
+    try {
+      process.kill(-groupId, 0)
+      return true
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code
+      if (code === 'ESRCH') return false
+      if (code === 'EPERM') return true
+      throw err
+    }
+  }
+
+  private isProcessTreeAlive(child: ChildProcessByStdio<null, Readable, Readable>): boolean {
+    const groupId = this.unixProcessGroupId(child)
+    if (groupId !== null) return this.isUnixProcessGroupAlive(groupId)
+    return child.exitCode === null && child.signalCode === null
+  }
+
+  private async waitForProcessTreeExit(
+    child: ChildProcessByStdio<null, Readable, Readable>,
+    timeoutMs: number,
+  ): Promise<boolean> {
+    const deadline = Date.now() + Math.max(0, timeoutMs)
+    while (this.isProcessTreeAlive(child) && Date.now() < deadline) {
+      await new Promise((resolveWait) => setTimeout(resolveWait, Math.min(25, deadline - Date.now())))
+    }
+    return !this.isProcessTreeAlive(child)
+  }
+
+  private killChildProcessTree(
+    child: ChildProcessByStdio<null, Readable, Readable>,
+    signal: NodeJS.Signals = 'SIGTERM',
+  ): void {
+    const pid = child.pid
     if (process.platform === 'win32' && pid) {
       const result = spawnSync('taskkill', ['/pid', String(pid), '/t', '/f'], {
         cwd: this.projectRoot,
@@ -714,6 +780,16 @@ export class RunManager {
       })
       if (result.status === 0) return
     }
-    this.child.kill()
+    const groupId = this.unixProcessGroupId(child)
+    if (groupId !== null) {
+      try {
+        process.kill(-groupId, signal)
+        return
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'ESRCH') return
+        throw err
+      }
+    }
+    child.kill(signal)
   }
 }

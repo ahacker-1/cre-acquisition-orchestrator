@@ -20,7 +20,9 @@ import type { ProofPathStep } from './ProofPathStrip'
 import { buildDealRecordGroups, coerceEditValue, countNeedsEye } from '../lib/dealRecordModel'
 import { buildAgentPanelView } from '../lib/agentView'
 import { routeIntent } from '../lib/intentRouting'
+import { dealArtifactHref } from '../lib/artifactUrl'
 import { useAgentDispatch } from '../hooks/useAgentDispatch'
+import { useAgentConversations } from '../hooks/useAgentConversations'
 import { API_URL } from '../config'
 import type { TeamAgentView } from './workspace/TeamRail'
 import {
@@ -39,6 +41,8 @@ import type {
   RuntimeProvider,
   StoryEvent,
 } from '../types/checkpoint'
+import { MAX_CONVERSATION_DOCUMENTS } from '../types/conversations'
+import type { ConversationEvent } from '../types/conversations'
 import type { DealLibraryItem, DealValidationIssue } from '../types/deals'
 import type {
   DealCriteria,
@@ -72,11 +76,14 @@ interface DealWorkspaceProps {
   logEntries: LogEntry[]
   storyEvents: StoryEvent[]
   documentArtifacts: DocumentArtifact[]
+  conversationEvents: ConversationEvent[]
+  conversationConnected: boolean
   deals: DealLibraryItem[]
   initialTab?: WorkspaceTab
   startGuidedDemo?: boolean
   onGuidedDemoConsumed?: () => void
   onOpenEditDetails?: (dealId: string) => void
+  onOpenDeals?: () => void
   onLaunchStarted?: (response: WorkflowLaunchResponse) => void
   onPresetSaved?: (preset: WorkflowPreset) => void
 }
@@ -140,12 +147,14 @@ function deriveIntakeAgentsLine(documents: SourceDocument[]): string {
   ).length
   const readable = documents.filter((doc) => doc.status === 'review_ready' || doc.status === 'applied').length
   const failed = documents.filter(
-    (doc) => doc.extractionStatus === 'parse_failed' || doc.extractionStatus === 'parser-unavailable' || doc.status === 'rejected',
+    (doc) => doc.extractionStatus === 'parse_failed' || doc.extractionStatus === 'parser-unavailable',
   ).length
+  const resolvedByOperator = documents.filter((doc) => doc.status === 'rejected' || doc.status === 'waived').length
   const parts: string[] = []
   if (readable > 0) parts.push(`${readable} document${readable === 1 ? '' : 's'} read into the record`)
   if (pending > 0) parts.push(`${pending} still parsing`)
   if (failed > 0) parts.push(`${failed} need a closer look`)
+  if (resolvedByOperator > 0) parts.push(`${resolvedByOperator} resolved by operator decision`)
   if (parts.length === 0) {
     return `Document Orchestrator routed ${documents.length} file${documents.length === 1 ? '' : 's'} to its parsers.`
   }
@@ -2198,11 +2207,14 @@ export default function DealWorkspace({
   logEntries,
   storyEvents,
   documentArtifacts,
+  conversationEvents,
+  conversationConnected,
   deals,
   initialTab,
   startGuidedDemo = false,
   onGuidedDemoConsumed,
   onOpenEditDetails,
+  onOpenDeals,
   onLaunchStarted,
   onPresetSaved,
 }: DealWorkspaceProps) {
@@ -2224,7 +2236,7 @@ export default function DealWorkspace({
     exportPackage,
     savePhaseChecklist,
     refreshWorkspace,
-  } = useDealWorkspace(dealCheckpoint.dealId)
+  } = useDealWorkspace(dealCheckpoint.dealId, { autoExtract: true })
   const { launchWorkflow, launchingWorkflowId } = useWorkflows()
   const [launchMessage, setLaunchMessage] = useState<string | null>(null)
   // Structured launch-readiness blockers from the most recent rejected phase launch, shown inline
@@ -2240,7 +2252,7 @@ export default function DealWorkspace({
   const advancedDrawerRef = useRef<HTMLDivElement | null>(null)
   // Owned here (not in IntakeStage) so the intake detailed-review disclosure survives the stage
   // body re-mounting whenever a workspace refresh flips `loading` (extract / apply / field edit).
-  const [intakeReviewOpen, setIntakeReviewOpen] = useState(false)
+  const [intakeReviewOpen, setIntakeReviewOpen] = useState(initialTab === 'documents')
   // Phase 3: the agent whose panel is open (summon → watch → read → re-task). Holds the kebab
   // agent id (matches agentCheckpoints / storyEvents.agent / documentArtifacts.agent).
   const [agentPanelName, setAgentPanelName] = useState<string | null>(null)
@@ -2255,6 +2267,56 @@ export default function DealWorkspace({
   const dispatchRuntimeProvider: RuntimeProvider =
     (liveDealCheckpoint?.runtimeProvider as RuntimeProvider | undefined) ?? phaseRuntimeProvider
   const { dispatchAgent } = useAgentDispatch(dealCheckpoint.dealId, dispatchRuntimeProvider)
+  const conversations = useAgentConversations(dealCheckpoint.dealId, conversationEvents, conversationConnected)
+  const [conversationDocumentIdsByThread, setConversationDocumentIdsByThread] = useState<Record<string, string[]>>({})
+  const [pendingConversationDocumentIds, setPendingConversationDocumentIds] = useState<string[]>([])
+  const [agentDirectoryOpen, setAgentDirectoryOpen] = useState(false)
+  const [agentDirectoryQuery, setAgentDirectoryQuery] = useState('')
+  const agentDirectoryDialogRef = useRef<HTMLDivElement | null>(null)
+  const agentDirectoryOpenerRef = useRef<HTMLElement | null>(null)
+  const agentDirectoryRestoreFocusRef = useRef(true)
+  const agentOpenEpochRef = useRef(0)
+  const conversationDocumentEpochRef = useRef(0)
+  const agentPanelNameRef = useRef<string | null>(null)
+  agentPanelNameRef.current = agentPanelName
+
+  useEffect(() => {
+    if (!agentDirectoryOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        agentDirectoryRestoreFocusRef.current = true
+        setAgentDirectoryOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusable = agentDirectoryDialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+      )
+      if (!focusable || focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = previousOverflow
+      if (agentDirectoryRestoreFocusRef.current) {
+        const opener = agentDirectoryOpenerRef.current
+        queueMicrotask(() => opener?.focus())
+      }
+      agentDirectoryRestoreFocusRef.current = true
+    }
+  }, [agentDirectoryOpen])
 
   useEffect(() => {
     setActiveTab(defaultWorkspaceTab(dealCheckpoint.status, initialTab))
@@ -2333,21 +2395,6 @@ export default function DealWorkspace({
     () => deriveIntakeAgentsLine(documents),
     [documents],
   )
-
-  // I2b end-to-end: auto-extract freshly uploaded, still-unextracted documents so DROPPING docs
-  // auto-fills the record (drop → extract → auto-apply on the server) with no manual "Preview
-  // Extraction" click. One doc at a time (guarded by `working` so extracts don't overlap), once
-  // each (the ref), so re-renders never re-trigger and parse_failed/unsupported docs aren't retried.
-  const autoExtractedRef = useRef<Set<string>>(new Set())
-  useEffect(() => {
-    if (working) return
-    const pending = documents.find(
-      (doc) => doc.extractionStatus === 'not-started' && !autoExtractedRef.current.has(doc.documentId),
-    )
-    if (!pending) return
-    autoExtractedRef.current.add(pending.documentId)
-    void extractDocument(pending.documentId)
-  }, [documents, working, extractDocument])
 
   // Advanced-drawer a11y (Phase-1 gate finding): lock body scroll + close on Escape while open,
   // move focus into the drawer on open, and restore it to the opener on close.
@@ -2512,23 +2559,80 @@ export default function DealWorkspace({
         })
       }
     }
+    // The conversation directory includes all 31 registry identities, including the six
+    // orchestrators that do not appear in a phase's specialist rail.
+    for (const agent of conversations.agents) {
+      if (roster.has(agent.agentId)) continue
+      roster.set(agent.agentId, {
+        name: agent.name,
+        role: `${displaySlug(agent.phase)} · ${displaySlug(agent.kind)}`,
+      })
+    }
     return roster
-  }, [phaseTabs])
+  }, [conversations.agents, phaseTabs])
 
   // Phase 3: summon paths. Rail click + command-bar (free text or chip intent) all land on the
   // same agent panel; a workflow intent launches that workflow; anything unrecognized opens the
   // Advanced drawer (the power-user fallback).
-  function openAgentPanel(agentId: string, task?: string): void {
+  function openAgentPanel(agentId: string, task?: string, sendTask = false): void {
+    const openEpoch = ++agentOpenEpochRef.current
+    const documentEpoch = ++conversationDocumentEpochRef.current
     setAgentPanelName(agentId)
     const trimmed = task?.trim()
     setAgentPanelTask(trimmed ? trimmed : null)
+    setAgentPanelNotice(null)
+    const defaultDocumentIds = documents.slice(0, 24).map((document) => document.documentId)
+    setPendingConversationDocumentIds(defaultDocumentIds)
+    if (conversations.enabled) {
+      void conversations.openAgent(agentId, defaultDocumentIds).then((detail) => {
+        setConversationDocumentIdsByThread((current) => ({
+          ...current,
+          [detail.thread.threadId]: detail.thread.documentIds,
+        }))
+        if (
+          agentOpenEpochRef.current === openEpoch
+          && conversationDocumentEpochRef.current === documentEpoch
+          && agentPanelNameRef.current === agentId
+        ) {
+          setPendingConversationDocumentIds(detail.thread.documentIds)
+        }
+        if (sendTask && trimmed) {
+          return conversations.sendMessageToThread(detail.thread.threadId, trimmed, detail.thread.documentIds)
+        }
+        return undefined
+      }).catch((cause) => {
+        if (agentOpenEpochRef.current === openEpoch) {
+          setAgentPanelNotice(cause instanceof Error ? cause.message : String(cause))
+        }
+      })
+    }
+  }
+
+  function directlyAddressedAgent(text: string): string | null {
+    const normalized = text.trim().toLowerCase()
+    const mention = normalized.match(/@([a-z0-9][a-z0-9._-]*)/)?.[1]
+    if (mention && agentRoster.has(mention)) return mention
+    if (/\blegal analyst\b/.test(normalized) && agentRoster.has('legal-orchestrator')) return 'legal-orchestrator'
+    const candidates = [...agentRoster.entries()]
+      .map(([agentId, meta]) => ({ agentId, names: [agentId, meta.name].map((value) => value.toLowerCase()) }))
+      .sort((a, b) => Math.max(...b.names.map((name) => name.length)) - Math.max(...a.names.map((name) => name.length)))
+    return candidates.find((candidate) => candidate.names.some((name) =>
+      normalized.startsWith(name) ||
+      normalized.startsWith(`hey ${name}`) ||
+      normalized.startsWith(`hi ${name}`)
+    ))?.agentId ?? null
   }
   // `text` drives intent routing (a chip passes its "agent:<id>" intent string); `displayTask` is
   // the human-readable task echoed in the panel (a chip's label, or the operator's typed command).
   function routeAndAct(text: string, displayTask?: string): void {
+    const addressedAgent = directlyAddressedAgent(displayTask ?? text)
+    if (addressedAgent) {
+      openAgentPanel(addressedAgent, displayTask ?? text, true)
+      return
+    }
     const result = routeIntent(text, activeStage, { suggestions: suggestionsForStage(activeStage) })
     if (result.kind === 'agent') {
-      openAgentPanel(result.agentId, displayTask)
+      openAgentPanel(result.agentId, displayTask, Boolean(displayTask))
       return
     }
     if (result.kind === 'workflow') {
@@ -2571,11 +2675,60 @@ export default function DealWorkspace({
         storyEvents,
         documentArtifacts,
         onOpenWorkpaper: (path) => {
-          if (path) window.open(`${API_URL}/${path.replace(/^\/+/, '')}`, '_blank', 'noopener')
+          if (path) window.open(dealArtifactHref(dealCheckpoint.dealId, path), '_blank', 'noopener')
         },
       })
     : null
-  const liveDispatch = dispatchRuntimeProvider === 'codex'
+  const liveDispatch = conversations.enabled && conversations.runtime.ready
+  const conversationPanelEnabled = Boolean(liveDispatch && agentPanelName)
+  const selectedConversationMatchesAgent = conversations.selectedThread?.agentId === agentPanelName
+  const conversationDocumentIds = conversations.selectedThreadId
+    ? conversationDocumentIdsByThread[conversations.selectedThreadId]
+      ?? conversations.selectedThread?.documentIds
+      ?? []
+    : pendingConversationDocumentIds
+  const conversationThreadsForAgent = agentPanelName
+    ? conversations.threads.filter((thread) => thread.agentId === agentPanelName)
+    : []
+  const conversationAssistantMessages = conversations.messages.filter((message) => message.role === 'assistant')
+  const conversationSuggestions = selectedConversationMatchesAgent
+    ? conversationAssistantMessages[conversationAssistantMessages.length - 1]?.followUpSuggestions ?? []
+    : []
+  const filteredConversationAgents = conversations.agents.filter((agent) => {
+    const query = agentDirectoryQuery.trim().toLowerCase()
+    return !query || [agent.agentId, agent.name, agent.phase, agent.kind, ...agent.inputs, ...agent.outputs]
+      .some((value) => value.toLowerCase().includes(query))
+  })
+
+  function toggleConversationDocument(documentId: string): void {
+    const next = (() => {
+      const current = conversationDocumentIds
+      if (current.includes(documentId)) return current.filter((value) => value !== documentId)
+      if (current.length >= MAX_CONVERSATION_DOCUMENTS) {
+        setAgentPanelNotice(`Select at most ${MAX_CONVERSATION_DOCUMENTS} documents for one conversation.`)
+        return current
+      }
+      setAgentPanelNotice(null)
+      return [...current, documentId]
+    })()
+    if (conversations.selectedThreadId) {
+      const threadId = conversations.selectedThreadId
+      setConversationDocumentIdsByThread((current) => ({ ...current, [threadId]: next }))
+    } else {
+      setPendingConversationDocumentIds(next)
+    }
+  }
+
+  function openAgentDirectory(): void {
+    agentDirectoryOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    agentDirectoryRestoreFocusRef.current = true
+    setAgentDirectoryOpen(true)
+  }
+
+  function closeAgentDirectory(restoreFocus = true): void {
+    agentDirectoryRestoreFocusRef.current = restoreFocus
+    setAgentDirectoryOpen(false)
+  }
 
   function renderStageBody(): ReactNode {
     const recovery = (
@@ -2703,7 +2856,8 @@ export default function DealWorkspace({
         onCommandSubmit={handleCommandSubmit}
         onCommandSuggestion={handleCommandSuggestion}
         onOpenAgent={openAgentPanel}
-        onSummon={() => setAdvancedOpen(true)}
+        onSummon={openAgentDirectory}
+        onOpenDealLibrary={() => onOpenDeals?.()}
         onOpenAdvanced={() => setAdvancedOpen(true)}
         primaryAction={activePhaseForStage ? {
           label: `Run ${activePhaseForStage.label.toLowerCase()}`,
@@ -2728,39 +2882,111 @@ export default function DealWorkspace({
       {agentPanelName && agentPanelView && (
         <AgentPanel
           open
+          agentId={agentPanelName}
           agentName={agentPanelMeta?.name ?? agentPanelName}
           agentRole={agentPanelMeta?.role}
           task={agentPanelTask ?? undefined}
           taskSource={agentPanelTask ? 'Your command' : undefined}
-          notice={agentPanelNotice ?? undefined}
+          notice={agentPanelNotice ?? conversations.error ?? undefined}
           status={agentPanelView.status}
           streamLines={agentPanelView.streamLines}
           output={agentPanelView.output}
           elapsedLabel={agentPanelView.elapsedLabel}
-          liveDispatch={liveDispatch}
+          liveDispatch={conversationPanelEnabled ? selectedConversationMatchesAgent : liveDispatch}
+          conversationMessages={conversationPanelEnabled
+            ? selectedConversationMatchesAgent ? conversations.messages : []
+            : undefined}
+          conversationActivity={selectedConversationMatchesAgent ? conversations.activity : null}
+          conversationActive={selectedConversationMatchesAgent && conversations.activeTurn !== null}
+          conversationLoading={conversations.loading || conversations.sending}
+          conversationThreads={conversationThreadsForAgent}
+          selectedConversationThreadId={selectedConversationMatchesAgent ? conversations.selectedThreadId : null}
+          onSelectConversationThread={(threadId) => {
+            const documentEpoch = ++conversationDocumentEpochRef.current
+            void conversations.loadThread(threadId).then((detail) => {
+              setConversationDocumentIdsByThread((current) => ({
+                ...current,
+                [detail.thread.threadId]: detail.thread.documentIds,
+              }))
+              if (
+                conversationDocumentEpochRef.current === documentEpoch
+                && agentPanelNameRef.current === detail.thread.agentId
+              ) {
+                setPendingConversationDocumentIds(detail.thread.documentIds)
+              }
+            }).catch((cause) => setAgentPanelNotice(cause instanceof Error ? cause.message : String(cause)))
+          }}
+          onNewConversation={() => {
+            const documentEpoch = ++conversationDocumentEpochRef.current
+            void conversations.createThread(agentPanelName, conversationDocumentIds).then((detail) => {
+              setConversationDocumentIdsByThread((current) => ({
+                ...current,
+                [detail.thread.threadId]: detail.thread.documentIds,
+              }))
+              if (
+                conversationDocumentEpochRef.current === documentEpoch
+                && agentPanelNameRef.current === detail.thread.agentId
+              ) {
+                setPendingConversationDocumentIds(detail.thread.documentIds)
+                setAgentPanelTask(null)
+              }
+            }).catch((cause) => setAgentPanelNotice(cause instanceof Error ? cause.message : String(cause)))
+          }}
+          onCancelConversation={() => {
+            void conversations.cancelTurn().catch((cause) => setAgentPanelNotice(cause instanceof Error ? cause.message : String(cause)))
+          }}
+          onRetryConversation={(turnId) => {
+            void conversations.retryTurn(turnId).catch((cause) => setAgentPanelNotice(cause instanceof Error ? cause.message : String(cause)))
+          }}
+          documents={documents.map((document) => ({
+            documentId: document.documentId,
+            fileName: document.fileName,
+            typeLabel: document.typeLabel,
+          }))}
+          selectedDocumentIds={conversationDocumentIds}
+          onToggleDocument={toggleConversationDocument}
           followUpSuggestions={
-            // Only agent-targeted chips make sense as a same-agent follow-up; offline the panel
-            // disables them anyway (replay), so this is purely the live-codex affordance.
-            liveDispatch
+            conversationPanelEnabled
+              ? conversationSuggestions
+              : liveDispatch
               ? suggestionsForStage(activeStage)
                   .filter((suggestion) => suggestion.intent.startsWith('agent:'))
                   .map((suggestion) => suggestion.label)
               : []
           }
-          onFollowUp={(text) => {
-            // Echo the latest follow-up as the panel's task so re-tasking is visible.
+          onFollowUp={async (text, clientRequestId) => {
             setAgentPanelTask(text)
             setAgentPanelNotice(null)
-            void dispatchAgent(agentPanelName, text).then((result) => {
-              if (result.status === 'dispatched') {
-                void refreshWorkspace()
-              } else {
-                // Surface a declined/failed live dispatch instead of leaving the panel idle.
-                setAgentPanelNotice(result.notice)
+            if (conversationPanelEnabled) {
+              if (!selectedConversationMatchesAgent || !conversations.selectedThread) {
+                const message = 'Wait for this agent conversation to finish opening before sending.'
+                setAgentPanelNotice(message)
+                return Promise.reject(new Error(message))
               }
-            })
+              try {
+                await conversations.sendMessageToThread(
+                  conversations.selectedThread.threadId,
+                  text,
+                  conversationDocumentIds,
+                  clientRequestId,
+                )
+              } catch (cause) {
+                setAgentPanelNotice(cause instanceof Error ? cause.message : String(cause))
+                throw cause
+              }
+              return
+            }
+            const result = await dispatchAgent(agentPanelName, text)
+            if (result.status === 'dispatched') {
+              void refreshWorkspace()
+            } else {
+              // Surface a declined/failed live dispatch instead of leaving the panel idle.
+              setAgentPanelNotice(result.notice)
+            }
           }}
           onClose={() => {
+            agentOpenEpochRef.current += 1
+            conversationDocumentEpochRef.current += 1
             setAgentPanelName(null)
             setAgentPanelTask(null)
             setAgentPanelNotice(null)
@@ -2768,8 +2994,82 @@ export default function DealWorkspace({
         />
       )}
 
+      {agentDirectoryOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4" data-testid="agent-directory">
+          <div
+            ref={agentDirectoryDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Agent directory"
+            className="flex max-h-[82vh] w-full max-w-3xl flex-col border border-white/[0.14] bg-[#0a151d] shadow-2xl"
+          >
+            <header className="flex items-start justify-between gap-4 border-b border-white/[0.08] px-6 py-5">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#c98d61]">Your complete team</p>
+                <h2 className="mt-2 font-serif text-2xl text-[#f4f1ed]">Talk to any of 31 agents</h2>
+                <p className="mt-1 text-xs text-[#8c99a2]">Specialists, ingestion agents, and orchestrators retain separate deal conversations.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => closeAgentDirectory(true)}
+                aria-label="Close agent directory"
+                className="inline-flex size-10 items-center justify-center border border-white/[0.1] text-[#a4afb6] hover:text-white"
+              >
+                ×
+              </button>
+            </header>
+            <div className="border-b border-white/[0.08] px-6 py-4">
+              <input
+                autoFocus
+                data-testid="agent-directory-search"
+                aria-label="Search agents"
+                value={agentDirectoryQuery}
+                onChange={(event) => setAgentDirectoryQuery(event.target.value)}
+                placeholder="Search rent roll, legal, financing, orchestrator…"
+                className="w-full border border-white/[0.12] bg-[#081219] px-4 py-3 text-sm text-[#eef1f2] placeholder:text-[#71808a] focus:border-[#c98d61] focus:outline-none"
+              />
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {filteredConversationAgents.map((agent) => (
+                  <button
+                    key={agent.agentId}
+                    type="button"
+                    data-testid={`agent-directory-item-${agent.agentId}`}
+                    onClick={() => {
+                      closeAgentDirectory(false)
+                      setAgentDirectoryQuery('')
+                      openAgentPanel(agent.agentId)
+                    }}
+                    className="border border-white/[0.09] bg-white/[0.025] p-4 text-left transition-colors hover:border-[#c98d61]/60 hover:bg-[#c98d61]/[0.05]"
+                  >
+                    <span className="block text-sm font-medium text-[#eef1f2]">{agent.name}</span>
+                    <span className="mt-1 block text-[9px] uppercase tracking-[0.12em] text-[#8c99a2]">
+                      {displaySlug(agent.phase)} · {displaySlug(agent.kind)}
+                    </span>
+                    {agent.inputs.length > 0 && (
+                      <span className="mt-2 block line-clamp-2 text-[10px] leading-4 text-[#9ca8b0]">
+                        {agent.inputs.join(' · ')}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {filteredConversationAgents.length === 0 && (
+                <p className="py-10 text-center text-sm text-[#8c99a2]">No agent matches that search.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {(error || launchMessage) && (
-        <div className="mt-4 border border-white/10 bg-black px-4 py-3 text-sm text-gray-300" data-testid="workspace-message">
+        <div
+          className="mt-4 border border-white/10 bg-black px-4 py-3 text-sm text-gray-300"
+          data-testid="workspace-message"
+          role={error ? 'alert' : 'status'}
+          aria-live={error ? 'assertive' : 'polite'}
+        >
           {error || launchMessage}
         </div>
       )}
@@ -2807,10 +3107,16 @@ export default function DealWorkspace({
                     documents={documents}
                     workspace={workspace}
                     onOpenDocuments={() => { setAdvancedOpen(false); setActiveTab('documents') }}
-                    onOpenAgents={() => undefined}
-                    onOpenWorkpapers={() => undefined}
+                    onOpenAgents={() => {
+                      setAdvancedOpen(false)
+                      openAgentDirectory()
+                    }}
+                    onOpenWorkpapers={() => {
+                      setAdvancedOpen(false)
+                      setActiveTab('package')
+                    }}
                     onOpenPackage={() => { setAdvancedOpen(false); setActiveTab('package') }}
-                    onOpenAdvanced={() => undefined}
+                    onOpenAdvanced={focusWorkflowLauncher}
                   />
                 </Suspense>
                 <Overview

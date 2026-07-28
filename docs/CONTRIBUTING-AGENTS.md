@@ -223,6 +223,7 @@ generated stress fixtures do not count. It counts, among other things:
 - **AI Roles** = `agents/**/*.md` + `orchestrators/**/*.md`
 - **Schemas** = `schemas/**/*.schema.json`
 - **Fixtures** = every tracked or untracked non-ignored file under `fixtures/`
+- **Test commands** = root `package.json` scripts named `test` or prefixed with `test:`
 
 So when you add an agent **and** a schema (Steps 1 + 3), you change both the
 **AI Roles** and **Schemas** counts; adding an input fixture (Step 4) changes the
@@ -235,7 +236,7 @@ README count drift detected:
 ```
 
 Update the matching number in `README.md` (the row under
-`| AI Roles | Skills | Schemas | Workflows | Fixtures | Tests passing |`) and the
+`| AI Roles | Skills | Schemas | Workflows | Fixtures | Test commands |`) and the
 prose line beneath it, then re-run `npm run validate:docs` until it is green.
 
 ### Final verification checklist

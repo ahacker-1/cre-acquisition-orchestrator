@@ -1,4 +1,5 @@
 import type { PhaseDownstreamData } from './phase-contracts'
+import type { ConversationWebSocketMessage } from './conversations'
 
 export type AgentStatus = 'pending' | 'running' | 'complete' | 'failed' | 'skipped'
 
@@ -247,6 +248,7 @@ export type WebSocketMessage =
       path?: string
       event?: StoryEvent
     }
+  | ConversationWebSocketMessage
   | RunEventMessage
 
 export interface StartRunRequestPayload {

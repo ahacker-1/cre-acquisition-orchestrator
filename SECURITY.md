@@ -17,7 +17,7 @@ I'll acknowledge receipt within 48 hours and work with you on a fix before any p
 
 This project is a reference architecture and simulation framework. It does not process real financial data or connect to external APIs by default. The offline simulation and dashboard storage write local files under `data/`.
 
-Optional live Codex runs are different: they send selected prompts and deal context through OpenAI Codex CLI using the user's ChatGPT-authenticated session. Do not run live Codex workflows on confidential deal data unless that data is approved for that environment. If you extend the project with real API integrations or production deal data, standard application security practices apply.
+Optional live Codex runs are different: they send selected prompts and deal context through OpenAI Codex CLI using the user's ChatGPT-authenticated session. A live Conversation Desk turn sends the selected documents' extracted evidence, current deal record, underwriting criteria, approved fields, selected agent role guide, recent conversation transcript, and operator question. Do not use live Codex workflows or conversations with confidential deal data unless all transmitted context is approved for that environment. If you extend the project with real API integrations or production deal data, standard application security practices apply.
 
 Codex authentication is intentionally local. The dashboard's **Login to ChatGPT** button starts `codex login` on the user's machine and the status API reports only booleans such as `installed`, `loggedIn`, and `usingChatGpt`. It does not expose access tokens, refresh tokens, API keys, cookies, or credential file contents. Runtime outputs under `data/` are ignored by git.
 
@@ -25,6 +25,6 @@ Codex authentication is intentionally local. The dashboard's **Login to ChatGPT*
 
 | Version | Supported |
 |---------|-----------|
-| 3.5.x   | Yes       |
-| 3.4.x   | Security fixes only |
-| 3.3.x and older | End of life |
+| 3.6.x   | Yes |
+| 3.5.x   | Security fixes only |
+| 3.4.x and older | End of life |

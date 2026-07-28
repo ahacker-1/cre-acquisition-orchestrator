@@ -41,7 +41,7 @@ function catalogFiles(relDir, predicate) {
 
 function parseByTheNumbers(readme) {
   const lines = readme.split(/\r?\n/);
-  const headerIndex = lines.findIndex((line) => line.includes('| AI Roles | Skills | Schemas | Workflows | Fixtures | Tests passing |'));
+  const headerIndex = lines.findIndex((line) => line.includes('| AI Roles | Skills | Schemas | Workflows | Fixtures | Test commands |'));
   if (headerIndex === -1 || !lines[headerIndex + 2]) {
     throw new Error('README By the Numbers table is missing or malformed.');
   }
@@ -71,7 +71,7 @@ function main() {
     Schemas: catalogFiles('schemas', (relPath) => relPath.endsWith('.schema.json')).length,
     Workflows: workflows.length,
     Fixtures: catalogFiles('fixtures', () => true).length,
-    'Tests passing': countTestScripts()
+    'Test commands': countTestScripts()
   };
 
   const failures = [];

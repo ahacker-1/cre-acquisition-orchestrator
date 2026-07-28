@@ -17,9 +17,11 @@ import type {
   StoryEvent,
   DocumentArtifact,
 } from '../types/checkpoint'
+import type { ConversationEvent } from '../types/conversations'
 
 const MAX_RECONNECT_DELAY = 30000
 const MAX_RECONNECT_ATTEMPTS = 20
+const MAX_CONVERSATION_EVENTS = 500
 
 function createIdleRunStatus(): RunStatus {
   return {
@@ -240,7 +242,7 @@ function mergePhaseData(rawPhase: Record<string, unknown>): Record<string, unkno
   return { ...extras, ...explicit }
 }
 
-function normalizeDealCheckpoint(raw: Record<string, unknown>): DealCheckpoint | null {
+export function normalizeDealCheckpoint(raw: Record<string, unknown>): DealCheckpoint | null {
   if (!raw.dealId || !raw.phases) return null
 
   const rawPhases = raw.phases as Record<string, Record<string, unknown>>
@@ -448,6 +450,16 @@ function mergeLogEntries(previous: LogEntry[], incoming: LogEntry[]): LogEntry[]
   return [...byKey.values()].sort((a, b) => a.timestamp.localeCompare(b.timestamp))
 }
 
+function mergeConversationEvents(previous: ConversationEvent[], incoming: ConversationEvent[]): ConversationEvent[] {
+  const byId = new Map<string, ConversationEvent>()
+  for (const event of [...previous, ...incoming]) {
+    if (event?.eventId) byId.set(event.eventId, event)
+  }
+  return [...byId.values()]
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.seq - b.seq)
+    .slice(-MAX_CONVERSATION_EVENTS)
+}
+
 function documentFromEvent(event: StoryEvent): DocumentArtifact | null {
   if (event.kind !== 'document_created') return null
   const rawDocId = event.docId
@@ -478,6 +490,7 @@ export function useCheckpointData() {
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])
   const [storyEvents, setStoryEvents] = useState<StoryEvent[]>([])
   const [documentArtifacts, setDocumentArtifacts] = useState<DocumentArtifact[]>([])
+  const [conversationEvents, setConversationEvents] = useState<ConversationEvent[]>([])
   const [connected, setConnected] = useState(false)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
   const [reconnectIn, setReconnectIn] = useState(0)
@@ -804,6 +817,13 @@ export function useCheckpointData() {
             break
           }
 
+          case 'conversation': {
+            if (msg.event?.eventId) {
+              setConversationEvents((previous) => mergeConversationEvents(previous, [msg.event]))
+            }
+            break
+          }
+
           case 'run': {
             const runMsg = msg as RunEventMessage
             const nextRunId = runMsg.runId ?? currentRunIdRef.current
@@ -946,6 +966,7 @@ export function useCheckpointData() {
     logEntries,
     storyEvents,
     documentArtifacts,
+    conversationEvents,
     connected,
     reconnectAttempt,
     reconnectIn,

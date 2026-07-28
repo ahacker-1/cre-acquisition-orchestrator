@@ -82,7 +82,11 @@ function IssueList({
   const titleClass = tone === 'error' ? 'text-cre-danger' : 'text-cre-warning'
 
   return (
-    <div className={`border-l-2 p-4 ${containerClass}`}>
+    <div
+      className={`border-l-2 p-4 ${containerClass}`}
+      role={tone === 'error' ? 'alert' : 'status'}
+      aria-atomic="true"
+    >
       <h4 className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${titleClass}`}>{title}</h4>
       <ul className="mt-3 divide-y divide-white/[0.06] text-sm text-gray-200">
         {issues.map((issue) => (
@@ -157,21 +161,53 @@ export default function DealIntakeWizard({
   const [workingState, setWorkingState] = useState<'saving' | 'launching' | 'checking' | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const modalRef = useRef<HTMLDivElement | null>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
-  // Dialog a11y: move focus into the wizard on open, restore it on close, and close on Escape.
+  // Dialog a11y: isolate keyboard focus, lock background scrolling, and restore the opener.
   useEffect(() => {
     if (!isOpen) return
     const previouslyFocused = document.activeElement as HTMLElement | null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     modalRef.current?.focus()
     function onKeyDown(event: KeyboardEvent): void {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onCloseRef.current()
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const modal = modalRef.current
+      if (!modal) return
+      const focusable = modal.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      if (focusable.length === 0) {
+        event.preventDefault()
+        modal.focus()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+      if (event.shiftKey && (active === first || active === modal)) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => {
       window.removeEventListener('keydown', onKeyDown)
-      previouslyFocused?.focus?.()
+      document.body.style.overflow = previousOverflow
+      queueMicrotask(() => previouslyFocused?.focus?.())
     }
-  }, [isOpen, onClose])
+  }, [isOpen])
 
   useLayoutEffect(() => {
     if (!isOpen) return
@@ -323,6 +359,7 @@ export default function DealIntakeWizard({
           role="dialog"
           aria-modal="true"
           aria-labelledby="deal-wizard-title"
+          aria-busy={loadingDeal || workingState !== null}
           className="w-full max-w-6xl border border-cre-border bg-cre-surface shadow-[0_24px_80px_rgba(0,0,0,0.45)] focus:outline-none"
         >
           <div className="border-b border-cre-border px-6 py-5 flex items-start justify-between gap-4">
@@ -383,13 +420,13 @@ export default function DealIntakeWizard({
 
           <div className="px-6 py-6 space-y-6">
             {saveError && (
-              <div className="border-l-2 border-cre-danger bg-cre-danger/[0.06] px-4 py-3 text-sm text-cre-danger">
+              <div className="border-l-2 border-cre-danger bg-cre-danger/[0.06] px-4 py-3 text-sm text-cre-danger" role="alert">
                 {saveError}
               </div>
             )}
 
             {loadingDeal ? (
-              <div className="card text-sm text-gray-400">Loading deal…</div>
+              <div className="card text-sm text-gray-400" role="status" aria-live="polite">Loading deal…</div>
             ) : (
               <>
                 {stepIndex === 0 && (
