@@ -66,8 +66,15 @@ const PHASE_KEY_BY_STAGE: Partial<Record<StageId, string>> = {
   closing: 'closing',
 }
 
+export function normalizeCheckpointStatus(status: string | null | undefined): string {
+  const normalized = (status ?? '').trim().toLowerCase().replace(/-/g, '_')
+  if (normalized === 'completed') return 'complete'
+  if (normalized === 'in_progress') return 'running'
+  return normalized
+}
+
 export function phaseStatusToStageStatus(status: PhaseStatus | string | undefined): StageStatus {
-  switch (status) {
+  switch (normalizeCheckpointStatus(status)) {
     case 'complete':
       return 'done'
     case 'running':

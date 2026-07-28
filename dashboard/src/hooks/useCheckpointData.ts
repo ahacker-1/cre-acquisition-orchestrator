@@ -242,7 +242,7 @@ function mergePhaseData(rawPhase: Record<string, unknown>): Record<string, unkno
   return { ...extras, ...explicit }
 }
 
-function normalizeDealCheckpoint(raw: Record<string, unknown>): DealCheckpoint | null {
+export function normalizeDealCheckpoint(raw: Record<string, unknown>): DealCheckpoint | null {
   if (!raw.dealId || !raw.phases) return null
 
   const rawPhases = raw.phases as Record<string, Record<string, unknown>>

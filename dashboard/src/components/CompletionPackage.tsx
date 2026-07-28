@@ -8,7 +8,7 @@ import {
 import ProofPathStrip from './ProofPathStrip'
 import { dealArtifactHref } from '../lib/artifactUrl'
 import { buildPackageProofSteps, sourceReadinessPresentation } from '../lib/completionModel'
-import { isCompleteDealStatus } from '../lib/stageModel'
+import { isCompleteDealStatus, normalizeCheckpointStatus } from '../lib/stageModel'
 import type {
   DealCheckpoint,
   DocumentArtifact,
@@ -98,9 +98,12 @@ function finalRecommendation(
   if (explicitEvent?.verdict) return explicitEvent.verdict
 
   const phases = dealCheckpoint ? Object.values(dealCheckpoint.phases) : []
-  const failed = phases.some((phase) => phase.status === 'failed' || phase.status === 'blocked')
+  const failed = phases.some((phase) => {
+    const status = normalizeCheckpointStatus(phase.status)
+    return status === 'failed' || status === 'blocked'
+  })
   if (failed) return 'Needs review before proceeding'
-  const hasSkipped = phases.some((phase) => phase.status === 'skipped')
+  const hasSkipped = phases.some((phase) => normalizeCheckpointStatus(phase.status) === 'skipped')
   if (hasSkipped && isCompleteDealStatus(dealCheckpoint?.status)) {
     return 'Scoped workflow completed. Review the package outputs before expanding to a full closing run.'
   }
@@ -258,8 +261,17 @@ function CompletionPackage({
       outcome.phase.outputs.redFlags.map((flag, index) => {
         const phaseKey = outcome.key
         const phaseLabel = outcome.phase.name || displayLabel(phaseKey)
-        const workpaper = packageArtifacts.find((artifact) => artifact.phase === phaseKey)
-          ?? packageArtifacts.find((artifact) => normalizePhase(artifact.phase) === normalizePhase(phaseKey))
+        const phaseArtifacts = packageArtifacts.filter(
+          (artifact) => normalizePhase(artifact.phase) === normalizePhase(phaseKey),
+        )
+        const owner = flag.owner ? normalizePhase(flag.owner) : null
+        const workpaper = (owner
+          ? phaseArtifacts.find((artifact) =>
+              normalizePhase(artifact.agent) === owner && normalizePhase(artifact.docType) === 'workpaper')
+            ?? phaseArtifacts.find((artifact) => normalizePhase(artifact.agent) === owner)
+          : undefined)
+          ?? phaseArtifacts.find((artifact) => normalizePhase(artifact.docType) === 'workpaper')
+          ?? phaseArtifacts[0]
         return {
           id: `${phaseKey}-${index}`,
           phaseKey,
@@ -618,7 +630,7 @@ function CompletionPackage({
                           rel="noreferrer"
                           className="mt-2 inline-flex min-h-8 items-center border-b border-cre-accent/60 text-[10px] font-semibold uppercase tracking-[0.12em] text-cre-accent hover:border-white hover:text-white"
                         >
-                          Open workpaper
+                          {normalizePhase(artifact.docType) === 'input_snapshot' ? 'Open run snapshot' : 'Open workpaper'}
                         </a>
                       </div>
                     )}

@@ -11,7 +11,7 @@ import {
   IconSparkles,
   IconX,
 } from '@tabler/icons-react'
-import { useCheckpointData } from './hooks/useCheckpointData'
+import { normalizeDealCheckpoint, useCheckpointData } from './hooks/useCheckpointData'
 import ErrorBoundary from './components/ErrorBoundary'
 import DealIntakeWizard from './components/DealIntakeWizard'
 import DropZoneHero, { type OutcomeIntent } from './components/DropZoneHero'
@@ -92,12 +92,15 @@ function pendingPhase(name: string, totalAgents: number): PhaseInfo {
 function checkpointFromDealRecord(record: DealRecordResponse): DealCheckpoint {
   const property = asObject(record.deal.property)
   if (record.checkpoint) {
-    const checkpointProperty = asObject(record.checkpoint.property)
-    return {
-      ...record.checkpoint,
-      dealId: record.checkpoint.dealId || record.item.dealId,
-      dealName: record.checkpoint.dealName || record.item.dealName,
+    const rawCheckpoint = asObject(record.checkpoint)
+    const checkpointProperty = asObject(rawCheckpoint.property)
+    const rawPhases = asObject(rawCheckpoint.phases)
+    const normalized = normalizeDealCheckpoint({
+      ...rawCheckpoint,
+      dealId: asString(rawCheckpoint.dealId, record.item.dealId),
+      dealName: asString(rawCheckpoint.dealName, record.item.dealName),
       property: {
+        ...checkpointProperty,
         address: asString(checkpointProperty.address, asString(property.address, record.item.address || '')),
         city: asString(checkpointProperty.city, asString(property.city, record.item.city || '')),
         state: asString(checkpointProperty.state, asString(property.state, record.item.state || '')),
@@ -105,12 +108,12 @@ function checkpointFromDealRecord(record: DealRecordResponse): DealCheckpoint {
         totalUnits: asNumber(checkpointProperty.totalUnits, asNumber(property.totalUnits, record.item.totalUnits ?? 0)),
         askingPrice: asNumber(checkpointProperty.askingPrice, asNumber(asObject(record.deal.financials).askingPrice, record.item.askingPrice ?? 0)),
       },
-      status: record.checkpoint.status || record.item.pipelineStatus || record.item.saveState,
-      workflowName: record.checkpoint.workflowName || 'Deal Workspace',
-      overallProgress: asNumber(record.checkpoint.overallProgress, 0),
-      startedAt: asString(record.checkpoint.startedAt, record.item.createdAt || record.item.updatedAt),
-      lastUpdatedAt: asString(record.checkpoint.lastUpdatedAt, record.item.updatedAt),
-      phases: record.checkpoint.phases || {
+      status: asString(rawCheckpoint.status, record.item.pipelineStatus || record.item.saveState),
+      workflowName: asString(rawCheckpoint.workflowName, 'Deal Workspace'),
+      overallProgress: asNumber(rawCheckpoint.overallProgress, 0),
+      startedAt: asString(rawCheckpoint.startedAt, record.item.createdAt || record.item.updatedAt),
+      lastUpdatedAt: asString(rawCheckpoint.lastUpdatedAt, record.item.updatedAt),
+      phases: Object.keys(rawPhases).length > 0 ? rawPhases : {
         dueDiligence: pendingPhase('Due Diligence', 7),
         underwriting: pendingPhase('Underwriting', 3),
         financing: pendingPhase('Financing', 3),
@@ -118,8 +121,9 @@ function checkpointFromDealRecord(record: DealRecordResponse): DealCheckpoint {
         closing: pendingPhase('Closing', 2),
       },
       resumeInstructions:
-        record.checkpoint.resumeInstructions || 'Review source documents, phase outcomes, and the IC package.',
-    }
+        asString(rawCheckpoint.resumeInstructions, 'Review source documents, phase outcomes, and the IC package.'),
+    })
+    if (normalized) return normalized
   }
   return {
     dealId: record.item.dealId,

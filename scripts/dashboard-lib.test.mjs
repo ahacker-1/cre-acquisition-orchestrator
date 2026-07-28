@@ -6,12 +6,14 @@ import assert from 'node:assert/strict'
 import {
   deriveSpineStages,
   phaseStatusToStageStatus,
+  normalizeCheckpointStatus,
   normalizeProgress,
   intakeSummaryFromDocuments,
   isCompleteDealStatus,
   INGESTION_TEAM,
   SPINE_STAGE_IDS,
 } from '../dashboard/src/lib/stageModel.ts'
+import { normalizeDealCheckpoint } from '../dashboard/src/hooks/useCheckpointData.ts'
 import { suggestionsForStage } from '../dashboard/src/lib/commandModel.ts'
 import { dealArtifactHref } from '../dashboard/src/lib/artifactUrl.ts'
 import { buildPackageProofSteps, sourceReadinessPresentation } from '../dashboard/src/lib/completionModel.ts'
@@ -108,12 +110,48 @@ console.log('stageModel:')
 
 check('phaseStatusToStageStatus maps checkpoint statuses to stage statuses', () => {
   assert.equal(phaseStatusToStageStatus('complete'), 'done')
+  assert.equal(phaseStatusToStageStatus('COMPLETE'), 'done')
   assert.equal(phaseStatusToStageStatus('running'), 'live')
+  assert.equal(phaseStatusToStageStatus('IN_PROGRESS'), 'live')
   assert.equal(phaseStatusToStageStatus('blocked'), 'blocked')
   assert.equal(phaseStatusToStageStatus('failed'), 'blocked')
+  assert.equal(phaseStatusToStageStatus('FAILED'), 'blocked')
   assert.equal(phaseStatusToStageStatus('pending'), 'idle')
   assert.equal(phaseStatusToStageStatus('skipped'), 'idle')
   assert.equal(phaseStatusToStageStatus(undefined), 'idle')
+})
+
+check('persisted checkpoint normalization canonicalizes schema casing and progress', () => {
+  const normalized = normalizeDealCheckpoint({
+    dealId: 'saved-checkpoint',
+    dealName: 'Saved Checkpoint',
+    property: { address: '', city: '', state: '', totalUnits: 10, askingPrice: 1_000_000 },
+    status: 'COMPLETED',
+    overallProgress: 100,
+    startedAt: '',
+    lastUpdatedAt: '',
+    resumeInstructions: '',
+    phases: {
+      dueDiligence: {
+        status: 'COMPLETE',
+        progress: 100,
+        agentStatuses: { 'rent-roll-analyst': 'COMPLETED' },
+      },
+      underwriting: { status: 'IN_PROGRESS', progress: 50, agentStatuses: {} },
+      financing: { status: 'SKIPPED', progress: 100, agentStatuses: {} },
+      legal: { status: 'FAILED', progress: 25, agentStatuses: {} },
+    },
+  })
+
+  assert.ok(normalized)
+  assert.equal(normalized.status, 'complete')
+  assert.equal(normalized.overallProgress, 1)
+  assert.equal(normalized.phases.due_diligence.status, 'complete')
+  assert.equal(normalized.phases.due_diligence.agentStatuses['rent-roll-analyst'], 'complete')
+  assert.equal(normalized.phases.underwriting.status, 'running')
+  assert.equal(normalized.phases.financing.status, 'skipped')
+  assert.equal(normalized.phases.legal.status, 'failed')
+  assert.equal(normalizeCheckpointStatus('IN-PROGRESS'), 'running')
 })
 
 check('normalizeProgress scales fractions, clamps, and guards non-numbers', () => {

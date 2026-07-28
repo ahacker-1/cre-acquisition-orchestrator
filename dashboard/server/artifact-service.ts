@@ -27,7 +27,7 @@ const CONTENT_TYPE_BY_EXTENSION = new Map([
   ['.json', 'application/json; charset=utf-8'],
 ])
 
-const ALLOWED_ARTIFACT_SCOPES = new Set(['reports', 'phase-outputs'])
+const ALLOWED_ARTIFACT_SCOPES = new Set(['reports', 'phase-outputs', 'runs'])
 
 export interface DealArtifactResult {
   statusCode: number

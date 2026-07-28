@@ -305,6 +305,17 @@ try {
   assert.equal(phaseOutput.statusCode, 200, 'a scoped JSON phase output must be served')
   assert.equal(phaseOutput.headers?.['Content-Type'], 'application/json; charset=utf-8')
 
+  const runSnapshotDir = join(artifactRoot, 'data', 'runs', dealId, 'run-001')
+  mkdirSync(runSnapshotDir, { recursive: true })
+  writeFileSync(join(runSnapshotDir, 'input-snapshot.json'), '{"workflowId":"quick-deal-screen"}\n')
+  const runSnapshot = readDealArtifact(
+    artifactContext,
+    dealId,
+    `data/runs/${dealId}/run-001/input-snapshot.json`,
+  )
+  assert.equal(runSnapshot.statusCode, 200, 'a deal-scoped JSON run snapshot must be served')
+  assert.equal(runSnapshot.headers?.['Content-Type'], 'application/json; charset=utf-8')
+
   writeFileSync(join(otherReportsDir, 'foreign.md'), '# Foreign deal')
   assert.equal(
     readDealArtifact(
@@ -346,7 +357,7 @@ try {
       `data/deals/${dealId}/approved-fields.txt`,
     ).statusCode,
     403,
-    'the route must not expose deal workspace files outside reports',
+    'the route must not expose deal workspace files outside approved artifact scopes',
   )
 
   const htmlPath = join(dealReportsDir, 'private.html')
