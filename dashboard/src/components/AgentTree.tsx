@@ -264,7 +264,7 @@ export default function AgentTree({ dealCheckpoint, agentCheckpoints, plannedPha
                   <StatusDot status={phaseInfo?.status || 'pending'} />
                   <span className="flex-1">{displayName}</span>
                   <span className="text-xs text-gray-600">
-                    {titleize(phaseInfo?.status || 'pending')} · {agents.length} agent{agents.length !== 1 ? 's' : ''}
+                    {titleize((phaseInfo?.status || 'pending').toLowerCase())} · {agents.length} agent{agents.length !== 1 ? 's' : ''}
                   </span>
                 </button>
 
